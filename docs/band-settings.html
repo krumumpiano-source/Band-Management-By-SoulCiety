@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ตั้งค่าวง — Band Management By SoulCiety</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>????????? � Band Management By SoulCiety</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -38,63 +38,63 @@
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title">⚙️ <span data-i18n="nav_settings">ตั้งค่าวง</span></h1>
-        <button id="saveBtn" class="btn btn-primary">💾 บันทึกการตั้งค่า</button>
+        <h1 class="page-title">?? <span data-i18n="nav_settings">?????????</span></h1>
+        <button id="saveBtn" class="btn btn-primary">?? ????????????????</button>
       </div>
 
       <!-- Band Info -->
       <div class="card" style="margin-bottom:var(--spacing-xl)">
-        <div class="card-header"><h3 class="card-title">🎵 ข้อมูลวง</h3></div>
+        <div class="card-header"><h3 class="card-title">?? ????????</h3></div>
         <div class="info-grid">
-          <div class="form-group"><label>ชื่อวง</label><input type="text" id="bandName" placeholder="ชื่อวงดนตรี"></div>
-          <div class="form-group"><label>ผู้จัดการวง</label><input type="text" id="bandManager" placeholder="ชื่อผู้จัดการวง"></div>
+          <div class="form-group"><label>??????</label><input type="text" id="bandName" placeholder="???????????"></div>
+          <div class="form-group"><label>???????????</label><input type="text" id="bandManager" placeholder="???????????????"></div>
         </div>
       </div>
 
       <!-- Members -->
       <div class="card" style="margin-bottom:var(--spacing-xl)">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
-          <h3 class="card-title">👥 สมาชิกวง</h3>
-          <button id="addMemberBtn" class="btn btn-primary btn-sm">➕ เพิ่มสมาชิก</button>
+          <h3 class="card-title">?? ????????</h3>
+          <button id="addMemberBtn" class="btn btn-primary btn-sm">? ???????????</button>
         </div>
-        <div id="noMembers" style="display:none"><p class="empty-state-small">ยังไม่มีสมาชิก กดปุ่ม ➕ เพื่อเพิ่ม</p></div>
+        <div id="noMembers" style="display:none"><p class="empty-state-small">?????????????? ?????? ? ??????????</p></div>
         <div id="membersList"></div>
       </div>
 
       <!-- Venues -->
       <div class="card" style="margin-bottom:var(--spacing-xl)">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
-          <h3 class="card-title">🏪 ร้านที่เล่น</h3>
-          <button id="addVenueBtn" class="btn btn-primary btn-sm">➕ เพิ่มร้าน</button>
+          <h3 class="card-title">?? ???????????</h3>
+          <button id="addVenueBtn" class="btn btn-primary btn-sm">? ?????????</button>
         </div>
-        <div id="noVenues" style="display:none"><p class="empty-state-small">ยังไม่มีร้าน กดปุ่ม ➕ เพื่อเพิ่ม</p></div>
+        <div id="noVenues" style="display:none"><p class="empty-state-small">???????????? ?????? ? ??????????</p></div>
         <div id="venuesList"></div>
       </div>
 
       <!-- Schedule -->
       <div class="card" style="margin-bottom:var(--spacing-xl)">
-        <div class="card-header"><h3 class="card-title">📅 ตารางงานประจำสัปดาห์ & ค่าแรง</h3></div>
-        <p class="empty-state-small" style="margin-bottom:var(--spacing-md)">เลือกวันเพื่อตั้งค่าช่วงเวลาและค่าแรงของสมาชิก</p>
+        <div class="card-header"><h3 class="card-title">?? ???????????????????? & ??????</h3></div>
+        <p class="empty-state-small" style="margin-bottom:var(--spacing-md)">??????????????????????????????????????????????</p>
         <div class="day-selector">
-          <button type="button" class="day-btn" data-day="0">อาทิตย์</button>
-          <button type="button" class="day-btn" data-day="1">จันทร์</button>
-          <button type="button" class="day-btn" data-day="2">อังคาร</button>
-          <button type="button" class="day-btn" data-day="3">พุธ</button>
-          <button type="button" class="day-btn" data-day="4">พฤหัสบดี</button>
-          <button type="button" class="day-btn" data-day="5">ศุกร์</button>
-          <button type="button" class="day-btn" data-day="6">เสาร์</button>
+          <button type="button" class="day-btn" data-day="0">???????</button>
+          <button type="button" class="day-btn" data-day="1">??????</button>
+          <button type="button" class="day-btn" data-day="2">??????</button>
+          <button type="button" class="day-btn" data-day="3">???</button>
+          <button type="button" class="day-btn" data-day="4">????????</button>
+          <button type="button" class="day-btn" data-day="5">?????</button>
+          <button type="button" class="day-btn" data-day="6">?????</button>
         </div>
         <div id="selectedDaySchedule">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-md)">
             <h4 id="selectedDayTitle" style="margin:0;font-weight:600;color:var(--premium-gold)"></h4>
-            <button id="addTimeSlotBtn" type="button" class="btn btn-secondary btn-sm" style="display:none">➕ เพิ่มช่วงเวลา</button>
+            <button id="addTimeSlotBtn" type="button" class="btn btn-secondary btn-sm" style="display:none">? ?????????????</button>
           </div>
           <div id="timeSlotsContainer"></div>
         </div>
       </div>
 
       <div style="display:flex;justify-content:flex-end;padding-bottom:var(--spacing-xl)">
-        <button class="btn btn-primary btn-lg" onclick="document.getElementById('saveBtn').click()">💾 บันทึกการตั้งค่า</button>
+        <button class="btn btn-primary btn-lg" onclick="document.getElementById('saveBtn').click()">?? ????????????????</button>
       </div>
     </div>
   </main>

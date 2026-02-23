@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>สถิติเพลง — Band Management By SoulCiety</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>????????? � Band Management By SoulCiety</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -38,38 +38,38 @@
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title">🎙️ <span data-i18n="nav_songInsights">สถิติเพลง</span></h1>
+        <h1 class="page-title">??? <span data-i18n="nav_songInsights">?????????</span></h1>
       </div>
 
       <div class="insights-grid">
         <!-- Frequent Songs -->
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">🔥 เพลงที่เล่นบ่อย</h3>
+            <h3 class="card-title">?? ???????????????</h3>
           </div>
           <div class="period-tabs">
-            <button class="period-tab active" data-period="7">7 วัน</button>
-            <button class="period-tab" data-period="30">30 วัน</button>
-            <button class="period-tab" data-period="90">90 วัน</button>
-            <button class="period-tab" data-period="all">ทั้งหมด</button>
+            <button class="period-tab active" data-period="7">7 ???</button>
+            <button class="period-tab" data-period="30">30 ???</button>
+            <button class="period-tab" data-period="90">90 ???</button>
+            <button class="period-tab" data-period="all">???????</button>
           </div>
-          <div id="frequentSongsList"><div class="loading-text">⏳ กำลังโหลด...</div></div>
+          <div id="frequentSongsList"><div class="loading-text">? ?????????...</div></div>
         </div>
 
         <!-- New Songs -->
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">✨ เพลงใหม่ (เพิ่มล่าสุด)</h3>
+            <h3 class="card-title">? ???????? (???????????)</h3>
           </div>
-          <div id="newSongsList"><div class="loading-text">⏳ กำลังโหลด...</div></div>
+          <div id="newSongsList"><div class="loading-text">? ?????????...</div></div>
         </div>
 
         <!-- System / Hit Songs -->
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">⭐ เพลง Hits ของวง</h3>
+            <h3 class="card-title">? ???? Hits ?????</h3>
           </div>
-          <div id="systemHitsList"><div class="loading-text">⏳ กำลังโหลด...</div></div>
+          <div id="systemHitsList"><div class="loading-text">? ?????????...</div></div>
         </div>
       </div>
     </div>
@@ -114,7 +114,7 @@
 
     function renderRankList(container, songs, labelFn) {
       if (!songs || songs.length === 0) {
-        container.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูล</div>';
+        container.innerHTML = '<div class="empty-state">??????????????</div>';
         return;
       }
       container.innerHTML = songs.map(function(s, i) {
@@ -134,13 +134,13 @@
       var freq = {};
       allSongs.forEach(function(s) {
         if (period === 'all' || (s.lastPlayed && daysSince(s.lastPlayed) <= cutoff)) {
-          var key = s.title || s.name || '(ไม่มีชื่อ)';
+          var key = s.title || s.name || '(?????????)';
           freq[key] = (freq[key] || 0) + (s.playCount || 1);
         }
       });
       var sorted = Object.keys(freq).map(function(k) { return {title: k, playCount: freq[k]}; });
       sorted.sort(function(a,b) { return b.playCount - a.playCount; });
-      renderRankList(container, sorted.slice(0, 10), function(s) { return s.playCount + ' ครั้ง'; });
+      renderRankList(container, sorted.slice(0, 10), function(s) { return s.playCount + ' ?????'; });
     }
 
     function renderNewSongs() {
@@ -150,7 +150,7 @@
       });
       renderRankList(container, sorted.slice(0, 10), function(s) {
         var d = s.addedDate || s.createdAt;
-        return d ? daysSince(d) + ' วันที่แล้ว' : 'ใหม่';
+        return d ? daysSince(d) + ' ??????????' : '????';
       });
     }
 
@@ -159,7 +159,7 @@
       var sorted = allSongs.slice().sort(function(a,b) {
         return (b.playCount || 0) - (a.playCount || 0);
       });
-      renderRankList(container, sorted.slice(0, 10), function(s) { return '⭐ ' + (s.playCount || 0); });
+      renderRankList(container, sorted.slice(0, 10), function(s) { return '? ' + (s.playCount || 0); });
     }
 
     function loadInsights(songs) {
@@ -194,14 +194,14 @@
         } else if (!cached) {
           ['frequentSongsList','newSongsList','systemHitsList'].forEach(function(id) {
             var el = document.getElementById(id);
-            if (el) el.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลเพลง</div>';
+            if (el) el.innerHTML = '<div class="empty-state">??????????????????</div>';
           });
         }
       });
     } else if (!cached) {
       ['frequentSongsList','newSongsList','systemHitsList'].forEach(function(id) {
         var el = document.getElementById(id);
-        if (el) el.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลเพลง</div>';
+        if (el) el.innerHTML = '<div class="empty-state">??????????????????</div>';
       });
     }
   });
