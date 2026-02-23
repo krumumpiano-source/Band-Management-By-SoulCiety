@@ -43,16 +43,36 @@
           <button class="tab-btn active" data-tab="band" onclick="switchTab('band',this)" data-i18n="bandSongs">เพลงของวง</button>
           <button class="tab-btn" data-tab="global" onclick="switchTab('global',this)" data-i18n="globalSongs">คลังเพลงสากล</button>
         </div>
-        <div class="search-bar">
-          <input type="text" id="searchQ" data-i18n-placeholder="searchSong" placeholder="ค้นหาเพลง..." oninput="filterSongs()">
-          <select id="filterKey" onchange="filterSongs()">
-            <option value="" data-i18n="allKey">ทุกคีย์</option>
-            <option>C</option><option>D</option><option>E</option><option>F</option>
-            <option>G</option><option>A</option><option>B</option>
+        <div class="search-bar" style="flex-wrap:wrap;gap:8px">
+          <input type="text" id="searchQ" placeholder="ค้นหาชื่อเพลง..." oninput="filterSongs()" style="flex:1;min-width:180px">
+          <select id="filterKeyNote" onchange="filterSongs()">
+            <option value="">ทุกคีย์</option>
+            <option>C</option><option>Db</option><option>D</option><option>Eb</option>
+            <option>E</option><option>F</option><option>F#</option><option>G</option>
+            <option>Ab</option><option>A</option><option>Bb</option><option>B</option>
           </select>
-          <select id="filterTempo" onchange="filterSongs()">
-            <option value="" data-i18n="allTempo">ทุกจังหวะ</option>
-            <option>ช้า</option><option>ปานกลาง</option><option>เร็ว</option>
+          <select id="filterEra" onchange="filterSongs()">
+            <option value="">ทุกยุค</option>
+            <option>สากล</option>
+            <option>2523-2532 ('80s)</option>
+            <option>2533-2542 ('90s)</option>
+            <option>2543-2553 ('00s)</option>
+            <option>2554-ปัจจุบัน ('11s)</option>
+            <option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option>
+          </select>
+          <select id="filterMood" onchange="filterSongs()">
+            <option value="">ทุกอารมณ์</option>
+            <option>เศร้า / เหงา (Sad)</option>
+            <option>สุข / สนุก (Happy)</option>
+            <option>นิ่ง / ผ่อนคลาย (Calm)</option>
+            <option>หวาน / อบอุ่น (Romantic)</option>
+            <option>มัน / ฮึกเหิม (Power)</option>
+          </select>
+          <select id="filterSinger" onchange="filterSongs()">
+            <option value="">ทุกเสียง</option>
+            <option value="male">ชาย</option>
+            <option value="female">หญิง</option>
+            <option value="duet">คู่</option>
           </select>
         </div>
         <div id="songGrid" class="song-grid"><div class="empty-state" style="grid-column:1/-1"><p data-i18n="loading">กำลังโหลด...</p></div></div>
@@ -91,13 +111,20 @@
   }
 
   function filterSongs() {
-    var q = document.getElementById('searchQ').value.toLowerCase();
-    var key = document.getElementById('filterKey').value;
-    var tempo = document.getElementById('filterTempo').value;
+    var q       = (document.getElementById('searchQ').value || '').toLowerCase();
+    var keyNote = document.getElementById('filterKeyNote').value;
+    var era     = document.getElementById('filterEra').value;
+    var mood    = document.getElementById('filterMood').value;
+    var singer  = document.getElementById('filterSinger').value;
     var filtered = allSongs.filter(function(s) {
-      return (!q || (s.title||'').toLowerCase().includes(q) || (s.artist||'').toLowerCase().includes(q))
-        && (!key || s.key === key)
-        && (!tempo || s.tempo === tempo);
+      if (q && !(s.name||'').toLowerCase().includes(q)) return false;
+      if (keyNote && s.keyNote !== keyNote) return false;
+      if (era && s.era !== era) return false;
+      if (mood && s.mood !== mood) return false;
+      if (singer === 'male'   && !s.male)   return false;
+      if (singer === 'female' && !s.female) return false;
+      if (singer === 'duet'   && !(s.male && s.female)) return false;
+      return true;
     });
     renderSongs(filtered);
   }
@@ -108,15 +135,17 @@
       grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>' + t('noData') + '</p></div>'; return;
     }
     grid.innerHTML = songs.map(function(s) {
-      var tags = [s.key && ('🎵 '+s.key), s.tempo && ('⏱ '+s.tempo), s.genre && s.genre].filter(Boolean);
-      var editLink = '?page=edit-song&songId='+encodeURIComponent(s.songId||'');
+      var keyLabel   = s.keyNote ? (s.keyNote + (s.key ? ' ('+s.key+')' : '')) : '';
+      var singerIcon = s.singer === 'duet' ? '👫' : s.singer === 'male' ? '👨' : s.singer === 'female' ? '👩' : '';
+      var tags = [keyLabel && ('🎵 '+keyLabel), s.bpm && ('♩'+s.bpm), s.era, s.mood].filter(Boolean);
+      var editLink = '?page=edit-song&songId='+encodeURIComponent(s.songId||s.id||'');
       return '<div class="song-card">'
-        +'<h4>'+escapeHtml(s.title||'')+'</h4>'
-        +'<div class="artist">'+escapeHtml(s.artist||'')+'</div>'
+        +'<h4>'+escapeHtml(s.name||'')+(singerIcon?' <span style="font-size:0.85em">'+singerIcon+'</span>':'')+'</h4>'
+        +'<div class="artist">'+escapeHtml(s.artist||'&nbsp;')+'</div>'
         +'<div class="tags">'+ tags.map(function(tg){return '<span class="tag">'+escapeHtml(tg)+'</span>';}).join('') +'</div>'
         +(currentTab==='band'?'<div style="margin-top:var(--spacing-sm);display:flex;gap:6px">'
           +'<a href="'+editLink+'" class="btn btn-ghost btn-sm">✏️</a>'
-          +'<button class="btn btn-danger btn-sm" onclick="deleteSong(\''+escapeHtml(s.songId||'')+'\')">🗑️</button>'
+          +'<button class="btn btn-danger btn-sm" onclick="deleteSong(\''+escapeHtml(s.songId||s.id||'')+'\')">🗑️</button>'
           +'</div>':'')
         +'</div>';
     }).join('');

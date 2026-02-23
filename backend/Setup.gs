@@ -15,7 +15,8 @@ var SETUP_CONFIG = {
   FOLDER_NAME:       'Band Management By SoulCiety',
   SPREADSHEET_NAME:  'BandManagement_Database',
   INFO_DOC_NAME:     'BandManagement_SystemInfo',
-  GLOBAL_SONGS_ID:   '1XISC-0mQzL69mnL3i7f1ITAQ4x5Uv5KkcUJP3vkpzDY'
+  GLOBAL_SONGS_ID:   '1XISC-0mQzL69mnL3i7f1ITAQ4x5Uv5KkcUJP3vkpzDY',
+  TARGET_FOLDER_ID:  '1chknCPBwHetWY6-Dj_LSLig4q_9I1ujy'  // Google Drive folder ที่ต้องการ
 };
 
 // ============================================================
@@ -96,10 +97,21 @@ var SHEET_SCHEMAS = [
 function runSetup() {
   Logger.log('=== Band Management By SoulCiety — Setup Start ===');
 
-  var folder = getOrCreateFolder(SETUP_CONFIG.FOLDER_NAME);
-  Logger.log('Folder: ' + folder.getName() + ' | ID: ' + folder.getId());
+  // ย้าย script นี้เข้า Drive folder ที่กำหนด
+  try {
+    var targetDriveFolder = DriveApp.getFolderById(SETUP_CONFIG.TARGET_FOLDER_ID);
+    var scriptFile = DriveApp.getFileById(ScriptApp.getScriptId());
+    scriptFile.moveTo(targetDriveFolder);
+    Logger.log('Script moved to folder: ' + targetDriveFolder.getName());
+  } catch(e) {
+    Logger.log('Note: Could not move script file — ' + e.message);
+  }
 
-  var ss = getOrCreateSpreadsheetInFolder(folder, SETUP_CONFIG.SPREADSHEET_NAME);
+  // สร้าง Spreadsheet ตรงใน TARGET_FOLDER_ID เลย (ไม่สร้าง subfolder)
+  var targetFolder = DriveApp.getFolderById(SETUP_CONFIG.TARGET_FOLDER_ID);
+  Logger.log('Target Folder: ' + targetFolder.getName() + ' | ID: ' + targetFolder.getId());
+
+  var ss = getOrCreateSpreadsheetInFolder(targetFolder, SETUP_CONFIG.SPREADSHEET_NAME);
   Logger.log('Spreadsheet: ' + ss.getName() + ' | ID: ' + ss.getId());
 
   var createdSheets = [];
@@ -116,7 +128,7 @@ function runSetup() {
 
   var msg =
     '✅ Setup เสร็จสมบูรณ์!\n\n' +
-    '📁 Folder: ' + folder.getName() + '\n' +
+    '📁 Folder: ' + targetFolder.getName() + '\n' +
     '📊 Spreadsheet ID: ' + ss.getId() + '\n' +
     '📝 สร้าง Sheet ใหม่: ' + (createdSheets.length > 0 ? createdSheets.join(', ') : 'ไม่มี (มีอยู่แล้ว)') + '\n\n' +
     'คัดลอก Spreadsheet ID ด้านบนไปใส่ใน ProjectProperties หรือผูก Script นี้กับ Spreadsheet นั้น';
@@ -136,6 +148,18 @@ function getOrCreateFolder(folderName) {
   var folders = DriveApp.getFoldersByName(folderName);
   if (folders.hasNext()) return folders.next();
   return DriveApp.createFolder(folderName);
+}
+
+function getOrCreateFolderInParent(folderName, parentFolderId) {
+  try {
+    var parentFolder = DriveApp.getFolderById(parentFolderId);
+    var folders = parentFolder.getFoldersByName(folderName);
+    if (folders.hasNext()) return folders.next();
+    return parentFolder.createFolder(folderName);
+  } catch(e) {
+    Logger.log('Cannot access parent folder, creating at root: ' + e.message);
+    return getOrCreateFolder(folderName);
+  }
 }
 
 function getOrCreateSpreadsheetInFolder(folder, ssName) {

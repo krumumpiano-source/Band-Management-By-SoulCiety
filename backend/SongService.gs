@@ -16,27 +16,37 @@ function getAllSongs(source, bandId) {
 function getAllGlobalSongs() {
   try {
     var ss = getGlobalSongsSpreadsheet();
-    var sheet = ss.getSheetByName(CONFIG.SHEETS.GLOBAL_SONGS);
+    // ลอง sheet ชื่อที่กำหนดก่อน ถ้าไม่เจอให้ใช้ sheet แรก
+    var sheet = ss.getSheetByName(CONFIG.SHEETS.GLOBAL_SONGS) || ss.getSheets()[0];
     if (!sheet) return { success: false, message: 'ไม่พบ sheet เพลงกลาง' };
     var data = sheet.getDataRange().getValues();
     if (data.length <= 1) return { success: true, data: [] };
+    // หาแถว header (แถวแรกที่มีข้อมูล ชื่อเพลง/คีย์ ฯลฯ)
+    var startRow = 1; // ข้ามแถว header
     var songs = [];
-    for (var i = 1; i < data.length; i++) {
+    for (var i = startRow; i < data.length; i++) {
       var row = data[i];
-      if (!row[0] || !row[0].toString().trim()) continue;
-      var male = row[5] === true || row[5] === 'TRUE' || row[5] === 1;
-      var female = row[6] === true || row[6] === 'TRUE' || row[6] === 1;
-      var singer = male && female ? 'duet' : male ? 'male' : female ? 'female' : '';
+      var name = (row[0] || '').toString().trim();
+      if (!name) continue;
+      // col F, G เป็น checkbox — อาจเป็น TRUE/FALSE หรือ true/false หรือ 1/0
+      var male   = row[5] === true || String(row[5]).toUpperCase() === 'TRUE' || row[5] === 1;
+      var female = row[6] === true || String(row[6]).toUpperCase() === 'TRUE' || row[6] === 1;
+      var singer = (male && female) ? 'duet' : male ? 'male' : female ? 'female' : '';
+      var bpmRaw = row[3];
+      var bpm = (bpmRaw !== '' && !isNaN(bpmRaw)) ? parseInt(bpmRaw) : 0;
       songs.push({
-        id: 'GLOBAL_' + i,
-        name: (row[0] || '').toString().trim(),
-        key: (row[1] || '').toString().trim(),
-        keyNote: (row[2] || '').toString().trim(),
-        bpm: row[3] ? (isNaN(row[3]) ? '' : parseInt(row[3])) : '',
-        era: (row[4] || '').toString().trim(),
-        male: male, female: female, singer: singer,
-        mood: (row[7] || '').toString().trim(),
-        source: 'global', bandId: ''
+        id:      'GLOBAL_' + i,
+        name:    name,
+        key:     (row[1] || '').toString().trim(),   // คีย์ (2b, 3#, C ...)
+        keyNote: (row[2] || '').toString().trim(),   // คีย์ตัวโน้ต (Bb, D, G ...)
+        bpm:     bpm,
+        era:     (row[4] || '').toString().trim(),   // ปีของเพลง
+        male:    male,
+        female:  female,
+        singer:  singer,
+        mood:    (row[7] || '').toString().trim(),   // อารมณ์เพลง
+        source:  'global',
+        bandId:  ''
       });
     }
     return { success: true, data: songs };
