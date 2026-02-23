@@ -167,8 +167,7 @@ function getOrCreateSpreadsheetInFolder(folder, ssName) {
   if (files.hasNext()) return SpreadsheetApp.open(files.next());
   var ss = SpreadsheetApp.create(ssName);
   var file = DriveApp.getFileById(ss.getId());
-  folder.addFile(file);
-  DriveApp.getRootFolder().removeFile(file);
+  file.moveTo(folder); // ย้ายเข้า folder เป้าหมายโดยตรง (แทน addFile/removeFile เก่า)
   return ss;
 }
 
@@ -200,4 +199,38 @@ function removeDefaultSheet(ss) {
   if (defaultSheet && ss.getSheets().length > 1) {
     try { ss.deleteSheet(defaultSheet); } catch(e) {}
   }
+}
+
+// ============================================================
+// ยกระดับผู้ใช้เป็น Admin
+// วิธีใช้: แก้ EMAIL_TO_PROMOTE แล้วกด ▶ Run
+// ============================================================
+function promoteToAdmin() {
+  var EMAIL_TO_PROMOTE = 'ใส่อีเมลของคุณที่นี่'; // <-- แก้ตรงนี้
+
+  if (EMAIL_TO_PROMOTE === 'ใส่อีเมลของคุณที่นี่' || !EMAIL_TO_PROMOTE.includes('@')) {
+    Logger.log('❌ กรุณาแก้ EMAIL_TO_PROMOTE ให้เป็นอีเมลจริงก่อน');
+    SpreadsheetApp.getUi && SpreadsheetApp.getUi().alert('❌ กรุณาแก้ EMAIL_TO_PROMOTE ให้เป็นอีเมลจริงก่อน');
+    return;
+  }
+
+  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
+  if (!sheet) { Logger.log('❌ ไม่พบ Sheet USERS'); return; }
+
+  var data = sheet.getDataRange().getValues();
+  var header = data[0];
+  var emailIdx = header.indexOf('email');
+  var roleIdx  = header.indexOf('role');
+
+  var emailLower = EMAIL_TO_PROMOTE.toLowerCase().trim();
+  for (var i = 1; i < data.length; i++) {
+    if ((data[i][emailIdx] || '').toString().toLowerCase().trim() === emailLower) {
+      sheet.getRange(i + 1, roleIdx + 1).setValue('admin');
+      Logger.log('✅ เปลี่ยน role ของ ' + EMAIL_TO_PROMOTE + ' เป็น admin เรียบร้อยแล้ว');
+      try { SpreadsheetApp.getUi().alert('✅ เปลี่ยนเป็น Admin เรียบร้อย! กรุณา Login ใหม่'); } catch(e) {}
+      return;
+    }
+  }
+  Logger.log('❌ ไม่พบอีเมล: ' + EMAIL_TO_PROMOTE + ' (สมัครสมาชิกก่อนแล้วค่อยรัน function นี้)');
 }
