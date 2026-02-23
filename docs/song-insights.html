@@ -3,114 +3,208 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>วิเคราะห์เพลง — Band Management By SoulCiety</title>
+  <title>สถิติเพลง — Band Management By SoulCiety</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
   <style>
-    .insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--spacing-xl)}
-    .bar-row{display:flex;align-items:center;gap:var(--spacing-md);margin-bottom:var(--spacing-sm)}
-    .bar-row .label{width:120px;font-size:var(--text-sm);color:var(--premium-text-muted);text-align:right;flex-shrink:0}
-    .bar-track{flex:1;height:16px;background:var(--premium-off-white);border-radius:var(--radius-full);overflow:hidden}
-    .bar-fill{height:100%;background:var(--premium-gold);border-radius:var(--radius-full);transition:width .5s}
-    .bar-val{width:40px;font-size:var(--text-sm);font-weight:600;color:var(--premium-gold);flex-shrink:0}
-    .popular-song{display:flex;align-items:center;gap:var(--spacing-md);padding:var(--spacing-sm) 0;border-bottom:1px dashed var(--premium-light-gray)}
-    .rank-num{width:28px;height:28px;border-radius:var(--radius-full);background:var(--premium-gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-    .rank-num.second{background:#a0aec0}.rank-num.third{background:#c6a15b}
+    .insights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--spacing-lg)}
+    .song-rank-item{display:flex;align-items:center;gap:var(--spacing-md);padding:var(--spacing-sm) 0;border-bottom:1px solid var(--premium-border,#e2e8f0)}
+    .song-rank-item:last-child{border-bottom:none}
+    .rank-badge{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+    .rank-1{background:#FFD700;color:#333}
+    .rank-2{background:#C0C0C0;color:#333}
+    .rank-3{background:#CD7F32;color:#fff}
+    .rank-other{background:var(--premium-off-white);color:var(--premium-text-muted)}
+    .song-info{flex:1;min-width:0}
+    .song-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .song-meta{font-size:12px;color:var(--premium-text-muted)}
+    .play-count{font-weight:700;color:var(--premium-gold);white-space:nowrap}
+    .period-tabs{display:flex;gap:var(--spacing-xs,4px);flex-wrap:wrap;margin-bottom:var(--spacing-md)}
+    .period-tab{padding:4px 14px;border-radius:var(--radius-full,999px);border:1px solid var(--premium-border);background:none;cursor:pointer;font-size:13px;transition:all .2s}
+    .period-tab.active{background:var(--premium-gold);color:#fff;border-color:var(--premium-gold)}
+    .tag-new{display:inline-block;background:#d4edda;color:#155724;border-radius:var(--radius-full,999px);padding:1px 8px;font-size:11px;font-weight:600;margin-left:6px}
+    #toast{display:none;position:fixed;bottom:24px;right:24px;background:var(--premium-gold);color:#fff;padding:12px 20px;border-radius:var(--radius-md);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+    #toast.show{display:block}
+    .empty-state{text-align:center;color:var(--premium-text-muted);padding:var(--spacing-xl)}
+    .loading-text{text-align:center;color:var(--premium-text-muted);padding:var(--spacing-lg)}
   </style>
 </head>
 <body>
   <div id="mainNav"></div>
-  <div id="toast"></div>
+  <div id="toast"><span class="toast-message"></span></div>
+
   <main>
     <div class="container">
-      <div class="page-header"><h1 class="page-title" data-i18n="nav_songInsights">วิเคราะห์เพลง</h1></div>
-      <div id="insightContent">
-        <div class="insight-grid">
-          <!-- Key Distribution -->
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">สัดส่วนตามคีย์</h3></div>
-            <div id="keyBars"><div class="empty-state"><p data-i18n="loading">กำลังโหลด...</p></div></div>
+      <div class="page-header">
+        <h1 class="page-title">🎙️ <span data-i18n="nav_songInsights">สถิติเพลง</span></h1>
+      </div>
+
+      <div class="insights-grid">
+        <!-- Frequent Songs -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🔥 เพลงที่เล่นบ่อย</h3>
           </div>
-          <!-- Tempo Distribution -->
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">สัดส่วนตามจังหวะ</h3></div>
-            <div id="tempoBars"><div class="empty-state"><p data-i18n="loading">กำลังโหลด...</p></div></div>
+          <div class="period-tabs">
+            <button class="period-tab active" data-period="7">7 วัน</button>
+            <button class="period-tab" data-period="30">30 วัน</button>
+            <button class="period-tab" data-period="90">90 วัน</button>
+            <button class="period-tab" data-period="all">ทั้งหมด</button>
           </div>
-          <!-- Genre Distribution -->
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">สัดส่วนตามแนวดนตรี</h3></div>
-            <div id="genreBars"><div class="empty-state"><p data-i18n="loading">กำลังโหลด...</p></div></div>
-          </div>
-          <!-- Most Used in Setlist -->
-          <div class="card">
-            <div class="card-header"><h3 class="card-title">เพลงที่ใช้บ่อยในเซ็ตลิสต์</h3></div>
-            <div id="popularSongs"><div class="empty-state"><p data-i18n="loading">กำลังโหลด...</p></div></div>
-          </div>
+          <div id="frequentSongsList"><div class="loading-text">⏳ กำลังโหลด...</div></div>
         </div>
-        <!-- Full song table -->
-        <div class="card" style="margin-top:var(--spacing-xl)">
-          <div class="card-header"><h3 class="card-title">รายการเพลงทั้งหมด</h3>
-            <span id="songCount" style="color:var(--premium-text-muted);font-size:var(--text-sm)"></span>
+
+        <!-- New Songs -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">✨ เพลงใหม่ (เพิ่มล่าสุด)</h3>
           </div>
-          <div class="table-responsive">
-            <table class="table">
-              <thead><tr><th>#</th><th>ชื่อเพลง</th><th>ศิลปิน</th><th>คีย์</th><th>จังหวะ</th><th>แนวดนตรี</th><th>ความยาว</th></tr></thead>
-              <tbody id="songTableBody"><tr><td colspan="7" class="text-center">กำลังโหลด...</td></tr></tbody>
-            </table>
+          <div id="newSongsList"><div class="loading-text">⏳ กำลังโหลด...</div></div>
+        </div>
+
+        <!-- System / Hit Songs -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">⭐ เพลง Hits ของวง</h3>
           </div>
+          <div id="systemHitsList"><div class="loading-text">⏳ กำลังโหลด...</div></div>
         </div>
       </div>
     </div>
   </main>
+
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
-    requireAuth(); renderMainNav('mainNav'); applyTranslations();
-    gasRun('getAllBandSongs', {}, function(r) {
-      var songs = (r && r.success && r.data) ? r.data : [];
-      document.getElementById('songCount').textContent = songs.length + ' เพลง';
-      // Key distribution
-      renderDistBar('keyBars', countBy(songs,'key'));
-      // Tempo distribution
-      renderDistBar('tempoBars', countBy(songs,'tempo'));
-      // Genre distribution
-      renderDistBar('genreBars', countBy(songs,'genre'));
-      // Popular (fake for now — use setlist data if available)
-      document.getElementById('popularSongs').innerHTML = songs.slice(0,5).map(function(s,i){
-        return '<div class="popular-song">'
-          +'<div class="rank-num'+(i===1?' second':i===2?' third':'')+'">'+( i+1)+'</div>'
-          +'<div><strong>'+escapeHtml(s.title||'')+'</strong><br><span style="font-size:var(--text-xs);color:var(--premium-text-muted)">'+escapeHtml(s.artist||'')+'</span></div>'
-          +'</div>';
-      }).join('') || '<div class="empty-state"><p>'+t('noData')+'</p></div>';
-      // Full table
-      var tbody = document.getElementById('songTableBody');
-      tbody.innerHTML = songs.length ? songs.map(function(s,i){
-        return '<tr><td>'+(i+1)+'</td><td>'+escapeHtml(s.title||'')+'</td><td>'+escapeHtml(s.artist||'')+'</td>'
-          +'<td>'+escapeHtml(s.key||'')+'</td><td>'+escapeHtml(s.tempo||'')+'</td><td>'+escapeHtml(s.genre||'')+'</td>'
-          +'<td>'+(s.duration?s.duration+' นาที':'')+'</td></tr>';
-      }).join('') : '<tr><td colspan="7" class="text-center">'+t('noData')+'</td></tr>';
+    if (typeof requireAuth === 'function') requireAuth();
+    if (typeof renderMainNav === 'function') renderMainNav('mainNav');
+    if (typeof applyTranslations === 'function') applyTranslations();
+
+    var bandId = localStorage.getItem('currentBandId') || '';
+    var allSongs = [];
+    var currentPeriod = 7;
+
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      if (!t) return;
+      t.querySelector('.toast-message').textContent = msg;
+      t.classList.add('show');
+      setTimeout(function() { t.classList.remove('show'); }, 3000);
+    }
+
+    function parseSongs(raw) {
+      if (!raw) return [];
+      try { return JSON.parse(raw); } catch(e) { return []; }
+    }
+
+    function escapeHtml(t) {
+      return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function daysSince(dateStr) {
+      if (!dateStr) return Infinity;
+      var d = new Date(dateStr);
+      if (isNaN(d)) return Infinity;
+      return Math.floor((Date.now() - d.getTime()) / 86400000);
+    }
+
+    function renderRankList(container, songs, labelFn) {
+      if (!songs || songs.length === 0) {
+        container.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูล</div>';
+        return;
+      }
+      container.innerHTML = songs.map(function(s, i) {
+        var rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
+        return '<div class="song-rank-item">' +
+          '<div class="rank-badge ' + rankClass + '">' + (i+1) + '</div>' +
+          '<div class="song-info"><div class="song-title">' + escapeHtml(s.title || s.name || '-') + '</div>' +
+          '<div class="song-meta">' + escapeHtml(s.artist || s.genre || '') + '</div></div>' +
+          '<div class="play-count">' + labelFn(s) + '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    function renderFrequent(period) {
+      var container = document.getElementById('frequentSongsList');
+      var cutoff = period === 'all' ? Infinity : parseInt(period);
+      var freq = {};
+      allSongs.forEach(function(s) {
+        if (period === 'all' || (s.lastPlayed && daysSince(s.lastPlayed) <= cutoff)) {
+          var key = s.title || s.name || '(ไม่มีชื่อ)';
+          freq[key] = (freq[key] || 0) + (s.playCount || 1);
+        }
+      });
+      var sorted = Object.keys(freq).map(function(k) { return {title: k, playCount: freq[k]}; });
+      sorted.sort(function(a,b) { return b.playCount - a.playCount; });
+      renderRankList(container, sorted.slice(0, 10), function(s) { return s.playCount + ' ครั้ง'; });
+    }
+
+    function renderNewSongs() {
+      var container = document.getElementById('newSongsList');
+      var sorted = allSongs.slice().sort(function(a,b) {
+        return daysSince(a.addedDate || a.createdAt) - daysSince(b.addedDate || b.createdAt);
+      });
+      renderRankList(container, sorted.slice(0, 10), function(s) {
+        var d = s.addedDate || s.createdAt;
+        return d ? daysSince(d) + ' วันที่แล้ว' : 'ใหม่';
+      });
+    }
+
+    function renderHits() {
+      var container = document.getElementById('systemHitsList');
+      var sorted = allSongs.slice().sort(function(a,b) {
+        return (b.playCount || 0) - (a.playCount || 0);
+      });
+      renderRankList(container, sorted.slice(0, 10), function(s) { return '⭐ ' + (s.playCount || 0); });
+    }
+
+    function loadInsights(songs) {
+      allSongs = songs || [];
+      renderFrequent(currentPeriod);
+      renderNewSongs();
+      renderHits();
+    }
+
+    // Period tab listeners
+    document.querySelectorAll('.period-tab').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.period-tab').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        currentPeriod = btn.getAttribute('data-period');
+        renderFrequent(currentPeriod);
+      });
     });
+
+    // Try localStorage first
+    var cached = localStorage.getItem('bandSongs');
+    if (cached) {
+      loadInsights(parseSongs(cached));
+    }
+
+    // Fetch from GAS API
+    if (bandId && typeof gasRun === 'function') {
+      gasRun('getSongs', {bandId: bandId}, function(result) {
+        if (result && result.success && result.songs) {
+          localStorage.setItem('bandSongs', JSON.stringify(result.songs));
+          loadInsights(result.songs);
+        } else if (!cached) {
+          ['frequentSongsList','newSongsList','systemHitsList'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลเพลง</div>';
+          });
+        }
+      });
+    } else if (!cached) {
+      ['frequentSongsList','newSongsList','systemHitsList'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลเพลง</div>';
+      });
+    }
   });
-
-  function countBy(arr, field) {
-    var counts = {};
-    arr.forEach(function(s){ var v = s[field]||'ไม่ระบุ'; counts[v] = (counts[v]||0)+1; });
-    return counts;
-  }
-
-  function renderDistBar(containerId, counts) {
-    var max = Math.max.apply(null, Object.values(counts)) || 1;
-    var html = Object.entries(counts).sort(function(a,b){return b[1]-a[1];}).slice(0,8).map(function(e){
-      return '<div class="bar-row"><span class="label">'+escapeHtml(e[0])+'</span>'
-        +'<div class="bar-track"><div class="bar-fill" style="width:'+Math.round(e[1]/max*100)+'%"></div></div>'
-        +'<span class="bar-val">'+e[1]+'</span></div>';
-    }).join('');
-    document.getElementById(containerId).innerHTML = html || '<div class="empty-state"><p>'+t('noData')+'</p></div>';
-  }
   </script>
 </body>
 </html>

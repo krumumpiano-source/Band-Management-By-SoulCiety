@@ -3,75 +3,125 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เบิก-จ่ายค่าตัว — Band Management By SoulCiety</title>
+  <title>บันทึกเข้างาน — Band Management By SoulCiety</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
   <style>
-    .member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--spacing-md)}
-    .member-att-card{background:var(--premium-white);border-radius:var(--radius-lg);padding:var(--spacing-md);box-shadow:var(--shadow-sm);text-align:center;border-top:3px solid var(--premium-gold)}
-    .member-att-card .name{font-weight:600;margin:var(--spacing-sm) 0 4px}
-    .member-att-card .role{font-size:var(--text-xs);color:var(--premium-text-muted)}
-    .att-toggle{display:flex;gap:4px;justify-content:center;margin:var(--spacing-sm) 0}
-    .att-btn{width:32px;height:32px;border-radius:var(--radius-full);border:2px solid var(--premium-light-gray);background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
-    .att-btn.present{border-color:#276749;background:#c6f6d5}.att-btn.absent{border-color:#c53030;background:#fed7d7}.att-btn.substitute{border-color:#d69e2e;background:#fefcbf}
-    .summary-bar{background:var(--premium-white);border-radius:var(--radius-lg);padding:var(--spacing-lg);box-shadow:var(--shadow-sm);margin-bottom:var(--spacing-xl);display:flex;gap:var(--spacing-xl);flex-wrap:wrap}
-    .summary-item{flex:1 1 120px;text-align:center}
-    .summary-item .val{font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
-    .summary-item .lbl{font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:2px}
+    .attendance-table th,.attendance-table td{padding:6px 10px;border:1px solid var(--premium-border,#e2e8f0);font-size:13px;white-space:nowrap}
+    .attendance-table th{background:var(--premium-off-white,#f8f8f6);font-weight:600}
+    .attendance-table td.sticky-col{position:sticky;left:0;background:var(--premium-white,#fff);z-index:1;min-width:120px}
+    .payout-table th,.payout-table td{padding:6px 10px;border:1px solid var(--premium-border,#e2e8f0);font-size:13px}
+    .payout-table th{background:var(--premium-off-white,#f8f8f6);font-weight:600}
+    .section-divider{margin:var(--spacing-xl) 0;border:none;border-top:2px solid var(--premium-border,#e2e8f0)}
+    .band-info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--spacing-md);margin-bottom:var(--spacing-lg)}
+    @media(max-width:640px){.band-info-grid{grid-template-columns:1fr}}
+    .info-item{background:var(--premium-off-white,#f8f9fa);border-radius:var(--radius-md);padding:var(--spacing-sm) var(--spacing-md)}
+    .info-label{font-size:12px;color:var(--premium-text-muted);margin-bottom:2px}
+    .info-value{font-weight:600}
+    .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--spacing-md);align-items:flex-end}
+    #toast{display:none;position:fixed;bottom:24px;right:24px;background:var(--premium-gold);color:#fff;padding:12px 20px;border-radius:var(--radius-md);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+    #toast.show{display:block}
+    #dailyDateGroup,#weeklyDateGroup,#monthlyDateGroup{display:none}
+    #bandInfoCard{display:none}
+    .action-btns{display:flex;flex-wrap:wrap;gap:var(--spacing-sm);margin-top:var(--spacing-md)}
+    input[type=number].payout-input{width:80px;text-align:right;border:1px solid var(--premium-border,#ccc);border-radius:4px;padding:2px 6px;font-size:13px}
+    input[type=number].payout-input:focus{outline:2px solid var(--premium-gold)}
+    .total-row td{font-weight:700;background:var(--premium-off-white);color:var(--premium-gold)}
   </style>
 </head>
 <body>
   <div id="mainNav"></div>
-  <div id="toast"></div>
-  <div id="confirmModal"></div>
+  <div id="toast"><span class="toast-message"></span></div>
 
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title" data-i18n="nav_payroll">ตรวจสอบ/เบิกค่าตัว</h1>
-        <a href="?page=external-payout" class="btn btn-secondary" data-i18n="nav_externalPayout">จ่ายคนนอก</a>
+        <h1 class="page-title">📝 <span data-i18n="nav_attendance">บันทึกเข้างาน</span></h1>
       </div>
 
-      <!-- Job Selector -->
-      <div class="card" style="margin-bottom:var(--spacing-xl)">
-        <div class="card-header"><h3 class="card-title" data-i18n="selectJob">เลือกงาน</h3></div>
-        <div style="display:flex;gap:var(--spacing-md);flex-wrap:wrap">
-          <select id="jobPicker" onchange="loadJobDetail()" style="flex:1">
-            <option value="">— เลือกงาน —</option>
-          </select>
-          <button class="btn btn-primary" onclick="saveAttendance()" data-i18n="save">บันทึก</button>
-        </div>
-        <div id="jobInfo" style="margin-top:var(--spacing-md);display:none">
-          <div class="summary-bar">
-            <div class="summary-item"><div class="val" id="sumTotal">0</div><div class="lbl">ค่าตัวรวม (บาท)</div></div>
-            <div class="summary-item"><div class="val" id="sumPresent">0</div><div class="lbl">เข้าร่วม</div></div>
-            <div class="summary-item"><div class="val" id="sumAbsent">0</div><div class="lbl">ขาด</div></div>
-            <div class="summary-item"><div class="val" id="sumEach">0</div><div class="lbl">ค่าตัว/คน (บาท)</div></div>
+      <!-- Filter Form -->
+      <div class="card" style="margin-bottom:var(--spacing-lg)">
+        <div class="card-header"><h3 class="card-title">⚙️ ตั้งค่าการบันทึก</h3></div>
+        <div class="filter-grid">
+          <div class="form-group">
+            <label>ประเภทการบันทึก</label>
+            <select id="recordType">
+              <option value="daily">รายวัน</option>
+              <option value="weekly">รายสัปดาห์</option>
+              <option value="monthly">รายเดือน</option>
+            </select>
+          </div>
+          <div class="form-group" id="dailyDateGroup">
+            <label>วันที่ทำงาน</label>
+            <input type="date" id="workDate">
+          </div>
+          <div class="form-group" id="weeklyDateGroup">
+            <label>วันที่เริ่ม</label>
+            <input type="date" id="startDate">
+          </div>
+          <div class="form-group" id="weeklyDateGroup2" style="display:none">
+            <label>วันที่สิ้นสุด</label>
+            <input type="date" id="endDate">
+          </div>
+          <div class="form-group" id="monthlyDateGroup">
+            <label>เดือน/ปี</label>
+            <input type="month" id="monthYear">
+          </div>
+          <div class="form-group">
+            <label>สถานที่ (Venue)</label>
+            <select id="venue"><option value="">-- เลือกสถานที่ --</option></select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end">
+            <button id="apLoadBtn" class="btn btn-primary" style="width:100%">▶️ โหลดตาราง</button>
           </div>
         </div>
       </div>
 
-      <!-- Members -->
-      <div class="card">
-        <div class="card-header"><h3 class="card-title" data-i18n="attendance">การเข้าร่วม</h3></div>
-        <div id="memberGrid" class="member-grid">
-          <div class="empty-state"><p data-i18n="selectJobFirst">กรุณาเลือกงานก่อน</p></div>
+      <!-- Band Info Card -->
+      <div id="bandInfoCard" class="card" style="margin-bottom:var(--spacing-lg)">
+        <div class="card-header"><h3 class="card-title">🎸 ข้อมูลวง</h3></div>
+        <div class="band-info-grid">
+          <div class="info-item"><div class="info-label">ชื่อวง</div><div class="info-value" id="bandNameDisplay">-</div></div>
+          <div class="info-item"><div class="info-label">หัวหน้าวง</div><div class="info-value" id="bandManagerDisplay">-</div></div>
+          <div class="info-item"><div class="info-label">จำนวนสมาชิก</div><div class="info-value" id="memberCountDisplay">-</div></div>
         </div>
       </div>
 
-      <!-- History table -->
-      <div class="card" style="margin-top:var(--spacing-xl)">
-        <div class="card-header"><h3 class="card-title">ประวัติการเบิกค่าตัว</h3></div>
+      <!-- Attendance Table -->
+      <div class="card" style="margin-bottom:var(--spacing-lg)">
+        <div class="card-header">
+          <h3 class="card-title" id="attendanceTableTitle">📋 ตารางเข้างาน</h3>
+        </div>
         <div class="table-responsive">
-          <table class="table" id="historyTable">
-            <thead><tr>
-              <th>งาน</th><th>วันที่</th><th>ค่าตัวรวม</th><th>เข้าร่วม</th><th>ค่าตัว/คน</th><th></th>
-            </tr></thead>
-            <tbody id="historyBody"><tr><td colspan="6" class="text-center">กำลังโหลด...</td></tr></tbody>
+          <table class="table attendance-table" style="min-width:600px">
+            <thead id="attendanceTableHead"></thead>
+            <tbody id="attendanceTableBody">
+              <tr><td colspan="10" style="text-align:center;color:var(--premium-text-muted);padding:2rem">กรุณากรอกข้อมูลด้านบนแล้วกด "โหลดตาราง"</td></tr>
+            </tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Payout Table -->
+      <div class="card" style="margin-bottom:var(--spacing-lg)">
+        <div class="card-header"><h3 class="card-title">💰 ตารางจ่ายเงิน</h3></div>
+        <div class="table-responsive">
+          <table class="table payout-table" style="min-width:500px">
+            <thead id="payoutTableHead"></thead>
+            <tbody id="payoutTableBody">
+              <tr><td colspan="10" style="text-align:center;color:var(--premium-text-muted);padding:2rem">จะแสดงหลังโหลดตารางเข้างาน</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-btns">
+        <button id="saveBtn" class="btn btn-primary">💾 บันทึกข้อมูล</button>
+        <button id="generateVenueReceiptBtn" class="btn btn-secondary">🧾 ใบรับ (สถานที่)</button>
+        <button id="generateMemberReceiptBtn" class="btn btn-secondary">🧾 ใบรับ (สมาชิก)</button>
       </div>
     </div>
   </main>
@@ -79,97 +129,45 @@
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
+  <script src="js/attendance-payroll.js"></script>
   <script>
-  var jobs=[], members=[], currentJobId='', attendance={};
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof requireAuth === 'function') requireAuth();
+      if (typeof renderMainNav === 'function') renderMainNav('mainNav');
+      if (typeof applyTranslations === 'function') applyTranslations();
 
-  document.addEventListener('DOMContentLoaded', function(){
-    requireAuth(); renderMainNav('mainNav'); applyTranslations();
-    Promise.all([
-      new Promise(function(res){ gasRun('getSchedule',{},function(r){ jobs=(r&&r.data)||[]; res(); }); }),
-      new Promise(function(res){ gasRun('getBandMembers',{},function(r){ members=(r&&r.data)||[]; res(); }); })
-    ]).then(function(){
-      var sel=document.getElementById('jobPicker');
-      jobs.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
-      jobs.forEach(function(j){
-        var o=document.createElement('option'); o.value=j.jobId||''; o.textContent=formatDate(j.date)+' — '+(j.venue||'');
-        sel.appendChild(o);
-      });
+      // Record type toggle
+      var rt = document.getElementById('recordType');
+      function showDateGroup() {
+        ['dailyDateGroup','weeklyDateGroup','weeklyDateGroup2','monthlyDateGroup'].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+        var v = rt ? rt.value : 'daily';
+        if (v === 'daily') {
+          var d = document.getElementById('dailyDateGroup');
+          if (d) d.style.display = 'block';
+        } else if (v === 'weekly') {
+          ['weeklyDateGroup','weeklyDateGroup2'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'block';
+          });
+        } else if (v === 'monthly') {
+          var m = document.getElementById('monthlyDateGroup');
+          if (m) m.style.display = 'block';
+        }
+      }
+      if (rt) { rt.addEventListener('change', showDateGroup); showDateGroup(); }
+
+      // Load button delegation (calls attendance-payroll.js main logic)
+      var loadBtn = document.getElementById('apLoadBtn');
+      if (loadBtn) {
+        loadBtn.addEventListener('click', function() {
+          if (typeof apLoadBandData === 'function') { apLoadBandData(); }
+        });
+      }
+      if (typeof apInitPage === 'function') apInitPage();
     });
-    loadHistory();
-  });
-
-  function loadJobDetail(){
-    currentJobId=document.getElementById('jobPicker').value;
-    if(!currentJobId){ document.getElementById('jobInfo').style.display='none'; document.getElementById('memberGrid').innerHTML='<div class="empty-state"><p>กรุณาเลือกงานก่อน</p></div>'; return; }
-    document.getElementById('jobInfo').style.display='block';
-    var job=jobs.find(function(j){return j.jobId===currentJobId;});
-    var payment=job?parseFloat(job.payment||0):0;
-    attendance={};
-    members.forEach(function(m){ attendance[m.memberId||m.name]={status:'present',memberId:m.memberId,name:m.name}; });
-    renderMembers(payment);
-  }
-
-  function renderMembers(totalPay){
-    var present=Object.values(attendance).filter(function(a){return a.status==='present';}).length;
-    var each=present>0?Math.floor(totalPay/present):0;
-    document.getElementById('sumTotal').textContent=formatCurrency(totalPay);
-    document.getElementById('sumPresent').textContent=present;
-    document.getElementById('sumAbsent').textContent=members.length-present;
-    document.getElementById('sumEach').textContent=formatCurrency(each);
-    document.getElementById('memberGrid').innerHTML=members.map(function(m){
-      var att=attendance[m.memberId||m.name]||{status:'present'};
-      return '<div class="member-att-card">'
-        +'<div style="font-size:36px">👤</div>'
-        +'<div class="name">'+escapeHtml(m.name||'')+'</div>'
-        +'<div class="role">'+escapeHtml(m.position||m.role||'')+'</div>'
-        +'<div class="att-toggle">'
-        +'<button class="att-btn '+(att.status==='present'?'present':'')+'" onclick="setAtt(\''+escapeHtml(m.memberId||m.name)+'\',\'present\')" title="มาร่วม">✓</button>'
-        +'<button class="att-btn '+(att.status==='absent'?'absent':'')+'" onclick="setAtt(\''+escapeHtml(m.memberId||m.name)+'\',\'absent\')" title="ขาด">✗</button>'
-        +'<button class="att-btn '+(att.status==='substitute'?'substitute':'')+'" onclick="setAtt(\''+escapeHtml(m.memberId||m.name)+'\',\'substitute\')" title="มาแทน">S</button>'
-        +'</div>'
-        +'<div style="font-size:var(--text-xs);color:var(--premium-text-muted)">ค่าตัว: '+formatCurrency(att.status==='present'?each:0)+'</div>'
-        +'</div>';
-    }).join('') || '<div class="empty-state"><p>ไม่มีสมาชิก</p></div>';
-  }
-
-  function setAtt(id,status){
-    if(attendance[id]) attendance[id].status=status;
-    var job=jobs.find(function(j){return j.jobId===currentJobId;});
-    renderMembers(job?parseFloat(job.payment||0):0);
-  }
-
-  function saveAttendance(){
-    if(!currentJobId){ showToast('กรุณาเลือกงานก่อน','info'); return; }
-    var job=jobs.find(function(j){return j.jobId===currentJobId;});
-    gasRun('addAttendancePayroll',{ jobId:currentJobId, attendance:attendance, totalPayment:job?job.payment:0 },function(r){
-      if(r&&r.success){ showToast(t('msg_saved'),'success'); loadHistory(); }
-      else showToast((r&&r.message)||t('msg_error'),'error');
-    });
-  }
-
-  function loadHistory(){
-    gasRun('getAllAttendancePayroll',{},function(r){
-      var rows=(r&&r.data)||[];
-      var tbody=document.getElementById('historyBody');
-      if(!rows.length){ tbody.innerHTML='<tr><td colspan="6" class="text-center">'+t('noData')+'</td></tr>'; return; }
-      tbody.innerHTML=rows.map(function(row){
-        return '<tr><td>'+escapeHtml(row.venue||row.jobId||'')+'</td><td>'+formatDate(row.date)+'</td>'
-          +'<td>'+formatCurrency(row.totalPayment||0)+'</td><td>'+escapeHtml(String(row.presentCount||''))+'</td>'
-          +'<td>'+formatCurrency(row.payPerPerson||0)+'</td>'
-          +'<td><button class="btn btn-danger btn-sm" onclick="deleteAttRecord(\''+escapeHtml(row.recordId||'')+'\')">🗑️</button></td></tr>';
-      }).join('');
-    });
-  }
-
-  function deleteAttRecord(id){
-    showConfirm(t('confirmDeleteTitle'),t('confirmDeleteMsg')).then(function(ok){
-      if(!ok) return;
-      gasRun('deleteAttendancePayroll',{recordId:id},function(r){
-        if(r&&r.success){ showToast(t('msg_deleted'),'success'); loadHistory(); }
-        else showToast((r&&r.message)||t('msg_error'),'error');
-      });
-    });
-  }
   </script>
 </body>
 </html>

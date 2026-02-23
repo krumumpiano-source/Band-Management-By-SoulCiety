@@ -49,6 +49,7 @@ function renderMainNav(containerId) {
             navLink('quotation', '📄 ' + _t('nav_quotation')) +
             navLink('contract', '📜 ' + _t('nav_contract')) +
             navLink('statistics', '📈 ' + _t('nav_statistics')) +
+            navLink('song-insights', '🎙️ ' + _t('nav_songInsights')) +
             navLink('equipment', '🎸 ' + _t('nav_equipment')) +
             navLink('clients', '🤝 ' + _t('nav_clients')) +
             navLink('band-info', '👥 ' + _t('nav_bandInfo')) +
