@@ -164,8 +164,12 @@ function apLoadVenues() {
       sel.appendChild(opt);
     });
     if (sel.options.length <= 1) sel.innerHTML = '<option value="">ยังไม่มีร้าน กรุณาเพิ่มร้านในหน้าตั้งค่า</option>';
-    apRenderAttendanceTable();
-    apRenderPayoutTable();
+    // Load check-ins from backend first, then render tables
+    apUpdateDateRange();
+    apLoadCheckIns(function() {
+      apRenderAttendanceTable();
+      apRenderPayoutTable();
+    });
   }
 
   if (apVenues.length > 0) { populateVenues(apVenues); return; }
@@ -562,6 +566,44 @@ function apGenerateMemberReceipt() {
     '<script>setTimeout(function(){window.print()},500);<\/script></body></html>';
   var w = window.open('', '_blank');
   w.document.write(html); w.document.close();
+}
+
+/* ===== LOAD CHECK-INS FROM BACKEND (pre-fill attendance table) ===== */
+/**
+ * apLoadCheckIns — ดึงการลงเวลาของสมาชิก pre-fill ตาราง
+ */
+function apLoadCheckIns(callback) {
+  if (!apCurrentBandId || typeof gasRun !== 'function') { if (callback) callback(); return; }
+  if (!apDateRange.length) { if (callback) callback(); return; }
+  var venue = apSelectedVenue || (apGetEl('venue') ? apGetEl('venue').value : '');
+  var dates = apDateRange.slice();
+  var total = dates.length; var done = 0; var allCheckIns = [];
+
+  function onBatchDone() {
+    allCheckIns.forEach(function(ci) {
+      var slots = ci.slots || []; if (!slots.length) return;
+      var dateStr = ci.date;
+      var member = null;
+      if (ci.memberId) member = apBandMembers.find(function(m){ return m.id===ci.memberId||m.memberId===ci.memberId; });
+      if (!member && ci.memberEmail) member = apBandMembers.find(function(m){ return (m.email||'').toLowerCase()===ci.memberEmail.toLowerCase(); });
+      if (!member && ci.memberName) member = apBandMembers.find(function(m){ return m.name===ci.memberName; });
+      if (!member) return;
+      var memberId = member.id || member.memberId;
+      if (!apAttendanceData[memberId]) apAttendanceData[memberId] = { hourlyRate:0, byDate:{} };
+      if (!apAttendanceData[memberId].byDate[dateStr]) apAttendanceData[memberId].byDate[dateStr] = [];
+      slots.forEach(function(slot){
+        if (apAttendanceData[memberId].byDate[dateStr].indexOf(slot)===-1) apAttendanceData[memberId].byDate[dateStr].push(slot);
+      });
+    });
+    if (callback) callback();
+  }
+  if (total===0){ onBatchDone(); return; }
+  dates.forEach(function(dateStr){
+    gasRun('getCheckInsForDate',{bandId:apCurrentBandId,date:dateStr,venue:venue},function(r){
+      if(r&&r.success&&r.data) allCheckIns=allCheckIns.concat(r.data);
+      done++; if(done>=total) onBatchDone();
+    });
+  });
 }
 
 /* ===== INIT ===== */

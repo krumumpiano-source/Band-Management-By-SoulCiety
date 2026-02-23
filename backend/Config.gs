@@ -31,9 +31,10 @@ var CONFIG = {
     VENUES:             'VENUES',
     HOURLY_RATES:       'HOURLY_RATES',
     SCHEDULE:           'SCHEDULE',
-    EQUIPMENT:          'EQUIPMENT',
-    CLIENTS:            'CLIENTS',
-    QUOTATIONS:         'QUOTATIONS'
+    EQUIPMENT:            'EQUIPMENT',
+    CLIENTS:              'CLIENTS',
+    QUOTATIONS:           'QUOTATIONS',
+    MEMBER_CHECK_INS:     'MEMBER_CHECK_INS'  // บันทึกเข้างานของสมาชิกแต่ละคน
   },
 
   // System Settings

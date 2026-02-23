@@ -41,8 +41,9 @@ function renderMainNav(containerId) {
         '<div class="nav-menu-wrap" id="navMenuWrap">' +
           '<ul class="nav-menu">' +
             navLink('dashboard', '📊 ' + _t('nav_dashboard')) +
+            navLink('check-in', '⏰ ' + _t('nav_checkIn')) +
             navLink('songs', '🎵 ' + _t('nav_songs')) +
-            navLink('attendance-payroll', '⏰ ' + _t('nav_attendance')) +
+            (isManager ? navLink('attendance-payroll', '📋 ' + _t('nav_attendance')) : '') +
             navLink('external-payout', '💵 ' + _t('nav_externalPayout')) +
             navLink('schedule', '📅 ' + _t('nav_schedule')) +
             (isManager ? navLink('job-calculator', '🧮 ' + _t('nav_jobCalculator')) : '') +

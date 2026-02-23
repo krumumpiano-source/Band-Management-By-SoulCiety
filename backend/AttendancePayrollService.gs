@@ -122,3 +122,144 @@ function deleteAttendancePayroll(recordId) {
     return { success: false, message: error.toString() };
   }
 }
+
+// ============================================================
+// MEMBER SELF CHECK-IN
+// สมาชิกลงเวลาตนเองผ่าน check-in.html
+// ============================================================
+
+/**
+ * memberCheckIn — สมาชิกลงเวลาตนเอง
+ * data: { bandId, date, venue, slots:['19:30-20:30',...], notes, memberId? }
+ * session จาก _session: { email, userName }
+ */
+function memberCheckIn(data) {
+  try {
+    var session = data._session || {};
+    var memberEmail = session.email || data.memberEmail || '';
+    var memberName = session.userName || data.memberName || '';
+    var bandId = data.bandId || session.bandId || '';
+    var date = data.date || '';
+    var venue = data.venue || '';
+    var slots = data.slots || [];
+
+    if (!date) return { success: false, message: 'กรุณาระบุวันที่' };
+    if (!venue) return { success: false, message: 'กรุณาระบุสถานที่' };
+    if (!slots.length) return { success: false, message: 'กรุณาเลือกช่วงเวลาที่ทำงานอย่างน้อย 1 ช่วง' };
+    if (!memberEmail) return { success: false, message: 'ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่' };
+
+    var sheet = getOrCreateSheet(CONFIG.SHEETS.MEMBER_CHECK_INS, [
+      'id', 'bandId', 'date', 'venue', 'memberEmail', 'memberName', 'memberId', 'slots', 'status', 'notes', 'createdAt', 'updatedAt'
+    ]);
+
+    // ถ้าวันนี้เคย check-in แล้ว → อัปเดตแทน
+    var sheetData = sheet.getDataRange().getValues();
+    var headers = sheetData[0];
+    var emailIdx = headers.indexOf('memberEmail');
+    var dateIdx = headers.indexOf('date');
+    var venueIdx = headers.indexOf('venue');
+    var existingRow = -1;
+    for (var i = 1; i < sheetData.length; i++) {
+      if (String(sheetData[i][emailIdx]).toLowerCase() === memberEmail.toLowerCase() &&
+          String(sheetData[i][dateIdx]) === date &&
+          String(sheetData[i][venueIdx]) === venue) {
+        existingRow = i + 1; break;
+      }
+    }
+
+    var now = new Date().toISOString();
+    if (existingRow > 0) {
+      // Update existing
+      sheet.getRange(existingRow, headers.indexOf('slots') + 1).setValue(JSON.stringify(slots));
+      sheet.getRange(existingRow, headers.indexOf('notes') + 1).setValue(data.notes || '');
+      sheet.getRange(existingRow, headers.indexOf('status') + 1).setValue('pending');
+      sheet.getRange(existingRow, headers.indexOf('updatedAt') + 1).setValue(now);
+      return { success: true, updated: true, message: 'อัปเดตการลงเวลาเรียบร้อยแล้ว' };
+    } else {
+      // Insert new
+      var id = 'CHK_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+      sheet.appendRow([
+        id, bandId, date, venue, memberEmail, memberName,
+        data.memberId || '', JSON.stringify(slots), 'pending', data.notes || '', now, now
+      ]);
+      return { success: true, updated: false, message: 'ลงเวลาเรียบร้อยแล้ว' };
+    }
+  } catch (error) {
+    Logger.log('memberCheckIn error: ' + error);
+    return { success: false, message: error.toString() };
+  }
+}
+
+/**
+ * getMyCheckIn — ดูสถานะการลงเวลาของตนเอง (สำหรับวันที่ระบุ)
+ * req: { date, venue?, bandId }
+ * Returns: { success, checkIn: { ... } | null }
+ */
+function getMyCheckIn(req) {
+  try {
+    var session = req._session || {};
+    var memberEmail = session.email || '';
+    var date = req.date || new Date().toISOString().slice(0, 10);
+    var venue = req.venue || '';
+
+    var sheet = getOrCreateSheet(CONFIG.SHEETS.MEMBER_CHECK_INS, [
+      'id', 'bandId', 'date', 'venue', 'memberEmail', 'memberName', 'memberId', 'slots', 'status', 'notes', 'createdAt', 'updatedAt'
+    ]);
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, checkIn: null };
+    var headers = data[0];
+    var emailIdx = headers.indexOf('memberEmail');
+    var dateIdx = headers.indexOf('date');
+    var venueIdx = headers.indexOf('venue');
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (String(row[emailIdx]).toLowerCase() !== memberEmail.toLowerCase()) continue;
+      if (String(row[dateIdx]) !== date) continue;
+      if (venue && String(row[venueIdx]) !== venue) continue;
+      var record = {};
+      headers.forEach(function(h, j) { record[h] = row[j]; });
+      try { record.slots = JSON.parse(record.slots || '[]'); } catch(e) { record.slots = []; }
+      return { success: true, checkIn: record };
+    }
+    return { success: true, checkIn: null };
+  } catch (error) {
+    Logger.log('getMyCheckIn error: ' + error);
+    return { success: false, message: error.toString() };
+  }
+}
+
+/**
+ * getCheckInsForDate — ผู้จัดการดูการลงเวลาของสมาชิกทุกคน (สำหรับวันที่/ร้านที่ระบุ)
+ * req: { bandId, date, venue? }
+ */
+function getCheckInsForDate(req) {
+  try {
+    var bandId = req.bandId || (req._session && req._session.bandId) || '';
+    var date = req.date || '';
+    var venue = req.venue || '';
+
+    var sheet = getOrCreateSheet(CONFIG.SHEETS.MEMBER_CHECK_INS, [
+      'id', 'bandId', 'date', 'venue', 'memberEmail', 'memberName', 'memberId', 'slots', 'status', 'notes', 'createdAt', 'updatedAt'
+    ]);
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, data: [] };
+    var headers = data[0];
+    var results = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (!row[0]) continue;
+      var record = {};
+      headers.forEach(function(h, j) { record[h] = row[j]; });
+      if (bandId && record.bandId !== bandId) continue;
+      if (date && record.date !== date) continue;
+      if (venue && record.venue !== venue) continue;
+      try { record.slots = JSON.parse(record.slots || '[]'); } catch(e) { record.slots = []; }
+      results.push(record);
+    }
+    return { success: true, data: results };
+  } catch (error) {
+    Logger.log('getCheckInsForDate error: ' + error);
+    return { success: false, message: error.toString() };
+  }
+}

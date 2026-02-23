@@ -25,6 +25,7 @@ function doGet(e) {
     'index','register','forgot-password','email-verification',
     'dashboard','admin','band-info','band-settings',
     'songs','add-song','edit-song','setlist','song-insights',
+    'check-in',
     'schedule','attendance-payroll','band-fund','external-payout',
     'job-calculator','quotation','contract','statistics',
     'equipment','clients',
@@ -138,6 +139,10 @@ function routeAction(req) {
     case 'getAllAttendancePayroll':  return getAllAttendancePayroll(req.bandId || '', req.startDate || '', req.endDate || '', req.year, req.page, req.pageSize);
     case 'updateAttendancePayroll': return updateAttendancePayroll(req.recordId, req.data || req);
     case 'deleteAttendancePayroll': return deleteAttendancePayroll(req.recordId);
+    // Member self check-in
+    case 'memberCheckIn':     return memberCheckIn(req);
+    case 'getMyCheckIn':      return getMyCheckIn(req);
+    case 'getCheckInsForDate': return getCheckInsForDate(req);
 
     // --- Band Settings ---
     case 'saveBandSettings': return saveBandSettings(req);

@@ -104,6 +104,7 @@
         if (r && r.success) {
           localStorage.setItem('auth_token', r.token);
           localStorage.setItem('userName', r.userName || '');
+          localStorage.setItem('userEmail', email);
           localStorage.setItem('bandName', r.bandName || '');
           localStorage.setItem('bandId', r.bandId || '');
           localStorage.setItem('userRole', r.role || 'member');
