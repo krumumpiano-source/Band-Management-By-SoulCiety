@@ -107,6 +107,9 @@ function renderMainNav(containerId) {
   } else {
     _renderNavLang('navLangSwitcher');
   }
+
+  // ===== Bottom Tab Bar (mobile/tablet) =====
+  _renderBottomTabBar(currentPage, isManager);
 }
 
 function _renderNavLang(containerId) {
@@ -128,6 +131,59 @@ function _renderNavLang(containerId) {
 }
 
 function renderLangSwitcher(containerId) { _renderNavLang(containerId); }
+
+/* ===== Bottom Tab Bar ===== */
+function _renderBottomTabBar(currentPage, isManager) {
+  // Remove any existing bar first
+  var existing = document.getElementById('_bottomTabBar');
+  if (existing) existing.parentNode.removeChild(existing);
+
+  var isGas = typeof google !== 'undefined' && google.script;
+  function href(page) { return isGas ? '?page=' + page : page + '.html'; }
+
+  // The 5 "main" pages in the bottom bar
+  var MAIN_TABS = ['dashboard', 'songs', 'schedule', 'leave', '__more__'];
+  var isInMainTabs = MAIN_TABS.indexOf(currentPage) !== -1 && currentPage !== '__more__';
+
+  function tab(page, icon, label) {
+    var isActive = currentPage === page;
+    if (page === '__more__') {
+      var dotClass = isInMainTabs ? '' : ' show';
+      return '<button class="btab' + (isActive ? ' active' : '') + '" id="_btabMore" aria-label="เมนูเพิ่มเติม">' +
+        '<span class="btab-dot' + dotClass + '"></span>' +
+        '<span class="btab-icon">☰</span>' +
+        '<span class="btab-label">' + label + '</span>' +
+        '</button>';
+    }
+    return '<a class="btab' + (isActive ? ' active' : '') + '" href="' + href(page) + '" aria-label="' + label + '">' +
+      '<span class="btab-icon">' + icon + '</span>' +
+      '<span class="btab-label">' + label + '</span>' +
+      '</a>';
+  }
+
+  var bar = document.createElement('nav');
+  bar.id = '_bottomTabBar';
+  bar.className = 'bottom-tab-bar';
+  bar.setAttribute('aria-label', 'เมนูหลัก');
+  bar.innerHTML =
+    tab('dashboard', '🏠', 'หน้าหลัก') +
+    tab('songs',     '🎵', 'เพลง') +
+    tab('schedule',  '📅', 'ตาราง') +
+    tab('leave',     '🔄', 'คนลา') +
+    tab('__more__',  '☰',  'เพิ่มเติม');
+
+  document.body.appendChild(bar);
+
+  // Wire "เพิ่มเติม" tab → hamburger toggle
+  var moreBtn = document.getElementById('_btabMore');
+  if (moreBtn) {
+    moreBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var hamburger = document.getElementById('navHamburger');
+      if (hamburger) hamburger.click();
+    });
+  }
+}
 
 function doLogout() {
   var token = typeof getAuthToken === 'function' ? getAuthToken() : (localStorage.getItem('auth_token') || '');

@@ -106,6 +106,13 @@
   max-height: calc(100vh - 64px);
   overflow-y: auto;
 }
+@media (max-width: 900px) {
+  .nav-menu-wrap {
+    /* Leave space for bottom tab bar (≈60px) */
+    max-height: calc(100vh - 64px - 60px - env(safe-area-inset-bottom, 0px));
+    padding: var(--spacing-md);
+  }
+}
 .nav-menu-wrap.open { display: flex; }
 
 /* ===== Menu grid ===== */
@@ -194,4 +201,89 @@
   background: rgba(0,0,0,.45);
   z-index: calc(var(--z-dropdown, 200) - 1);
 }
+/* On mobile, stop before the bottom tab bar */
+@media (max-width: 900px) {
+  .nav-backdrop {
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+}
 .nav-backdrop.open { display: block; }
+
+/* =============================================
+   BOTTOM TAB BAR — mobile / tablet only
+   ============================================= */
+.bottom-tab-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #111827;
+  border-top: 2px solid #2d3748;
+  z-index: var(--z-fixed, 1030);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  grid-template-columns: repeat(5, 1fr);
+  box-shadow: 0 -4px 20px rgba(0,0,0,.4);
+}
+
+/* Show bottom bar on mobile/tablet, hide on desktop */
+@media (max-width: 900px) {
+  .bottom-tab-bar { display: grid; }
+  /* On mobile — hide logout & username from top bar to save space */
+  .nav-logout { display: none; }
+  .nav-user-name { display: none; }
+}
+
+/* Individual tab button */
+.btab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 4px 6px;
+  text-decoration: none;
+  color: #718096;
+  font-family: var(--font-family-body, 'Sarabun', sans-serif);
+  font-weight: 600;
+  gap: 2px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-top: 2px solid transparent;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  min-height: 54px;
+  transition: color .15s, border-color .15s;
+  position: relative;
+}
+.btab:hover { color: #cbd5e0; }
+.btab.active {
+  color: var(--premium-gold, #f6ad55);
+  border-top-color: var(--premium-gold, #f6ad55);
+}
+.btab-icon {
+  font-size: 21px;
+  line-height: 1;
+  transition: transform .15s;
+}
+.btab.active .btab-icon { transform: scale(1.12); }
+.btab-label {
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Active badge dot (for "More" tab when current page is not in the 4 main ones) */
+.btab-dot {
+  position: absolute;
+  top: 6px;
+  right: calc(50% - 14px);
+  width: 7px;
+  height: 7px;
+  background: #fc8181;
+  border-radius: 50%;
+  display: none;
+}
+.btab-dot.show { display: block; }

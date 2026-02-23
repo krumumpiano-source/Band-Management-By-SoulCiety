@@ -196,11 +196,21 @@ tbody td{padding:10px var(--spacing-md);color:var(--premium-text);font-size:var(
 }
 
 /* Mobile */
+@media(max-width:900px){
+  /* Push content above the bottom tab bar */
+  main, .page-main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+}
 @media(max-width:768px){
   .page-container,.container{padding:var(--spacing-sm)}
   .card{padding:var(--spacing-md);border-radius:var(--radius-md)}
   .modal-box{max-width:100%;margin:var(--spacing-sm)}
   .page-header h1{font-size:var(--text-xl)}
+  /* Stack card-header on narrow screens */
+  .card-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+  /* Make stat grids 2-col on mobile */
+  .stat-grid { grid-template-columns: repeat(2,1fr) !important; gap: var(--spacing-sm) !important; }
 }
 @media(max-width:480px){
   .page-container,.container{padding:10px}
@@ -210,4 +220,6 @@ tbody td{padding:10px var(--spacing-md);color:var(--premium-text);font-size:var(
   /* Stack modal footer on mobile */
   .modal-footer,.confirm-actions{flex-direction:column-reverse;gap:8px}
   .modal-footer .btn,.confirm-actions .btn{width:100%;justify-content:center}
+  /* Bigger touch areas for tab buttons */
+  .tab-btn { padding: var(--spacing-sm) var(--spacing-md); min-height: 44px; }
 }
