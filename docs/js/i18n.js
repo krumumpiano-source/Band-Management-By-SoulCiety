@@ -8,7 +8,7 @@
 
   const i18n = {
     th: {
-      appTitle: 'Band Management By SoulCiety',
+      appTitle: 'Band Management', appCredit: 'Band Management By SoulCiety',
       langTh: 'ไทย', langEn: 'English',
       login: 'เข้าสู่ระบบ', logout: 'ออกจากระบบ', register: 'สมัครสมาชิก',
       email: 'อีเมล', password: 'รหัสผ่าน', rememberMe: 'จดจำการเข้าสู่ระบบ', forgotPassword: 'ลืมรหัสผ่าน?',
@@ -85,7 +85,7 @@
       placeholderSearch: 'ค้นหา...', placeholderSelect: 'เลือก...',
     },
     en: {
-      appTitle: 'Band Management By SoulCiety',
+      appTitle: 'Band Management', appCredit: 'Band Management By SoulCiety',
       langTh: 'Thai', langEn: 'English',
       login: 'Login', logout: 'Logout', register: 'Register',
       email: 'Email', password: 'Password', rememberMe: 'Remember me', forgotPassword: 'Forgot password?',
