@@ -32,57 +32,73 @@ function renderMainNav(containerId) {
   }
 
   container.innerHTML =
+    '<div class="nav-backdrop" id="navBackdrop"></div>' +
     '<div class="main-nav">' +
       '<div class="nav-inner">' +
         '<div class="nav-brand">' +
           '<a href="' + (typeof google !== 'undefined' && google.script ? '?page=dashboard' : 'dashboard.html') + '">🎵 ' + _escHtml(bandName) + '</a>' +
         '</div>' +
-        '<button class="nav-hamburger" id="navHamburger" aria-label="เมนู">' +
+        '<button class="nav-hamburger" id="navHamburger" aria-label="เมนู" aria-expanded="false">' +
           '<span></span><span></span><span></span>' +
         '</button>' +
-        '<div class="nav-menu-wrap" id="navMenuWrap">' +
-          '<ul class="nav-menu">' +
-            navLink('dashboard', '📊 ' + _t('nav_dashboard')) +
-            navLink('songs', '🎵 ' + _t('nav_songs')) +
-            navLink('song-insights', '🎙️ ' + _t('nav_songInsights')) +
-            (isManager ? navLink('attendance-payroll', '📋 ' + _t('nav_attendance')) : '') +
-            navLink('leave', '🔄 ' + _t('nav_leave')) +
-            navLink('external-payout', '💵 ' + _t('nav_externalPayout')) +
-            (isManager ? navLink('job-calculator', '🧮 ' + _t('nav_jobCalculator')) : '') +
-            navLink('schedule', '📅 ' + _t('nav_schedule')) +
-            navLink('quotation', '📄 ' + _t('nav_quotation')) +
-            navLink('contract', '📜 ' + _t('nav_contract')) +
-            (isManager ? navLink('band-fund', '💰 ' + _t('nav_bandFund')) : '') +
-            navLink('statistics', '📈 ' + _t('nav_statistics')) +
-            navLink('equipment', '🎸 ' + _t('nav_equipment')) +
-            navLink('clients', '🤝 ' + _t('nav_clients')) +
-            navLink('band-info', '👥 ' + _t('nav_bandInfo')) +
-            (isManager ? navLink('band-settings', '⚙️ ' + _t('nav_settings')) : '') +
-            navLink('user-manual', '📖 ' + _t('nav_userManual')) +
-            (isAdmin ? navLink('admin', '🔧 ' + _t('nav_admin')) : '') +
-          '</ul>' +
-          '<div class="nav-right">' +
-            '<div id="navLangSwitcher"></div>' +
-            '<span class="nav-user-name">' + _escHtml(userName) + '</span>' +
-            '<a href="' + (typeof google !== 'undefined' && google.script ? '?page=index' : 'index.html') + '" class="nav-logout" onclick="if(typeof doLogout===\'function\')doLogout();return true;">' + _t('logout') + '</a>' +
-          '</div>' +
+        '<div class="nav-right">' +
+          '<div id="navLangSwitcher"></div>' +
+          '<span class="nav-user-name">' + _escHtml(userName) + '</span>' +
+          '<a href="' + (typeof google !== 'undefined' && google.script ? '?page=index' : 'index.html') + '" class="nav-logout" onclick="if(typeof doLogout===\'function\')doLogout();return true;">' + _t('logout') + '</a>' +
         '</div>' +
+      '</div>' +
+      '<div class="nav-menu-wrap" id="navMenuWrap">' +
+        '<ul class="nav-menu">' +
+          navLink('dashboard', '📊 ' + _t('nav_dashboard')) +
+          navLink('songs', '🎵 ' + _t('nav_songs')) +
+          navLink('song-insights', '🎙️ ' + _t('nav_songInsights')) +
+          (isManager ? navLink('attendance-payroll', '📋 ' + _t('nav_attendance')) : '') +
+          navLink('leave', '🔄 ' + _t('nav_leave')) +
+          navLink('external-payout', '💵 ' + _t('nav_externalPayout')) +
+          (isManager ? navLink('job-calculator', '🧮 ' + _t('nav_jobCalculator')) : '') +
+          navLink('schedule', '📅 ' + _t('nav_schedule')) +
+          navLink('quotation', '📄 ' + _t('nav_quotation')) +
+          navLink('contract', '📜 ' + _t('nav_contract')) +
+          (isManager ? navLink('band-fund', '💰 ' + _t('nav_bandFund')) : '') +
+          navLink('statistics', '📈 ' + _t('nav_statistics')) +
+          navLink('equipment', '🎸 ' + _t('nav_equipment')) +
+          navLink('clients', '🤝 ' + _t('nav_clients')) +
+          navLink('band-info', '👥 ' + _t('nav_bandInfo')) +
+          (isManager ? navLink('band-settings', '⚙️ ' + _t('nav_settings')) : '') +
+          navLink('user-manual', '📖 ' + _t('nav_userManual')) +
+          (isAdmin ? navLink('admin', '🔧 ' + _t('nav_admin')) : '') +
+        '</ul>' +
       '</div>' +
     '</div>';
 
   // Hamburger toggle
   var hamburger = document.getElementById('navHamburger');
   var menuWrap = document.getElementById('navMenuWrap');
+  var backdrop = document.getElementById('navBackdrop');
+
+  function navOpen() {
+    hamburger.classList.add('open');
+    menuWrap.classList.add('open');
+    if (backdrop) backdrop.classList.add('open');
+    hamburger.setAttribute('aria-expanded', 'true');
+  }
+  function navClose() {
+    hamburger.classList.remove('open');
+    menuWrap.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+  }
+
   if (hamburger && menuWrap) {
-    hamburger.addEventListener('click', function() {
-      hamburger.classList.toggle('open');
-      menuWrap.classList.toggle('open');
+    hamburger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      hamburger.classList.contains('open') ? navClose() : navOpen();
     });
-    document.addEventListener('click', function(e) {
-      if (!container.contains(e.target)) {
-        hamburger.classList.remove('open');
-        menuWrap.classList.remove('open');
-      }
+    // Close on backdrop click
+    if (backdrop) backdrop.addEventListener('click', navClose);
+    // Close when a nav link is clicked
+    menuWrap.querySelectorAll('a').forEach(function(a) {
+      a.addEventListener('click', navClose);
     });
   }
 
