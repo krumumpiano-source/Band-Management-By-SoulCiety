@@ -9,7 +9,7 @@ var CONFIG = {
   // [A] Spreadsheet สำหรับข้อมูลปฏิบัติการ
   //     ID ของ Google Sheet ที่สร้างโดย runSetup()
   // ============================================================
-  SPREADSHEET_ID: '13WfRJtutCvzZfyWxWxDEdV_gE-z2BwVQ5RbrskMWl1w',
+  SPREADSHEET_ID: '1U5Z-BkWFysDytkJt-QcOjtW70ExBZY7kIXvC5XWJfVQ',
 
   // ============================================================
   // [B] คลังเพลงกลาง (Global Songs Library) — อ่านอย่างเดียว
