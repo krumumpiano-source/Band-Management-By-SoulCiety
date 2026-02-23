@@ -1,6 +1,6 @@
-﻿/**
- * Band Management By SoulCiety â€” Navigation
- * renderMainNav() â€” à¹„à¸Ÿà¸¥à¹Œà¸™à¸µà¹‰à¹€à¸›à¹‡à¸™à¸—à¸µà¹ˆà¹€à¸”à¸µà¸¢à¸§à¸—à¸µà¹ˆ renderMainNav à¸–à¸¹à¸à¸™à¸´à¸¢à¸²à¸¡
+/**
+ * Band Management By SoulCiety — Navigation
+ * renderMainNav() — ไฟล์นี้เป็นที่เดียวที่ renderMainNav ถูกนิยาม
  */
 
 function renderMainNav(containerId) {
@@ -8,13 +8,13 @@ function renderMainNav(containerId) {
   var container = document.getElementById(containerId || 'mainNav');
   if (!container) return;
 
-  var bandName = localStorage.getItem('bandName') || (typeof t === 'function' ? t('yourBand') : 'à¸§à¸‡à¸‚à¸­à¸‡à¸„à¸¸à¸“');
-  var userName = localStorage.getItem('userName') || (typeof t === 'function' ? t('user') : 'à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰');
+  var bandName = localStorage.getItem('bandName') || (typeof t === 'function' ? t('yourBand') : 'วงของคุณ');
+  var userName = localStorage.getItem('userName') || (typeof t === 'function' ? t('user') : 'ผู้ใช้');
   var isManager = !!(localStorage.getItem('bandManager') || localStorage.getItem('userRole') === 'manager');
   var isAdmin = localStorage.getItem('userRole') === 'admin';
   var _t = typeof t === 'function' ? t : function(k) { return k; };
 
-  // à¸•à¸£à¸§à¸ˆ active page
+  // ตรวจ active page
   var currentPage = '';
   if (typeof google !== 'undefined' && google.script) {
     var params = new URLSearchParams(window.location.search);
@@ -33,29 +33,29 @@ function renderMainNav(containerId) {
     '<div class="main-nav">' +
       '<div class="nav-inner">' +
         '<div class="nav-brand">' +
-          '<a href="' + (typeof google !== 'undefined' && google.script ? '?page=dashboard' : 'dashboard.html') + '">ðŸŽµ ' + _escHtml(bandName) + '</a>' +
+          '<a href="' + (typeof google !== 'undefined' && google.script ? '?page=dashboard' : 'dashboard.html') + '">🎵 ' + _escHtml(bandName) + '</a>' +
         '</div>' +
-        '<button class="nav-hamburger" id="navHamburger" aria-label="à¹€à¸¡à¸™à¸¹">' +
+        '<button class="nav-hamburger" id="navHamburger" aria-label="เมนู">' +
           '<span></span><span></span><span></span>' +
         '</button>' +
         '<div class="nav-menu-wrap" id="navMenuWrap">' +
           '<ul class="nav-menu">' +
-            navLink('dashboard', 'ðŸ“Š ' + _t('nav_dashboard')) +
-            navLink('songs', 'ðŸŽµ ' + _t('nav_songs')) +
-            navLink('attendance-payroll', 'â° ' + _t('nav_attendance')) +
-            navLink('external-payout', 'ðŸ’µ ' + _t('nav_externalPayout')) +
-            navLink('schedule', 'ðŸ“… ' + _t('nav_schedule')) +
-            (isManager ? navLink('job-calculator', 'ðŸ§® ' + _t('nav_jobCalculator')) : '') +
-            navLink('quotation', 'ðŸ“„ ' + _t('nav_quotation')) +
-            navLink('contract', 'ðŸ“œ ' + _t('nav_contract')) +
-            navLink('statistics', 'ðŸ“ˆ ' + _t('nav_statistics')) +
-            navLink('equipment', 'ðŸŽ¸ ' + _t('nav_equipment')) +
-            navLink('clients', 'ðŸ¤ ' + _t('nav_clients')) +
-            navLink('band-info', 'ðŸ‘¥ ' + _t('nav_bandInfo')) +
-            (isManager ? navLink('band-fund', 'ðŸ’° ' + _t('nav_bandFund')) : '') +
-            (isManager ? navLink('band-settings', 'âš™ï¸ ' + _t('nav_settings')) : '') +
-            navLink('user-manual', 'ðŸ“– ' + _t('nav_userManual')) +
-            (isAdmin ? navLink('admin', 'ðŸ”§ ' + _t('nav_admin')) : '') +
+            navLink('dashboard', '📊 ' + _t('nav_dashboard')) +
+            navLink('songs', '🎵 ' + _t('nav_songs')) +
+            navLink('attendance-payroll', '⏰ ' + _t('nav_attendance')) +
+            navLink('external-payout', '💵 ' + _t('nav_externalPayout')) +
+            navLink('schedule', '📅 ' + _t('nav_schedule')) +
+            (isManager ? navLink('job-calculator', '🧮 ' + _t('nav_jobCalculator')) : '') +
+            navLink('quotation', '📄 ' + _t('nav_quotation')) +
+            navLink('contract', '📜 ' + _t('nav_contract')) +
+            navLink('statistics', '📈 ' + _t('nav_statistics')) +
+            navLink('equipment', '🎸 ' + _t('nav_equipment')) +
+            navLink('clients', '🤝 ' + _t('nav_clients')) +
+            navLink('band-info', '👥 ' + _t('nav_bandInfo')) +
+            (isManager ? navLink('band-fund', '💰 ' + _t('nav_bandFund')) : '') +
+            (isManager ? navLink('band-settings', '⚙️ ' + _t('nav_settings')) : '') +
+            navLink('user-manual', '📖 ' + _t('nav_userManual')) +
+            (isAdmin ? navLink('admin', '🔧 ' + _t('nav_admin')) : '') +
           '</ul>' +
           '<div class="nav-right">' +
             '<div id="navLangSwitcher"></div>' +
@@ -74,7 +74,6 @@ function renderMainNav(containerId) {
       hamburger.classList.toggle('open');
       menuWrap.classList.toggle('open');
     });
-    // à¸›à¸´à¸”à¹€à¸¡à¸·à¹ˆà¸­à¸„à¸¥à¸´à¸à¸™à¸­à¸
     document.addEventListener('click', function(e) {
       if (!container.contains(e.target)) {
         hamburger.classList.remove('open');
@@ -83,7 +82,6 @@ function renderMainNav(containerId) {
     });
   }
 
-  // Lang switcher
   if (typeof renderLangSwitcher === 'function') {
     renderLangSwitcher('navLangSwitcher');
   } else {
@@ -112,7 +110,7 @@ function _renderNavLang(containerId) {
 function renderLangSwitcher(containerId) { _renderNavLang(containerId); }
 
 function doLogout() {
-  var token = getAuthToken ? getAuthToken() : (localStorage.getItem('auth_token') || '');
+  var token = typeof getAuthToken === 'function' ? getAuthToken() : (localStorage.getItem('auth_token') || '');
   if (token && token.indexOf('demo_') !== 0 && typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run.doPostFromClient({ action: 'logout', _token: token });
   }

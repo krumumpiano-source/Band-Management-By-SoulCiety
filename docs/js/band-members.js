@@ -1,4 +1,4 @@
-﻿var _allMembers = [];
+var _allMembers = [];
 var _filteredMembers = [];
 
 function loadBandMembers() {
@@ -28,18 +28,18 @@ function renderMemberCards(members) {
   container.innerHTML = members.map(function(m) {
     return '<div class="member-card">'
       + '<div class="card-actions">'
-      + '<button class="btn btn-ghost btn-sm" onclick="openMemberModal(\'' + escapeHtml(m.memberId||'') + '\')">âœï¸</button>'
+      + '<button class="btn btn-ghost btn-sm" onclick="openMemberModal(\'' + escapeHtml(m.memberId||'') + '\')">✏️</button>'
       + '</div>'
-      + '<div class="member-avatar">ðŸŽµ</div>'
+      + '<div class="member-avatar">🎵</div>'
       + '<h4>' + escapeHtml(m.name||'') + '</h4>'
-      + '<div class="role-badge">' + escapeHtml(m.position||m.role||'à¸ªà¸¡à¸²à¸Šà¸´à¸') + '</div>'
+      + '<div class="role-badge">' + escapeHtml(m.position||m.role||'สมาชิก') + '</div>'
       + '<div class="contact">'
-      + (m.phone ? 'ðŸ“ž ' + escapeHtml(m.phone) + '<br>' : '')
-      + (m.email ? 'âœ‰ï¸ ' + escapeHtml(m.email) : '')
+      + (m.phone ? '📞 ' + escapeHtml(m.phone) + '<br>' : '')
+      + (m.email ? '✉️ ' + escapeHtml(m.email) : '')
       + '</div>'
       + '<div style="margin-top:var(--spacing-sm);font-size:var(--text-xs)">'
       + '<span class="status-dot ' + (m.status==='active'?'active':'inactive') + '"></span>'
-      + (m.status === 'active' ? 'à¹ƒà¸Šà¹‰à¸‡à¸²à¸™' : 'à¹„à¸¡à¹ˆà¹ƒà¸Šà¹‰à¸‡à¸²à¸™')
+      + (m.status === 'active' ? 'ใช้งาน' : 'ไม่ใช้งาน')
       + '</div>'
       + '</div>';
   }).join('');
@@ -52,7 +52,7 @@ function openMemberModal(id) {
   document.getElementById('memberForm').reset();
   document.getElementById('memberId').value = '';
   document.getElementById('deleteMemberBtn').style.display = 'none';
-  document.getElementById('memberModalTitle').textContent = id ? 'à¹à¸à¹‰à¹„à¸‚à¸ªà¸¡à¸²à¸Šà¸´à¸' : 'à¹€à¸žà¸´à¹ˆà¸¡à¸ªà¸¡à¸²à¸Šà¸´à¸';
+  document.getElementById('memberModalTitle').textContent = id ? 'แก้ไขสมาชิก' : 'เพิ่มสมาชิก';
   if (id) {
     var m = _allMembers.find(function(x) { return x.memberId === id; });
     if (m) {
