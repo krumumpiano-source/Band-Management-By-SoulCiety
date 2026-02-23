@@ -46,25 +46,36 @@ function saveSchedule(data) {
   }
 }
 
-function getSchedule(bandId) {
+/**
+ * getSchedule
+ * @param {string} bandId
+ * @param {string|number} year  ปี ค.ศ. เช่น '2026' — ส่ง 'all' หรือ '' เพื่อดูทุกปี (default = ปีปัจจุบัน)
+ */
+function getSchedule(bandId, year) {
   try {
     if (!bandId) return { success: false, message: 'ไม่พบ bandId' };
+    if (year === undefined || year === null) year = String(new Date().getFullYear());
+    var filterYear = (year && year !== 'all') ? String(year) : '';
+
     var sheet = getOrCreateSheet(CONFIG.SHEETS.SCHEDULE, [
       'scheduleId','bandId','type','venueName','venueId','date','dayOfWeek',
       'timeSlots','description','status','totalPay','notes','createdAt','updatedAt'
     ]);
     var data = sheet.getDataRange().getValues();
-    if (data.length <= 1) return { success: true, data: [] };
+    if (data.length <= 1) return { success: true, data: [], year: filterYear || 'all' };
     var headers = data[0];
+    var bandIdIdx = headers.indexOf('bandId');
+    var dateIdx   = headers.indexOf('date');
     var results = [];
     for (var i = 1; i < data.length; i++) {
-      if (data[i][headers.indexOf('bandId')] !== bandId) continue;
+      if (data[i][bandIdIdx] !== bandId) continue;
+      if (filterYear && !String(data[i][dateIdx]).startsWith(filterYear)) continue;
       var gig = {};
       for (var j = 0; j < headers.length; j++) gig[headers[j]] = data[i][j];
       try { gig.timeSlots = JSON.parse(gig.timeSlots || '[]'); } catch(e) { gig.timeSlots = []; }
       results.push(gig);
     }
-    return { success: true, data: results };
+    return { success: true, data: results, year: filterYear || 'all' };
   } catch (error) {
     return { success: false, message: error.toString() };
   }

@@ -135,7 +135,7 @@ function routeAction(req) {
 
     // --- Attendance & Payroll ---
     case 'addAttendancePayroll':    return addAttendancePayroll(req.data || req);
-    case 'getAllAttendancePayroll':  return getAllAttendancePayroll(req.bandId || '', req.startDate || '', req.endDate || '');
+    case 'getAllAttendancePayroll':  return getAllAttendancePayroll(req.bandId || '', req.startDate || '', req.endDate || '', req.year, req.page, req.pageSize);
     case 'updateAttendancePayroll': return updateAttendancePayroll(req.recordId, req.data || req);
     case 'deleteAttendancePayroll': return deleteAttendancePayroll(req.recordId);
 
@@ -145,7 +145,7 @@ function routeAction(req) {
 
     // --- Schedule ---
     case 'saveSchedule': return saveSchedule(req);
-    case 'getSchedule':  return getSchedule(req.bandId || '');
+    case 'getSchedule':  return getSchedule(req.bandId || '', req.year);
 
     // --- Equipment ---
     case 'getAllEquipment':  return getAllEquipment(req.bandId || '');

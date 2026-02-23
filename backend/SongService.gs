@@ -14,6 +14,11 @@ function getAllSongs(source, bandId) {
 }
 
 function getAllGlobalSongs() {
+  // Cache เพลงกลาง 5 นาที (เปลี่ยนนานๆ ครั้ง)
+  var cacheKey = 'global_songs';
+  var cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
   try {
     var ss = getGlobalSongsSpreadsheet();
     // ลอง sheet ชื่อที่กำหนดก่อน ถ้าไม่เจอให้ใช้ sheet แรก
@@ -49,13 +54,19 @@ function getAllGlobalSongs() {
         bandId:  ''
       });
     }
-    return { success: true, data: songs };
+    var result = { success: true, data: songs };
+    cacheSet(cacheKey, result, CACHE_TTL.GLOBAL_SONGS);
+    return result;
   } catch (error) {
     return { success: false, message: error.toString() };
   }
 }
 
 function getAllBandSongs(bandId) {
+  // Cache เพลงวง 60 วิ
+  var cacheKey = 'band_songs_' + bandId;
+  var cached = cacheGet(cacheKey);
+  if (cached) return cached;
   try {
     var sheet = getOrCreateSheet(CONFIG.SHEETS.BAND_SONGS, [
       'songId','bandId','name','artist','key','bpm','singer','mood','era','tags','notes','source','createdAt','updatedAt'
@@ -70,7 +81,9 @@ function getAllBandSongs(bandId) {
       for (var j = 0; j < headers.length; j++) song[headers[j]] = data[i][j];
       if (song.bandId === bandId) songs.push(song);
     }
-    return { success: true, data: songs };
+    var result = { success: true, data: songs };
+    cacheSet(cacheKey, result, CACHE_TTL.BAND_DATA);
+    return result;
   } catch (error) {
     return { success: false, message: error.toString() };
   }
@@ -92,6 +105,7 @@ function addSong(songData) {
       JSON.stringify(songData.tags || []), songData.notes || '',
       'band', now, now
     ]);
+    cacheDelete('band_songs_' + (songData.bandId || ''));
     return { success: true, data: { songId: id } };
   } catch (error) {
     return { success: false, message: error.toString() };
@@ -115,6 +129,9 @@ function updateSong(songId, songData) {
       }
     });
     sheet.getRange(rowIndex, headers.indexOf('updatedAt') + 1).setValue(new Date().toISOString());
+    // Invalidate cache (ไม่รู้ bandId แน่ๆ → ลบ global songs ด้วยเผื่อ)
+    cacheDelete('global_songs');
+    cacheDelete('band_songs_' + (songData.bandId || ''));
     return { success: true };
   } catch (error) {
     return { success: false, message: error.toString() };
@@ -131,6 +148,7 @@ function deleteSong(songId) {
     }
     if (rowIndex === -1) return { success: false, message: 'ไม่พบเพลง' };
     sheet.deleteRow(rowIndex);
+    cacheDelete('global_songs');
     return { success: true };
   } catch (error) {
     return { success: false, message: error.toString() };
