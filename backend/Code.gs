@@ -58,6 +58,8 @@ function include(filename) {
 // ============================================================
 // API ROUTER — doPost (เรียกจากภายนอก)
 // ============================================================
+// API ROUTER — doPost (เรียกจาก fetch ของ GitHub Pages)
+// ============================================================
 function doPost(e) {
   try {
     var requestData;
@@ -66,6 +68,18 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Invalid JSON' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
+
+    // Token validation (เหมือน doPostFromClient)
+    var publicActions = ['login','register','requestPasswordReset','verifyPasswordResetOtp','resetPassword'];
+    if (publicActions.indexOf(requestData.action) === -1) {
+      var session = validateToken(requestData._token || '');
+      if (!session) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, authError: true, message: 'Session หมดอายุ กรุณาล็อกอินใหม่' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      requestData._session = session;
+    }
+
     return ContentService.createTextOutput(JSON.stringify(routeAction(requestData)))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (error) {

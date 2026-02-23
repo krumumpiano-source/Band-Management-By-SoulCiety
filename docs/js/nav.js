@@ -1,0 +1,130 @@
+﻿/**
+ * Band Management By SoulCiety â€” Navigation
+ * renderMainNav() â€” à¹„à¸Ÿà¸¥à¹Œà¸™à¸µà¹‰à¹€à¸›à¹‡à¸™à¸—à¸µà¹ˆà¹€à¸”à¸µà¸¢à¸§à¸—à¸µà¹ˆ renderMainNav à¸–à¸¹à¸à¸™à¸´à¸¢à¸²à¸¡
+ */
+
+function renderMainNav(containerId) {
+  if (typeof ensureDemoSession === 'function') ensureDemoSession();
+  var container = document.getElementById(containerId || 'mainNav');
+  if (!container) return;
+
+  var bandName = localStorage.getItem('bandName') || (typeof t === 'function' ? t('yourBand') : 'à¸§à¸‡à¸‚à¸­à¸‡à¸„à¸¸à¸“');
+  var userName = localStorage.getItem('userName') || (typeof t === 'function' ? t('user') : 'à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰');
+  var isManager = !!(localStorage.getItem('bandManager') || localStorage.getItem('userRole') === 'manager');
+  var isAdmin = localStorage.getItem('userRole') === 'admin';
+  var _t = typeof t === 'function' ? t : function(k) { return k; };
+
+  // à¸•à¸£à¸§à¸ˆ active page
+  var currentPage = '';
+  if (typeof google !== 'undefined' && google.script) {
+    var params = new URLSearchParams(window.location.search);
+    currentPage = params.get('page') || 'dashboard';
+  } else {
+    currentPage = (window.location.pathname.split('/').pop() || 'dashboard.html').replace('.html','');
+  }
+
+  function navLink(page, label) {
+    var isActive = currentPage === page ? ' active' : '';
+    var href = typeof google !== 'undefined' && google.script ? '?page=' + page : page + '.html';
+    return '<li><a href="' + href + '" class="nav-link' + isActive + '">' + label + '</a></li>';
+  }
+
+  container.innerHTML =
+    '<div class="main-nav">' +
+      '<div class="nav-inner">' +
+        '<div class="nav-brand">' +
+          '<a href="' + (typeof google !== 'undefined' && google.script ? '?page=dashboard' : 'dashboard.html') + '">ðŸŽµ ' + _escHtml(bandName) + '</a>' +
+        '</div>' +
+        '<button class="nav-hamburger" id="navHamburger" aria-label="à¹€à¸¡à¸™à¸¹">' +
+          '<span></span><span></span><span></span>' +
+        '</button>' +
+        '<div class="nav-menu-wrap" id="navMenuWrap">' +
+          '<ul class="nav-menu">' +
+            navLink('dashboard', 'ðŸ“Š ' + _t('nav_dashboard')) +
+            navLink('songs', 'ðŸŽµ ' + _t('nav_songs')) +
+            navLink('attendance-payroll', 'â° ' + _t('nav_attendance')) +
+            navLink('external-payout', 'ðŸ’µ ' + _t('nav_externalPayout')) +
+            navLink('schedule', 'ðŸ“… ' + _t('nav_schedule')) +
+            (isManager ? navLink('job-calculator', 'ðŸ§® ' + _t('nav_jobCalculator')) : '') +
+            navLink('quotation', 'ðŸ“„ ' + _t('nav_quotation')) +
+            navLink('contract', 'ðŸ“œ ' + _t('nav_contract')) +
+            navLink('statistics', 'ðŸ“ˆ ' + _t('nav_statistics')) +
+            navLink('equipment', 'ðŸŽ¸ ' + _t('nav_equipment')) +
+            navLink('clients', 'ðŸ¤ ' + _t('nav_clients')) +
+            navLink('band-info', 'ðŸ‘¥ ' + _t('nav_bandInfo')) +
+            (isManager ? navLink('band-fund', 'ðŸ’° ' + _t('nav_bandFund')) : '') +
+            (isManager ? navLink('band-settings', 'âš™ï¸ ' + _t('nav_settings')) : '') +
+            navLink('user-manual', 'ðŸ“– ' + _t('nav_userManual')) +
+            (isAdmin ? navLink('admin', 'ðŸ”§ ' + _t('nav_admin')) : '') +
+          '</ul>' +
+          '<div class="nav-right">' +
+            '<div id="navLangSwitcher"></div>' +
+            '<span class="nav-user-name">' + _escHtml(userName) + '</span>' +
+            '<a href="' + (typeof google !== 'undefined' && google.script ? '?page=index' : 'index.html') + '" class="nav-logout" onclick="if(typeof doLogout===\'function\')doLogout();return true;">' + _t('logout') + '</a>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Hamburger toggle
+  var hamburger = document.getElementById('navHamburger');
+  var menuWrap = document.getElementById('navMenuWrap');
+  if (hamburger && menuWrap) {
+    hamburger.addEventListener('click', function() {
+      hamburger.classList.toggle('open');
+      menuWrap.classList.toggle('open');
+    });
+    // à¸›à¸´à¸”à¹€à¸¡à¸·à¹ˆà¸­à¸„à¸¥à¸´à¸à¸™à¸­à¸
+    document.addEventListener('click', function(e) {
+      if (!container.contains(e.target)) {
+        hamburger.classList.remove('open');
+        menuWrap.classList.remove('open');
+      }
+    });
+  }
+
+  // Lang switcher
+  if (typeof renderLangSwitcher === 'function') {
+    renderLangSwitcher('navLangSwitcher');
+  } else {
+    _renderNavLang('navLangSwitcher');
+  }
+}
+
+function _renderNavLang(containerId) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  var lang = typeof getLang === 'function' ? getLang() : 'th';
+  el.innerHTML =
+    '<div class="lang-switcher">' +
+      '<button type="button" class="lang-btn ' + (lang==='th'?'active':'') + '" data-lang="th">TH</button>' +
+      '<button type="button" class="lang-btn ' + (lang==='en'?'active':'') + '" data-lang="en">EN</button>' +
+    '</div>';
+  el.querySelectorAll('[data-lang]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (typeof setLang === 'function') setLang(btn.dataset.lang);
+      renderMainNav('mainNav');
+      if (typeof applyTranslations === 'function') applyTranslations();
+    });
+  });
+}
+
+function renderLangSwitcher(containerId) { _renderNavLang(containerId); }
+
+function doLogout() {
+  var token = getAuthToken ? getAuthToken() : (localStorage.getItem('auth_token') || '');
+  if (token && token.indexOf('demo_') !== 0 && typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run.doPostFromClient({ action: 'logout', _token: token });
+  }
+  ['auth_token','bandId','bandName','bandManager','userRole','userName'].forEach(function(k) {
+    localStorage.removeItem(k);
+    sessionStorage.removeItem(k);
+  });
+}
+
+function _escHtml(text) {
+  if (!text) return '';
+  var d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}

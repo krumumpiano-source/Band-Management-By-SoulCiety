@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตั้งค่าวง — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <style>
+    .settings-layout{display:grid;grid-template-columns:200px 1fr;gap:var(--spacing-xl)}
+    @media(max-width:768px){.settings-layout{grid-template-columns:1fr}}
+    .settings-nav{display:flex;flex-direction:column;gap:2px}
+    .s-nav-item{padding:var(--spacing-sm) var(--spacing-md);border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);color:var(--premium-text-muted);transition:all .15s}
+    .s-nav-item.active,.s-nav-item:hover{background:var(--premium-gold);color:#fff}
+    .section-panel{display:none}.section-panel.active{display:block}
+    .rate-row{display:flex;align-items:center;gap:var(--spacing-md);margin-bottom:var(--spacing-sm)}
+    .rate-row label{flex:1;font-size:var(--text-sm)}
+    .rate-row input{width:120px;font-size:var(--text-sm)}
+    .rate-row .del-btn{flex-shrink:0}
+    .venue-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--premium-off-white);border-radius:var(--radius-full);font-size:var(--text-sm);margin:4px}
+    .venue-tag button{border:none;background:none;cursor:pointer;color:var(--premium-text-muted);font-size:14px;line-height:1;padding:0}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title" data-i18n="nav_settings">ตั้งค่าวง</h1>
+        <button class="btn btn-primary" onclick="saveAll()" data-i18n="save">บันทึกทั้งหมด</button>
+      </div>
+      <div class="settings-layout">
+        <div>
+          <div class="card">
+            <div class="settings-nav">
+              <div class="s-nav-item active" onclick="showSection('band',this)">🎵 ข้อมูลวง</div>
+              <div class="s-nav-item" onclick="showSection('venues',this)">📍 สถานที่</div>
+              <div class="s-nav-item" onclick="showSection('rates',this)">💰 อัตราค่าตัว</div>
+              <div class="s-nav-item" onclick="showSection('app',this)">⚙️ แอปพลิเคชัน</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <!-- Band Info -->
+          <div class="card section-panel active" id="panel-band">
+            <div class="card-header"><h3 class="card-title">ข้อมูลวงดนตรี</h3></div>
+            <div class="form-group"><label>ชื่อวง *</label><input type="text" id="bandName"></div>
+            <div class="form-group"><label>แนวดนตรี</label><input type="text" id="bandGenre" placeholder="Pop, Rock, Jazz..."></div>
+            <div class="form-group"><label>ปีที่ก่อตั้ง</label><input type="number" id="bandFounded" placeholder="2020"></div>
+            <div class="form-group"><label>คำอธิบายวง</label><textarea id="bandDesc" rows="3"></textarea></div>
+            <div class="form-group"><label>เว็บไซต์ / Facebook</label><input type="url" id="bandUrl"></div>
+          </div>
+          <!-- Venues -->
+          <div class="card section-panel" id="panel-venues">
+            <div class="card-header"><h3 class="card-title">สถานที่ที่ใช้บ่อย</h3></div>
+            <div id="venueTags" style="margin-bottom:var(--spacing-md)"></div>
+            <div style="display:flex;gap:var(--spacing-sm)">
+              <input type="text" id="newVenueInput" placeholder="ชื่อสถานที่ใหม่">
+              <button type="button" class="btn btn-primary" onclick="addVenue()">+ เพิ่ม</button>
+            </div>
+          </div>
+          <!-- Hourly Rates -->
+          <div class="card section-panel" id="panel-rates">
+            <div class="card-header"><h3 class="card-title">อัตราค่าตัวตามตำแหน่ง</h3></div>
+            <div id="rateRows"></div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="addRateRow()">+ เพิ่มตำแหน่ง</button>
+          </div>
+          <!-- App Settings -->
+          <div class="card section-panel" id="panel-app">
+            <div class="card-header"><h3 class="card-title">ตั้งค่าแอปพลิเคชัน</h3></div>
+            <div class="form-group"><label>ภาษาเริ่มต้น</label>
+              <select id="defaultLang"><option value="th">ภาษาไทย</option><option value="en">English</option></select>
+            </div>
+            <div class="form-group"><label>สกุลเงิน</label>
+              <select id="currency"><option value="THB">THB (บาท)</option><option value="USD">USD</option></select>
+            </div>
+            <div class="form-group">
+              <label style="display:flex;align-items:center;gap:var(--spacing-sm);cursor:pointer">
+                <input type="checkbox" id="enableVat" style="width:auto"> เปิดใช้ VAT ในใบเสนอราคา
+              </label>
+            </div>
+            <div class="form-group"><label>VAT เริ่มต้น (%)</label><input type="number" id="defaultVat" value="7" min="0"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+  var venues = [], rates = [], settingsData = {};
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    gasRun('getBandSettings', {}, function(r) {
+      if (r && r.success && r.data) {
+        settingsData = r.data;
+        var b = (r.data.bands && r.data.bands[0]) || {};
+        document.getElementById('bandName').value = b.name || '';
+        document.getElementById('bandGenre').value = b.genre || '';
+        document.getElementById('bandFounded').value = b.founded || '';
+        document.getElementById('bandDesc').value = b.description || '';
+        document.getElementById('bandUrl').value = b.website || '';
+        venues = r.data.venues || [];
+        rates = r.data.hourlyRates || [];
+        renderVenuesTags(); renderRateRows();
+        var appCfg = r.data.appConfig || {};
+        document.getElementById('defaultLang').value = appCfg.defaultLang || 'th';
+        document.getElementById('currency').value = appCfg.currency || 'THB';
+        document.getElementById('enableVat').checked = !!appCfg.enableVat;
+        document.getElementById('defaultVat').value = appCfg.defaultVat || 7;
+      }
+    });
+  });
+
+  function showSection(id, el) {
+    document.querySelectorAll('.section-panel').forEach(function(p){p.classList.remove('active');});
+    document.getElementById('panel-'+id).classList.add('active');
+    document.querySelectorAll('.s-nav-item').forEach(function(n){n.classList.remove('active');});
+    el.classList.add('active');
+  }
+
+  function renderVenuesTags() {
+    document.getElementById('venueTags').innerHTML = venues.map(function(v, i) {
+      return '<span class="venue-tag">'+escapeHtml(v)+'<button onclick="removeVenue('+i+')">×</button></span>';
+    }).join('');
+  }
+
+  function addVenue() {
+    var val = document.getElementById('newVenueInput').value.trim();
+    if (!val) return;
+    venues.push(val);
+    document.getElementById('newVenueInput').value = '';
+    renderVenuesTags();
+  }
+
+  function removeVenue(i) { venues.splice(i, 1); renderVenuesTags(); }
+
+  function renderRateRows() {
+    document.getElementById('rateRows').innerHTML = rates.map(function(r, i) {
+      return '<div class="rate-row">'
+        +'<input type="text" value="'+escapeHtml(r.position||'')+'" placeholder="ตำแหน่ง" class="r-pos" onchange="updateRate('+i+',\'position\',this.value)">'
+        +'<input type="number" value="'+(r.rate||'')+'" placeholder="บาท/งาน" class="r-rate" onchange="updateRate('+i+',\'rate\',this.value)">'
+        +'<button class="btn btn-danger btn-sm del-btn" onclick="removeRate('+i+')">×</button></div>';
+    }).join('');
+  }
+
+  function addRateRow() { rates.push({position:'',rate:0}); renderRateRows(); }
+  function removeRate(i) { rates.splice(i,1); renderRateRows(); }
+  function updateRate(i,field,val) { if(rates[i]) rates[i][field]=val; }
+
+  function saveAll() {
+    var payload = {
+      bands: [{ name: document.getElementById('bandName').value.trim(), genre: document.getElementById('bandGenre').value.trim(), founded: document.getElementById('bandFounded').value, description: document.getElementById('bandDesc').value, website: document.getElementById('bandUrl').value.trim() }],
+      venues: venues, hourlyRates: rates,
+      appConfig: { defaultLang: document.getElementById('defaultLang').value, currency: document.getElementById('currency').value, enableVat: document.getElementById('enableVat').checked, defaultVat: document.getElementById('defaultVat').value }
+    };
+    gasRun('saveBandSettings', payload, function(r) {
+      if (r && r.success) showToast(t('msg_saved'), 'success');
+      else showToast((r && r.message) || t('msg_error'), 'error');
+    });
+  }
+  </script>
+</body>
+</html>

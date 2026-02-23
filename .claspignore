@@ -2,3 +2,5 @@
 node_modules/
 .gitignore
 README.md
+docs/**
+frontend/**

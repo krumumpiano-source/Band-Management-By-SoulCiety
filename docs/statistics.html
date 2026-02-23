@@ -1,0 +1,139 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สถิติ — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <style>
+    .stat-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--spacing-lg);margin-bottom:var(--spacing-xl)}
+    .stat-ov-card{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--spacing-xl);text-align:center}
+    .stat-ov-card .ico{font-size:32px;margin-bottom:var(--spacing-sm)}
+    .stat-ov-card .val{font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
+    .stat-ov-card .lbl{font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px}
+    .bar-wrap{margin-bottom:var(--spacing-xl)}
+    .bar-row{display:flex;align-items:center;gap:var(--spacing-md);margin-bottom:var(--spacing-sm)}
+    .bar-row .label{width:100px;font-size:var(--text-sm);color:var(--premium-text-muted);text-align:right}
+    .bar-track{flex:1;height:18px;background:var(--premium-off-white);border-radius:var(--radius-full);overflow:hidden}
+    .bar-fill{height:100%;background:var(--premium-gold);border-radius:var(--radius-full);transition:width .5s}
+    .bar-row .bar-val{width:80px;font-size:var(--text-sm);font-weight:600;color:var(--premium-gold)}
+    .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-xl)}
+    @media(max-width:768px){.stats-row{grid-template-columns:1fr}}
+    .year-select{display:flex;gap:var(--spacing-md);align-items:center;margin-bottom:var(--spacing-xl);flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title" data-i18n="nav_statistics">สถิติและรายงาน</h1>
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ <span data-i18n="print">พิมพ์</span></button>
+      </div>
+
+      <div class="year-select">
+        <label data-i18n="year">ปี</label>
+        <select id="yearPicker" onchange="loadStats()"></select>
+        <label data-i18n="month">เดือน</label>
+        <select id="monthPicker" onchange="loadStats()">
+          <option value="">ทั้งปี</option>
+          <option value="0">มกราคม</option><option value="1">กุมภาพันธ์</option><option value="2">มีนาคม</option>
+          <option value="3">เมษายน</option><option value="4">พฤษภาคม</option><option value="5">มิถุนายน</option>
+          <option value="6">กรกฎาคม</option><option value="7">สิงหาคม</option><option value="8">กันยายน</option>
+          <option value="9">ตุลาคม</option><option value="10">พฤศจิกายน</option><option value="11">ธันวาคม</option>
+        </select>
+      </div>
+
+      <!-- Overview Cards -->
+      <div class="stat-overview" id="overviewCards">
+        <div class="stat-ov-card"><div class="ico">📅</div><div class="val" id="ovJobs">—</div><div class="lbl">งานทั้งหมด</div></div>
+        <div class="stat-ov-card"><div class="ico">💰</div><div class="val" id="ovIncome">—</div><div class="lbl">รายรับรวม</div></div>
+        <div class="stat-ov-card"><div class="ico">💸</div><div class="val" id="ovExpense">—</div><div class="lbl">รายจ่ายรวม</div></div>
+        <div class="stat-ov-card"><div class="ico">🏦</div><div class="val" id="ovProfit">—</div><div class="lbl">กำไรสุทธิ</div></div>
+        <div class="stat-ov-card"><div class="ico">📊</div><div class="val" id="ovAvgJob">—</div><div class="lbl">ค่าเฉลี่ย/งาน</div></div>
+      </div>
+
+      <div class="stats-row">
+        <!-- Monthly Bar Chart -->
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">รายรับรายเดือน</h3></div>
+          <div id="monthlyBars" class="bar-wrap"></div>
+        </div>
+        <!-- Job type stats -->
+        <div class="card">
+          <div class="card-header"><h3 class="card-title">ประเภทงาน</h3></div>
+          <div id="jobTypeBars" class="bar-wrap"></div>
+        </div>
+      </div>
+
+      <!-- Top members -->
+      <div class="card" style="margin-top:var(--spacing-xl)">
+        <div class="card-header"><h3 class="card-title">สมาชิกที่ออกงานมากสุด</h3></div>
+        <div class="table-responsive">
+          <table class="table">
+            <thead><tr><th>สมาชิก</th><th>ตำแหน่ง</th><th>งาน</th><th>รายรับ</th></tr></thead>
+            <tbody id="topMemberTbody"><tr><td colspan="4" class="text-center">กำลังโหลด...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    var yr = document.getElementById('yearPicker');
+    var now = new Date().getFullYear();
+    for (var y = now; y >= now-4; y--) { var o=document.createElement('option'); o.value=y; o.textContent=y+543; if(y===now)o.selected=true; yr.appendChild(o); }
+    loadStats();
+  });
+
+  function loadStats() {
+    var year = parseInt(document.getElementById('yearPicker').value);
+    var month = document.getElementById('monthPicker').value;
+    gasRun('getStatistics', { year: year, month: month !== '' ? parseInt(month) : null }, function(r) {
+      if (!r || !r.success) return;
+      var d = r.data || {};
+      document.getElementById('ovJobs').textContent = d.totalJobs || 0;
+      document.getElementById('ovIncome').textContent = formatCurrency(d.totalIncome||0);
+      document.getElementById('ovExpense').textContent = formatCurrency(d.totalExpense||0);
+      document.getElementById('ovProfit').textContent = formatCurrency((d.totalIncome||0)-(d.totalExpense||0));
+      document.getElementById('ovAvgJob').textContent = d.totalJobs ? formatCurrency(Math.round((d.totalIncome||0)/(d.totalJobs||1))) : '—';
+
+      // Monthly bars
+      var months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      var monthData = d.byMonth || [];
+      var maxVal = Math.max.apply(null, monthData.map(function(m){return m.income||0;})) || 1;
+      document.getElementById('monthlyBars').innerHTML = months.map(function(mn,i){
+        var val = (monthData[i]||{}).income||0;
+        return '<div class="bar-row"><span class="label">'+mn+'</span>'
+          +'<div class="bar-track"><div class="bar-fill" style="width:'+Math.round(val/maxVal*100)+'%"></div></div>'
+          +'<span class="bar-val">'+formatCurrency(val)+'</span></div>';
+      }).join('');
+
+      // Job type bars
+      var typeData = d.byType || [];
+      var maxType = Math.max.apply(null, typeData.map(function(t){return t.count||0;})) || 1;
+      document.getElementById('jobTypeBars').innerHTML = typeData.map(function(t){
+        return '<div class="bar-row"><span class="label" style="font-size:11px">'+escapeHtml(t.type||'')+'</span>'
+          +'<div class="bar-track"><div class="bar-fill" style="width:'+Math.round((t.count||0)/maxType*100)+'%"></div></div>'
+          +'<span class="bar-val">'+t.count+'</span></div>';
+      }).join('') || '<p class="text-muted" style="padding:var(--spacing-md)">'+t('noData')+'</p>';
+
+      // Members
+      var mData = d.topMembers || [];
+      document.getElementById('topMemberTbody').innerHTML = mData.length ? mData.map(function(m){
+        return '<tr><td>'+escapeHtml(m.name||'')+'</td><td>'+escapeHtml(m.position||'')+'</td><td>'+m.jobCount+'</td><td>'+formatCurrency(m.totalEarned||0)+'</td></tr>';
+      }).join('') : '<tr><td colspan="4" class="text-center">'+t('noData')+'</td></tr>';
+    });
+  }
+  </script>
+</body>
+</html>

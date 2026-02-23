@@ -1,0 +1,227 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>อุปกรณ์/เครื่องดนตรี — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <style>
+    .equip-type-card{display:flex;align-items:center;gap:var(--spacing-sm);padding:var(--spacing-sm) var(--spacing-md);background:var(--premium-off-white);border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;cursor:pointer;transition:background .15s}
+    .equip-type-card.active,.equip-type-card:hover{background:var(--premium-gold);color:#fff}
+    .equip-filter-bar{display:flex;gap:var(--spacing-sm);flex-wrap:wrap;margin-bottom:var(--spacing-lg)}
+    .status-chip{padding:2px 10px;border-radius:var(--radius-full);font-size:11px;font-weight:600}
+    .status-chip.normal{background:#c6f6d5;color:#276749}
+    .status-chip.repair{background:#fefcbf;color:#d69e2e}
+    .status-chip.broken{background:#fed7d7;color:#c53030}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <div id="confirmModal"></div>
+
+  <!-- Equipment Modal -->
+  <div id="equipModal" class="modal-backdrop" style="display:none">
+    <div class="modal" style="max-width:580px">
+      <div class="modal-header">
+        <h3 class="modal-title" id="equipModalTitle" data-i18n="equip_add">เพิ่มอุปกรณ์</h3>
+        <button class="modal-close" onclick="closeEquipModal()">×</button>
+      </div>
+      <form id="equipForm">
+        <input type="hidden" id="equipId">
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:var(--spacing-md)">
+          <div class="form-group"><label data-i18n="equip_name">ชื่ออุปกรณ์ *</label><input type="text" id="eName" required></div>
+          <div class="form-group"><label data-i18n="equip_type">ประเภท</label>
+            <select id="eType">
+              <option value="instrument">เครื่องดนตรี</option>
+              <option value="audio">เสียง/PA</option>
+              <option value="lighting">แสง</option>
+              <option value="accessory">อุปกรณ์เสริม</option>
+              <option value="other">อื่นๆ</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)">
+          <div class="form-group"><label data-i18n="equip_owner">เจ้าของ</label><input type="text" id="eOwner"></div>
+          <div class="form-group"><label data-i18n="equip_serial">หมายเลข Serial</label><input type="text" id="eSerial"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)">
+          <div class="form-group"><label data-i18n="equip_purchaseDate">วันที่ซื้อ</label><input type="date" id="ePurchaseDate"></div>
+          <div class="form-group"><label data-i18n="equip_price">ราคา (บาท)</label><input type="number" id="ePrice" min="0"></div>
+        </div>
+        <div class="form-group"><label data-i18n="equip_status">สถานะ</label>
+          <div style="display:flex;gap:var(--spacing-md)">
+            <label><input type="radio" name="eStatus" value="normal" checked> ปกติ</label>
+            <label><input type="radio" name="eStatus" value="repair"> ซ่อม</label>
+            <label><input type="radio" name="eStatus" value="broken"> เสียหาย</label>
+          </div>
+        </div>
+        <div class="form-group"><label data-i18n="notes">หมายเหตุ</label><textarea id="eNotes" rows="2"></textarea></div>
+        <div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm)">
+          <button type="button" class="btn btn-secondary" onclick="closeEquipModal()" data-i18n="cancel">ยกเลิก</button>
+          <button type="button" class="btn btn-danger" id="deleteEquipBtn" style="display:none" onclick="deleteCurrentEquip()" data-i18n="delete">ลบ</button>
+          <button type="submit" class="btn btn-primary" id="saveEquipBtn" data-i18n="save">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title" data-i18n="nav_equipment">อุปกรณ์/เครื่องดนตรี</h1>
+        <button class="btn btn-primary" onclick="openEquipModal(null)">+ <span data-i18n="equip_add">เพิ่มอุปกรณ์</span></button>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="equip-filter-bar">
+        <div class="equip-type-card active" onclick="setFilter('all',this)" data-i18n="all">ทั้งหมด</div>
+        <div class="equip-type-card" onclick="setFilter('instrument',this)">🎸 เครื่องดนตรี</div>
+        <div class="equip-type-card" onclick="setFilter('audio',this)">🔊 เสียง/PA</div>
+        <div class="equip-type-card" onclick="setFilter('lighting',this)">💡 แสง</div>
+        <div class="equip-type-card" onclick="setFilter('accessory',this)">🎒 อุปกรณ์เสริม</div>
+        <div class="equip-type-card" onclick="setFilter('other',this)">📦 อื่นๆ</div>
+      </div>
+      <div style="display:flex;gap:var(--spacing-md);margin-bottom:var(--spacing-lg);flex-wrap:wrap">
+        <input type="text" id="equipSearch" placeholder="ค้นหา..." oninput="renderEquip()" style="flex:1">
+        <select id="statusFilterEq" onchange="renderEquip()">
+          <option value="">ทุกสถานะ</option>
+          <option value="normal">ปกติ</option>
+          <option value="repair">ซ่อม</option>
+          <option value="broken">เสียหาย</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table">
+            <thead><tr>
+              <th data-i18n="equip_name">ชื่ออุปกรณ์</th>
+              <th data-i18n="equip_type">ประเภท</th>
+              <th data-i18n="equip_owner">เจ้าของ</th>
+              <th data-i18n="equip_serial">Serial</th>
+              <th data-i18n="equip_price">ราคา</th>
+              <th data-i18n="equip_status">สถานะ</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="equipBody"><tr><td colspan="7" class="text-center" data-i18n="loading">กำลังโหลด...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+  var allEquip = [], filterType = 'all';
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    loadEquipment();
+  });
+
+  function loadEquipment() {
+    gasRun('getAllEquipment', {}, function(r) {
+      allEquip = (r && r.success && r.data) ? r.data : [];
+      renderEquip();
+    });
+  }
+
+  function setFilter(type, el) {
+    filterType = type;
+    document.querySelectorAll('.equip-type-card').forEach(function(c) { c.classList.remove('active'); });
+    el.classList.add('active');
+    renderEquip();
+  }
+
+  var typeLabels = {instrument:'เครื่องดนตรี',audio:'เสียง/PA',lighting:'แสง',accessory:'อุปกรณ์เสริม',other:'อื่นๆ'};
+
+  function renderEquip() {
+    var q = document.getElementById('equipSearch').value.toLowerCase();
+    var st = document.getElementById('statusFilterEq').value;
+    var filtered = allEquip.filter(function(e) {
+      return (filterType === 'all' || e.type === filterType)
+        && (!q || (e.name||'').toLowerCase().includes(q) || (e.owner||'').toLowerCase().includes(q))
+        && (!st || e.status === st);
+    });
+    var tbody = document.getElementById('equipBody');
+    if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center">' + t('noData') + '</td></tr>'; return; }
+    var statusMap = {normal:['normal','ปกติ'],repair:['repair','ซ่อม'],broken:['broken','เสียหาย']};
+    tbody.innerHTML = filtered.map(function(e) {
+      var sm = statusMap[e.status] || ['normal','ปกติ'];
+      return '<tr>'
+        + '<td><strong>' + escapeHtml(e.name||'') + '</strong></td>'
+        + '<td>' + (typeLabels[e.type]||escapeHtml(e.type||'')) + '</td>'
+        + '<td>' + escapeHtml(e.owner||'') + '</td>'
+        + '<td>' + escapeHtml(e.serialNo||'') + '</td>'
+        + '<td>' + (e.price ? formatCurrency(e.price) : '—') + '</td>'
+        + '<td><span class="status-chip ' + sm[0] + '">' + sm[1] + '</span></td>'
+        + '<td><button class="btn btn-ghost btn-sm" onclick="openEquipModal(\'' + escapeHtml(e.equipmentId||'') + '\')">✏️</button></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function openEquipModal(id) {
+    document.getElementById('equipModal').style.display = 'flex';
+    document.getElementById('equipForm').reset();
+    document.getElementById('equipId').value = '';
+    document.getElementById('deleteEquipBtn').style.display = 'none';
+    document.getElementById('equipModalTitle').textContent = id ? t('equip_edit')||'แก้ไขอุปกรณ์' : t('equip_add')||'เพิ่มอุปกรณ์';
+    document.querySelector('input[name="eStatus"][value="normal"]').checked = true;
+    if (id) {
+      var e = allEquip.find(function(x) { return x.equipmentId === id; });
+      if (e) {
+        document.getElementById('equipId').value = e.equipmentId || '';
+        document.getElementById('eName').value = e.name || '';
+        document.getElementById('eType').value = e.type || 'instrument';
+        document.getElementById('eOwner').value = e.owner || '';
+        document.getElementById('eSerial').value = e.serialNo || '';
+        document.getElementById('ePurchaseDate').value = (e.purchaseDate||'').substring(0,10);
+        document.getElementById('ePrice').value = e.price || '';
+        var radio = document.querySelector('input[name="eStatus"][value="' + (e.status||'normal') + '"]');
+        if (radio) radio.checked = true;
+        document.getElementById('eNotes').value = e.notes || '';
+        document.getElementById('deleteEquipBtn').style.display = 'inline-flex';
+      }
+    }
+  }
+
+  function closeEquipModal() { document.getElementById('equipModal').style.display = 'none'; }
+
+  document.getElementById('equipForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('saveEquipBtn'); btn.disabled = true; btn.textContent = t('loading');
+    var id = document.getElementById('equipId').value;
+    var statusRadio = document.querySelector('input[name="eStatus"]:checked');
+    gasRun(id ? 'updateEquipment' : 'addEquipment', {
+      equipmentId: id, name: document.getElementById('eName').value.trim(),
+      type: document.getElementById('eType').value, owner: document.getElementById('eOwner').value.trim(),
+      serialNo: document.getElementById('eSerial').value.trim(),
+      purchaseDate: document.getElementById('ePurchaseDate').value,
+      price: document.getElementById('ePrice').value,
+      status: statusRadio ? statusRadio.value : 'normal',
+      notes: document.getElementById('eNotes').value.trim()
+    }, function(r) {
+      btn.disabled = false; btn.textContent = t('save');
+      if (r && r.success) { showToast(t('msg_saved'), 'success'); closeEquipModal(); loadEquipment(); }
+      else showToast((r && r.message) || t('msg_error'), 'error');
+    });
+  });
+
+  function deleteCurrentEquip() {
+    var id = document.getElementById('equipId').value;
+    showConfirm(t('confirmDeleteTitle'), t('confirmDeleteMsg')).then(function(ok) {
+      if (!ok) return;
+      gasRun('deleteEquipment', { equipmentId: id }, function(r) {
+        if (r && r.success) { showToast(t('msg_deleted'), 'success'); closeEquipModal(); loadEquipment(); }
+        else showToast((r && r.message) || t('msg_error'), 'error');
+      });
+    });
+  }
+  </script>
+</body>
+</html>

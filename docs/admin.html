@@ -1,0 +1,224 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <style>
+    .admin-layout{display:grid;grid-template-columns:220px 1fr;gap:var(--spacing-xl)}
+    @media(max-width:768px){.admin-layout{grid-template-columns:1fr}}
+    .admin-nav{display:flex;flex-direction:column;gap:2px}
+    .a-nav-item{padding:var(--spacing-sm) var(--spacing-md);border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);color:var(--premium-text-muted);transition:all .15s}
+    .a-nav-item.active,.a-nav-item:hover{background:var(--premium-gold);color:#fff}
+    .a-panel{display:none}.a-panel.active{display:block}
+    .role-select{font-size:var(--text-sm);padding:4px 8px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md)}
+    .danger-zone{border:2px solid #fc8181;border-radius:var(--radius-lg);padding:var(--spacing-xl)}
+    .danger-zone h3{color:#c53030;font-size:var(--text-base);margin-bottom:var(--spacing-md)}
+    .system-info-row{display:flex;justify-content:space-between;padding:var(--spacing-xs) 0;border-bottom:1px dashed var(--premium-light-gray);font-size:var(--text-sm)}
+    .system-info-row:last-child{border-bottom:none}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <div id="confirmModal"></div>
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">🔧 Admin Panel</h1>
+        <span class="badge badge-danger">Admin Only</span>
+      </div>
+      <div class="admin-layout">
+        <div>
+          <div class="card">
+            <div class="admin-nav">
+              <div class="a-nav-item active" onclick="showPanel('users',this)">👥 ผู้ใช้งาน</div>
+              <div class="a-nav-item" onclick="showPanel('sysinfo',this)">📊 ระบบ</div>
+              <div class="a-nav-item" onclick="showPanel('backup',this)">💾 สำรองข้อมูล</div>
+              <div class="a-nav-item" onclick="showPanel('danger',this)">⚠️ Danger Zone</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <!-- Users Panel -->
+          <div class="card a-panel active" id="panel-users">
+            <div class="card-header"><h3 class="card-title">จัดการผู้ใช้งาน</h3>
+              <button class="btn btn-primary btn-sm" onclick="loadUsers()">🔄 รีเฟรช</button>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead><tr><th>ชื่อ</th><th>อีเมล</th><th>วง</th><th>Role</th><th>สถานะ</th><th></th></tr></thead>
+                <tbody id="userTbody"><tr><td colspan="6" class="text-center">กำลังโหลด...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- System Info Panel -->
+          <div class="card a-panel" id="panel-sysinfo">
+            <div class="card-header"><h3 class="card-title">ข้อมูลระบบ</h3></div>
+            <div id="sysInfoContent">
+              <div class="system-info-row"><span>เวอร์ชัน</span><span>1.0.0</span></div>
+              <div class="system-info-row"><span>Platform</span><span>Google Apps Script (V8)</span></div>
+              <div class="system-info-row"><span>Database</span><span>Google Sheets</span></div>
+              <div class="system-info-row"><span>จำนวน Sheets</span><span id="sheetCount">กำลังตรวจสอบ...</span></div>
+              <div class="system-info-row"><span>บัญชีผู้ใช้</span><span id="userCount">กำลังตรวจสอบ...</span></div>
+              <div class="system-info-row"><span>ข้อมูลงาน</span><span id="jobCount">กำลังตรวจสอบ...</span></div>
+              <div class="system-info-row"><span>ข้อมูลเพลง</span><span id="songCount">กำลังตรวจสอบ...</span></div>
+              <div class="system-info-row"><span>เวลาเซิร์ฟเวอร์</span><span id="serverTime">กำลังตรวจสอบ...</span></div>
+            </div>
+            <div style="margin-top:var(--spacing-lg)">
+              <button class="btn btn-secondary" onclick="loadSysInfo()">🔄 ตรวจสอบระบบ</button>
+            </div>
+          </div>
+
+          <!-- Backup Panel -->
+          <div class="card a-panel" id="panel-backup">
+            <div class="card-header"><h3 class="card-title">สำรอง/กู้คืนข้อมูล</h3></div>
+            <p style="color:var(--premium-text-muted);font-size:var(--text-sm);margin-bottom:var(--spacing-xl)">ข้อมูลทั้งหมดบันทึกใน Google Sheets เสมอ คุณสามารถดาวน์โหลด Spreadsheet เป็น .xlsx ได้ตลอดเวลา</p>
+            <div style="display:flex;flex-direction:column;gap:var(--spacing-md)">
+              <button class="btn btn-primary" onclick="triggerBackup()">📥 สร้าง Backup (Export JSON ไปยัง Drive)</button>
+              <button class="btn btn-secondary" onclick="openSpreadsheet()">📊 เปิด Spreadsheet โดยตรง</button>
+              <button class="btn btn-secondary" onclick="runSetup()">🔧 รัน Setup (สร้าง Sheets ที่ขาดหายไป)</button>
+            </div>
+          </div>
+
+          <!-- Danger Zone Panel -->
+          <div class="card a-panel" id="panel-danger">
+            <div class="card-header"><h3 class="card-title" style="color:#c53030">⚠️ Danger Zone</h3></div>
+            <div class="danger-zone">
+              <h3>ล้างข้อมูลทั้งหมด</h3>
+              <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">คำเตือน: การดำเนินการนี้ไม่สามารถย้อนกลับได้ ข้อมูลทั้งหมดจะถูกลบออกจาก Sheets</p>
+              <button class="btn btn-danger" onclick="clearAllData()">🗑️ ล้างข้อมูลทั้งหมด</button>
+            </div>
+            <div class="danger-zone" style="margin-top:var(--spacing-lg)">
+              <h3>รีเซ็ตบัญชี</h3>
+              <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">ลบผู้ใช้งานทั้งหมดและเริ่มต้นใหม่</p>
+              <button class="btn btn-danger" onclick="resetUsers()">🔐 รีเซ็ตบัญชีผู้ใช้งาน</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
+    var role = localStorage.getItem('userRole') || '';
+    if (role !== 'admin') { showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error'); setTimeout(function(){ window.location.href='?page=dashboard'; },1500); return; }
+    renderMainNav('mainNav'); applyTranslations();
+    loadUsers(); loadSysInfo();
+  });
+
+  function showPanel(id, el) {
+    document.querySelectorAll('.a-panel').forEach(function(p){p.classList.remove('active');});
+    document.getElementById('panel-'+id).classList.add('active');
+    document.querySelectorAll('.a-nav-item').forEach(function(n){n.classList.remove('active');});
+    el.classList.add('active');
+  }
+
+  function loadUsers() {
+    gasRun('getAllUsers', {}, function(r) {
+      var users = (r && r.data) || [];
+      var tbody = document.getElementById('userTbody');
+      if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center">'+t('noData')+'</td></tr>'; return; }
+      tbody.innerHTML = users.map(function(u) {
+        return '<tr>'
+          +'<td>'+escapeHtml(u.name||'')+'</td>'
+          +'<td>'+escapeHtml(u.email||'')+'</td>'
+          +'<td>'+escapeHtml(u.bandName||'')+'</td>'
+          +'<td><select class="role-select" onchange="updateUserRole(\''+escapeHtml(u.userId||'')+'\',this.value)">'
+          +'<option value="member"'+(u.role==='member'?' selected':'')+'>member</option>'
+          +'<option value="manager"'+(u.role==='manager'?' selected':'')+'>manager</option>'
+          +'<option value="admin"'+(u.role==='admin'?' selected':'')+'>admin</option>'
+          +'</select></td>'
+          +'<td><span class="badge '+(u.active?'badge-success':'badge-danger')+'">'+(u.active?'ใช้งาน':'ปิด')+'</span></td>'
+          +'<td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+escapeHtml(u.userId||'')+'\')">🗑️</button></td>'
+          +'</tr>';
+      }).join('');
+    });
+  }
+
+  function updateUserRole(id, role) {
+    gasRun('updateUserRole', { userId: id, role: role }, function(r) {
+      if (r && r.success) showToast(t('msg_saved'), 'success');
+      else showToast((r && r.message) || t('msg_error'), 'error');
+    });
+  }
+
+  function deleteUser(id) {
+    showConfirm('ลบผู้ใช้งาน?', 'คุณแน่ใจที่จะลบผู้ใช้งานนี้?').then(function(ok) {
+      if (!ok) return;
+      gasRun('deleteUser', { userId: id }, function(r) {
+        if (r && r.success) { showToast(t('msg_deleted'), 'success'); loadUsers(); }
+        else showToast((r && r.message) || t('msg_error'), 'error');
+      });
+    });
+  }
+
+  function loadSysInfo() {
+    gasRun('getSystemInfo', {}, function(r) {
+      if (r && r.data) {
+        var d = r.data;
+        document.getElementById('sheetCount').textContent = d.sheetCount || '—';
+        document.getElementById('userCount').textContent = d.userCount || '—';
+        document.getElementById('jobCount').textContent = d.jobCount || '—';
+        document.getElementById('songCount').textContent = d.songCount || '—';
+        document.getElementById('serverTime').textContent = d.serverTime || new Date().toLocaleString('th-TH');
+      }
+    });
+  }
+
+  function triggerBackup() {
+    showToast('กำลังสร้าง Backup...', 'info');
+    gasRun('createBackup', {}, function(r) {
+      if (r && r.success) showToast('Backup สำเร็จ: ' + (r.url || ''), 'success');
+      else showToast((r && r.message) || t('msg_error'), 'error');
+    });
+  }
+
+  function openSpreadsheet() {
+    gasRun('getSpreadsheetUrl', {}, function(r) {
+      if (r && r.url) window.open(r.url, '_blank');
+      else showToast(t('msg_error'), 'error');
+    });
+  }
+
+  function runSetup() {
+    showConfirm('รัน Setup', 'ระบบจะสร้าง Sheets ที่ขาดหายไป ดำเนินการต่อ?').then(function(ok) {
+      if (!ok) return;
+      gasRun('runSetupFromAdmin', {}, function(r) {
+        if (r && r.success) showToast('Setup สำเร็จ', 'success');
+        else showToast((r && r.message) || t('msg_error'), 'error');
+      });
+    });
+  }
+
+  function clearAllData() {
+    showConfirm('⚠️ ล้างข้อมูลทั้งหมด', 'การดำเนินการนี้จะลบข้อมูลทุกอย่างในทุก Sheet ยกเว้น Users คุณแน่ใจ?').then(function(ok) {
+      if (!ok) return;
+      gasRun('clearAllData', {}, function(r) {
+        if (r && r.success) showToast('ล้างข้อมูลสำเร็จ', 'success');
+        else showToast((r && r.message) || t('msg_error'), 'error');
+      });
+    });
+  }
+
+  function resetUsers() {
+    showConfirm('⚠️ รีเซ็ตบัญชีผู้ใช้งาน', 'ผู้ใช้งานทั้งหมดจะถูกลบ รวมถึงบัญชีของคุณ คุณแน่ใจ?').then(function(ok) {
+      if (!ok) return;
+      gasRun('resetUsers', {}, function(r) {
+        if (r && r.success) { showToast('รีเซ็ตสำเร็จ กรุณาสมัครบัญชีใหม่', 'success'); setTimeout(function(){ window.location.href='?page=index'; },2000); }
+        else showToast((r && r.message) || t('msg_error'), 'error');
+      });
+    });
+  }
+  </script>
+</body>
+</html>
