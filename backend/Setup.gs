@@ -225,11 +225,51 @@ function forceReAuth() {
 }
 
 // ============================================================
+// สร้าง Spreadsheet ใหม่ แล้วบันทึก ID ลง PropertiesService
+// วิธีใช้: กด ▶ Run — ดู Log แล้วคัดลอก ID ใส่ Config.gs
+// ============================================================
+function initSpreadsheet() {
+  try {
+    // ลองเปิด ID เดิมก่อน
+    var existingId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || CONFIG.SPREADSHEET_ID;
+    try {
+      var existing = SpreadsheetApp.openById(existingId);
+      Logger.log('✅ Spreadsheet เดิมยังใช้ได้: ' + existing.getName() + ' (ID: ' + existingId + ')');
+      return;
+    } catch(e) {
+      Logger.log('⚠️ ไม่พบ Spreadsheet เดิม — กำลังสร้างใหม่...');
+    }
+
+    // สร้างใหม่
+    var ss = SpreadsheetApp.create('BandManagement_Database');
+    var newId = ss.getId();
+
+    // ย้ายไปใส่โฟลเดอร์
+    try {
+      var folder = DriveApp.getFolderById('1chknCPBwHetWY6-Dj_LSLig4q_9I1ujy');
+      var file = DriveApp.getFileById(newId);
+      file.moveTo(folder);
+      Logger.log('📁 ย้ายไปโฟลเดอร์เรียบร้อย');
+    } catch(e) {
+      Logger.log('⚠️ ย้ายโฟลเดอร์ไม่ได้ (ไม่เป็นไร): ' + e.toString());
+    }
+
+    // บันทึก ID
+    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', newId);
+    Logger.log('✅ สร้าง Spreadsheet ใหม่สำเร็จ!');
+    Logger.log('🆔 NEW SPREADSHEET_ID = ' + newId);
+    Logger.log('👉 คัดลอก ID นี้ไปใส่ใน Config.gs บรรทัด SPREADSHEET_ID');
+  } catch(err) {
+    Logger.log('❌ Error: ' + err.toString());
+  }
+}
+
+// ============================================================
 // ยกระดับผู้ใช้เป็น Admin
 // วิธีใช้: แก้ EMAIL_TO_PROMOTE แล้วกด ▶ Run
 // ============================================================
 function promoteToAdmin() {
-  var EMAIL_TO_PROMOTE = 'ใส่อีเมลของคุณที่นี่'; // <-- แก้ตรงนี้
+  var EMAIL_TO_PROMOTE = 'krumum.piano@gmail.com';
 
   if (EMAIL_TO_PROMOTE === 'ใส่อีเมลของคุณที่นี่' || !EMAIL_TO_PROMOTE.includes('@')) {
     Logger.log('❌ กรุณาแก้ EMAIL_TO_PROMOTE ให้เป็นอีเมลจริงก่อน');
