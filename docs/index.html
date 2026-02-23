@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -47,7 +47,7 @@
         <div class="form-group">
           <label for="password">
             <span data-i18n="password">รหัสผ่าน</span>
-            <a href="?page=forgot-password" class="forgot-link" data-i18n="forgotPassword">ลืมรหัสผ่าน?</a>
+            <a href="forgot-password.html" class="forgot-link" data-i18n="forgotPassword">ลืมรหัสผ่าน?</a>
           </label>
           <input type="password" id="password" autocomplete="current-password" data-i18n-placeholder="enterPassword" placeholder="กรุณากรอกรหัสผ่าน" required>
           <div class="err-msg" id="passwordError"></div>
@@ -62,9 +62,9 @@
       </button>
       <div class="auth-footer">
         <span data-i18n="noAccount">ยังไม่มีบัญชี?</span>
-        <a href="?page=register" data-i18n="registerNew">สมัครสมาชิกใหม่</a>
+        <a href="register.html" data-i18n="registerNew">สมัครสมาชิกใหม่</a>
         &nbsp;|&nbsp;
-        <a href="?page=terms" data-i18n="terms_link">ข้อกำหนดการใช้งาน</a>
+        <a href="terms.html" data-i18n="terms_link">ข้อกำหนดการใช้งาน</a>
       </div>
     </div>
   </div>
@@ -99,36 +99,20 @@
       var btn = document.getElementById('loginBtn');
       btn.disabled = true; btn.textContent = t('loading');
 
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function(r) {
-            btn.disabled = false; btn.textContent = t('login');
-            if (r && r.success) {
-              localStorage.setItem('auth_token', r.token);
-              localStorage.setItem('userName', r.userName || '');
-              localStorage.setItem('bandName', r.bandName || '');
-              localStorage.setItem('bandId', r.bandId || '');
-              localStorage.setItem('userRole', r.role || 'member');
-              if (r.role === 'manager' || r.role === 'admin') localStorage.setItem('bandManager', '1');
-              window.location.href = '?page=dashboard';
-            } else {
-              document.getElementById('emailError').textContent = (r && r.message) || t('msg_error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            btn.disabled = false; btn.textContent = t('login');
-            document.getElementById('emailError').textContent = err.message || t('msg_error');
-          })
-          .doPostFromClient({ action: 'login', email: email, password: password });
-      } else {
-        // offline demo
+      gasRun('login', { email: email, password: password }, function(r) {
         btn.disabled = false; btn.textContent = t('login');
-        if (typeof showToast === 'function') showToast('Demo mode — กรุณา Deploy GAS ก่อนล็อกอินจริง', 'info');
-        setTimeout(function() {
-          ensureDemoSession();
+        if (r && r.success) {
+          localStorage.setItem('auth_token', r.token);
+          localStorage.setItem('userName', r.userName || '');
+          localStorage.setItem('bandName', r.bandName || '');
+          localStorage.setItem('bandId', r.bandId || '');
+          localStorage.setItem('userRole', r.role || 'member');
+          if (r.role === 'manager' || r.role === 'admin') localStorage.setItem('bandManager', '1');
           window.location.href = 'dashboard.html';
-        }, 1000);
-      }
+        } else {
+          document.getElementById('emailError').textContent = (r && r.message) || t('msg_error');
+        }
+      });
     });
 
     demoBtn.addEventListener('click', function() {

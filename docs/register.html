@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -69,7 +69,7 @@
       </form>
       <div class="auth-footer">
         <span data-i18n="haveAccount">มีบัญชีแล้ว?</span>
-        <a href="?page=index" data-i18n="login">เข้าสู่ระบบ</a>
+        <a href="index.html" data-i18n="login">เข้าสู่ระบบ</a>
       </div>
     </div>
   </div>
@@ -103,26 +103,15 @@
       var btn = document.getElementById('regBtn');
       btn.disabled = true; btn.textContent = t('loading');
 
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function(r) {
-            btn.disabled = false; btn.textContent = t('registerNew');
-            if (r && r.success) {
-              showToast(t('msg_success'), 'success');
-              setTimeout(function() { window.location.href = '?page=index'; }, 1500);
-            } else {
-              document.getElementById('generalError').textContent = (r && r.message) || t('msg_error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            btn.disabled = false; btn.textContent = t('registerNew');
-            document.getElementById('generalError').textContent = err.message || t('msg_error');
-          })
-          .doPostFromClient({ action: 'register', name: name, email: email, password: pw, bandName: band, inviteCode: invite });
-      } else {
-        btn.disabled = false;
-        if (typeof showToast === 'function') showToast('Demo mode — Deploy GAS ก่อนสมัครสมาชิกจริง', 'info');
-      }
+      gasRun('register', { name: name, email: email, password: pw, bandName: band, inviteCode: invite }, function(r) {
+        btn.disabled = false; btn.textContent = t('registerNew');
+        if (r && r.success) {
+          if (typeof showToast === 'function') showToast('สมัครเรียบร้อย! โปรดล็อกอินเพื่อเข้าใช้งาน', 'success');
+          setTimeout(function() { window.location.href = 'index.html'; }, 1500);
+        } else {
+          document.getElementById('generalError').textContent = (r && r.message) || t('msg_error');
+        }
+      });
     });
   });
   </script>
