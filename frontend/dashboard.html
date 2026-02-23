@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <?!= include('css_theme') ?>
+  <?!= include('css_nav') ?>
+  <?!= include('css_browser-compat') ?>
+  <style>
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--spacing-lg);margin-bottom:var(--spacing-xl)}
+    .stat-card{background:var(--premium-white);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);padding:var(--spacing-xl);display:flex;align-items:center;gap:var(--spacing-md)}
+    .stat-icon{width:52px;height:52px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+    .stat-icon.gold{background:#fef3c7}.stat-icon.blue{background:#dbeafe}.stat-icon.green{background:#d1fae5}.stat-icon.purple{background:#ede9fe}
+    .stat-body h3{font-size:var(--text-2xl);font-weight:700;color:var(--premium-text)}.stat-body p{font-size:var(--text-sm);color:var(--premium-text-light)}
+    .dash-row{display:grid;grid-template-columns:2fr 1fr;gap:var(--spacing-xl)}
+    @media(max-width:768px){.dash-row{grid-template-columns:1fr}}
+    .quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-sm)}
+    .quick-btn{padding:var(--spacing-md);border-radius:var(--radius-md);background:var(--premium-light-gray);border:none;cursor:pointer;text-align:center;font-size:var(--text-sm);font-family:var(--font-family-body);color:var(--premium-text);transition:background .2s,transform .1s}
+    .quick-btn:hover{background:var(--premium-gold);color:#fff;transform:translateY(-1px)}
+    .job-item{display:flex;align-items:center;gap:var(--spacing-md);padding:var(--spacing-md) 0;border-bottom:1px solid var(--premium-light-gray)}
+    .job-item:last-child{border-bottom:none}
+    .job-date-box{width:48px;text-align:center;background:var(--premium-off-white);border-radius:var(--radius-md);padding:6px}
+    .job-date-box .dd{font-size:var(--text-xl);font-weight:700;color:var(--premium-gold);line-height:1}
+    .job-date-box .mm{font-size:10px;color:var(--premium-text-muted);text-transform:uppercase}
+    .job-info h4{font-size:var(--text-sm);font-weight:600;margin:0}
+    .job-info p{font-size:var(--text-xs);color:var(--premium-text-muted);margin:2px 0 0}
+    .finance-row{display:flex;justify-content:space-between;padding:var(--spacing-sm) 0;border-bottom:1px solid var(--premium-light-gray);font-size:var(--text-sm)}
+    .finance-row:last-child{border-bottom:none}
+    .finance-row .label{color:var(--premium-text-light)}
+    .finance-row .val-pos{color:#276749;font-weight:600}
+    .finance-row .val-neg{color:#c53030;font-weight:600}
+    .welcome-bar{background:linear-gradient(135deg,#2d3748,#4a5568);color:#fff;border-radius:var(--radius-xl);padding:var(--spacing-xl) var(--spacing-2xl);margin-bottom:var(--spacing-xl);display:flex;align-items:center;justify-content:space-between}
+    .welcome-bar h2{font-size:var(--text-xl);font-weight:700;margin:0}
+    .welcome-bar p{font-size:var(--text-sm);color:#cbd5e0;margin:4px 0 0}
+    @media(max-width:480px){.welcome-bar{flex-direction:column;align-items:flex-start;gap:var(--spacing-sm)}.quick-actions{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <main>
+    <div class="container">
+      <div class="welcome-bar">
+        <div>
+          <h2>🎵 <span id="welcomeName"></span></h2>
+          <p id="welcomeBand"></p>
+        </div>
+        <div style="font-size:32px">🥁</div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icon gold">🎸</div>
+          <div class="stat-body"><h3 id="statMembers">—</h3><p data-i18n="nav_members">สมาชิกวง</p></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">📅</div>
+          <div class="stat-body"><h3 id="statJobs">—</h3><p data-i18n="upcomingJobs">งานที่กำลังจะมาถึง</p></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">💰</div>
+          <div class="stat-body"><h3 id="statRevenue">—</h3><p data-i18n="revenueMonth">รายรับเดือนนี้</p></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">📄</div>
+          <div class="stat-body"><h3 id="statQuotations">—</h3><p data-i18n="nav_quotation">ใบเสนอราคา</p></div>
+        </div>
+      </div>
+
+      <div class="dash-row">
+        <!-- Upcoming Jobs -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title" data-i18n="upcomingJobs">งานที่กำลังจะมาถึง</h3>
+            <a href="?page=schedule" class="btn btn-ghost btn-sm" data-i18n="viewAll">ดูทั้งหมด</a>
+          </div>
+          <div id="jobList">
+            <div class="empty-state"><p data-i18n="noData">ไม่มีข้อมูล</p></div>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div>
+          <!-- Quick Actions -->
+          <div class="card" style="margin-bottom:var(--spacing-xl)">
+            <div class="card-header"><h3 class="card-title" data-i18n="quickActions">ทางลัด</h3></div>
+            <div class="quick-actions">
+              <button class="quick-btn" onclick="nav('schedule')">📅 <span data-i18n="nav_schedule">ตารางงาน</span></button>
+              <button class="quick-btn" onclick="nav('attendance-payroll')">💳 <span data-i18n="nav_payroll">เบิกเงิน</span></button>
+              <button class="quick-btn" onclick="nav('quotation')">📃 <span data-i18n="nav_quotation">ใบเสนอราคา</span></button>
+              <button class="quick-btn" onclick="nav('band-info')">🎵 <span data-i18n="nav_bandInfo">ข้อมูลวง</span></button>
+              <button class="quick-btn" onclick="nav('songs')">🎼 <span data-i18n="nav_songs">รายการเพลง</span></button>
+              <button class="quick-btn" onclick="nav('equipment')">🎸 <span data-i18n="nav_equipment">อุปกรณ์</span></button>
+            </div>
+          </div>
+          <!-- Finance Summary -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title" data-i18n="financeThisMonth">การเงินเดือนนี้</h3>
+              <a href="?page=statistics" class="btn btn-ghost btn-sm" data-i18n="viewAll">ดูทั้งหมด</a>
+            </div>
+            <div id="financeList"><div class="empty-state"><p data-i18n="loading">กำลังโหลด...</p></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <?!= include('js_i18n') ?>
+  <?!= include('js_app') ?>
+  <?!= include('js_nav') ?>
+  <script>
+  function nav(page) {
+    var isGas = typeof google !== 'undefined' && google.script;
+    window.location.href = isGas ? '?page=' + page : page + '.html';
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
+    renderMainNav('mainNav');
+    applyTranslations();
+
+    var name = localStorage.getItem('userName') || 'ผู้ใช้งาน';
+    var band = localStorage.getItem('bandName') || 'วงดนตรี';
+    document.getElementById('welcomeName').textContent = 'สวัสดี, ' + name;
+    document.getElementById('welcomeBand').textContent = '🎵 ' + band;
+
+    loadDashboard();
+  });
+
+  function loadDashboard() {
+    gasRun('getDashboardSummary', {}, function(r) {
+      if (!r || !r.success) return;
+      var d = r.data || {};
+      document.getElementById('statMembers').textContent = d.memberCount != null ? d.memberCount : '—';
+      document.getElementById('statJobs').textContent = d.upcomingJobs != null ? d.upcomingJobs : '—';
+      document.getElementById('statRevenue').textContent = d.revenueMonth != null ? formatCurrency(d.revenueMonth) : '—';
+      document.getElementById('statQuotations').textContent = d.quotationCount != null ? d.quotationCount : '—';
+
+      // jobs
+      var jl = document.getElementById('jobList');
+      if (d.jobs && d.jobs.length) {
+        jl.innerHTML = d.jobs.slice(0,5).map(function(j) {
+          var dt = new Date(j.date);
+          var dd = isNaN(dt) ? '?' : dt.getDate();
+          var mm = isNaN(dt) ? '' : dt.toLocaleString('th-TH',{month:'short'});
+          return '<div class="job-item"><div class="job-date-box"><div class="dd">'+dd+'</div><div class="mm">'+mm+'</div></div>'
+            +'<div class="job-info"><h4>'+escapeHtml(j.venue||'')+'</h4>'
+            +'<p>'+escapeHtml(j.band||'')+' · '+escapeHtml(j.type||'')+'</p></div></div>';
+        }).join('');
+      } else { jl.innerHTML = '<div class="empty-state"><p>ยังไม่มีงาน</p></div>'; }
+
+      // finance
+      var fl = document.getElementById('financeList');
+      var fin = d.finance || {};
+      fl.innerHTML = [
+        ['รายรับทั้งหมด', formatCurrency(fin.income||0), 'val-pos'],
+        ['รายจ่ายทั้งหมด', formatCurrency(fin.expense||0), 'val-neg'],
+        ['กองกลาง', formatCurrency(fin.fund||0), ''],
+        ['คงเหลือ', formatCurrency((fin.income||0)-(fin.expense||0)), (fin.income||0)>=(fin.expense||0)?'val-pos':'val-neg'],
+      ].map(function(row){
+        return '<div class="finance-row"><span class="label">'+row[0]+'</span><span class="'+row[2]+'">'+row[1]+'</span></div>';
+      }).join('');
+    });
+  }
+  </script>
+</body>
+</html>

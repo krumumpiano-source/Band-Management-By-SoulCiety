@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จ่ายคนนอก — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <?!= include('css_theme') ?>
+  <?!= include('css_nav') ?>
+  <?!= include('css_browser-compat') ?>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <div id="confirmModal"></div>
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title" data-i18n="nav_externalPayout">จ่ายค่าตัวคนนอก</h1>
+        <a href="?page=attendance-payroll" class="btn btn-ghost" data-i18n="back">← กลับ</a>
+      </div>
+      <div class="card" style="max-width:600px">
+        <form id="payoutForm">
+          <div class="form-group"><label>ชื่อผู้รับเงิน *</label><input type="text" id="payeeName" required></div>
+          <div class="form-group"><label>ประเภท</label>
+            <select id="payeeType">
+              <option value="นักดนตรีเกสต์">นักดนตรีเกสต์</option>
+              <option value="นักร้องเกสต์">นักร้องเกสต์</option>
+              <option value="เทคนิเชียน">เทคนิเชียน</option>
+              <option value="อื่นๆ">อื่นๆ</option>
+            </select>
+          </div>
+          <div class="form-group"><label>ค่าตัว (บาท) *</label><input type="number" id="amount" min="0" required></div>
+          <div class="form-group"><label>วันที่</label><input type="date" id="payDate"></div>
+          <div class="form-group"><label>งาน (ถ้ามี)</label>
+            <select id="jobRef"><option value="">— ไม่ระบุ —</option></select>
+          </div>
+          <div class="form-group"><label>หมายเหตุ</label><textarea id="notes" rows="2"></textarea></div>
+          <div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm)">
+            <button type="button" class="btn btn-secondary" onclick="history.back()" data-i18n="cancel">ยกเลิก</button>
+            <button type="submit" class="btn btn-primary" id="saveBtn" data-i18n="save">บันทึก</button>
+          </div>
+        </form>
+      </div>
+      <div class="card" style="margin-top:var(--spacing-xl)">
+        <div class="card-header"><h3 class="card-title">ประวัติ</h3></div>
+        <div class="table-responsive">
+          <table class="table"><thead><tr><th>ผู้รับ</th><th>ประเภท</th><th>จำนวนเงิน</th><th>วันที่</th><th>หมายเหตุ</th><th></th></tr></thead>
+          <tbody id="payoutBody"><tr><td colspan="6" class="text-center">กำลังโหลด...</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+  </main>
+  <?!= include('js_i18n') ?>
+  <?!= include('js_app') ?>
+  <?!= include('js_nav') ?>
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    document.getElementById('payDate').value = new Date().toISOString().substring(0,10);
+    gasRun('getSchedule',{},function(r){
+      var sel=document.getElementById('jobRef'); var jobs=(r&&r.data)||[];
+      jobs.forEach(function(j){ var o=document.createElement('option'); o.value=j.jobId||''; o.textContent=formatDate(j.date)+' — '+(j.venue||''); sel.appendChild(o); });
+    });
+    loadPayouts();
+  });
+  document.getElementById('payoutForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn=document.getElementById('saveBtn'); btn.disabled=true; btn.textContent=t('loading');
+    gasRun('addExternalPayout',{
+      payeeName: document.getElementById('payeeName').value.trim(),
+      payeeType: document.getElementById('payeeType').value,
+      amount: document.getElementById('amount').value,
+      date: document.getElementById('payDate').value,
+      jobId: document.getElementById('jobRef').value,
+      notes: document.getElementById('notes').value
+    }, function(r){
+      btn.disabled=false; btn.textContent=t('save');
+      if(r&&r.success){ showToast(t('msg_saved'),'success'); document.getElementById('payoutForm').reset(); loadPayouts(); }
+      else showToast((r&&r.message)||t('msg_error'),'error');
+    });
+  });
+  function loadPayouts(){
+    gasRun('getAllExternalPayouts',{},function(r){
+      var rows=(r&&r.data)||[];
+      var tbody=document.getElementById('payoutBody');
+      if(!rows.length){ tbody.innerHTML='<tr><td colspan="6" class="text-center">'+t('noData')+'</td></tr>'; return; }
+      tbody.innerHTML=rows.map(function(row){
+        return '<tr><td>'+escapeHtml(row.payeeName||'')+'</td><td>'+escapeHtml(row.payeeType||'')+'</td>'
+          +'<td>'+formatCurrency(row.amount||0)+'</td><td>'+formatDate(row.date)+'</td>'
+          +'<td>'+escapeHtml(row.notes||'')+'</td>'
+          +'<td><button class="btn btn-danger btn-sm" onclick="deletePayout(\''+escapeHtml(row.payoutId||'')+'\')">🗑️</button></td></tr>';
+      }).join('');
+    });
+  }
+  function deletePayout(id){
+    showConfirm(t('confirmDeleteTitle'),t('confirmDeleteMsg')).then(function(ok){
+      if(!ok) return;
+      gasRun('deleteExternalPayout',{payoutId:id},function(r){
+        if(r&&r.success){ showToast(t('msg_deleted'),'success'); loadPayouts(); }
+        else showToast((r&&r.message)||t('msg_error'),'error');
+      });
+    });
+  }
+  </script>
+</body>
+</html>

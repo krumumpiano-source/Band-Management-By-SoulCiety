@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สัญญาจ้าง — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <?!= include('css_theme') ?>
+  <?!= include('css_nav') ?>
+  <?!= include('css_browser-compat') ?>
+  <style>
+    @media print{#mainNav,.btn,.modal-backdrop{display:none!important}.print-area{max-width:780px;margin:auto;font-family:'Sarabun',sans-serif}}
+    .contract-preview{background:#fff;padding:40px;border-radius:var(--radius-lg);box-shadow:var(--shadow-md);line-height:2;font-size:15px}
+    .contract-preview h2{text-align:center;font-size:1.4rem;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:20px}
+    .contract-party{margin-bottom:16px}
+    .contract-sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:60px}
+    .sign-block{text-align:center;border-top:1px solid #000;padding-top:8px}
+    .preview-vars{background:var(--premium-off-white);border-radius:var(--radius-lg);padding:var(--spacing-xl);margin-bottom:var(--spacing-xl)}
+    .prev-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--spacing-md)}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title" data-i18n="nav_contract">สัญญาจ้าง</h1>
+        <div style="display:flex;gap:var(--spacing-sm)">
+          <button class="btn btn-secondary" onclick="generatePreview()">👁 ดูตัวอย่าง</button>
+          <button class="btn btn-primary" onclick="window.print()">🖨️ <span data-i18n="print">พิมพ์</span></button>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="preview-vars">
+        <h3 style="margin:0 0 var(--spacing-md);font-size:var(--text-base)">ข้อมูลสัญญา</h3>
+        <div class="prev-row">
+          <div class="form-group"><label>วันที่สัญญา</label><input type="date" id="contractDate"></div>
+          <div class="form-group"><label>ชื่อผู้จ้าง</label><input type="text" id="employerName" placeholder="ชื่อ-นามสกุล หรือบริษัท"></div>
+          <div class="form-group"><label>ชื่อวงดนตรี</label><input type="text" id="bandNameCt"></div>
+          <div class="form-group"><label>วันแสดง</label><input type="date" id="eventDate"></div>
+        </div>
+        <div class="prev-row">
+          <div class="form-group"><label>สถานที่</label><input type="text" id="eventVenue"></div>
+          <div class="form-group"><label>เวลาเริ่ม</label><input type="time" id="eventStartTime"></div>
+          <div class="form-group"><label>เวลาจบ</label><input type="time" id="eventEndTime"></div>
+          <div class="form-group"><label>ค่าตัวรวม (บาท)</label><input type="number" id="totalFee" value="0"></div>
+        </div>
+        <div class="prev-row">
+          <div class="form-group"><label>เงินมัดจำ (บาท)</label><input type="number" id="deposit" value="0"></div>
+          <div class="form-group"><label>ชำระส่วนที่เหลือ</label><input type="text" id="balanceDate" placeholder="วันแสดง/ก่อนแสดง"></div>
+          <div class="form-group"><label>ชื่อผู้รับมัดจำ</label><input type="text" id="receiverName"></div>
+        </div>
+        <div class="form-group"><label>เงื่อนไขเพิ่มเติม</label><textarea id="extraTerms" rows="3" placeholder="ระบุเงื่อนไขพิเศษ เช่น รวม/ไม่รวมเครื่องเสียง, เบรค, อาหาร..."></textarea></div>
+      </div>
+
+      <!-- Contract Preview -->
+      <div class="contract-preview print-area" id="contractDoc">
+        <h2>สัญญาจ้างวงดนตรี</h2>
+        <div class="contract-party" id="partySection">
+          <p>สัญญานี้ทำขึ้นเมื่อวันที่ <strong id="pDate">—</strong></p>
+          <p>ระหว่าง <strong id="pEmployer">—</strong> (ผู้จ้าง)</p>
+          <p>กับ <strong id="pBand">—</strong> (วงดนตรี)</p>
+        </div>
+        <p><strong>ข้อ 1: งานและสถานที่</strong></p>
+        <p>ผู้จ้างตกลงจ้างวงดนตรีให้แสดงดนตรีสด ณ <span id="pVenue">—</span> วันที่ <span id="pEventDate">—</span> เวลา <span id="pTime">—</span></p>
+        <p><strong>ข้อ 2: ค่าตัว</strong></p>
+        <p>ผู้จ้างตกลงจ่ายค่าตัวรวมทั้งสิ้น <span id="pFee">—</span> บาท โดยชำระเป็นเงินมัดจำ <span id="pDeposit">—</span> บาท ณ วันเซ็นสัญญา ส่วนที่เหลือ <span id="pBalance">—</span> บาท ชำระ<span id="pBalanceDate">—</span></p>
+        <p><strong>ข้อ 3: เงื่อนไขเพิ่มเติม</strong></p>
+        <p id="pExtraTerms">—</p>
+        <p><strong>ข้อ 4: การยกเลิก</strong></p>
+        <p>หากผู้จ้างยกเลิกงานน้อยกว่า 7 วัน เงินมัดจำไม่สามารถขอคืนได้ หากวงดนตรียกเลิกงานจะคืนเงินมัดจำเต็มจำนวน</p>
+        <div class="contract-sign">
+          <div class="sign-block">
+            <p>________________________</p>
+            <p>(<span id="pSignEmployer">ผู้จ้าง</span>)</p>
+            <p>วันที่ ________________________</p>
+          </div>
+          <div class="sign-block">
+            <p>________________________</p>
+            <p>(<span id="pSignReceiver">ผู้รับมอบ</span>)</p>
+            <p>วันที่ ________________________</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <?!= include('js_i18n') ?>
+  <?!= include('js_app') ?>
+  <?!= include('js_nav') ?>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    document.getElementById('contractDate').value = new Date().toISOString().substring(0,10);
+    var band = localStorage.getItem('bandName') || '';
+    document.getElementById('bandNameCt').value = band;
+    generatePreview();
+  });
+
+  function generatePreview() {
+    document.getElementById('pDate').textContent = formatDate(document.getElementById('contractDate').value);
+    document.getElementById('pEmployer').textContent = document.getElementById('employerName').value || '—';
+    document.getElementById('pBand').textContent = document.getElementById('bandNameCt').value || '—';
+    document.getElementById('pVenue').textContent = document.getElementById('eventVenue').value || '—';
+    document.getElementById('pEventDate').textContent = formatDate(document.getElementById('eventDate').value) || '—';
+    var st = document.getElementById('eventStartTime').value, et = document.getElementById('eventEndTime').value;
+    document.getElementById('pTime').textContent = (st||'?')+' – '+(et||'?') + ' น.';
+    var fee = parseFloat(document.getElementById('totalFee').value)||0;
+    var dep = parseFloat(document.getElementById('deposit').value)||0;
+    document.getElementById('pFee').textContent = formatCurrency(fee);
+    document.getElementById('pDeposit').textContent = formatCurrency(dep);
+    document.getElementById('pBalance').textContent = formatCurrency(fee-dep);
+    document.getElementById('pBalanceDate').textContent = document.getElementById('balanceDate').value || 'ก่อนแสดง';
+    document.getElementById('pExtraTerms').textContent = document.getElementById('extraTerms').value || '—';
+    document.getElementById('pSignEmployer').textContent = document.getElementById('employerName').value || 'ผู้จ้าง';
+    document.getElementById('pSignReceiver').textContent = document.getElementById('receiverName').value || 'ผู้รับมอบ';
+  }
+
+  ['contractDate','employerName','bandNameCt','eventDate','eventVenue','eventStartTime','eventEndTime','totalFee','deposit','balanceDate','receiverName','extraTerms'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('input', generatePreview);
+    if (el) el.addEventListener('change', generatePreview);
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายการเพลง — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <?!= include('css_theme') ?>
+  <?!= include('css_nav') ?>
+  <?!= include('css_browser-compat') ?>
+  <style>
+    .search-bar{display:flex;gap:var(--spacing-md);margin-bottom:var(--spacing-lg);flex-wrap:wrap}
+    .search-bar input{flex:1 1 220px}
+    .search-bar select{flex:0 0 160px}
+    .song-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--spacing-lg)}
+    .song-card{background:var(--premium-white);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--spacing-lg);border-left:4px solid var(--premium-gold);transition:box-shadow .2s}
+    .song-card:hover{box-shadow:var(--shadow-md)}
+    .song-card h4{font-size:var(--text-base);font-weight:600;margin:0 0 4px;color:var(--premium-text)}
+    .song-card .artist{font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:var(--spacing-sm)}
+    .song-card .tags{display:flex;gap:6px;flex-wrap:wrap}
+    .tag{background:var(--premium-off-white);border-radius:var(--radius-full);padding:2px 10px;font-size:11px;color:var(--premium-text-light)}
+    .tab-bar{display:flex;gap:0;border-bottom:2px solid var(--premium-light-gray);margin-bottom:var(--spacing-xl)}
+    .tab-btn{padding:var(--spacing-sm) var(--spacing-lg);border:none;background:transparent;cursor:pointer;font-family:var(--font-family-body);font-size:var(--text-sm);color:var(--premium-text-muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s}
+    .tab-btn.active{color:var(--premium-gold);border-bottom-color:var(--premium-gold);font-weight:600}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <div id="confirmModal"></div>
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title" data-i18n="nav_songs">รายการเพลง</h1>
+        <div style="display:flex;gap:var(--spacing-sm)">
+          <a href="?page=setlist" class="btn btn-secondary">📋 <span data-i18n="setlist">เซ็ตลิสต์</span></a>
+          <a href="?page=add-song" class="btn btn-primary">+ <span data-i18n="addSong">เพิ่มเพลง</span></a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="band" onclick="switchTab('band',this)" data-i18n="bandSongs">เพลงของวง</button>
+          <button class="tab-btn" data-tab="global" onclick="switchTab('global',this)" data-i18n="globalSongs">คลังเพลงสากล</button>
+        </div>
+        <div class="search-bar">
+          <input type="text" id="searchQ" data-i18n-placeholder="searchSong" placeholder="ค้นหาเพลง..." oninput="filterSongs()">
+          <select id="filterKey" onchange="filterSongs()">
+            <option value="" data-i18n="allKey">ทุกคีย์</option>
+            <option>C</option><option>D</option><option>E</option><option>F</option>
+            <option>G</option><option>A</option><option>B</option>
+          </select>
+          <select id="filterTempo" onchange="filterSongs()">
+            <option value="" data-i18n="allTempo">ทุกจังหวะ</option>
+            <option>ช้า</option><option>ปานกลาง</option><option>เร็ว</option>
+          </select>
+        </div>
+        <div id="songGrid" class="song-grid"><div class="empty-state" style="grid-column:1/-1"><p data-i18n="loading">กำลังโหลด...</p></div></div>
+      </div>
+    </div>
+  </main>
+
+  <?!= include('js_i18n') ?>
+  <?!= include('js_app') ?>
+  <?!= include('js_nav') ?>
+  <script>
+  var allSongs = [];
+  var currentTab = 'band';
+
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
+    renderMainNav('mainNav');
+    applyTranslations();
+    loadSongs();
+  });
+
+  function switchTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active')});
+    btn.classList.add('active');
+    loadSongs();
+  }
+
+  function loadSongs() {
+    var action = currentTab === 'band' ? 'getAllBandSongs' : 'getAllGlobalSongs';
+    document.getElementById('songGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>กำลังโหลด...</p></div>';
+    gasRun(action, {}, function(r) {
+      allSongs = (r && r.success && r.data) ? r.data : [];
+      renderSongs(allSongs);
+    });
+  }
+
+  function filterSongs() {
+    var q = document.getElementById('searchQ').value.toLowerCase();
+    var key = document.getElementById('filterKey').value;
+    var tempo = document.getElementById('filterTempo').value;
+    var filtered = allSongs.filter(function(s) {
+      return (!q || (s.title||'').toLowerCase().includes(q) || (s.artist||'').toLowerCase().includes(q))
+        && (!key || s.key === key)
+        && (!tempo || s.tempo === tempo);
+    });
+    renderSongs(filtered);
+  }
+
+  function renderSongs(songs) {
+    var grid = document.getElementById('songGrid');
+    if (!songs.length) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>' + t('noData') + '</p></div>'; return;
+    }
+    grid.innerHTML = songs.map(function(s) {
+      var tags = [s.key && ('🎵 '+s.key), s.tempo && ('⏱ '+s.tempo), s.genre && s.genre].filter(Boolean);
+      var editLink = '?page=edit-song&songId='+encodeURIComponent(s.songId||'');
+      return '<div class="song-card">'
+        +'<h4>'+escapeHtml(s.title||'')+'</h4>'
+        +'<div class="artist">'+escapeHtml(s.artist||'')+'</div>'
+        +'<div class="tags">'+ tags.map(function(tg){return '<span class="tag">'+escapeHtml(tg)+'</span>';}).join('') +'</div>'
+        +(currentTab==='band'?'<div style="margin-top:var(--spacing-sm);display:flex;gap:6px">'
+          +'<a href="'+editLink+'" class="btn btn-ghost btn-sm">✏️</a>'
+          +'<button class="btn btn-danger btn-sm" onclick="deleteSong(\''+escapeHtml(s.songId||'')+'\')">🗑️</button>'
+          +'</div>':'')
+        +'</div>';
+    }).join('');
+  }
+
+  function deleteSong(id) {
+    showConfirm(t('confirmDeleteTitle'), t('confirmDeleteMsg')).then(function(ok) {
+      if (!ok) return;
+      gasRun('deleteSong', { songId: id }, function(r) {
+        if (r && r.success) { showToast(t('msg_deleted'), 'success'); loadSongs(); }
+        else showToast((r && r.message)||t('msg_error'), 'error');
+      });
+    });
+  }
+  </script>
+</body>
+</html>

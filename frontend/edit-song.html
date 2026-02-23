@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แก้ไขเพลง — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <?!= include('css_theme') ?>
+  <?!= include('css_nav') ?>
+  <?!= include('css_browser-compat') ?>
+  <style>.form-r{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}@media(max-width:480px){.form-r{grid-template-columns:1fr}}</style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <main>
+    <div class="container" style="max-width:640px">
+      <div class="page-header">
+        <h1 class="page-title" data-i18n="editSong">แก้ไขเพลง</h1>
+        <a href="?page=songs" class="btn btn-ghost" data-i18n="back">← กลับ</a>
+      </div>
+      <div class="card">
+        <form id="editSongForm">
+          <input type="hidden" id="songId">
+          <div class="form-r">
+            <div class="form-group"><label data-i18n="songTitle">ชื่อเพลง *</label><input type="text" id="title" required></div>
+            <div class="form-group"><label data-i18n="artist">ศิลปิน</label><input type="text" id="artist"></div>
+          </div>
+          <div class="form-r">
+            <div class="form-group">
+              <label data-i18n="key">คีย์</label>
+              <select id="key"><option value="">—</option><option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option><option>F#</option><option>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option></select>
+            </div>
+            <div class="form-group">
+              <label data-i18n="tempo">จังหวะ</label>
+              <select id="tempo"><option value="">—</option><option value="ช้า">ช้า</option><option value="ปานกลาง">ปานกลาง</option><option value="เร็ว">เร็ว</option></select>
+            </div>
+          </div>
+          <div class="form-r">
+            <div class="form-group"><label data-i18n="genre">แนวเพลง</label><input type="text" id="genre"></div>
+            <div class="form-group"><label data-i18n="duration">ความยาว (นาที)</label><input type="number" id="duration" min="0" step="0.5"></div>
+          </div>
+          <div class="form-group"><label data-i18n="lyrics">เนื้อเพลง / Chords</label><textarea id="lyrics" rows="5"></textarea></div>
+          <div class="form-group"><label data-i18n="youtubeUrl">YouTube / Link</label><input type="url" id="youtubeUrl"></div>
+          <div class="form-group"><label data-i18n="notes">หมายเหตุ</label><textarea id="notes" rows="2"></textarea></div>
+          <div style="display:flex;gap:var(--spacing-md);justify-content:flex-end">
+            <a href="?page=songs" class="btn btn-secondary" data-i18n="cancel">ยกเลิก</a>
+            <button type="submit" class="btn btn-primary" id="saveBtn" data-i18n="save">บันทึก</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+  <?!= include('js_i18n') ?>
+  <?!= include('js_app') ?>
+  <?!= include('js_nav') ?>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    var params = new URLSearchParams(window.location.search);
+    var songId = params.get('songId') || '';
+    document.getElementById('songId').value = songId;
+    if (songId) {
+      gasRun('getSong', { songId: songId }, function(r) {
+        if (r && r.success && r.data) {
+          var s = r.data;
+          document.getElementById('title').value = s.title || '';
+          document.getElementById('artist').value = s.artist || '';
+          document.getElementById('key').value = s.key || '';
+          document.getElementById('tempo').value = s.tempo || '';
+          document.getElementById('genre').value = s.genre || '';
+          document.getElementById('duration').value = s.duration || '';
+          document.getElementById('lyrics').value = s.lyrics || '';
+          document.getElementById('youtubeUrl').value = s.youtubeUrl || '';
+          document.getElementById('notes').value = s.notes || '';
+        }
+      });
+    }
+    document.getElementById('editSongForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('saveBtn'); btn.disabled = true; btn.textContent = t('loading');
+      gasRun('updateSong', {
+        songId: document.getElementById('songId').value,
+        title: document.getElementById('title').value.trim(),
+        artist: document.getElementById('artist').value.trim(),
+        key: document.getElementById('key').value,
+        tempo: document.getElementById('tempo').value,
+        genre: document.getElementById('genre').value.trim(),
+        duration: document.getElementById('duration').value,
+        lyrics: document.getElementById('lyrics').value,
+        youtubeUrl: document.getElementById('youtubeUrl').value.trim(),
+        notes: document.getElementById('notes').value.trim()
+      }, function(r) {
+        btn.disabled = false; btn.textContent = t('save');
+        if (r && r.success) { showToast(t('msg_saved'),'success'); setTimeout(function(){ window.location.href='?page=songs'; },1000); }
+        else showToast((r&&r.message)||t('msg_error'),'error');
+      });
+    });
+  });
+  </script>
+</body>
+</html>

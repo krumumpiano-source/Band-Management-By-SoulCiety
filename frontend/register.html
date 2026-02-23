@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สมัครสมาชิก — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <?!= include('css_theme') ?>
+  <?!= include('css_browser-compat') ?>
+  <style>
+    body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:var(--spacing-md)}
+    .auth-wrap{width:100%;max-width:480px}
+    .auth-card{background:var(--premium-white);border-radius:var(--radius-xl);box-shadow:var(--shadow-2xl);padding:var(--spacing-2xl)}
+    .auth-logo{text-align:center;margin-bottom:var(--spacing-xl)}
+    .auth-logo h1{font-family:var(--font-family-display);font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
+    .lang-top{position:fixed;top:16px;right:16px}
+    .btn-full{width:100%;justify-content:center;padding:12px;font-size:var(--text-base);margin-top:var(--spacing-sm)}
+    .err-msg{color:#c53030;font-size:var(--text-xs);margin-top:4px;min-height:16px}
+    .auth-footer{text-align:center;margin-top:var(--spacing-lg);font-size:var(--text-sm);color:var(--premium-text-light)}
+    .auth-footer a{color:var(--premium-gold);font-weight:600;text-decoration:none}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+    @media(max-width:480px){.form-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="lang-top"><div id="langToggle"></div></div>
+  <div id="toast"></div>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <h1>🎵 SoulCiety</h1>
+        <p data-i18n="registerNew">สมัครสมาชิกใหม่</p>
+      </div>
+      <form id="registerForm">
+        <div class="form-group">
+          <label data-i18n="fullName">ชื่อ-นามสกุล</label>
+          <input type="text" id="name" data-i18n-placeholder="enterFullName" placeholder="กรุณากรอกชื่อ-นามสกุล" required>
+          <div class="err-msg" id="nameError"></div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="email">อีเมล</label>
+          <input type="email" id="email" data-i18n-placeholder="enterEmail" placeholder="กรุณากรอกอีเมล" required>
+          <div class="err-msg" id="emailError"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="password">รหัสผ่าน</label>
+            <input type="password" id="password" data-i18n-placeholder="enterPassword" placeholder="รหัสผ่าน (8+ ตัว)" required>
+            <div class="err-msg" id="passwordError"></div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="confirmPassword">ยืนยันรหัสผ่าน</label>
+            <input type="password" id="confirmPassword" data-i18n-placeholder="confirmPassword" placeholder="พิมพ์รหัสผ่านอีกครั้ง" required>
+            <div class="err-msg" id="confirmError"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="bandName">ชื่อวง</label>
+          <input type="text" id="bandName" data-i18n-placeholder="enterBandName" placeholder="กรุณากรอกชื่อวง" required>
+        </div>
+        <div class="form-group">
+          <label data-i18n="inviteCode">รหัสเชิญ (ถ้ามี)</label>
+          <input type="text" id="inviteCode" placeholder="optional">
+        </div>
+        <div class="err-msg" id="generalError"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="regBtn">
+          <span data-i18n="registerNew">สมัครสมาชิก</span>
+        </button>
+      </form>
+      <div class="auth-footer">
+        <span data-i18n="haveAccount">มีบัญชีแล้ว?</span>
+        <a href="?page=index" data-i18n="login">เข้าสู่ระบบ</a>
+      </div>
+    </div>
+  </div>
+  <?!= include('js_i18n') ?>
+  <?!= include('js_app') ?>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof renderLangToggle === 'function') renderLangToggle('langToggle');
+    if (typeof applyTranslations === 'function') applyTranslations();
+
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      ['nameError','emailError','passwordError','confirmError','generalError'].forEach(function(id){
+        document.getElementById(id).textContent = '';
+      });
+      var name = document.getElementById('name').value.trim();
+      var email = document.getElementById('email').value.trim();
+      var pw = document.getElementById('password').value;
+      var cpw = document.getElementById('confirmPassword').value;
+      var band = document.getElementById('bandName').value.trim();
+      var invite = document.getElementById('inviteCode').value.trim();
+
+      var ok = true;
+      if (!name) { document.getElementById('nameError').textContent = 'กรุณากรอกชื่อ'; ok = false; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('emailError').textContent = t('errInvalidEmail'); ok = false; }
+      if (pw.length < 8) { document.getElementById('passwordError').textContent = 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'; ok = false; }
+      if (pw !== cpw) { document.getElementById('confirmError').textContent = 'รหัสผ่านไม่ตรงกัน'; ok = false; }
+      if (!band) { document.getElementById('generalError').textContent = 'กรุณากรอกชื่อวง'; ok = false; }
+      if (!ok) return;
+
+      var btn = document.getElementById('regBtn');
+      btn.disabled = true; btn.textContent = t('loading');
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(r) {
+            btn.disabled = false; btn.textContent = t('registerNew');
+            if (r && r.success) {
+              showToast(t('msg_success'), 'success');
+              setTimeout(function() { window.location.href = '?page=index'; }, 1500);
+            } else {
+              document.getElementById('generalError').textContent = (r && r.message) || t('msg_error');
+            }
+          })
+          .withFailureHandler(function(err) {
+            btn.disabled = false; btn.textContent = t('registerNew');
+            document.getElementById('generalError').textContent = err.message || t('msg_error');
+          })
+          .doPostFromClient({ action: 'register', name: name, email: email, password: pw, bandName: band, inviteCode: invite });
+      } else {
+        btn.disabled = false;
+        if (typeof showToast === 'function') showToast('Demo mode — Deploy GAS ก่อนสมัครสมาชิกจริง', 'info');
+      }
+    });
+  });
+  </script>
+</body>
+</html>
