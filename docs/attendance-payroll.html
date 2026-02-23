@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>????????????? � Band Management By SoulCiety</title>
+  <title>บันทึกเข้างาน — Band Management By SoulCiety</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -38,67 +38,67 @@
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title">?? <span data-i18n="nav_attendance">?????????????</span></h1>
+        <h1 class="page-title">📝 <span data-i18n="nav_attendance">บันทึกเข้างาน</span></h1>
       </div>
 
       <!-- Filter Form -->
       <div class="card" style="margin-bottom:var(--spacing-lg)">
-        <div class="card-header"><h3 class="card-title">?? ????????????????</h3></div>
+        <div class="card-header"><h3 class="card-title">⚙️ ตั้งค่าการบันทึก</h3></div>
         <div class="filter-grid">
           <div class="form-group">
-            <label>???????????????</label>
+            <label>ประเภทการบันทึก</label>
             <select id="recordType">
-              <option value="daily">??????</option>
-              <option value="weekly">??????????</option>
-              <option value="monthly">????????</option>
+              <option value="daily">รายวัน</option>
+              <option value="weekly">รายสัปดาห์</option>
+              <option value="monthly">รายเดือน</option>
             </select>
           </div>
           <div class="form-group" id="dailyDateGroup">
-            <label>???????????</label>
+            <label>วันที่ทำงาน</label>
             <input type="date" id="workDate">
           </div>
           <div class="form-group" id="weeklyDateGroup">
-            <label>???????????</label>
+            <label>วันที่เริ่ม</label>
             <input type="date" id="startDate">
           </div>
           <div class="form-group" id="weeklyDateGroup2" style="display:none">
-            <label>?????????????</label>
+            <label>วันที่สิ้นสุด</label>
             <input type="date" id="endDate">
           </div>
           <div class="form-group" id="monthlyDateGroup">
-            <label>?????/??</label>
+            <label>เดือน/ปี</label>
             <input type="month" id="monthYear">
           </div>
           <div class="form-group">
-            <label>??????? (Venue)</label>
-            <select id="venue"><option value="">-- ???????????? --</option></select>
+            <label>สถานที่ (Venue)</label>
+            <select id="venue"><option value="">-- เลือกสถานที่ --</option></select>
           </div>
           <div class="form-group" style="display:flex;align-items:flex-end">
-            <button id="apLoadBtn" class="btn btn-primary" style="width:100%">?? ?????????</button>
+            <button id="apLoadBtn" class="btn btn-primary" style="width:100%">▶️ โหลดตาราง</button>
           </div>
         </div>
       </div>
 
       <!-- Band Info Card -->
       <div id="bandInfoCard" class="card" style="margin-bottom:var(--spacing-lg)">
-        <div class="card-header"><h3 class="card-title">?? ????????</h3></div>
+        <div class="card-header"><h3 class="card-title">🎸 ข้อมูลวง</h3></div>
         <div class="band-info-grid">
-          <div class="info-item"><div class="info-label">??????</div><div class="info-value" id="bandNameDisplay">-</div></div>
-          <div class="info-item"><div class="info-label">?????????</div><div class="info-value" id="bandManagerDisplay">-</div></div>
-          <div class="info-item"><div class="info-label">???????????</div><div class="info-value" id="memberCountDisplay">-</div></div>
+          <div class="info-item"><div class="info-label">ชื่อวง</div><div class="info-value" id="bandNameDisplay">-</div></div>
+          <div class="info-item"><div class="info-label">หัวหน้าวง</div><div class="info-value" id="bandManagerDisplay">-</div></div>
+          <div class="info-item"><div class="info-label">จำนวนสมาชิก</div><div class="info-value" id="memberCountDisplay">-</div></div>
         </div>
       </div>
 
       <!-- Attendance Table -->
       <div class="card" style="margin-bottom:var(--spacing-lg)">
         <div class="card-header">
-          <h3 class="card-title" id="attendanceTableTitle">?? ????????????</h3>
+          <h3 class="card-title" id="attendanceTableTitle">📋 ตารางเข้างาน</h3>
         </div>
         <div class="table-responsive">
           <table class="table attendance-table" style="min-width:600px">
             <thead id="attendanceTableHead"></thead>
             <tbody id="attendanceTableBody">
-              <tr><td colspan="10" style="text-align:center;color:var(--premium-text-muted);padding:2rem">??????????????????????????? "?????????"</td></tr>
+              <tr><td colspan="10" style="text-align:center;color:var(--premium-text-muted);padding:2rem">กรุณากรอกข้อมูลด้านบนแล้วกด "โหลดตาราง"</td></tr>
             </tbody>
           </table>
         </div>
@@ -106,12 +106,12 @@
 
       <!-- Payout Table -->
       <div class="card" style="margin-bottom:var(--spacing-lg)">
-        <div class="card-header"><h3 class="card-title">?? ?????????????</h3></div>
+        <div class="card-header"><h3 class="card-title">💰 ตารางจ่ายเงิน</h3></div>
         <div class="table-responsive">
           <table class="table payout-table" style="min-width:500px">
             <thead id="payoutTableHead"></thead>
             <tbody id="payoutTableBody">
-              <tr><td colspan="10" style="text-align:center;color:var(--premium-text-muted);padding:2rem">??????????????????????????</td></tr>
+              <tr><td colspan="10" style="text-align:center;color:var(--premium-text-muted);padding:2rem">จะแสดงหลังโหลดตารางเข้างาน</td></tr>
             </tbody>
           </table>
         </div>
@@ -119,9 +119,9 @@
 
       <!-- Action Buttons -->
       <div class="action-btns">
-        <button id="saveBtn" class="btn btn-primary">?? ????????????</button>
-        <button id="generateVenueReceiptBtn" class="btn btn-secondary">?? ????? (???????)</button>
-        <button id="generateMemberReceiptBtn" class="btn btn-secondary">?? ????? (??????)</button>
+        <button id="saveBtn" class="btn btn-primary">💾 บันทึกข้อมูล</button>
+        <button id="generateVenueReceiptBtn" class="btn btn-secondary">🧾 ใบรับ (สถานที่)</button>
+        <button id="generateMemberReceiptBtn" class="btn btn-secondary">🧾 ใบรับ (สมาชิก)</button>
       </div>
     </div>
   </main>

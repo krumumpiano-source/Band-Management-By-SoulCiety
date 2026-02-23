@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>???????? � Band Management By SoulCiety</title>
+  <title>ตารางงาน — Band Management By SoulCiety</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -44,24 +44,24 @@
   <div id="addExternalGigModal" class="modal-backdrop">
     <div class="modal-box">
       <div class="modal-header-inner">
-        <h3>? ???????????</h3>
-        <button class="modal-close-btn" id="closeModalBtn">�</button>
+        <h3>➕ เพิ่มงานนอก</h3>
+        <button class="modal-close-btn" id="closeModalBtn">×</button>
       </div>
       <form id="externalGigForm">
-        <div class="form-group"><label>?????? *</label><input type="date" id="gigDate" required></div>
+        <div class="form-group"><label>วันที่ *</label><input type="date" id="gigDate" required></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)">
-          <div class="form-group"><label>????????? *</label><input type="time" id="gigStartTime" required></div>
-          <div class="form-group"><label>?????? *</label><input type="time" id="gigEndTime" required></div>
+          <div class="form-group"><label>เวลาเริ่ม *</label><input type="time" id="gigStartTime" required></div>
+          <div class="form-group"><label>เวลาจบ *</label><input type="time" id="gigEndTime" required></div>
         </div>
-        <div class="form-group"><label>??????? *</label><input type="text" id="gigVenue" placeholder="???????????" required></div>
-        <div class="form-group"><label>???????</label><input type="text" id="gigAddress" placeholder="??????????????"></div>
-        <div class="form-group"><label>?????? (???) *</label><input type="number" id="gigPrice" min="0" required></div>
-        <div class="form-group"><label>??????????</label><textarea id="gigDescription" rows="2" placeholder="?????????????"></textarea></div>
-        <div class="form-group"><label>??????</label><input type="text" id="gigContact" placeholder="?????????????????????????"></div>
-        <div class="form-group"><label>????????????????</label><div id="gigMembersList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:4px;margin-top:8px"></div></div>
+        <div class="form-group"><label>สถานที่ *</label><input type="text" id="gigVenue" placeholder="ชื่อสถานที่" required></div>
+        <div class="form-group"><label>ที่อยู่</label><input type="text" id="gigAddress" placeholder="ที่อยู่สถานที่"></div>
+        <div class="form-group"><label>ค่าตัว (บาท) *</label><input type="number" id="gigPrice" min="0" required></div>
+        <div class="form-group"><label>รายละเอียด</label><textarea id="gigDescription" rows="2" placeholder="รายละเอียดงาน"></textarea></div>
+        <div class="form-group"><label>ติดต่อ</label><input type="text" id="gigContact" placeholder="เบอร์โทรหรือช่องทางติดต่อ"></div>
+        <div class="form-group"><label>สมาชิกที่ร่วมงาน</label><div id="gigMembersList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:4px;margin-top:8px"></div></div>
         <div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm);margin-top:var(--spacing-md)">
-          <button type="button" class="btn btn-secondary" id="cancelGigBtn">??????</button>
-          <button type="submit" class="btn btn-primary">?? ?????????</button>
+          <button type="button" class="btn btn-secondary" id="cancelGigBtn">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">💾 บันทึกงาน</button>
         </div>
       </form>
     </div>
@@ -70,54 +70,54 @@
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title">?? <span data-i18n="nav_schedule">????????</span></h1>
-        <button id="addExternalGigBtn" class="btn btn-primary">? ???????????</button>
+        <h1 class="page-title">📅 <span data-i18n="nav_schedule">ตารางงาน</span></h1>
+        <button id="addExternalGigBtn" class="btn btn-primary">➕ เพิ่มงานนอก</button>
       </div>
 
       <!-- Summary Stats -->
       <div class="summary-stats">
-        <div class="stat-card"><div class="stat-value" id="totalGigs">0</div><div class="stat-label">??????????</div></div>
-        <div class="stat-card"><div class="stat-value" id="regularGigs">0</div><div class="stat-label">???????</div></div>
-        <div class="stat-card"><div class="stat-value" id="externalGigs">0</div><div class="stat-label">??????</div></div>
-        <div class="stat-card"><div class="stat-value" id="totalRevenue">0</div><div class="stat-label">?????????</div></div>
+        <div class="stat-card"><div class="stat-value" id="totalGigs">0</div><div class="stat-label">งานทั้งหมด</div></div>
+        <div class="stat-card"><div class="stat-value" id="regularGigs">0</div><div class="stat-label">งานปกติ</div></div>
+        <div class="stat-card"><div class="stat-value" id="externalGigs">0</div><div class="stat-label">งานนอก</div></div>
+        <div class="stat-card"><div class="stat-value" id="totalRevenue">0</div><div class="stat-label">รายได้รวม</div></div>
       </div>
 
       <!-- Filters -->
       <div class="card filter-card">
-        <div class="card-header"><h3 class="card-title">?? ????????????</h3></div>
+        <div class="card-header"><h3 class="card-title">🔍 ค้นหาและกรอง</h3></div>
         <div class="filter-grid">
           <div class="form-group">
-            <label>???????????</label>
-            <select id="viewType"><option value="all">??????</option><option value="individual">?????</option></select>
+            <label>ประเภทการดู</label>
+            <select id="viewType"><option value="all">ทั้งวง</option><option value="individual">รายคน</option></select>
           </div>
           <div class="form-group" id="memberFilterGroup">
-            <label>??????</label>
-            <select id="memberFilter"><option value="">???????????</option></select>
+            <label>สมาชิก</label>
+            <select id="memberFilter"><option value="">เลือกสมาชิก</option></select>
           </div>
           <div class="form-group">
-            <label>????????</label>
+            <label>ช่วงเวลา</label>
             <select id="periodType">
-              <option value="daily">??????</option>
-              <option value="weekly">??????????</option>
-              <option value="history">????????</option>
+              <option value="daily">รายวัน</option>
+              <option value="weekly">รายสัปดาห์</option>
+              <option value="history">ย้อนหลัง</option>
             </select>
           </div>
           <div class="form-group" id="dateFilterGroup">
-            <label>??????</label>
+            <label>วันที่</label>
             <input type="date" id="dateFilter">
           </div>
           <div class="form-group" id="weekFilterGroup" style="display:none">
-            <label>???????</label>
+            <label>สัปดาห์</label>
             <input type="week" id="weekFilter">
           </div>
           <div id="historyDateGroup" style="display:none;grid-column:span 2">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)">
-              <div class="form-group"><label>???????????</label><input type="date" id="historyStartDate"></div>
-              <div class="form-group"><label>?????????????</label><input type="date" id="historyEndDate"></div>
+              <div class="form-group"><label>วันที่เริ่ม</label><input type="date" id="historyStartDate"></div>
+              <div class="form-group"><label>วันที่สิ้นสุด</label><input type="date" id="historyEndDate"></div>
             </div>
           </div>
           <div class="form-group" style="display:flex;align-items:flex-end">
-            <button id="applyFiltersBtn" class="btn btn-primary" style="width:100%">?? ?????</button>
+            <button id="applyFiltersBtn" class="btn btn-primary" style="width:100%">🔍 ค้นหา</button>
           </div>
         </div>
       </div>
@@ -125,10 +125,10 @@
       <!-- Schedule Table -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title" id="scheduleTableTitle">?? ????????</h3>
+          <h3 class="card-title" id="scheduleTableTitle">📋 ตารางงาน</h3>
         </div>
         <div id="noScheduleData">
-          <p>???????????????????<br>?????????????????????????????????????</p>
+          <p>ไม่พบข้อมูลตารางงาน<br>กรองวันที่หรือเพิ่มงานนอกให้เรียบร้อย</p>
         </div>
         <div class="table-responsive">
           <table class="table" style="min-width:700px">
