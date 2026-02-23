@@ -202,6 +202,22 @@ function removeDefaultSheet(ss) {
 }
 
 // ============================================================
+// ทดสอบการเชื่อมต่อ Spreadsheet
+// วิธีใช้: กด ▶ Run ก่อนเพื่อ Re-authorize OAuth
+// ============================================================
+function testConnection() {
+  try {
+    var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    Logger.log('✅ เชื่อมต่อสำเร็จ: ' + ss.getName());
+    Logger.log('Sheets: ' + ss.getSheets().map(function(s){ return s.getName(); }).join(', '));
+    try { SpreadsheetApp.getUi().alert('✅ เชื่อมต่อสำเร็จ: ' + ss.getName()); } catch(e) {}
+  } catch(err) {
+    Logger.log('❌ Error: ' + err.toString());
+    try { SpreadsheetApp.getUi().alert('❌ Error: ' + err.toString()); } catch(e) {}
+  }
+}
+
+// ============================================================
 // ยกระดับผู้ใช้เป็น Admin
 // วิธีใช้: แก้ EMAIL_TO_PROMOTE แล้วกด ▶ Run
 // ============================================================
