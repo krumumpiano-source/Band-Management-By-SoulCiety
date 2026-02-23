@@ -110,13 +110,11 @@
             <label>สัปดาห์</label>
             <input type="week" id="weekFilter">
           </div>
-          <div class="form-group" id="historyDateGroup" style="display:none">
-            <label>วันที่เริ่ม</label>
-            <input type="date" id="historyStartDate">
-          </div>
-          <div class="form-group" id="historyDateGroup2" style="display:none">
-            <label>วันที่สิ้นสุด</label>
-            <input type="date" id="historyEndDate">
+          <div id="historyDateGroup" style="display:none;grid-column:span 2">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)">
+              <div class="form-group"><label>วันที่เริ่ม</label><input type="date" id="historyStartDate"></div>
+              <div class="form-group"><label>วันที่สิ้นสุด</label><input type="date" id="historyEndDate"></div>
+            </div>
           </div>
           <div class="form-group" style="display:flex;align-items:flex-end">
             <button id="applyFiltersBtn" class="btn btn-primary" style="width:100%">🔍 ค้นหา</button>
@@ -151,16 +149,6 @@
       if (typeof requireAuth === 'function') requireAuth();
       if (typeof renderMainNav === 'function') renderMainNav('mainNav');
       if (typeof applyTranslations === 'function') applyTranslations();
-      // Fix historyDateGroup2 visibility
-      var hg = document.getElementById('historyDateGroup');
-      var hg2 = document.getElementById('historyDateGroup2');
-      var pt = document.getElementById('periodType');
-      if (pt) {
-        pt.addEventListener('change', function() {
-          if (hg2) hg2.style.display = this.value === 'history' ? 'block' : 'none';
-          if (hg) hg.style.display = this.value === 'history' ? 'block' : 'none';
-        });
-      }
     });
   </script>
 </body>
