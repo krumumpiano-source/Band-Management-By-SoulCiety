@@ -6,10 +6,10 @@
 
 var CONFIG = {
   // ============================================================
-  // [A] Spreadsheet สำหรับข้อมูลปฏิบัติการ (Operational)
-  //     = Spreadsheet ที่ Script นี้ผูก (container-bound) อยู่
-  //     ไม่ต้องใส่ ID — ระบบดึงจาก SpreadsheetApp.getActiveSpreadsheet()
+  // [A] Spreadsheet สำหรับข้อมูลปฏิบัติการ
+  //     ID ของ Google Sheet ที่สร้างโดย runSetup()
   // ============================================================
+  SPREADSHEET_ID: '13WfRJtutCvzZfyWxWxDEdV_gE-z2BwVQ5RbrskMWl1w',
 
   // ============================================================
   // [B] คลังเพลงกลาง (Global Songs Library) — อ่านอย่างเดียว
@@ -49,14 +49,11 @@ var CONFIG = {
  * [A] Spreadsheet ปฏิบัติการ — ดึงจาก container-bound (getActiveSpreadsheet)
  */
 function getOperationalSpreadsheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) {
-    throw new Error(
-      'ไม่พบ Spreadsheet ที่ผูกกับ Script นี้\n' +
-      'วิธีแก้: สร้าง Google Sheet ใหม่ → เปิด Extensions > Apps Script → วาง code ทั้งหมด → Deploy'
-    );
+  var id = CONFIG.SPREADSHEET_ID;
+  if (!id) {
+    throw new Error('กรุณาตั้งค่า SPREADSHEET_ID ใน Config.gs');
   }
-  return ss;
+  return SpreadsheetApp.openById(id);
 }
 
 /**
