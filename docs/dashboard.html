@@ -35,6 +35,25 @@
     .welcome-bar h2{font-size:var(--text-xl);font-weight:700;margin:0}
     .welcome-bar p{font-size:var(--text-sm);color:#cbd5e0;margin:4px 0 0}
     @media(max-width:480px){.welcome-bar{flex-direction:column;align-items:flex-start;gap:var(--spacing-sm)}.quick-actions{grid-template-columns:1fr}}
+    /* === Quick Check-In === */
+    .qci-header{display:flex;align-items:center;gap:12px;margin-bottom:var(--spacing-md)}
+    .qci-date-badge{background:linear-gradient(135deg,var(--premium-gold),#b7791f);color:#fff;border-radius:var(--radius-lg);padding:8px 18px;font-size:var(--text-sm);font-weight:600;white-space:nowrap}
+    .qci-step{margin-bottom:var(--spacing-md)}
+    .qci-step-label{font-size:var(--text-sm);font-weight:600;color:var(--premium-text-light);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+    .qci-step-label .step-num{width:22px;height:22px;border-radius:50%;background:var(--premium-gold);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+    .qci-btn-group{display:flex;flex-wrap:wrap;gap:8px}
+    .qci-venue-btn,.qci-slot-btn{padding:10px 18px;border-radius:var(--radius-full);border:2px solid var(--premium-border);background:#fff;cursor:pointer;font-size:var(--text-sm);font-family:var(--font-family-body);color:var(--premium-text);transition:all .18s;font-weight:500}
+    .qci-venue-btn.selected{border-color:var(--premium-gold);background:var(--premium-gold);color:#fff;font-weight:700;transform:translateY(-1px);box-shadow:0 2px 8px rgba(203,162,60,.35)}
+    .qci-slot-btn.selected{border-color:#276749;background:#276749;color:#fff;font-weight:700;transform:translateY(-1px);box-shadow:0 2px 8px rgba(39,103,73,.25)}
+    .qci-summary{background:linear-gradient(135deg,#f0fff4,#c6f6d5);border:1px solid #9ae6b4;border-radius:var(--radius-lg);padding:var(--spacing-md) var(--spacing-lg);font-size:var(--text-sm);line-height:1.8;display:none}
+    .qci-summary.show{display:block}
+    .qci-summary strong{color:#065f46}
+    .qci-done{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #6ee7b7;border-radius:var(--radius-lg);padding:var(--spacing-lg);text-align:center;display:none}
+    .qci-done.show{display:block}
+    .qci-done .done-icon{font-size:36px;margin-bottom:8px}
+    .qci-done p{margin:4px 0;font-size:var(--text-sm);color:#065f46}
+    .qci-done strong{font-size:var(--text-md);color:#064e3b}
+    .qci-no-schedule{color:var(--premium-text-muted);font-size:var(--text-sm);font-style:italic}
   </style>
 </head>
 <body>
@@ -48,6 +67,55 @@
           <p id="welcomeBand"></p>
         </div>
         <div style="font-size:32px">🥁</div>
+      </div>
+
+      <!-- ===== Quick Daily Check-In ===== -->
+      <div class="card" id="qciCard" style="margin-bottom:var(--spacing-xl)">
+        <div class="card-header">
+          <div class="qci-header">
+            <h3 class="card-title" style="margin:0">⏰ ลงเวลาประจำวัน</h3>
+            <div class="qci-date-badge" id="qciDateBadge"></div>
+          </div>
+        </div>
+
+        <!-- Already checked-in state -->
+        <div class="qci-done" id="qciDone">
+          <div class="done-icon">✅</div>
+          <strong id="qciDoneSummary">ลงเวลาแล้ว</strong>
+          <p id="qciDoneDetail"></p>
+          <button class="btn btn-ghost btn-sm" style="margin-top:8px" id="qciEditBtn">✏️ แก้ไขเวลา</button>
+        </div>
+
+        <!-- Check-in form -->
+        <div id="qciForm">
+          <!-- Step 1: Venue -->
+          <div class="qci-step">
+            <div class="qci-step-label"><span class="step-num">1</span> เลือกสถานที่</div>
+            <div class="qci-btn-group" id="qciVenueBtns">
+              <span class="qci-no-schedule">⏳ กำลังโหลด...</span>
+            </div>
+          </div>
+
+          <!-- Step 2: Time slots -->
+          <div class="qci-step" id="qciSlotStep" style="display:none">
+            <div class="qci-step-label"><span class="step-num">2</span> เลือกช่วงเวลาที่ทำงาน <span id="qciDayName" style="color:var(--premium-gold);font-size:12px"></span></div>
+            <div class="qci-btn-group" id="qciSlotBtns"></div>
+          </div>
+
+          <!-- Summary -->
+          <div class="qci-summary" id="qciSummary">
+            <strong>📋 สรุปการลงเวลา</strong><br>
+            📅 วันที่: <strong id="sumDate"></strong><br>
+            📍 ร้าน: <strong id="sumVenue"></strong><br>
+            ⏰ ช่วงเวลา: <strong id="sumSlots"></strong>
+          </div>
+
+          <!-- Confirm -->
+          <div id="qciConfirmRow" style="display:none;margin-top:var(--spacing-md)">
+            <button class="btn btn-primary" id="qciConfirmBtn">✅ ยืนยันลงเวลา</button>
+            <button class="btn btn-ghost" id="qciResetBtn" style="margin-left:8px">🔄 เริ่มใหม่</button>
+          </div>
+        </div>
       </div>
 
       <!-- Stat Cards -->
@@ -117,6 +185,174 @@
     var isGas = typeof google !== 'undefined' && google.script;
     window.location.href = isGas ? '?page=' + page : page + '.html';
   }
+
+  /* ===== Quick Check-In ===== */
+  var qciBandId = '', qciBandSettings = { venues: [], scheduleData: {} };
+  var qciSelectedVenue = '', qciSelectedSlots = [], qciExistingCheckIn = null;
+  var QCI_DAY_NAMES_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+
+  function qciEsc(s) { var d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+  function qciLoadSettings(cb) {
+    var stored = localStorage.getItem('bandSettings');
+    if (stored) { try { var s = JSON.parse(stored); qciBandSettings = { venues: s.venues||[], scheduleData: s.scheduleData||s.schedule||{} }; } catch(e){} }
+    if (qciBandSettings.venues.length > 0) { cb(); return; }
+    if (qciBandId && typeof gasRun === 'function') {
+      gasRun('getBandSettings', { bandId: qciBandId }, function(r) {
+        if (r && r.success && r.data) {
+          qciBandSettings = { venues: r.data.venues||[], scheduleData: r.data.scheduleData||r.data.schedule||{} };
+          try { localStorage.setItem('bandSettings', JSON.stringify(r.data)); } catch(e) {}
+        }
+        cb();
+      });
+    } else { cb(); }
+  }
+
+  function qciGetSlotsForToday() {
+    var dow = new Date().getDay();
+    var dayData = qciBandSettings.scheduleData[dow] || qciBandSettings.scheduleData[String(dow)];
+    if (dayData && dayData.timeSlots && dayData.timeSlots.length) {
+      return dayData.timeSlots.map(function(s) { return { key: s.startTime+'-'+s.endTime, label: s.startTime+' – '+s.endTime }; });
+    }
+    return [
+      { key:'19:30-20:30', label:'19:30 – 20:30' },
+      { key:'21:00-22:00', label:'21:00 – 22:00' },
+      { key:'22:30-23:30', label:'22:30 – 23:30' }
+    ];
+  }
+
+  function qciRenderVenues() {
+    var container = document.getElementById('qciVenueBtns');
+    if (!container) return;
+    var venues = (qciBandSettings.venues || []);
+    if (!venues.length) venues = [{ name: 'ร้านหลัก' }];
+    container.innerHTML = venues.map(function(v) {
+      var name = v.name || v.venueName || String(v);
+      return '<button type="button" class="qci-venue-btn" data-venue="'+qciEsc(name)+'">📍 '+qciEsc(name)+'</button>';
+    }).join('');
+    container.querySelectorAll('.qci-venue-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        container.querySelectorAll('.qci-venue-btn').forEach(function(b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        qciSelectedVenue = btn.dataset.venue;
+        qciSelectedSlots = [];
+        qciRenderSlots();
+        qciUpdateSummary();
+      });
+    });
+  }
+
+  function qciRenderSlots() {
+    var step = document.getElementById('qciSlotStep');
+    var container = document.getElementById('qciSlotBtns');
+    var dayLabel = document.getElementById('qciDayName');
+    if (!step || !container) return;
+    if (!qciSelectedVenue) { step.style.display = 'none'; return; }
+    step.style.display = 'block';
+    var dow = new Date().getDay();
+    if (dayLabel) dayLabel.textContent = '(วัน'+QCI_DAY_NAMES_TH[dow]+')';
+    var slots = qciGetSlotsForToday();
+    var existingSlots = (qciExistingCheckIn && qciExistingCheckIn.slots) ? qciExistingCheckIn.slots : [];
+    container.innerHTML = slots.map(function(s) {
+      var pre = existingSlots.indexOf(s.key) !== -1 ? ' selected' : '';
+      return '<button type="button" class="qci-slot-btn'+pre+'" data-slot="'+qciEsc(s.key)+'">🕐 '+qciEsc(s.label)+'</button>';
+    }).join('');
+    if (existingSlots.length) qciSelectedSlots = existingSlots.slice();
+    container.querySelectorAll('.qci-slot-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        btn.classList.toggle('selected');
+        var slot = btn.dataset.slot;
+        if (btn.classList.contains('selected')) {
+          if (qciSelectedSlots.indexOf(slot) === -1) qciSelectedSlots.push(slot);
+        } else {
+          qciSelectedSlots = qciSelectedSlots.filter(function(s) { return s !== slot; });
+        }
+        qciUpdateSummary();
+      });
+    });
+    qciUpdateSummary();
+  }
+
+  function qciUpdateSummary() {
+    var summary = document.getElementById('qciSummary');
+    var confirmRow = document.getElementById('qciConfirmRow');
+    if (!summary || !confirmRow) return;
+    if (qciSelectedVenue && qciSelectedSlots.length) {
+      var today = new Date();
+      var dateStr = today.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      var slotStr = qciSelectedSlots.map(function(k) { var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
+      document.getElementById('sumDate').textContent = dateStr;
+      document.getElementById('sumVenue').textContent = qciSelectedVenue;
+      document.getElementById('sumSlots').textContent = slotStr;
+      summary.classList.add('show');
+      confirmRow.style.display = 'block';
+    } else {
+      summary.classList.remove('show');
+      confirmRow.style.display = 'none';
+    }
+  }
+
+  function qciShowDone(slots, venue) {
+    var done = document.getElementById('qciDone');
+    var form = document.getElementById('qciForm');
+    var slotStr = (slots||[]).map(function(k){ var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
+    document.getElementById('qciDoneSummary').textContent = '✅ ลงเวลาแล้ววันนี้';
+    document.getElementById('qciDoneDetail').textContent = '📍 '+venue+' · ⏰ '+slotStr;
+    done.classList.add('show');
+    form.style.display = 'none';
+  }
+
+  function qciCheckExisting() {
+    if (!qciBandId || typeof gasRun !== 'function') return;
+    var today = new Date().toISOString().split('T')[0];
+    gasRun('getMyCheckIn', { date: today, venue: '', bandId: qciBandId }, function(r) {
+      if (r && r.success && r.checkIn) {
+        qciExistingCheckIn = r.checkIn;
+        var ci = r.checkIn;
+        if (ci.status === 'confirmed' || ci.status === 'pending') {
+          qciShowDone(ci.slots, ci.venue);
+        }
+      }
+    });
+  }
+
+  function qciConfirm() {
+    if (!qciSelectedVenue) { alert('กรุณาเลือกสถานที่ก่อน'); return; }
+    if (!qciSelectedSlots.length) { alert('กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง'); return; }
+    var btn = document.getElementById('qciConfirmBtn');
+    btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+    var today = new Date().toISOString().split('T')[0];
+    gasRun('memberCheckIn', { bandId: qciBandId, date: today, venue: qciSelectedVenue, slots: qciSelectedSlots, notes: '' }, function(r) {
+      btn.disabled = false; btn.textContent = '✅ ยืนยันลงเวลา';
+      if (r && r.success) {
+        qciShowDone(qciSelectedSlots, qciSelectedVenue);
+        showDashToast('ลงเวลาเรียบร้อย — รอผู้จัดการยืนยัน', 'success');
+      } else {
+        alert((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+      }
+    });
+  }
+
+  function qciReset() {
+    qciSelectedVenue = ''; qciSelectedSlots = []; qciExistingCheckIn = null;
+    document.getElementById('qciDone').classList.remove('show');
+    document.getElementById('qciForm').style.display = 'block';
+    document.getElementById('qciSlotStep').style.display = 'none';
+    document.getElementById('qciSummary').classList.remove('show');
+    document.getElementById('qciConfirmRow').style.display = 'none';
+    document.querySelectorAll('.qci-venue-btn').forEach(function(b) { b.classList.remove('selected'); });
+    qciRenderSlots();
+  }
+
+  function showDashToast(msg, type) {
+    var t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.style.background = type === 'success' ? '#276749' : type === 'error' ? '#c53030' : 'var(--premium-gold)';
+    t.style.display = 'block'; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.style.display='none'; }, 300); }, 3500);
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
     renderMainNav('mainNav');
@@ -126,6 +362,30 @@
     var band = localStorage.getItem('bandName') || 'วงดนตรี';
     document.getElementById('welcomeName').textContent = 'สวัสดี, ' + name;
     document.getElementById('welcomeBand').textContent = '🎵 ' + band;
+
+    // Quick Check-In init
+    qciBandId = localStorage.getItem('bandId') || '';
+    var today = new Date();
+    var dateBadge = document.getElementById('qciDateBadge');
+    if (dateBadge) dateBadge.textContent = today.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+    qciLoadSettings(function() {
+      qciRenderVenues();
+      qciCheckExisting();
+    });
+
+    document.getElementById('qciConfirmBtn').addEventListener('click', qciConfirm);
+    document.getElementById('qciResetBtn').addEventListener('click', qciReset);
+    document.getElementById('qciEditBtn').addEventListener('click', function() {
+      document.getElementById('qciDone').classList.remove('show');
+      document.getElementById('qciForm').style.display = 'block';
+      if (qciExistingCheckIn && qciExistingCheckIn.venue) {
+        qciSelectedVenue = qciExistingCheckIn.venue;
+        var vBtn = document.querySelector('.qci-venue-btn[data-venue="'+qciSelectedVenue+'"]');
+        if (vBtn) vBtn.classList.add('selected');
+        qciRenderSlots();
+      }
+    });
 
     loadDashboard();
   });

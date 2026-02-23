@@ -43,20 +43,20 @@ function renderMainNav(containerId) {
         '<div class="nav-menu-wrap" id="navMenuWrap">' +
           '<ul class="nav-menu">' +
             navLink('dashboard', '📊 ' + _t('nav_dashboard')) +
-            navLink('check-in', '⏰ ' + _t('nav_checkIn')) +
             navLink('songs', '🎵 ' + _t('nav_songs')) +
+            navLink('song-insights', '🎙️ ' + _t('nav_songInsights')) +
             (isManager ? navLink('attendance-payroll', '📋 ' + _t('nav_attendance')) : '') +
+            navLink('leave', '🔄 ' + _t('nav_leave')) +
             navLink('external-payout', '💵 ' + _t('nav_externalPayout')) +
-            navLink('schedule', '📅 ' + _t('nav_schedule')) +
             (isManager ? navLink('job-calculator', '🧮 ' + _t('nav_jobCalculator')) : '') +
+            navLink('schedule', '📅 ' + _t('nav_schedule')) +
             navLink('quotation', '📄 ' + _t('nav_quotation')) +
             navLink('contract', '📜 ' + _t('nav_contract')) +
+            (isManager ? navLink('band-fund', '💰 ' + _t('nav_bandFund')) : '') +
             navLink('statistics', '📈 ' + _t('nav_statistics')) +
-            navLink('song-insights', '🎙️ ' + _t('nav_songInsights')) +
             navLink('equipment', '🎸 ' + _t('nav_equipment')) +
             navLink('clients', '🤝 ' + _t('nav_clients')) +
             navLink('band-info', '👥 ' + _t('nav_bandInfo')) +
-            (isManager ? navLink('band-fund', '💰 ' + _t('nav_bandFund')) : '') +
             (isManager ? navLink('band-settings', '⚙️ ' + _t('nav_settings')) : '') +
             navLink('user-manual', '📖 ' + _t('nav_userManual')) +
             (isAdmin ? navLink('admin', '🔧 ' + _t('nav_admin')) : '') +

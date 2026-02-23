@@ -34,7 +34,8 @@ var CONFIG = {
     EQUIPMENT:            'EQUIPMENT',
     CLIENTS:              'CLIENTS',
     QUOTATIONS:           'QUOTATIONS',
-    MEMBER_CHECK_INS:     'MEMBER_CHECK_INS'  // บันทึกเข้างานของสมาชิกแต่ละคน
+    MEMBER_CHECK_INS:     'MEMBER_CHECK_INS',  // บันทึกเข้างานของสมาชิกแต่ละคน
+    LEAVE_REQUESTS:       'LEAVE_REQUESTS'      // คำขอลางานและคนแทน
   },
 
   // System Settings

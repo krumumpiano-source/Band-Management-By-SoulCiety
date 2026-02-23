@@ -25,7 +25,7 @@ function doGet(e) {
     'index','register','forgot-password','email-verification',
     'dashboard','admin','band-info','band-settings',
     'songs','add-song','edit-song','setlist','song-insights',
-    'check-in',
+    'leave',
     'schedule','attendance-payroll','band-fund','external-payout',
     'job-calculator','quotation','contract','statistics',
     'equipment','clients',
@@ -143,6 +143,13 @@ function routeAction(req) {
     case 'memberCheckIn':     return memberCheckIn(req);
     case 'getMyCheckIn':      return getMyCheckIn(req);
     case 'getCheckInsForDate': return getCheckInsForDate(req);
+
+    // --- Leave & Substitute ---
+    case 'requestLeave':        return requestLeave(req);
+    case 'getMyLeaveRequests':  return getMyLeaveRequests(req);
+    case 'getAllLeaveRequests':  return getAllLeaveRequests(req);
+    case 'assignSubstitute':    return assignSubstitute(req);
+    case 'rejectLeave':         return rejectLeave(req);
 
     // --- Band Settings ---
     case 'saveBandSettings': return saveBandSettings(req);
