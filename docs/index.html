@@ -27,6 +27,17 @@
     .auth-footer a:hover{text-decoration:underline}
     .forgot-link{float:right;font-size:var(--text-xs);color:var(--premium-text-light);text-decoration:none}
     .forgot-link:hover{color:var(--premium-gold)}
+    /* Biometric button */
+    .btn-biometric{width:100%;justify-content:center;padding:13px;font-size:var(--text-base);
+      background:linear-gradient(135deg,#2b2d42,#3a3f58);color:#fff;border:none;border-radius:var(--radius-lg);
+      cursor:pointer;font-family:var(--font-family-body);font-weight:600;letter-spacing:.3px;
+      display:flex;align-items:center;gap:10px;margin-top:var(--spacing-sm);
+      box-shadow:0 2px 10px rgba(43,45,66,.25);transition:transform .15s,box-shadow .15s}
+    .btn-biometric:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(43,45,66,.35)}
+    .btn-biometric:active{transform:translateY(0)}
+    .btn-biometric .bio-icon{font-size:22px;line-height:1}
+    .bio-hint{text-align:center;font-size:11px;color:var(--premium-text-muted);margin-top:5px}
+    .btn-biometric:disabled{opacity:.5;cursor:not-allowed;transform:none}
   </style>
 </head>
 <body>
@@ -56,6 +67,16 @@
           <span data-i18n="login">เข้าสู่ระบบ</span>
         </button>
       </form>
+      <!-- Biometric / Saved-credential button (hidden until supported) -->
+      <div id="biometricSection" style="display:none;margin-top:var(--spacing-md)">
+        <div class="divider">หรือ</div>
+        <button type="button" class="btn-biometric" id="biometricBtn">
+          <span class="bio-icon" id="biometricIcon">👆</span>
+          <span id="biometricLabel">เข้าสู่ระบบด้วยลายนิ้วมือ / Face ID</span>
+        </button>
+        <div class="bio-hint" id="biometricHint">ใช้ชีวมิติของอุปกรณ์เพื่อเข้าระบบโดยไม่ต้องพิมพ์รหัสผ่าน</div>
+      </div>
+
       <div class="divider" data-i18n="or">หรือ</div>
       <button type="button" class="btn btn-success btn-demo btn-full" id="demoBtn">
         <span data-i18n="demoLogin">เข้าโหมดทดสอบทันที (ไม่ต้องล็อกอิน)</span>
@@ -72,13 +93,130 @@
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
   <script>
+  /* ===== Biometric / Credential Management Helper ===== */
+  var CRED_API = !!(window.PasswordCredential || window.FederatedCredential);
+  // iOS Safari handles biometric via autocomplete="current-password" natively —
+  // We still show the button on iOS for UX, powered by the credential store.
+
+  function bioDetectIcon() {
+    var ua = navigator.userAgent;
+    if (/iPhone|iPad/.test(ua)) return '🔒'; // FaceID / TouchID
+    if (/Android/.test(ua)) return '👆';      // Fingerprint
+    return '🔑';                               // Desktop - system keychain
+  }
+
+  function doLoginSuccess(r, email, password, userName) {
+    // 1. Store in localStorage (existing logic)
+    localStorage.setItem('auth_token', r.token);
+    localStorage.setItem('userName', userName || r.userName || '');
+    localStorage.setItem('userEmail', email);
+    localStorage.setItem('bandName', r.bandName || '');
+    localStorage.setItem('bandId', r.bandId || '');
+    localStorage.setItem('userRole', r.role || 'member');
+    if (r.role === 'manager' || r.role === 'admin') localStorage.setItem('bandManager', '1');
+    else localStorage.removeItem('bandManager');
+
+    // 2. Save credentials for biometric / password-manager (async, fire-and-forget)
+    if (CRED_API && password) {
+      try {
+        var cred = new PasswordCredential({
+          id: email,
+          password: password,
+          name: userName || r.userName || email
+        });
+        navigator.credentials.store(cred).catch(function(){});
+      } catch(ex) {}
+    }
+
+    // 3. Navigate
+    window.location.href = 'dashboard.html';
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof renderLangToggle === 'function') renderLangToggle('langToggle');
     if (typeof applyTranslations === 'function') applyTranslations();
 
-    var loginForm = document.getElementById('loginForm');
-    var demoBtn = document.getElementById('demoBtn');
+    var loginForm   = document.getElementById('loginForm');
+    var demoBtn     = document.getElementById('demoBtn');
+    var bioSection  = document.getElementById('biometricSection');
+    var bioBtn      = document.getElementById('biometricBtn');
+    var bioIcon     = document.getElementById('biometricIcon');
+    var bioLabel    = document.getElementById('biometricLabel');
+    var bioHint     = document.getElementById('biometricHint');
 
+    // ----- Detect & show biometric button -----
+    // Show on supported browsers (Credential Management API present)
+    if (CRED_API || /iPhone|iPad/.test(navigator.userAgent)) {
+      bioSection.style.display = 'block';
+      bioIcon.textContent = bioDetectIcon();
+
+      // On iOS/iPad — uses native Safari behaviour; label change only
+      if (/iPhone|iPad/.test(navigator.userAgent)) {
+        bioLabel.textContent = 'เข้าสู่ระบบด้วย Face ID / Touch ID';
+        bioHint.textContent = 'Safari จะใช้ Face ID หรือ Touch ID จากรหัสผ่านที่บันทึกไว้';
+      }
+
+      // Auto-fetch saved credentials on load (silent, mediation: optional)
+      if (CRED_API) {
+        navigator.credentials.get({ password: true, mediation: 'optional' }).then(function(cred) {
+          if (cred && cred.type === 'password' && cred.id && cred.password) {
+            // Pre-fill fields quietly — user can still tap biometric button to confirm
+            document.getElementById('email').value    = cred.id;
+            document.getElementById('password').value = cred.password;
+            // Show a hint that credentials are prefilled
+            bioHint.textContent = '🔓 พบบัญชีที่บันทึกไว้สำหรับ ' + cred.id + ' — กดปุ่มด้านบนเพื่อยืนยัน';
+          }
+        }).catch(function(){});
+      }
+    }
+
+    // ----- Biometric button click -----
+    if (bioBtn) {
+      bioBtn.addEventListener('click', function() {
+        if (!CRED_API) {
+          // iOS Safari: just focus the password field so the OS shows its saved-password prompt
+          document.getElementById('password').focus();
+          return;
+        }
+        bioBtn.disabled = true;
+        bioLabel.textContent = '⏳ กำลังยืนยันตัวตน...';
+
+        navigator.credentials.get({ password: true, mediation: 'required' })
+          .then(function(cred) {
+            bioBtn.disabled = false;
+            bioLabel.textContent = 'เข้าสู่ระบบด้วยลายนิ้วมือ / Face ID';
+            if (!cred || cred.type !== 'password') return;
+
+            // Fill fields visually (for transparency)
+            document.getElementById('email').value    = cred.id;
+            document.getElementById('password').value = cred.password;
+
+            // Auto-submit
+            var btn = document.getElementById('loginBtn');
+            btn.disabled = true; btn.textContent = (typeof t === 'function' ? t('loading') : 'กำลังโหลด...');
+            clearErrors();
+
+            gasRun('login', { email: cred.id, password: cred.password }, function(r) {
+              btn.disabled = false; btn.textContent = (typeof t === 'function' ? t('login') : 'เข้าสู่ระบบ');
+              if (r && r.success) {
+                doLoginSuccess(r, cred.id, cred.password, cred.name);
+              } else {
+                document.getElementById('emailError').textContent = (r && r.message) || 'เข้าสู่ระบบไม่สำเร็จ';
+              }
+            });
+          })
+          .catch(function(err) {
+            bioBtn.disabled = false;
+            bioLabel.textContent = 'เข้าสู่ระบบด้วยลายนิ้วมือ / Face ID';
+            // User cancelled → just let them type manually
+            if (err && err.name !== 'NotAllowedError') {
+              console.warn('Credential get error:', err);
+            }
+          });
+      });
+    }
+
+    // ----- Normal form submit -----
     function clearErrors() {
       ['emailError','passwordError'].forEach(function(id) {
         var el = document.getElementById(id); if (el) el.textContent = '';
@@ -88,34 +226,28 @@
     loginForm.addEventListener('submit', function(e) {
       e.preventDefault();
       clearErrors();
-      var email = document.getElementById('email').value.trim();
+      var email    = document.getElementById('email').value.trim();
       var password = document.getElementById('password').value;
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        document.getElementById('emailError').textContent = t('errInvalidEmail'); return;
+        document.getElementById('emailError').textContent = (typeof t === 'function' ? t('errInvalidEmail') : 'อีเมลไม่ถูกต้อง'); return;
       }
       if (!password) {
-        document.getElementById('passwordError').textContent = t('errEnterPassword'); return;
+        document.getElementById('passwordError').textContent = (typeof t === 'function' ? t('errEnterPassword') : 'กรุณากรอกรหัสผ่าน'); return;
       }
       var btn = document.getElementById('loginBtn');
-      btn.disabled = true; btn.textContent = t('loading');
+      btn.disabled = true; btn.textContent = (typeof t === 'function' ? t('loading') : 'กำลังโหลด...');
 
       gasRun('login', { email: email, password: password }, function(r) {
-        btn.disabled = false; btn.textContent = t('login');
+        btn.disabled = false; btn.textContent = (typeof t === 'function' ? t('login') : 'เข้าสู่ระบบ');
         if (r && r.success) {
-          localStorage.setItem('auth_token', r.token);
-          localStorage.setItem('userName', r.userName || '');
-          localStorage.setItem('userEmail', email);
-          localStorage.setItem('bandName', r.bandName || '');
-          localStorage.setItem('bandId', r.bandId || '');
-          localStorage.setItem('userRole', r.role || 'member');
-          if (r.role === 'manager' || r.role === 'admin') localStorage.setItem('bandManager', '1');
-          window.location.href = 'dashboard.html';
+          doLoginSuccess(r, email, password, r.userName);
         } else {
-          document.getElementById('emailError').textContent = (r && r.message) || t('msg_error');
+          document.getElementById('emailError').textContent = (r && r.message) || (typeof t === 'function' ? t('msg_error') : 'เกิดข้อผิดพลาด');
         }
       });
     });
 
+    // ----- Demo button -----
     demoBtn.addEventListener('click', function() {
       if (typeof ensureDemoSession === 'function') ensureDemoSession();
       var href = typeof google !== 'undefined' && google.script ? '?page=dashboard' : 'dashboard.html';
