@@ -202,15 +202,24 @@ function removeDefaultSheet(ss) {
 }
 
 // ============================================================
-// ทดสอบการเชื่อมต่อ Spreadsheet
-// วิธีใช้: กด ▶ Run ก่อนเพื่อ Re-authorize OAuth
+// ทดสอบการเชื่อมต่อ Spreadsheet + บันทึก ID ลง PropertiesService
+// วิธีใช้: กด ▶ Run เพื่อ Re-authorize OAuth และตั้งค่า
 // ============================================================
 function testConnection() {
   try {
+    // บันทึก SPREADSHEET_ID ลง Script Properties
+    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', CONFIG.SPREADSHEET_ID);
+
+    // ทดสอบเปิดผ่าน DriveApp ก่อน (ใช้ scope drive)
+    var file = DriveApp.getFileById(CONFIG.SPREADSHEET_ID);
+    Logger.log('DriveApp OK: ' + file.getName());
+
+    // เปิดด้วย SpreadsheetApp
     var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    var sheetNames = ss.getSheets().map(function(s){ return s.getName(); }).join(', ');
     Logger.log('✅ เชื่อมต่อสำเร็จ: ' + ss.getName());
-    Logger.log('Sheets: ' + ss.getSheets().map(function(s){ return s.getName(); }).join(', '));
-    try { SpreadsheetApp.getUi().alert('✅ เชื่อมต่อสำเร็จ: ' + ss.getName()); } catch(e) {}
+    Logger.log('Sheets: ' + sheetNames);
+    try { SpreadsheetApp.getUi().alert('✅ เชื่อมต่อสำเร็จ!\n' + ss.getName() + '\nSheets: ' + sheetNames); } catch(e) {}
   } catch(err) {
     Logger.log('❌ Error: ' + err.toString());
     try { SpreadsheetApp.getUi().alert('❌ Error: ' + err.toString()); } catch(e) {}

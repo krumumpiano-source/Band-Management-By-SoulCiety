@@ -49,10 +49,14 @@ var CONFIG = {
  * [A] Spreadsheet ปฏิบัติการ — ดึงจาก container-bound (getActiveSpreadsheet)
  */
 function getOperationalSpreadsheet() {
-  var id = CONFIG.SPREADSHEET_ID;
-  if (!id) {
-    throw new Error('กรุณาตั้งค่า SPREADSHEET_ID ใน Config.gs');
+  // ลองอ่าน ID จาก PropertiesService ก่อน (เผื่อถูก override)
+  var id = '';
+  try {
+    id = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || CONFIG.SPREADSHEET_ID;
+  } catch(e) {
+    id = CONFIG.SPREADSHEET_ID;
   }
+  if (!id) throw new Error('กรุณาตั้งค่า SPREADSHEET_ID ใน Config.gs');
   return SpreadsheetApp.openById(id);
 }
 
