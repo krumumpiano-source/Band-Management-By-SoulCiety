@@ -115,7 +115,7 @@ function routeAction(req) {
 
     // --- Auth ---
     case 'login':    return login(req.email, req.password);
-    case 'register': return register(req.email, req.password, req.bandName || '');
+    case 'register': return register(req.name || '', req.email, req.password, req.bandName || '');
     case 'logout':   return logoutSession(req._token || '');
     case 'requestPasswordReset':  return requestPasswordReset(req.email || '');
     case 'verifyPasswordResetOtp': return verifyPasswordResetOtp(req.email || '', req.otp || '');
@@ -231,7 +231,7 @@ function login(email, password) {
   }
 }
 
-function register(email, password, bandName) {
+function register(name, email, password, bandName) {
   try {
     if (!email || !password) return { success: false, message: 'กรุณากรอกอีเมลและรหัสผ่าน' };
     if (password.length < 8) return { success: false, message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' };
@@ -247,7 +247,8 @@ function register(email, password, bandName) {
     }
     var userId = Utilities.getUuid();
     var bandId = 'BAND_' + Date.now();
-    sheet.appendRow([userId, emailLower, hashPassword(password), email.split('@')[0], 'manager', bandName || 'วงดนตรี', bandId, 'active', new Date().toISOString()]);
+    var userName = (name || '').trim() || email.split('@')[0];
+    sheet.appendRow([userId, emailLower, hashPassword(password), userName, 'manager', bandName || 'วงดนตรี', bandId, 'active', new Date().toISOString()]);
     return { success: true, message: 'สมัครสมาชิกสำเร็จ' };
   } catch (err) {
     return { success: false, message: err.toString() };
