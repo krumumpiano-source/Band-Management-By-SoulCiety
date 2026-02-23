@@ -10,8 +10,10 @@ function renderMainNav(containerId) {
 
   var bandName = localStorage.getItem('bandName') || (typeof t === 'function' ? t('yourBand') : 'วงของคุณ');
   var userName = localStorage.getItem('userName') || (typeof t === 'function' ? t('user') : 'ผู้ใช้');
-  var isManager = !!(localStorage.getItem('bandManager') || localStorage.getItem('userRole') === 'manager');
-  var isAdmin = localStorage.getItem('userRole') === 'admin';
+  var userRole = localStorage.getItem('userRole') || 'member';
+  var isAdmin = userRole === 'admin';
+  // admin มีสิทธิ์ทุกอย่างที่ manager มี
+  var isManager = !!(localStorage.getItem('bandManager') || userRole === 'manager' || isAdmin);
   var _t = typeof t === 'function' ? t : function(k) { return k; };
 
   // ตรวจ active page
