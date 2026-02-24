@@ -88,6 +88,12 @@ var SHEET_SCHEMAS = [
     color: '#ff9800',
     description: 'ใบเสนอราคาและใบเสร็จ',
     columns: ['quotationId','bandId','clientId','clientName','date','eventDate','eventType','venue','items','subtotal','vat','vatAmount','total','status','notes','docUrl','createdAt','updatedAt']
+  },
+  {
+    name: 'INVITE_CODES',
+    color: '#673ab7',
+    description: 'รหัสเชิญสมาชิกเข้าวง (อายุ 7 วัน)',
+    columns: ['code','bandId','createdBy','createdAt','expiresAt','usageCount']
   }
 ];
 

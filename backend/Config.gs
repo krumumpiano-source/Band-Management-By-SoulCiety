@@ -35,7 +35,8 @@ var CONFIG = {
     CLIENTS:              'CLIENTS',
     QUOTATIONS:           'QUOTATIONS',
     MEMBER_CHECK_INS:     'MEMBER_CHECK_INS',  // บันทึกเข้างานของสมาชิกแต่ละคน
-    LEAVE_REQUESTS:       'LEAVE_REQUESTS'      // คำขอลางานและคนแทน
+    LEAVE_REQUESTS:       'LEAVE_REQUESTS',     // คำขอลางานและคนแทน
+    INVITE_CODES:         'INVITE_CODES'        // รหัสเชิญสมาชิก
   },
 
   // System Settings

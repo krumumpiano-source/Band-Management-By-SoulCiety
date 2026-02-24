@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>สมัครสมาชิก — Band Management By SoulCiety</title>
+  <title>à¸ªà¸¡à¸±à¸„à¸£à¸ªà¸¡à¸²à¸Šà¸´à¸ â€” Band Management By SoulCiety</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <?!= include('css_theme') ?>
   <?!= include('css_browser-compat') ?>
@@ -28,48 +28,53 @@
   <div class="auth-wrap">
     <div class="auth-card">
       <div class="auth-logo">
-        <h1>🎵 SoulCiety</h1>
-        <p data-i18n="registerNew">สมัครสมาชิกใหม่</p>
+        <h1>ðŸŽµ SoulCiety</h1>
+        <p data-i18n="registerNew">à¸ªà¸¡à¸±à¸„à¸£à¸ªà¸¡à¸²à¸Šà¸´à¸à¹ƒà¸«à¸¡à¹ˆ</p>
       </div>
       <form id="registerForm">
+        <div id="modeSwitchBtns" style="display:flex;gap:6px;margin-bottom:var(--spacing-md)">
+          <button type="button" class="btn btn-primary btn-sm" data-mode="create" style="flex:1">ðŸŽµ à¸ªà¸£à¹‰à¸²à¸‡à¸§à¸‡à¹ƒà¸«à¸¡à¹ˆ</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-mode="join" style="flex:1">ðŸ”‘ à¹€à¸‚à¹‰à¸²à¸£à¹ˆà¸§à¸¡à¸§à¸‡à¸”à¹‰à¸§à¸¢à¸£à¸«à¸±à¸ªà¹€à¸Šà¸´à¸</button>
+        </div>
         <div class="form-group">
-          <label data-i18n="fullName">ชื่อ-นามสกุล</label>
-          <input type="text" id="name" data-i18n-placeholder="enterFullName" placeholder="กรุณากรอกชื่อ-นามสกุล" required>
+          <label data-i18n="fullName">à¸Šà¸·à¹ˆà¸­-à¸™à¸²à¸¡à¸ªà¸à¸¸à¸¥</label>
+          <input type="text" id="name" data-i18n-placeholder="enterFullName" placeholder="à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸Šà¸·à¹ˆà¸­-à¸™à¸²à¸¡à¸ªà¸à¸¸à¸¥" required>
           <div class="err-msg" id="nameError"></div>
         </div>
         <div class="form-group">
-          <label data-i18n="email">อีเมล</label>
-          <input type="email" id="email" data-i18n-placeholder="enterEmail" placeholder="กรุณากรอกอีเมล" required>
+          <label data-i18n="email">à¸­à¸µà¹€à¸¡à¸¥</label>
+          <input type="email" id="email" data-i18n-placeholder="enterEmail" placeholder="à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸­à¸µà¹€à¸¡à¸¥" required>
           <div class="err-msg" id="emailError"></div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label data-i18n="password">รหัสผ่าน</label>
-            <input type="password" id="password" data-i18n-placeholder="enterPassword" placeholder="รหัสผ่าน (8+ ตัว)" required>
+            <label data-i18n="password">à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™</label>
+            <input type="password" id="password" placeholder="à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™ (8+ à¸•à¸±à¸§)" required>
             <div class="err-msg" id="passwordError"></div>
           </div>
           <div class="form-group">
-            <label data-i18n="confirmPassword">ยืนยันรหัสผ่าน</label>
-            <input type="password" id="confirmPassword" data-i18n-placeholder="confirmPassword" placeholder="พิมพ์รหัสผ่านอีกครั้ง" required>
+            <label data-i18n="confirmPassword">à¸¢à¸·à¸™à¸¢à¸±à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™</label>
+            <input type="password" id="confirmPassword" placeholder="à¸žà¸´à¸¡à¸žà¹Œà¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡" required>
             <div class="err-msg" id="confirmError"></div>
           </div>
         </div>
-        <div class="form-group">
-          <label data-i18n="bandName">ชื่อวง</label>
-          <input type="text" id="bandName" data-i18n-placeholder="enterBandName" placeholder="กรุณากรอกชื่อวง" required>
+        <div id="bandNameGroup" class="form-group">
+          <label data-i18n="bandName">à¸Šà¸·à¹ˆà¸­à¸§à¸‡</label>
+          <input type="text" id="bandNameInput" placeholder="à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸Šà¸·à¹ˆà¸­à¸§à¸‡à¸”à¸™à¸•à¸£à¸µ" required>
         </div>
-        <div class="form-group">
-          <label data-i18n="inviteCode">รหัสเชิญ (ถ้ามี)</label>
-          <input type="text" id="inviteCode" placeholder="optional">
+        <div id="inviteGroup" class="form-group" style="display:none">
+          <label>ðŸ”‘ à¸£à¸«à¸±à¸ªà¹€à¸Šà¸´à¸à¸ˆà¸²à¸à¸œà¸¹à¹‰à¸ˆà¸±à¸”à¸à¸²à¸£à¸§à¸‡</label>
+          <input type="text" id="inviteCode" placeholder="à¸à¸£à¸­à¸à¸£à¸«à¸±à¸ª 6 à¸«à¸¥à¸±à¸ à¹€à¸Šà¹ˆà¸™ AB3X7Q" maxlength="6" style="text-transform:uppercase;font-family:monospace;font-size:1.2rem;letter-spacing:.2em;text-align:center">
+          <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px">à¸‚à¸­à¸£à¸«à¸±à¸ªà¸ˆà¸²à¸à¸œà¸¹à¹‰à¸ˆà¸±à¸”à¸à¸²à¸£à¸§à¸‡ à¹à¸¥à¹‰à¸§à¸™à¸³à¸¡à¸²à¸à¸£à¸­à¸à¸—à¸µà¹ˆà¸™à¸µà¹‰</div>
         </div>
         <div class="err-msg" id="generalError"></div>
         <button type="submit" class="btn btn-primary btn-full" id="regBtn">
-          <span data-i18n="registerNew">สมัครสมาชิก</span>
+          <span data-i18n="registerNew">à¸ªà¸¡à¸±à¸„à¸£à¸ªà¸¡à¸²à¸Šà¸´à¸</span>
         </button>
       </form>
       <div class="auth-footer">
-        <span data-i18n="haveAccount">มีบัญชีแล้ว?</span>
-        <a href="?page=index" data-i18n="login">เข้าสู่ระบบ</a>
+        <span data-i18n="haveAccount">à¸¡à¸µà¸šà¸±à¸à¸Šà¸µà¹à¸¥à¹‰à¸§?</span>
+        <a href="?page=index" data-i18n="login">à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸š</a>
       </div>
     </div>
   </div>
@@ -80,48 +85,68 @@
     if (typeof renderLangToggle === 'function') renderLangToggle('langToggle');
     if (typeof applyTranslations === 'function') applyTranslations();
 
+    var urlInvite = new URLSearchParams(window.location.search).get('invite') || '';
+    if (urlInvite) { document.getElementById('inviteCode').value = urlInvite.toUpperCase(); switchMode('join'); }
+
+    document.getElementById('modeSwitchBtns').addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-mode]');
+      if (btn) switchMode(btn.dataset.mode);
+    });
+
+    function switchMode(mode) {
+      var joinMode = mode === 'join';
+      document.getElementById('bandNameGroup').style.display = joinMode ? 'none' : '';
+      document.getElementById('inviteGroup').style.display = joinMode ? '' : 'none';
+      document.getElementById('bandNameInput').required = !joinMode;
+      document.getElementById('inviteCode').required = joinMode;
+      document.querySelectorAll('[data-mode]').forEach(function(b) {
+        b.classList.toggle('btn-primary', b.dataset.mode === mode);
+        b.classList.toggle('btn-secondary', b.dataset.mode !== mode);
+      });
+    }
+
     document.getElementById('registerForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      ['nameError','emailError','passwordError','confirmError','generalError'].forEach(function(id){
-        document.getElementById(id).textContent = '';
-      });
+      ['nameError','emailError','passwordError','confirmError','generalError'].forEach(function(id){ document.getElementById(id).textContent = ''; });
       var name = document.getElementById('name').value.trim();
       var email = document.getElementById('email').value.trim();
       var pw = document.getElementById('password').value;
       var cpw = document.getElementById('confirmPassword').value;
-      var band = document.getElementById('bandName').value.trim();
-      var invite = document.getElementById('inviteCode').value.trim();
+      var band = document.getElementById('bandNameInput').value.trim();
+      var invite = document.getElementById('inviteCode').value.trim().toUpperCase();
+      var joinMode = document.getElementById('inviteGroup').style.display !== 'none';
 
       var ok = true;
-      if (!name) { document.getElementById('nameError').textContent = 'กรุณากรอกชื่อ'; ok = false; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('emailError').textContent = t('errInvalidEmail'); ok = false; }
-      if (pw.length < 8) { document.getElementById('passwordError').textContent = 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'; ok = false; }
-      if (pw !== cpw) { document.getElementById('confirmError').textContent = 'รหัสผ่านไม่ตรงกัน'; ok = false; }
-      if (!band) { document.getElementById('generalError').textContent = 'กรุณากรอกชื่อวง'; ok = false; }
+      if (!name) { document.getElementById('nameError').textContent = 'à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸Šà¸·à¹ˆà¸­'; ok = false; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('emailError').textContent = 'à¸­à¸µà¹€à¸¡à¸¥à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡'; ok = false; }
+      if (pw.length < 8) { document.getElementById('passwordError').textContent = 'à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¸•à¹‰à¸­à¸‡à¸¡à¸µà¸­à¸¢à¹ˆà¸²à¸‡à¸™à¹‰à¸­à¸¢ 8 à¸•à¸±à¸§à¸­à¸±à¸à¸©à¸£'; ok = false; }
+      if (pw !== cpw) { document.getElementById('confirmError').textContent = 'à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¹„à¸¡à¹ˆà¸•à¸£à¸‡à¸à¸±à¸™'; ok = false; }
+      if (!joinMode && !band) { document.getElementById('generalError').textContent = 'à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸Šà¸·à¹ˆà¸­à¸§à¸‡'; ok = false; }
+      if (joinMode && !invite) { document.getElementById('generalError').textContent = 'à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸£à¸«à¸±à¸ªà¹€à¸Šà¸´à¸'; ok = false; }
       if (!ok) return;
 
       var btn = document.getElementById('regBtn');
-      btn.disabled = true; btn.textContent = t('loading');
+      btn.disabled = true; btn.textContent = 'à¸à¸³à¸¥à¸±à¸‡à¸ªà¸¡à¸±à¸„à¸£...';
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run
           .withSuccessHandler(function(r) {
-            btn.disabled = false; btn.textContent = t('registerNew');
+            btn.disabled = false; btn.textContent = 'à¸ªà¸¡à¸±à¸„à¸£à¸ªà¸¡à¸²à¸Šà¸´à¸';
             if (r && r.success) {
-              showToast(t('msg_success'), 'success');
-              setTimeout(function() { window.location.href = '?page=index'; }, 1500);
+              if (typeof showToast === 'function') showToast((r.message || 'à¸ªà¸¡à¸±à¸„à¸£à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢!') + ' à¸à¸³à¸¥à¸±à¸‡à¹„à¸›à¸«à¸™à¹‰à¸²à¸¥à¹‡à¸­à¸à¸­à¸´à¸™...', 'success');
+              setTimeout(function() { window.location.href = '?page=index'; }, 1800);
             } else {
-              document.getElementById('generalError').textContent = (r && r.message) || t('msg_error');
+              document.getElementById('generalError').textContent = (r && r.message) || 'à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”';
             }
           })
           .withFailureHandler(function(err) {
-            btn.disabled = false; btn.textContent = t('registerNew');
-            document.getElementById('generalError').textContent = err.message || t('msg_error');
+            btn.disabled = false; btn.textContent = 'à¸ªà¸¡à¸±à¸„à¸£à¸ªà¸¡à¸²à¸Šà¸´à¸';
+            document.getElementById('generalError').textContent = err.message || 'à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”';
           })
           .doPostFromClient({ action: 'register', name: name, email: email, password: pw, bandName: band, inviteCode: invite });
       } else {
         btn.disabled = false;
-        if (typeof showToast === 'function') showToast('Demo mode — Deploy GAS ก่อนสมัครสมาชิกจริง', 'info');
+        if (typeof showToast === 'function') showToast('Demo mode â€” Deploy GAS à¸à¹ˆà¸­à¸™à¸ªà¸¡à¸±à¸„à¸£à¸ªà¸¡à¸²à¸Šà¸´à¸à¸ˆà¸£à¸´à¸‡', 'info');
       }
     });
   });

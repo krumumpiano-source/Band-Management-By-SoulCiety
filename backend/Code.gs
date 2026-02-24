@@ -116,13 +116,15 @@ function routeAction(req) {
 
     // --- Auth ---
     case 'login':    return login(req.email, req.password);
-    case 'register': return register(req.name || '', req.email, req.password, req.bandName || '');
+    case 'register': return register(req.name || '', req.email, req.password, req.bandName || '', req.inviteCode || '');
     case 'logout':   return logoutSession(req._token || '');
     case 'requestPasswordReset':  return requestPasswordReset(req.email || '');
     case 'verifyPasswordResetOtp': return verifyPasswordResetOtp(req.email || '', req.otp || '');
     case 'resetPassword':          return resetPassword(req.email || '', req.otp || '', req.newPassword || '');
 
-    // --- Songs ---
+    case 'generateInviteCode': return generateInviteCode(req.bandId || '');
+
+    // --- Settings ---
     case 'getAllSongs':   return getAllSongs(req.source || 'global', req.bandId || '');
     case 'addSong':      return addSong(req.data || req);
     case 'updateSong':   return updateSong(req.songId, req.data || req);
@@ -243,7 +245,7 @@ function login(email, password) {
   }
 }
 
-function register(name, email, password, bandName) {
+function register(name, email, password, bandName, inviteCode) {
   try {
     if (!email || !password) return { success: false, message: 'กรุณากรอกอีเมลและรหัสผ่าน' };
     if (password.length < 8) return { success: false, message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' };
@@ -258,11 +260,82 @@ function register(name, email, password, bandName) {
       }
     }
     var userId = Utilities.getUuid();
-    var bandId = 'BAND_' + Date.now();
     var userName = (name || '').trim() || email.split('@')[0];
-    sheet.appendRow([userId, emailLower, hashPassword(password), userName, 'manager', bandName || 'วงดนตรี', bandId, 'active', new Date().toISOString()]);
-    return { success: true, message: 'สมัครสมาชิกสำเร็จ' };
+    var role = 'manager';
+    var resolvedBandName = bandName || 'วงดนตรี';
+    var bandId = 'BAND_' + Date.now();
+
+    // ── Join via invite code ──────────────────────────
+    if (inviteCode && inviteCode.trim()) {
+      var joined = _redeemInviteCode(inviteCode.trim().toUpperCase(), userId, userName);
+      if (joined.success) {
+        bandId = joined.bandId;
+        resolvedBandName = joined.bandName || resolvedBandName;
+        role = 'member';
+      } else {
+        return { success: false, message: '❌ รหัสเชิญไม่ถูกต้องหรือหมดอายุแล้ว: ' + joined.message };
+      }
+    }
+    // ─────────────────────────────────────────────────
+
+    sheet.appendRow([userId, emailLower, hashPassword(password), userName, role, resolvedBandName, bandId, 'active', new Date().toISOString()]);
+    return { success: true, message: 'สมัครสมาชิกสำเร็จ' + (role === 'member' ? ' — เข้าร่วมวง ' + resolvedBandName + ' แล้ว!' : '') };
   } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+/**
+ * สร้างรหัสเชิญสมาชิก (อายุ 7 วัน)
+ */
+function generateInviteCode(bandId) {
+  try {
+    if (!bandId) return { success: false, message: 'ไม่พบ bandId' };
+    // ตรวจสอบ band
+    var bandSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEETS.BANDS);
+    var resolvedBandName = bandId;
+    if (bandSheet) {
+      var bdata = bandSheet.getDataRange().getValues();
+      for (var i = 1; i < bdata.length; i++) {
+        if (bdata[i][0] === bandId) { resolvedBandName = bdata[i][1] || bandId; break; }
+      }
+    }
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var code = '';
+    for (var k = 0; k < 6; k++) code += chars[Math.floor(Math.random() * chars.length)];
+    var now = new Date();
+    var expires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    var sheet = getOrCreateSheet(CONFIG.SHEETS.INVITE_CODES, ['code','bandId','bandName','createdAt','expiresAt','status','usedBy']);
+    sheet.appendRow([code, bandId, resolvedBandName, now.toISOString(), expires.toISOString(), 'active', '']);
+    return { success: true, data: { code: code, bandId: bandId, bandName: resolvedBandName, expiresAt: expires.toISOString() } };
+  } catch (err) {
+    return { success: false, message: err.toString() };
+  }
+}
+
+/**
+ * ใช้รหัสเชิญ — return { success, bandId, bandName }
+ */
+function _redeemInviteCode(code, userId, userName) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEETS.INVITE_CODES);
+    if (!sheet) return { success: false, message: 'ไม่พบตารางรหัสเชิญ' };
+    var data = sheet.getDataRange().getValues();
+    var h = data[0];
+    var ci = { code:h.indexOf('code'), bandId:h.indexOf('bandId'), bandName:h.indexOf('bandName'), expires:h.indexOf('expiresAt'), status:h.indexOf('status'), usedBy:h.indexOf('usedBy') };
+    for (var i = 1; i < data.length; i++) {
+      if ((data[i][ci.code]||'').toString().toUpperCase() !== code) continue;
+      if (data[i][ci.status] !== 'active') return { success: false, message: 'รหัสนี้ถูกใช้ไปแล้ว' };
+      var exp = new Date(data[i][ci.expires]);
+      if (exp < new Date()) return { success: false, message: 'รหัสหมดอายุแล้ว' };
+      // Mark as used
+      var usedStr = (data[i][ci.usedBy] ? data[i][ci.usedBy] + ',' : '') + (userName || userId);
+      sheet.getRange(i+1, ci.usedBy+1).setValue(usedStr);
+      // Don't deactivate — allow multiple uses within 7 days
+      return { success: true, bandId: data[i][ci.bandId], bandName: data[i][ci.bandName] };
+    }
+    return { success: false, message: 'ไม่พบรหัสนี้ในระบบ' };
+  } catch(err) {
     return { success: false, message: err.toString() };
   }
 }

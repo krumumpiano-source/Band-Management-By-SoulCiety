@@ -33,6 +33,12 @@
         <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:2px" data-i18n="appCredit">Band Management By SoulCiety</p>
       </div>
       <form id="registerForm">
+        <!-- Mode toggle -->
+        <div id="modeSwitchBtns" style="display:flex;gap:6px;margin-bottom:var(--spacing-md)">
+          <button type="button" class="btn btn-primary btn-sm" data-mode="create" style="flex:1">🎵 สร้างวงใหม่</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-mode="join" style="flex:1">🔑 เข้าร่วมวงด้วยรหัสเชิญ</button>
+        </div>
+
         <div class="form-group">
           <label data-i18n="fullName">ชื่อ-นามสกุล</label>
           <input type="text" id="name" data-i18n-placeholder="enterFullName" placeholder="กรุณากรอกชื่อ-นามสกุล" required>
@@ -55,14 +61,20 @@
             <div class="err-msg" id="confirmError"></div>
           </div>
         </div>
-        <div class="form-group">
+
+        <!-- Create band mode -->
+        <div id="bandNameGroup" class="form-group">
           <label data-i18n="bandName">ชื่อวง</label>
-          <input type="text" id="bandName" data-i18n-placeholder="enterBandName" placeholder="กรุณากรอกชื่อวง" required>
+          <input type="text" id="bandNameInput" data-i18n-placeholder="enterBandName" placeholder="กรุณากรอกชื่อวงดนตรี" required>
         </div>
-        <div class="form-group">
-          <label data-i18n="inviteCode">รหัสเชิญ (ถ้ามี)</label>
-          <input type="text" id="inviteCode" placeholder="optional">
+
+        <!-- Join with invite code mode (hidden by default) -->
+        <div id="inviteGroup" class="form-group" style="display:none">
+          <label>🔑 รหัสเชิญจากผู้จัดการวง</label>
+          <input type="text" id="inviteCode" placeholder="กรอกรหัส 6 หลัก เช่น AB3X7Q" maxlength="6" style="text-transform:uppercase;font-family:monospace;font-size:1.2rem;letter-spacing:.2em;text-align:center">
+          <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px">ขอรหัสจากผู้จัดการวง แล้วนำมากรอกที่นี่</div>
         </div>
+
         <div class="err-msg" id="generalError"></div>
         <button type="submit" class="btn btn-primary btn-full" id="regBtn">
           <span data-i18n="registerNew">สมัครสมาชิก</span>
@@ -81,6 +93,31 @@
     if (typeof renderLangToggle === 'function') renderLangToggle('langToggle');
     if (typeof applyTranslations === 'function') applyTranslations();
 
+    // Pre-fill invite code from URL ?invite=XXXXXX
+    var urlInvite = new URLSearchParams(window.location.search).get('invite') || '';
+    if (urlInvite) {
+      document.getElementById('inviteCode').value = urlInvite.toUpperCase();
+      switchMode('join');
+    }
+
+    // Mode toggle
+    document.getElementById('modeSwitchBtns').addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-mode]');
+      if (btn) switchMode(btn.dataset.mode);
+    });
+
+    function switchMode(mode) {
+      var joinMode = mode === 'join';
+      document.getElementById('bandNameGroup').style.display = joinMode ? 'none' : '';
+      document.getElementById('inviteGroup').style.display = joinMode ? '' : 'none';
+      document.getElementById('bandNameInput').required = !joinMode;
+      document.getElementById('inviteCode').required = joinMode;
+      document.querySelectorAll('[data-mode]').forEach(function(b) {
+        b.classList.toggle('btn-primary', b.dataset.mode === mode);
+        b.classList.toggle('btn-secondary', b.dataset.mode !== mode);
+      });
+    }
+
     document.getElementById('registerForm').addEventListener('submit', function(e) {
       e.preventDefault();
       ['nameError','emailError','passwordError','confirmError','generalError'].forEach(function(id){
@@ -90,15 +127,17 @@
       var email = document.getElementById('email').value.trim();
       var pw = document.getElementById('password').value;
       var cpw = document.getElementById('confirmPassword').value;
-      var band = document.getElementById('bandName').value.trim();
-      var invite = document.getElementById('inviteCode').value.trim();
+      var band = document.getElementById('bandNameInput').value.trim();
+      var invite = document.getElementById('inviteCode').value.trim().toUpperCase();
+      var joinMode = document.getElementById('inviteGroup').style.display !== 'none';
 
       var ok = true;
       if (!name) { document.getElementById('nameError').textContent = 'กรุณากรอกชื่อ'; ok = false; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('emailError').textContent = t('errInvalidEmail'); ok = false; }
       if (pw.length < 8) { document.getElementById('passwordError').textContent = 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'; ok = false; }
       if (pw !== cpw) { document.getElementById('confirmError').textContent = 'รหัสผ่านไม่ตรงกัน'; ok = false; }
-      if (!band) { document.getElementById('generalError').textContent = 'กรุณากรอกชื่อวง'; ok = false; }
+      if (!joinMode && !band) { document.getElementById('generalError').textContent = 'กรุณากรอกชื่อวง'; ok = false; }
+      if (joinMode && !invite) { document.getElementById('generalError').textContent = 'กรุณากรอกรหัสเชิญ'; ok = false; }
       if (!ok) return;
 
       var btn = document.getElementById('regBtn');
@@ -107,8 +146,8 @@
       gasRun('register', { name: name, email: email, password: pw, bandName: band, inviteCode: invite }, function(r) {
         btn.disabled = false; btn.textContent = t('registerNew');
         if (r && r.success) {
-          if (typeof showToast === 'function') showToast('สมัครเรียบร้อย! โปรดล็อกอินเพื่อเข้าใช้งาน', 'success');
-          setTimeout(function() { window.location.href = 'index.html'; }, 1500);
+          if (typeof showToast === 'function') showToast((r.message || 'สมัครเรียบร้อย!') + ' กำลังไปหน้าล็อกอิน...', 'success');
+          setTimeout(function() { window.location.href = 'index.html'; }, 1800);
         } else {
           document.getElementById('generalError').textContent = (r && r.message) || t('msg_error');
         }

@@ -84,6 +84,26 @@ function getBandSettings(bandId) {
     var memberResult = getAllBandMembers();
     if (memberResult.success) result.members = memberResult.data.filter(function(m) { return m.bandId === bandId; });
 
+    // Load active invite code for this band
+    try {
+      var inviteSheet = getOrCreateSheet(CONFIG.SHEETS.INVITE_CODES, ['code','bandId','createdBy','createdAt','expiresAt','usageCount']);
+      var inviteData = inviteSheet.getDataRange().getValues();
+      var now = new Date();
+      var activeCode = null;
+      for (var i = inviteData.length - 1; i >= 1; i--) {
+        if (inviteData[i][1] === bandId) {
+          var exp = new Date(inviteData[i][4]);
+          if (exp > now) { activeCode = { code: inviteData[i][0], expiresAt: inviteData[i][4] }; break; }
+        }
+      }
+      if (activeCode) {
+        result.inviteCode = activeCode.code;
+        result.inviteExpires = activeCode.expiresAt;
+      }
+    } catch(e) {
+      // Invite codes are optional — don't fail getBandSettings because of this
+    }
+
     return { success: true, data: result };
   } catch (error) {
     return { success: false, message: error.toString() };
