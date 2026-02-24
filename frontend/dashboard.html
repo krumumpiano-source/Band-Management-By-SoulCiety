@@ -35,6 +35,26 @@
     .welcome-bar h2{font-size:var(--text-xl);font-weight:700;margin:0}
     .welcome-bar p{font-size:var(--text-sm);color:#cbd5e0;margin:4px 0 0}
     @media(max-width:480px){.welcome-bar{flex-direction:column;align-items:flex-start;gap:var(--spacing-sm)}.quick-actions{grid-template-columns:1fr}}
+    /* === Quick Check-In === */
+    .qci-header{display:flex;align-items:center;gap:12px;margin-bottom:var(--spacing-md)}
+    .qci-date-badge{background:linear-gradient(135deg,var(--premium-gold),#b7791f);color:#fff;border-radius:var(--radius-lg);padding:8px 18px;font-size:var(--text-sm);font-weight:600;white-space:nowrap}
+    .qci-step{margin-bottom:var(--spacing-md)}
+    .qci-step-label{font-size:var(--text-sm);font-weight:600;color:var(--premium-text-light);margin-bottom:8px}
+    .qci-btn-group{display:flex;flex-wrap:wrap;gap:8px}
+    .qci-venue-btn,.qci-slot-btn{padding:10px 18px;border-radius:var(--radius-full);border:2px solid var(--premium-border);background:#fff;cursor:pointer;font-size:var(--text-sm);font-family:var(--font-family-body);color:var(--premium-text);transition:all .18s;font-weight:500}
+    .qci-slot-btn{padding:12px 22px;font-size:var(--text-md)}
+    .qci-venue-btn.selected{border-color:var(--premium-gold);background:var(--premium-gold);color:#fff;font-weight:700;transform:translateY(-1px);box-shadow:0 2px 8px rgba(203,162,60,.35)}
+    .qci-slot-btn.selected{border-color:#276749;background:#276749;color:#fff;font-weight:700;transform:translateY(-1px);box-shadow:0 2px 8px rgba(39,103,73,.25)}
+    .qci-summary{background:linear-gradient(135deg,#f0fff4,#c6f6d5);border:1px solid #9ae6b4;border-radius:var(--radius-lg);padding:var(--spacing-md) var(--spacing-lg);font-size:var(--text-sm);line-height:1.8;display:none}
+    .qci-summary.show{display:block}
+    .qci-summary strong{color:#065f46}
+    .qci-done{background:linear-gradient(135deg,#d1fae5,#a7f3d0);border:1px solid #6ee7b7;border-radius:var(--radius-lg);padding:var(--spacing-lg);text-align:center;display:none}
+    .qci-done.show{display:block}
+    .qci-done .done-icon{font-size:36px;margin-bottom:8px}
+    .qci-done p{margin:4px 0;font-size:var(--text-sm);color:#065f46}
+    .qci-done strong{font-size:var(--text-md);color:#064e3b}
+    .qci-no-schedule{color:var(--premium-text-muted);font-size:var(--text-sm);font-style:italic;padding:10px 0;display:block}
+    .qci-no-work{background:#f7fafc;border:1px dashed var(--premium-border);border-radius:var(--radius-lg);padding:var(--spacing-md) var(--spacing-lg);text-align:center;color:var(--premium-text-muted);font-size:var(--text-sm)}
   </style>
 </head>
 <body>
@@ -48,6 +68,42 @@
           <p id="welcomeBand"></p>
         </div>
         <div style="font-size:32px">🥁</div>
+      </div>
+
+      <!-- ===== Quick Daily Check-In ===== -->
+      <div class="card" id="qciCard" style="margin-bottom:var(--spacing-xl)">
+        <div class="card-header">
+          <div class="qci-header">
+            <h3 class="card-title" style="margin:0">⏰ ลงเวลาประจำวัน</h3>
+            <div class="qci-date-badge" id="qciDateBadge"></div>
+          </div>
+        </div>
+        <div class="qci-done" id="qciDone">
+          <div class="done-icon">✅</div>
+          <strong id="qciDoneSummary">ลงเวลาแล้ว</strong>
+          <p id="qciDoneDetail"></p>
+          <button class="btn btn-ghost btn-sm" style="margin-top:8px" id="qciEditBtn">✏️ แก้ไขเวลา</button>
+        </div>
+        <div id="qciForm">
+          <div class="qci-step" id="qciVenueStep">
+            <div class="qci-step-label">📍 สถานที่</div>
+            <div class="qci-btn-group" id="qciVenueBtns"><span class="qci-no-schedule">⏳ กำลังโหลด...</span></div>
+          </div>
+          <div class="qci-step" id="qciSlotStep">
+            <div class="qci-step-label" id="qciSlotLabel">🕐 รอบวันนี้</div>
+            <div class="qci-btn-group" id="qciSlotBtns"><span class="qci-no-schedule">⏳ กำลังโหลด...</span></div>
+          </div>
+          <div class="qci-summary" id="qciSummary">
+            <strong>📋 สรุปการลงเวลา</strong><br>
+            📅 วันที่: <strong id="sumDate"></strong><br>
+            📍 ร้าน: <strong id="sumVenue"></strong><br>
+            ⏰ ช่วงเวลา: <strong id="sumSlots"></strong>
+          </div>
+          <div id="qciConfirmRow" style="display:none;margin-top:var(--spacing-md)">
+            <button class="btn btn-primary" id="qciConfirmBtn">✅ ยืนยันลงเวลา</button>
+            <button class="btn btn-ghost" id="qciResetBtn" style="margin-left:8px">🔄 รีเซ็ต</button>
+          </div>
+        </div>
       </div>
 
       <!-- Stat Cards -->
@@ -126,6 +182,122 @@
     var band = localStorage.getItem('bandName') || 'วงดนตรี';
     document.getElementById('welcomeName').textContent = 'สวัสดี, ' + name;
     document.getElementById('welcomeBand').textContent = '🎵 ' + band;
+
+    // Quick Check-In init
+    var qciBandId = localStorage.getItem('bandId') || '';
+    var qciBandSettings = { venues: [], scheduleData: {} };
+    var qciSelectedVenue = '', qciSelectedSlots = [], qciExistingCheckIn = null;
+    var QCI_DAY_NAMES_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+    function qciEsc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+
+    var today2 = new Date();
+    var dateBadge = document.getElementById('qciDateBadge');
+    if (dateBadge) dateBadge.textContent = today2.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+    function qciGetSlotsForToday(){
+      var dow=new Date().getDay();
+      var dd=qciBandSettings.scheduleData[dow]||qciBandSettings.scheduleData[String(dow)];
+      if(dd&&dd.timeSlots&&dd.timeSlots.length)return dd.timeSlots.map(function(s){return{key:s.startTime+'-'+s.endTime,label:s.startTime+' – '+s.endTime};});
+      return[];
+    }
+    function qciUpdateSummary(){
+      var summary=document.getElementById('qciSummary'),confirmRow=document.getElementById('qciConfirmRow');
+      if(!summary||!confirmRow)return;
+      if(qciSelectedVenue&&qciSelectedSlots.length){
+        var dt=new Date(),ds=dt.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+        var ss=qciSelectedSlots.map(function(k){var p=k.split('-');return p[0]+' – '+p[1];}).join(' · ');
+        document.getElementById('sumDate').textContent=ds;
+        document.getElementById('sumVenue').textContent=qciSelectedVenue;
+        document.getElementById('sumSlots').textContent=ss;
+        summary.classList.add('show');confirmRow.style.display='block';
+      }else{summary.classList.remove('show');confirmRow.style.display='none';}
+    }
+    function qciRenderSlots(){
+      var container=document.getElementById('qciSlotBtns'),label=document.getElementById('qciSlotLabel');
+      if(!container)return;
+      var dow=new Date().getDay();
+      if(label)label.textContent='🕐 รอบวัน'+QCI_DAY_NAMES_TH[dow]+'นี้';
+      var slots=qciGetSlotsForToday();
+      if(!slots.length){
+        container.innerHTML='<div class="qci-no-work">🎵 ไม่มีรอบสำหรับวัน'+QCI_DAY_NAMES_TH[dow]+'นี้<br><span style="font-size:11px;opacity:.7">ผู้จัดการยังไม่ได้กำหนดตารางวันนี้</span></div>';
+        document.getElementById('qciSummary').classList.remove('show');
+        document.getElementById('qciConfirmRow').style.display='none';return;
+      }
+      var existing=(qciExistingCheckIn&&qciExistingCheckIn.slots)?qciExistingCheckIn.slots:[];
+      container.innerHTML=slots.map(function(s){var pre=existing.indexOf(s.key)!==-1?' selected':'';return'<button type="button" class="qci-slot-btn'+pre+'" data-slot="'+qciEsc(s.key)+'">🕐 '+qciEsc(s.label)+'</button>';}).join('');
+      if(existing.length)qciSelectedSlots=existing.slice();
+      container.querySelectorAll('.qci-slot-btn').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          btn.classList.toggle('selected');
+          var slot=btn.dataset.slot;
+          if(btn.classList.contains('selected')){if(qciSelectedSlots.indexOf(slot)===-1)qciSelectedSlots.push(slot);}else{qciSelectedSlots=qciSelectedSlots.filter(function(s){return s!==slot;});}
+          qciUpdateSummary();
+        });
+      });
+      qciUpdateSummary();
+    }
+    function qciRenderVenues(){
+      var venueStep=document.getElementById('qciVenueStep'),container=document.getElementById('qciVenueBtns');
+      if(!container)return;
+      var venues=(qciBandSettings.venues||[]);
+      if(!venues.length)venues=[{name:'ร้านหลัก'}];
+      if(venues.length===1){qciSelectedVenue=venues[0].name||venues[0].venueName||'ร้านหลัก';if(venueStep)venueStep.style.display='none';qciRenderSlots();return;}
+      if(venueStep)venueStep.style.display='block';
+      container.innerHTML=venues.map(function(v){var name=v.name||v.venueName||String(v);return'<button type="button" class="qci-venue-btn" data-venue="'+qciEsc(name)+'">📍 '+qciEsc(name)+'</button>';}).join('');
+      container.querySelectorAll('.qci-venue-btn').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          container.querySelectorAll('.qci-venue-btn').forEach(function(b){b.classList.remove('selected');});
+          btn.classList.add('selected');qciSelectedVenue=btn.dataset.venue;qciUpdateSummary();
+        });
+      });
+      var first=container.querySelector('.qci-venue-btn');if(first)first.click();
+      qciRenderSlots();
+    }
+    function qciShowDone(slots,venue){
+      var done=document.getElementById('qciDone'),form=document.getElementById('qciForm');
+      var ss=(slots||[]).map(function(k){var p=k.split('-');return p[0]+' – '+p[1];}).join(' · ');
+      document.getElementById('qciDoneSummary').textContent='✅ ลงเวลาแล้ววันนี้';
+      document.getElementById('qciDoneDetail').textContent='📍 '+venue+' · ⏰ '+ss;
+      done.classList.add('show');form.style.display='none';
+    }
+    function qciLoadAndRender(){
+      var stored=localStorage.getItem('bandSettings');
+      if(stored){try{var s=JSON.parse(stored);qciBandSettings={venues:s.venues||[],scheduleData:s.scheduleData||s.schedule||{}};}catch(e){}}
+      qciRenderVenues();
+      if(qciBandId&&typeof gasRun==='function'){
+        var td=new Date().toISOString().split('T')[0];
+        gasRun('getMyCheckIn',{date:td,venue:'',bandId:qciBandId},function(r){
+          if(r&&r.success&&r.checkIn){qciExistingCheckIn=r.checkIn;var ci=r.checkIn;if(ci.status==='confirmed'||ci.status==='pending')qciShowDone(ci.slots,ci.venue);}
+        });
+        if(!qciBandSettings.venues.length)gasRun('getBandSettings',{bandId:qciBandId},function(r){
+          if(r&&r.success&&r.data){qciBandSettings={venues:r.data.venues||[],scheduleData:r.data.scheduleData||r.data.schedule||{}};try{localStorage.setItem('bandSettings',JSON.stringify(r.data));}catch(e){}qciRenderVenues();}
+        });
+      }
+    }
+    document.getElementById('qciConfirmBtn').addEventListener('click',function(){
+      if(!qciSelectedVenue){alert('กรุณาเลือกสถานที่ก่อน');return;}
+      if(!qciSelectedSlots.length){alert('กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง');return;}
+      var btn=document.getElementById('qciConfirmBtn');btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';
+      var td=new Date().toISOString().split('T')[0];
+      gasRun('memberCheckIn',{bandId:qciBandId,date:td,venue:qciSelectedVenue,slots:qciSelectedSlots,notes:''},function(r){
+        btn.disabled=false;btn.textContent='✅ ยืนยันลงเวลา';
+        if(r&&r.success){qciShowDone(qciSelectedSlots,qciSelectedVenue);}else{alert((r&&r.message)||'เกิดข้อผิดพลาด กรุณาลองใหม่');}
+      });
+    });
+    document.getElementById('qciResetBtn').addEventListener('click',function(){
+      qciSelectedVenue='';qciSelectedSlots=[];qciExistingCheckIn=null;
+      document.getElementById('qciDone').classList.remove('show');
+      document.getElementById('qciForm').style.display='block';
+      document.getElementById('qciSummary').classList.remove('show');
+      document.getElementById('qciConfirmRow').style.display='none';
+      qciRenderVenues();
+    });
+    document.getElementById('qciEditBtn').addEventListener('click',function(){
+      document.getElementById('qciDone').classList.remove('show');
+      document.getElementById('qciForm').style.display='block';
+      if(qciExistingCheckIn&&qciExistingCheckIn.venue){qciSelectedVenue=qciExistingCheckIn.venue;var vb=document.querySelector('.qci-venue-btn[data-venue="'+qciSelectedVenue+'"]');if(vb)vb.classList.add('selected');qciRenderSlots();}
+    });
+    qciLoadAndRender();
 
     loadDashboard();
   });

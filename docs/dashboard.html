@@ -48,10 +48,10 @@
     .qci-header{display:flex;align-items:center;gap:12px;margin-bottom:var(--spacing-md)}
     .qci-date-badge{background:linear-gradient(135deg,var(--premium-gold),#b7791f);color:#fff;border-radius:var(--radius-lg);padding:8px 18px;font-size:var(--text-sm);font-weight:600;white-space:nowrap}
     .qci-step{margin-bottom:var(--spacing-md)}
-    .qci-step-label{font-size:var(--text-sm);font-weight:600;color:var(--premium-text-light);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-    .qci-step-label .step-num{width:22px;height:22px;border-radius:50%;background:var(--premium-gold);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+    .qci-step-label{font-size:var(--text-sm);font-weight:600;color:var(--premium-text-light);margin-bottom:8px}
     .qci-btn-group{display:flex;flex-wrap:wrap;gap:8px}
     .qci-venue-btn,.qci-slot-btn{padding:10px 18px;border-radius:var(--radius-full);border:2px solid var(--premium-border);background:#fff;cursor:pointer;font-size:var(--text-sm);font-family:var(--font-family-body);color:var(--premium-text);transition:all .18s;font-weight:500}
+    .qci-slot-btn{padding:12px 22px;font-size:var(--text-md)}
     .qci-venue-btn.selected{border-color:var(--premium-gold);background:var(--premium-gold);color:#fff;font-weight:700;transform:translateY(-1px);box-shadow:0 2px 8px rgba(203,162,60,.35)}
     .qci-slot-btn.selected{border-color:#276749;background:#276749;color:#fff;font-weight:700;transform:translateY(-1px);box-shadow:0 2px 8px rgba(39,103,73,.25)}
     .qci-summary{background:linear-gradient(135deg,#f0fff4,#c6f6d5);border:1px solid #9ae6b4;border-radius:var(--radius-lg);padding:var(--spacing-md) var(--spacing-lg);font-size:var(--text-sm);line-height:1.8;display:none}
@@ -62,7 +62,8 @@
     .qci-done .done-icon{font-size:36px;margin-bottom:8px}
     .qci-done p{margin:4px 0;font-size:var(--text-sm);color:#065f46}
     .qci-done strong{font-size:var(--text-md);color:#064e3b}
-    .qci-no-schedule{color:var(--premium-text-muted);font-size:var(--text-sm);font-style:italic}
+    .qci-no-schedule{color:var(--premium-text-muted);font-size:var(--text-sm);font-style:italic;padding:10px 0;display:block}
+    .qci-no-work{background:#f7fafc;border:1px dashed var(--premium-border);border-radius:var(--radius-lg);padding:var(--spacing-md) var(--spacing-lg);text-align:center;color:var(--premium-text-muted);font-size:var(--text-sm)}
   </style>
 </head>
 <body>
@@ -97,18 +98,20 @@
 
         <!-- Check-in form -->
         <div id="qciForm">
-          <!-- Step 1: Venue -->
-          <div class="qci-step">
-            <div class="qci-step-label"><span class="step-num">1</span> เลือกสถานที่</div>
+          <!-- Venue picker (hidden when single venue via JS) -->
+          <div class="qci-step" id="qciVenueStep">
+            <div class="qci-step-label">📍 สถานที่</div>
             <div class="qci-btn-group" id="qciVenueBtns">
               <span class="qci-no-schedule">⏳ กำลังโหลด...</span>
             </div>
           </div>
 
-          <!-- Step 2: Time slots -->
-          <div class="qci-step" id="qciSlotStep" style="display:none">
-            <div class="qci-step-label"><span class="step-num">2</span> เลือกช่วงเวลาที่ทำงาน <span id="qciDayName" style="color:var(--premium-gold);font-size:12px"></span></div>
-            <div class="qci-btn-group" id="qciSlotBtns"></div>
+          <!-- Time slots for today (auto-rendered from manager's schedule) -->
+          <div class="qci-step" id="qciSlotStep">
+            <div class="qci-step-label" id="qciSlotLabel">🕐 รอบวันนี้</div>
+            <div class="qci-btn-group" id="qciSlotBtns">
+              <span class="qci-no-schedule">⏳ กำลังโหลด...</span>
+            </div>
           </div>
 
           <!-- Summary -->
@@ -122,7 +125,7 @@
           <!-- Confirm -->
           <div id="qciConfirmRow" style="display:none;margin-top:var(--spacing-md)">
             <button class="btn btn-primary" id="qciConfirmBtn">✅ ยืนยันลงเวลา</button>
-            <button class="btn btn-ghost" id="qciResetBtn" style="margin-left:8px">🔄 เริ่มใหม่</button>
+            <button class="btn btn-ghost" id="qciResetBtn" style="margin-left:8px">🔄 รีเซ็ต</button>
           </div>
         </div>
       </div>
@@ -217,54 +220,71 @@
     } else { cb(); }
   }
 
+  /* Returns slots for today's day-of-week (empty = no schedule) */
   function qciGetSlotsForToday() {
     var dow = new Date().getDay();
     var dayData = qciBandSettings.scheduleData[dow] || qciBandSettings.scheduleData[String(dow)];
     if (dayData && dayData.timeSlots && dayData.timeSlots.length) {
-      return dayData.timeSlots.map(function(s) { return { key: s.startTime+'-'+s.endTime, label: s.startTime+' – '+s.endTime }; });
+      return dayData.timeSlots.map(function(s) {
+        return { key: s.startTime + '-' + s.endTime, label: s.startTime + ' – ' + s.endTime };
+      });
     }
-    return [
-      { key:'19:30-20:30', label:'19:30 – 20:30' },
-      { key:'21:00-22:00', label:'21:00 – 22:00' },
-      { key:'22:30-23:30', label:'22:30 – 23:30' }
-    ];
+    return []; /* ไม่มี fallback — แสดง "ไม่มีรอบ" ถ้าผู้จัดการไม่ได้กำหนด */
   }
 
+  /* Render venue buttons; auto-select + hide if only one venue */
   function qciRenderVenues() {
+    var venueStep = document.getElementById('qciVenueStep');
     var container = document.getElementById('qciVenueBtns');
     if (!container) return;
     var venues = (qciBandSettings.venues || []);
     if (!venues.length) venues = [{ name: 'ร้านหลัก' }];
+
+    if (venues.length === 1) {
+      /* เดิมซ่อน venue step เลยถ้ามีร้านเดียว */
+      qciSelectedVenue = venues[0].name || venues[0].venueName || 'ร้านหลัก';
+      if (venueStep) venueStep.style.display = 'none';
+      qciRenderSlots();
+      return;
+    }
+
+    if (venueStep) venueStep.style.display = 'block';
     container.innerHTML = venues.map(function(v) {
       var name = v.name || v.venueName || String(v);
-      return '<button type="button" class="qci-venue-btn" data-venue="'+qciEsc(name)+'">📍 '+qciEsc(name)+'</button>';
+      return '<button type="button" class="qci-venue-btn" data-venue="' + qciEsc(name) + '">📍 ' + qciEsc(name) + '</button>';
     }).join('');
     container.querySelectorAll('.qci-venue-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         container.querySelectorAll('.qci-venue-btn').forEach(function(b) { b.classList.remove('selected'); });
         btn.classList.add('selected');
         qciSelectedVenue = btn.dataset.venue;
-        qciSelectedSlots = [];
-        qciRenderSlots();
         qciUpdateSummary();
       });
     });
+    /* Auto-select first venue */
+    var first = container.querySelector('.qci-venue-btn');
+    if (first) first.click();
+    qciRenderSlots();
   }
 
+  /* Render time slot buttons from manager's schedule for today */
   function qciRenderSlots() {
-    var step = document.getElementById('qciSlotStep');
     var container = document.getElementById('qciSlotBtns');
-    var dayLabel = document.getElementById('qciDayName');
-    if (!step || !container) return;
-    if (!qciSelectedVenue) { step.style.display = 'none'; return; }
-    step.style.display = 'block';
+    var label = document.getElementById('qciSlotLabel');
+    if (!container) return;
     var dow = new Date().getDay();
-    if (dayLabel) dayLabel.textContent = '(วัน'+QCI_DAY_NAMES_TH[dow]+')';
+    if (label) label.textContent = '🕐 รอบวัน' + QCI_DAY_NAMES_TH[dow] + 'นี้';
     var slots = qciGetSlotsForToday();
+    if (!slots.length) {
+      container.innerHTML = '<div class="qci-no-work">🎵 ไม่มีรอบสำหรับวัน' + QCI_DAY_NAMES_TH[dow] + 'นี้<br><span style="font-size:11px;opacity:.7">ผู้จัดการยังไม่ได้กำหนดตารางวันนี้</span></div>';
+      document.getElementById('qciSummary').classList.remove('show');
+      document.getElementById('qciConfirmRow').style.display = 'none';
+      return;
+    }
     var existingSlots = (qciExistingCheckIn && qciExistingCheckIn.slots) ? qciExistingCheckIn.slots : [];
     container.innerHTML = slots.map(function(s) {
       var pre = existingSlots.indexOf(s.key) !== -1 ? ' selected' : '';
-      return '<button type="button" class="qci-slot-btn'+pre+'" data-slot="'+qciEsc(s.key)+'">🕐 '+qciEsc(s.label)+'</button>';
+      return '<button type="button" class="qci-slot-btn' + pre + '" data-slot="' + qciEsc(s.key) + '">🕐 ' + qciEsc(s.label) + '</button>';
     }).join('');
     if (existingSlots.length) qciSelectedSlots = existingSlots.slice();
     container.querySelectorAll('.qci-slot-btn').forEach(function(btn) {
@@ -346,11 +366,11 @@
     qciSelectedVenue = ''; qciSelectedSlots = []; qciExistingCheckIn = null;
     document.getElementById('qciDone').classList.remove('show');
     document.getElementById('qciForm').style.display = 'block';
-    document.getElementById('qciSlotStep').style.display = 'none';
     document.getElementById('qciSummary').classList.remove('show');
     document.getElementById('qciConfirmRow').style.display = 'none';
     document.querySelectorAll('.qci-venue-btn').forEach(function(b) { b.classList.remove('selected'); });
-    qciRenderSlots();
+    qciSelectedSlots = [];
+    qciRenderVenues();
   }
 
   function showDashToast(msg, type) {
@@ -379,7 +399,7 @@
     if (dateBadge) dateBadge.textContent = today.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
     qciLoadSettings(function() {
-      qciRenderVenues();
+      qciRenderVenues(); /* venues → auto-selects single venue → renders slots */
       qciCheckExisting();
     });
 
