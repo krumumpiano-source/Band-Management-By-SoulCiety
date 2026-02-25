@@ -85,8 +85,8 @@ button:disabled{
 }
 
 .result-columns{
-  display:flex;
-  flex-direction:column;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
   gap:0;
 }
 
@@ -96,8 +96,13 @@ button:disabled{
   gap:10px;
   padding:10px 12px;
   border-bottom:1px solid var(--line);
+  border-right:1px solid var(--line);
   transition:background .15s;
   cursor:default;
+}
+/* ลบ border-right ของคอลั่มสุดท้ายแต่ละแถว */
+.result-item:nth-child(3n){
+  border-right:none;
 }
 .result-item:active{background:rgba(255,255,255,.04)}
 
@@ -382,7 +387,9 @@ html{
 }
 
 @media (max-width: 899px) {
-  .result-columns { column-width: min(220px, 100%); }
+  .result-columns { grid-template-columns: repeat(2,1fr); }
+  .result-item:nth-child(3n) { border-right: 1px solid var(--line); }
+  .result-item:nth-child(2n) { border-right: none; }
   .container { padding: 12px; }
   .panel { padding: 12px; }
   .tp-btn, .move-btn, .del {
@@ -403,7 +410,8 @@ html{
 }
 
 @media (max-width: 599px) {
-  .result-columns { column-width: 100%; }
+  .result-columns { grid-template-columns: 1fr; }
+  .result-item { border-right: none; }
   .container { padding: 10px; }
   .panel { padding: 10px; }
   .filters {
