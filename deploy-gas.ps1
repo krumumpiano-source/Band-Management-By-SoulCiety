@@ -13,15 +13,15 @@ $DEPLOYMENT_ID = if ($env:GAS_DEPLOYMENT_ID) { $env:GAS_DEPLOYMENT_ID } else { "
 
 Set-Location $ROOT
 
-# ── Auth: ใช้ .clasprc.json ของโปรเจกต์นี้ถ้ามี (แยกจากโปรเจกต์อื่น) ──
+# ── Auth: use project-local .clasprc.json if available (separate from other projects) ──
 $LOCAL_AUTH = Join-Path $ROOT ".clasprc.json"
 $PREV_CLASP_CONFIG = $env:CLASP_CONFIG
 if (Test-Path $LOCAL_AUTH) {
   $env:CLASP_CONFIG = $LOCAL_AUTH
   Write-Host "   Using project credentials: .clasprc.json" -ForegroundColor DarkGray
 } else {
-  Write-Host "   ⚠️  ไม่พบ .clasprc.json — ใช้ credentials ทั่วไป (~/.clasprc.json)" -ForegroundColor Yellow
-  Write-Host "   หากต้องการแยก credentials: รัน 'clasp login' แล้ว copy ~\.clasprc.json มาวางที่โปรเจกต์นี้เป็น .clasprc.json" -ForegroundColor DarkGray
+  Write-Host "   WARNING: .clasprc.json not found, using global ~/.clasprc.json" -ForegroundColor Yellow
+  Write-Host "   To separate: run 'clasp login' then copy ~/.clasprc.json here as .clasprc.json" -ForegroundColor DarkGray
 }
 
 # ── Step 1: Flatten frontend HTML templates to root so clasp picks them up ──
