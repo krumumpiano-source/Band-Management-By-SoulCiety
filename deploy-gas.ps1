@@ -13,6 +13,17 @@ $DEPLOYMENT_ID = if ($env:GAS_DEPLOYMENT_ID) { $env:GAS_DEPLOYMENT_ID } else { "
 
 Set-Location $ROOT
 
+# ── Auth: ใช้ .clasprc.json ของโปรเจกต์นี้ถ้ามี (แยกจากโปรเจกต์อื่น) ──
+$LOCAL_AUTH = Join-Path $ROOT ".clasprc.json"
+$PREV_CLASP_CONFIG = $env:CLASP_CONFIG
+if (Test-Path $LOCAL_AUTH) {
+  $env:CLASP_CONFIG = $LOCAL_AUTH
+  Write-Host "   Using project credentials: .clasprc.json" -ForegroundColor DarkGray
+} else {
+  Write-Host "   ⚠️  ไม่พบ .clasprc.json — ใช้ credentials ทั่วไป (~/.clasprc.json)" -ForegroundColor Yellow
+  Write-Host "   หากต้องการแยก credentials: รัน 'clasp login' แล้ว copy ~\.clasprc.json มาวางที่โปรเจกต์นี้เป็น .clasprc.json" -ForegroundColor DarkGray
+}
+
 # ── Step 1: Flatten frontend HTML templates to root so clasp picks them up ──
 Write-Host ""
 Write-Host "Flattening frontend HTML templates to root..." -ForegroundColor DarkCyan
@@ -52,3 +63,6 @@ Write-Host "Redeploy complete!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Web App URL (unchanged):"
 Write-Host "   https://script.google.com/macros/s/$DEPLOYMENT_ID/exec" -ForegroundColor Yellow
+
+# ── Restore CLASP_CONFIG env var ──
+$env:CLASP_CONFIG = $PREV_CLASP_CONFIG
