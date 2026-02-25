@@ -521,6 +521,7 @@ html{
       <option value="">นักร้อง</option>
       <option value="ชาย">ชาย</option>
       <option value="หญิง">หญิง</option>
+      <option value="คู่">คู่</option>
     </select>
 
     <select id="era" onchange="onFilterChange()">
@@ -673,16 +674,17 @@ function getFilterValues() {
 function getDropdownFiltered() {
   var f = getFilterValues();
   return allResults.filter(function (s) {
-    if (f.singer === "ชาย" && !s.male) return false;
-    if (f.singer === "หญิง" && !s.female) return false;
+    if (f.singer === "ชาย" && s.singer !== 'male') return false;
+    if (f.singer === "หญิง" && s.singer !== 'female') return false;
+    if (f.singer === "คู่" && s.singer !== 'duet') return false;
     if (f.era && s.era.indexOf(f.era) < 0) return false;
-    if (f.speed) {
-      var bpm = s.bpm || 0;
-      if (f.speed === "ช้า" && (bpm < 1 || bpm > 70)) return false;
-      if (f.speed === "กลาง" && (bpm < 80 || bpm > 115)) return false;
-      if (f.speed === "เร็ว" && bpm < 116) return false;
+    if (f.speed && s.bpm > 0) {
+      var bpm = s.bpm;
+      if (f.speed === "ช้า" && bpm > 75) return false;
+      if (f.speed === "กลาง" && (bpm <= 75 || bpm > 115)) return false;
+      if (f.speed === "เร็ว" && bpm <= 115) return false;
     }
-    if (f.mood && s.mood !== f.mood) return false;
+    if (f.mood && s.mood && s.mood.indexOf(f.mood) < 0) return false;
     return true;
   });
 }

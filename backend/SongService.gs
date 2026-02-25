@@ -7,11 +7,11 @@
  *   ชื่อ Sheet: CONFIG.SONG_SHEET_PREFIX + bandName (เช่น "ลิสเพลงSoulCiety")
  *
  * คอลัมน์ในแต่ละ Sheet:
- *   A: ชื่อเพลง  B: คีย์  C: คีย์ (ตัวโน้ต)  D: ความเร็ว  E: ปีของเพลง  F: ชาย  G: หญิง  H: อารมณ์เพลง
+ *   A: ชื่อเพลง  B: คีย์  C: คีย์ (ตัวโน้ต)  D: ความเร็ว  E: ปีของเพลง  F: ชาย  G: หญิง  H: คู่  I: อารมณ์เพลง
  */
 
 // header row สำหรับ sheet ที่สร้างใหม่
-var SONG_HEADERS = ['ชื่อเพลง','คีย์','คีย์ (ตัวโน้ต)','ความเร็ว','ปีของเพลง','ชาย','หญิง','อารมณ์เพลง'];
+var SONG_HEADERS = ['ชื่อเพลง','คีย์','คีย์ (ตัวโน้ต)','ความเร็ว','ปีของเพลง','ชาย','หญิง','คู่','อารมณ์เพลง'];
 
 // ──────────────────────────────────────────────────────────────
 // HELPERS
@@ -87,7 +87,8 @@ function lookupBandName(bandId) {
 function rowToSong(row, rowNum, bandName) {
   var male   = row[5] === true || String(row[5]).toUpperCase() === 'TRUE' || row[5] === 1;
   var female = row[6] === true || String(row[6]).toUpperCase() === 'TRUE' || row[6] === 1;
-  var singer = (male && female) ? 'duet' : male ? 'male' : female ? 'female' : '';
+  var duet   = row[7] === true || String(row[7]).toUpperCase() === 'TRUE' || row[7] === 1;
+  var singer = (duet || (male && female)) ? 'duet' : male ? 'male' : female ? 'female' : '';
   var bpmRaw = row[3];
   var bpm = (bpmRaw !== '' && !isNaN(bpmRaw)) ? parseInt(bpmRaw) : 0;
   return {
@@ -100,8 +101,9 @@ function rowToSong(row, rowNum, bandName) {
     era:      (row[4] || '').toString().trim(),
     male:     male,
     female:   female,
+    duet:     duet,
     singer:   singer,
-    mood:     (row[7] || '').toString().trim(),
+    mood:     (row[8] || '').toString().trim(),
     source:   'global',
     bandName: bandName
   };
@@ -166,8 +168,11 @@ function addSong(songData) {
 
     var obj   = getSongSheet(bandName);
     var sheet = obj.sheet;
-    var male   = songData.singer === 'male'   || songData.singer === 'duet' || songData.male   === true;
-    var female = songData.singer === 'female' || songData.singer === 'duet' || songData.female === true;
+    var male   = songData.singer === 'male'   || songData.male   === true;
+    var female = songData.singer === 'female' || songData.female === true;
+    var duet   = songData.singer === 'duet'   || songData.duet   === true;
+    // ถ้า singer='duet' ให้เช็ค male+female+duet ทั้งหมด
+    if (duet) { male = true; female = true; }
 
     sheet.appendRow([
       name,
@@ -177,6 +182,7 @@ function addSong(songData) {
       songData.era     || '',
       male,
       female,
+      duet,
       songData.mood    || ''
     ]);
 
@@ -210,15 +216,19 @@ function updateSong(songId, songData) {
     if (songData.keyNote  !== undefined) sheet.getRange(rowNum, 3).setValue(songData.keyNote);
     if (songData.bpm      !== undefined) sheet.getRange(rowNum, 4).setValue(songData.bpm);
     if (songData.era      !== undefined) sheet.getRange(rowNum, 5).setValue(songData.era);
-    if (songData.singer !== undefined || songData.male !== undefined || songData.female !== undefined) {
-      var male   = songData.singer === 'male'   || songData.singer === 'duet' ||
-                   (songData.male   !== undefined ? songData.male   : (data[rowNum-1][5] === true));
-      var female = songData.singer === 'female' || songData.singer === 'duet' ||
-                   (songData.female !== undefined ? songData.female : (data[rowNum-1][6] === true));
-      sheet.getRange(rowNum, 6).setValue(male);
-      sheet.getRange(rowNum, 7).setValue(female);
+    if (songData.singer !== undefined || songData.male !== undefined || songData.female !== undefined || songData.duet !== undefined) {
+      var newMale   = songData.singer === 'male'   || songData.male   === true ||
+                      (songData.singer !== 'female' && songData.singer !== 'duet' && songData.male === undefined && data[rowNum-1][5] === true);
+      var newFemale = songData.singer === 'female' || songData.female === true ||
+                      (songData.singer !== 'male' && songData.singer !== 'duet' && songData.female === undefined && data[rowNum-1][6] === true);
+      var newDuet   = songData.singer === 'duet'   || songData.duet   === true ||
+                      (songData.duet === undefined && data[rowNum-1][7] === true);
+      if (newDuet) { newMale = true; newFemale = true; }
+      sheet.getRange(rowNum, 6).setValue(newMale);
+      sheet.getRange(rowNum, 7).setValue(newFemale);
+      sheet.getRange(rowNum, 8).setValue(newDuet);
     }
-    if (songData.mood !== undefined) sheet.getRange(rowNum, 8).setValue(songData.mood);
+    if (songData.mood !== undefined) sheet.getRange(rowNum, 9).setValue(songData.mood);
 
     cacheDelete('songs_' + bandName);
     return { success: true };
