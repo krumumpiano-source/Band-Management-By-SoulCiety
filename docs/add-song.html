@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -71,14 +71,14 @@
       var bandId   = localStorage.getItem('bandId')   || '';
       var bandName = localStorage.getItem('bandName') || '';
       gasRun('addSong', {
-        name:    document.getElementById('songName').value.trim(),
-        key:     document.getElementById('key').value,
-        keyNote: document.getElementById('keyNote').value.trim(),
-        bpm:     parseInt(document.getElementById('bpm').value) || 0,
-        era:     document.getElementById('era').value.trim(),
-        singer:  singerRadio ? singerRadio.value : '',
-        mood:    document.getElementById('mood').value.trim(),
-        bandId:  bandId,
+        name:     document.getElementById('songName').value.trim(),
+        key:      document.getElementById('key').value,
+        keyNote:  document.getElementById('keyNote').value.trim(),
+        bpm:      parseInt(document.getElementById('bpm').value) || 0,
+        era:      document.getElementById('era').value.trim(),
+        singer:   singerRadio ? singerRadio.value : '',
+        mood:     document.getElementById('mood').value.trim(),
+        bandId:   bandId,
         bandName: bandName
       }, function(r) {
         btn.disabled = false; btn.textContent = '💾 บันทึก';
@@ -87,115 +87,6 @@
           showToast('เพิ่มเพลงเรียบร้อย', 'success');
           setTimeout(function() { window.location.href = 'songs.html'; }, 1000);
         } else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
-      });
-    });
-  });
-  </script>
-</body>
-</html>
-<body>
-  <div id="mainNav"></div>
-  <div id="toast"></div>
-  <main>
-    <div class="container" style="max-width:640px">
-      <div class="page-header">
-        <h1 class="page-title" data-i18n="addSong">เพิ่มเพลง</h1>
-        <a href="?page=songs" class="btn btn-ghost" data-i18n="back">← กลับ</a>
-      </div>
-      <div class="card">
-        <form id="addSongForm">
-          <div class="form-row-2">
-            <div class="form-group">
-              <label data-i18n="songTitle">ชื่อเพลง *</label>
-              <input type="text" id="title" required>
-            </div>
-            <div class="form-group">
-              <label data-i18n="artist">ศิลปิน</label>
-              <input type="text" id="artist">
-            </div>
-          </div>
-          <div class="form-row-2">
-            <div class="form-group">
-              <label data-i18n="key">คีย์</label>
-              <select id="key">
-                <option value="">— เลือกคีย์ —</option>
-                <option>C</option><option>C#</option><option>D</option><option>D#</option>
-                <option>E</option><option>F</option><option>F#</option><option>G</option>
-                <option>G#</option><option>A</option><option>A#</option><option>B</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label data-i18n="tempo">จังหวะ</label>
-              <select id="tempo">
-                <option value="">— เลือกจังหวะ —</option>
-                <option value="ช้า">ช้า</option>
-                <option value="ปานกลาง">ปานกลาง</option>
-                <option value="เร็ว">เร็ว</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row-2">
-            <div class="form-group">
-              <label data-i18n="genre">แนวเพลง</label>
-              <input type="text" id="genre" placeholder="Pop, Rock, Jazz...">
-            </div>
-            <div class="form-group">
-              <label data-i18n="duration">ความยาว (นาที)</label>
-              <input type="number" id="duration" min="0" step="0.5" placeholder="4.5">
-            </div>
-          </div>
-          <div class="form-group">
-            <label data-i18n="lyrics">เนื้อเพลง / Chords</label>
-            <textarea id="lyrics" rows="5" placeholder="ใส่เนื้อเพลงหรือ Chord chart ที่นี่..."></textarea>
-          </div>
-          <div class="form-group">
-            <label data-i18n="youtubeUrl">YouTube / Link</label>
-            <input type="url" id="youtubeUrl" placeholder="https://...">
-          </div>
-          <div class="form-group">
-            <label data-i18n="notes">หมายเหตุ</label>
-            <textarea id="notes" rows="2"></textarea>
-          </div>
-          <div class="card-footer" style="display:flex;gap:var(--spacing-md);justify-content:flex-end">
-            <a href="?page=songs" class="btn btn-secondary" data-i18n="cancel">ยกเลิก</a>
-            <button type="submit" class="btn btn-primary" id="saveBtn" data-i18n="save">บันทึก</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </main>
-  <script src="js/i18n.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/nav.js"></script>
-  <style>.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}@media(max-width:480px){.form-row-2{grid-template-columns:1fr}}</style>
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    requireAuth();
-    renderMainNav('mainNav');
-    applyTranslations();
-
-    document.getElementById('addSongForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var btn = document.getElementById('saveBtn');
-      btn.disabled = true; btn.textContent = t('loading');
-      var data = {
-        action: 'addSong',
-        title: document.getElementById('title').value.trim(),
-        artist: document.getElementById('artist').value.trim(),
-        key: document.getElementById('key').value,
-        tempo: document.getElementById('tempo').value,
-        genre: document.getElementById('genre').value.trim(),
-        duration: document.getElementById('duration').value,
-        lyrics: document.getElementById('lyrics').value,
-        youtubeUrl: document.getElementById('youtubeUrl').value.trim(),
-        notes: document.getElementById('notes').value.trim()
-      };
-      gasRun('addSong', data, function(r) {
-        btn.disabled = false; btn.textContent = t('save');
-        if (r && r.success) {
-          showToast(t('msg_saved'), 'success');
-          setTimeout(function() { window.location.href = '?page=songs'; }, 1000);
-        } else showToast((r && r.message)||t('msg_error'), 'error');
       });
     });
   });
