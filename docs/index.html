@@ -38,6 +38,10 @@
     .btn-biometric .bio-icon{font-size:22px;line-height:1}
     .bio-hint{text-align:center;font-size:11px;color:var(--premium-text-muted);margin-top:5px}
     .btn-biometric:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .pw-wrap{position:relative;display:flex;align-items:center}
+    .pw-wrap input{flex:1;padding-right:42px}
+    .btn-toggle-pw{position:absolute;right:10px;background:none;border:none;cursor:pointer;padding:0;color:var(--premium-text-light);font-size:18px;line-height:1;display:flex;align-items:center;opacity:.7;transition:opacity .2s}
+    .btn-toggle-pw:hover{opacity:1}
   </style>
 </head>
 <body>
@@ -60,7 +64,10 @@
             <span data-i18n="password">รหัสผ่าน</span>
             <a href="forgot-password.html" class="forgot-link" data-i18n="forgotPassword">ลืมรหัสผ่าน?</a>
           </label>
-          <input type="password" id="password" autocomplete="current-password" data-i18n-placeholder="enterPassword" placeholder="กรุณากรอกรหัสผ่าน" required>
+          <div class="pw-wrap">
+            <input type="password" id="password" autocomplete="current-password" data-i18n-placeholder="enterPassword" placeholder="กรุณากรอกรหัสผ่าน" required>
+            <button type="button" class="btn-toggle-pw" id="togglePassword" aria-label="แสดง/ซ่อนรหัสผ่าน">👁</button>
+          </div>
           <div class="err-msg" id="passwordError"></div>
         </div>
         <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
@@ -77,10 +84,6 @@
         <div class="bio-hint" id="biometricHint">ใช้ชีวมิติของอุปกรณ์เพื่อเข้าระบบโดยไม่ต้องพิมพ์รหัสผ่าน</div>
       </div>
 
-      <div class="divider" data-i18n="or">หรือ</div>
-      <button type="button" class="btn btn-success btn-demo btn-full" id="demoBtn">
-        <span data-i18n="demoLogin">เข้าโหมดทดสอบทันที (ไม่ต้องล็อกอิน)</span>
-      </button>
       <div class="auth-footer">
         <span data-i18n="noAccount">ยังไม่มีบัญชี?</span>
         <a href="register.html" data-i18n="registerNew">สมัครสมาชิกใหม่</a>
@@ -137,7 +140,14 @@
     if (typeof applyTranslations === 'function') applyTranslations();
 
     var loginForm   = document.getElementById('loginForm');
-    var demoBtn     = document.getElementById('demoBtn');
+    var togglePassword = document.getElementById('togglePassword');
+    if (togglePassword) {
+      togglePassword.addEventListener('click', function() {
+        var pw = document.getElementById('password');
+        if (pw.type === 'password') { pw.type = 'text'; togglePassword.textContent = '🙈'; }
+        else { pw.type = 'password'; togglePassword.textContent = '👁'; }
+      });
+    }
     var bioSection  = document.getElementById('biometricSection');
     var bioBtn      = document.getElementById('biometricBtn');
     var bioIcon     = document.getElementById('biometricIcon');
@@ -247,12 +257,6 @@
       });
     });
 
-    // ----- Demo button -----
-    demoBtn.addEventListener('click', function() {
-      if (typeof ensureDemoSession === 'function') ensureDemoSession();
-      var href = typeof google !== 'undefined' && google.script ? '?page=dashboard' : 'dashboard.html';
-      window.location.href = href;
-    });
   });
   </script>
 </body>

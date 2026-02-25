@@ -27,6 +27,10 @@
     .auth-footer a:hover{text-decoration:underline}
     .forgot-link{float:right;font-size:var(--text-xs);color:var(--premium-text-light);text-decoration:none}
     .forgot-link:hover{color:var(--premium-gold)}
+    .pw-wrap{position:relative;display:flex;align-items:center}
+    .pw-wrap input{flex:1;padding-right:42px}
+    .btn-toggle-pw{position:absolute;right:10px;background:none;border:none;cursor:pointer;padding:0;color:var(--premium-text-light);font-size:18px;line-height:1;display:flex;align-items:center;opacity:.7;transition:opacity .2s}
+    .btn-toggle-pw:hover{opacity:1}
   </style>
 </head>
 <body>
@@ -49,17 +53,16 @@
             <span data-i18n="password">รหัสผ่าน</span>
             <a href="?page=forgot-password" class="forgot-link" data-i18n="forgotPassword">ลืมรหัสผ่าน?</a>
           </label>
-          <input type="password" id="password" autocomplete="current-password" data-i18n-placeholder="enterPassword" placeholder="กรุณากรอกรหัสผ่าน" required>
+          <div class="pw-wrap">
+            <input type="password" id="password" autocomplete="current-password" data-i18n-placeholder="enterPassword" placeholder="กรุณากรอกรหัสผ่าน" required>
+            <button type="button" class="btn-toggle-pw" id="togglePassword" aria-label="แสดง/ซ่อนรหัสผ่าน">👁</button>
+          </div>
           <div class="err-msg" id="passwordError"></div>
         </div>
         <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
           <span data-i18n="login">เข้าสู่ระบบ</span>
         </button>
       </form>
-      <div class="divider" data-i18n="or">หรือ</div>
-      <button type="button" class="btn btn-success btn-demo btn-full" id="demoBtn">
-        <span data-i18n="demoLogin">เข้าโหมดทดสอบทันที (ไม่ต้องล็อกอิน)</span>
-      </button>
       <div class="auth-footer">
         <span data-i18n="noAccount">ยังไม่มีบัญชี?</span>
         <a href="?page=register" data-i18n="registerNew">สมัครสมาชิกใหม่</a>
@@ -77,7 +80,14 @@
     if (typeof applyTranslations === 'function') applyTranslations();
 
     var loginForm = document.getElementById('loginForm');
-    var demoBtn = document.getElementById('demoBtn');
+    var togglePassword = document.getElementById('togglePassword');
+    if (togglePassword) {
+      togglePassword.addEventListener('click', function() {
+        var pw = document.getElementById('password');
+        if (pw.type === 'password') { pw.type = 'text'; togglePassword.textContent = '🙈'; }
+        else { pw.type = 'password'; togglePassword.textContent = '👁'; }
+      });
+    }
 
     function clearErrors() {
       ['emailError','passwordError'].forEach(function(id) {
@@ -121,21 +131,11 @@
           })
           .doPostFromClient({ action: 'login', email: email, password: password });
       } else {
-        // offline demo
         btn.disabled = false; btn.textContent = t('login');
-        if (typeof showToast === 'function') showToast('Demo mode — กรุณา Deploy GAS ก่อนล็อกอินจริง', 'info');
-        setTimeout(function() {
-          ensureDemoSession();
-          window.location.href = 'dashboard.html';
-        }, 1000);
+        document.getElementById('emailError').textContent = t('msg_error');
       }
     });
 
-    demoBtn.addEventListener('click', function() {
-      if (typeof ensureDemoSession === 'function') ensureDemoSession();
-      var href = typeof google !== 'undefined' && google.script ? '?page=dashboard' : 'dashboard.html';
-      window.location.href = href;
-    });
   });
   </script>
 </body>
