@@ -34,7 +34,7 @@
               <label>คีย์</label>
               <select id="key"><option value="">—</option><optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup><optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup></select>
             <div class="form-group"><label>ความเร็ว (BPM)</label><input type="number" id="bpm" min="0" max="300" placeholder="0"></div>
-            <div class="form-group"><label>ปีของเพลง</label><input type="text" id="era" placeholder="เช่น 90s, 2000s"></div>
+            <div class="form-group"><label>ยุคของเพลง</label><select id="era"><option value="">— เลือกยุค —</option><option>2523-2532</option><option>2533-2542</option><option>2543-2553</option><option>2554-ปัจจุบัน</option><option>สากล</option><option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option></select></div>
           </div>
           <div class="form-group">
             <label>นักร้อง</label>
@@ -45,7 +45,7 @@
               <label class="singer-option"><input type="radio" name="singer" value=""> — ไม่ระบุ</label>
             </div>
           </div>
-          <div class="form-group"><label>อารมณ์เพลง</label><input type="text" id="mood" placeholder="เช่น สนุก, โรแมนติก, เศร้า"></div>
+          <div class="form-group"><label>อารมณ์เพลง</label><select id="mood"><option value="">— เลือกอารมณ์ —</option><option>สุข / สนุก</option><option>เศร้า / เหงา</option><option>นิ่ง / ผ่อนคลาย</option><option>หวาน / อบอุ่น</option><option>มัน / ฮึกเหิม</option></select></div>
           <div style="display:flex;gap:var(--spacing-md);justify-content:flex-end;margin-top:var(--spacing-md)">
             <a href="songs.html" class="btn btn-secondary">ยกเลิก</a>
             <button type="submit" class="btn btn-primary" id="saveBtn">💾 บันทึก</button>
