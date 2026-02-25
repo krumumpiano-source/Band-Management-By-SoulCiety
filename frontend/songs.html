@@ -669,9 +669,17 @@ function onFilterChange() {
 
 function loadInitial() {
   setLoading(true);
+  var bandName = localStorage.getItem('bandName') || '';
+  var bandId   = localStorage.getItem('bandId')   || '';
   google.script.run
-    .withSuccessHandler(function (data) {
-      allResults = data;
+    .withSuccessHandler(function (result) {
+      if (result && result.success && result.data) {
+        allResults = result.data;
+      } else {
+        allResults = [];
+        var resultEl = getEl("result");
+        if (resultEl) resultEl.innerHTML = '<div class="result-loading result-error">โหลดข้อมูลไม่ได้: ' + ((result && result.message) || 'error') + '</div>';
+      }
       setLoading(false);
       applyFiltersAndRender();
     })
@@ -679,9 +687,8 @@ function loadInitial() {
       setLoading(false);
       var resultEl = getEl("result");
       if (resultEl) resultEl.innerHTML = '<div class="result-loading result-error">โหลดข้อมูลไม่ได้: ' + (err.message || "error") + '</div>';
-      alert("โหลดข้อมูลไม่สำเร็จ: " + (err.message || "error"));
     })
-    .getAllSongs();
+    .getAllSongs('global', bandId, bandName);
 }
 
 function escapeHtml(text) {

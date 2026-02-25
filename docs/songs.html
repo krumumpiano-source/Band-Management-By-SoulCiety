@@ -673,7 +673,9 @@ function onFilterChange() {
 
 function loadInitial() {
   setLoading(true);
-  gasRun('getAllSongs', { source: 'global' }, function(result) {
+  var bandName = localStorage.getItem('bandName') || '';
+  var bandId   = localStorage.getItem('bandId')   || '';
+  gasRun('getAllSongs', { source: 'global', bandName: bandName, bandId: bandId }, function(result) {
     if (result && result.success && result.data) {
       allResults = result.data;
       setLoading(false);
