@@ -105,7 +105,38 @@ var venueActiveDays = {};
 var expandedVenues  = {}; // accordion open state: { vi: true }
 
 var DAY_NAMES = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-var POSITIONS = ['นักร้อง','กีตาร์','เบส','กลอง','คีย์บอร์ด','เปียโน','แซกโซโฟน','ทรัมเป็ต','อื่นๆ'];
+var POSITIONS = [
+  // เสียง
+  'นักร้อง (Vocal)',
+  'นักร้องนำ (Lead Vocal)',
+  'นักร้องประสาน (Backing Vocal)',
+  // กีตาร์
+  'กีตาร์นำ (Lead Guitar)',
+  'กีตาร์ริธึม (Rhythm Guitar)',
+  'เบส (Bass Guitar)',
+  // กลอง
+  'กลองชุด (Drum Set)',
+  'เปอร์คัชชัน (Percussion)',
+  'กาออน (Cajon)',
+  // คีย์บอร์ด / เปียโน
+  'คีย์บอร์ด (Keyboard)',
+  'เปียโน (Piano)',
+  'ออร์แกน (Organ)',
+  // สายลม
+  'ซอกโซโฟน (Saxophone)',
+  'ทรัมเป็ต (Trumpet)',
+  'ทรอมโบน (Trombone)',
+  'ฟลุต (Flute)',
+  // เครื่องสาย
+  'ไวโอลิน (Violin)',
+  'เชลโล (Cello)',
+  'อุคูเลเล (Ukulele)',
+  // ดีเจ / โปรแกรม
+  'DJ / โปรแกรมเมอร์ (Programmer)',
+  'เสียง (Sound Engineer)',
+  // อื่นๆ
+  'อื่นๆ'
+];
 
 function getEl(id) { return document.getElementById(id); }
 function esc(text) {
