@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Band Management By SoulCiety
  * Main Entry Point — doGet, doPost, doPostFromClient, onOpen
  */
@@ -292,7 +292,7 @@ function generateInviteCode(bandId) {
   try {
     if (!bandId) return { success: false, message: 'ไม่พบ bandId' };
     // ตรวจสอบ band
-    var bandSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEETS.BANDS);
+    var bandSheet = getOperationalSpreadsheet().getSheetByName(CONFIG.SHEETS.BANDS);
     var resolvedBandName = bandId;
     if (bandSheet) {
       var bdata = bandSheet.getDataRange().getValues();
@@ -318,7 +318,7 @@ function generateInviteCode(bandId) {
  */
 function _redeemInviteCode(code, userId, userName) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEETS.INVITE_CODES);
+    var sheet = getOperationalSpreadsheet().getSheetByName(CONFIG.SHEETS.INVITE_CODES);
     if (!sheet) return { success: false, message: 'ไม่พบตารางรหัสเชิญ' };
     var data = sheet.getDataRange().getValues();
     var h = data[0];
@@ -376,7 +376,7 @@ function openWebApp() {
 }
 
 function showDashboardInfo() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = getOperationalSpreadsheet();
   var sheets = ss.getSheets().map(function(s) { return s.getName() + ' (' + (s.getLastRow() - 1) + ' records)'; });
   SpreadsheetApp.getUi().alert('Band Management By SoulCiety\n\n' + sheets.join('\n'));
 }
@@ -386,7 +386,7 @@ function showDashboardInfo() {
 // ============================================================
 function adminGetAllUsers() {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEETS.USERS);
+    var sheet = getOperationalSpreadsheet().getSheetByName(CONFIG.SHEETS.USERS);
     if (!sheet) return { success: false, message: 'USERS sheet not found' };
     var data = sheet.getDataRange().getValues();
     if (data.length < 2) return { success: true, data: [] };
@@ -405,7 +405,7 @@ function adminGetAllUsers() {
 
 function adminUpdateUserRole(userId, role) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEETS.USERS);
+    var sheet = getOperationalSpreadsheet().getSheetByName(CONFIG.SHEETS.USERS);
     if (!sheet) return { success: false, message: 'USERS sheet not found' };
     var data = sheet.getDataRange().getValues();
     var headers = data[0];
@@ -424,7 +424,7 @@ function adminUpdateUserRole(userId, role) {
 
 function adminDeleteUser(userId) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEETS.USERS);
+    var sheet = getOperationalSpreadsheet().getSheetByName(CONFIG.SHEETS.USERS);
     if (!sheet) return { success: false, message: 'USERS sheet not found' };
     var data = sheet.getDataRange().getValues();
     var headers = data[0];
@@ -442,7 +442,7 @@ function adminDeleteUser(userId) {
 
 function adminGetSystemInfo() {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getOperationalSpreadsheet();
     var sheets = ss.getSheets();
     var sheetCount = sheets.length;
     var userSheet = ss.getSheetByName(CONFIG.SHEETS.USERS);
@@ -460,7 +460,7 @@ function adminGetSystemInfo() {
 
 function adminCreateBackup() {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getOperationalSpreadsheet();
     var backup = {};
     ss.getSheets().forEach(function(s) {
       var data = s.getDataRange().getValues();
@@ -478,7 +478,7 @@ function adminCreateBackup() {
 
 function adminGetSpreadsheetUrl() {
   try {
-    var url = SpreadsheetApp.getActiveSpreadsheet().getUrl();
+    var url = getOperationalSpreadsheet().getUrl();
     return { success: true, url: url };
   } catch(e) { return { success: false, message: e.message }; }
 }
@@ -492,7 +492,7 @@ function adminRunSetup() {
 
 function adminClearAllData() {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getOperationalSpreadsheet();
     var skipSheets = [CONFIG.SHEETS.USERS];
     ss.getSheets().forEach(function(s) {
       if (skipSheets.indexOf(s.getName()) < 0 && s.getLastRow() > 1) {
@@ -505,7 +505,7 @@ function adminClearAllData() {
 
 function adminResetUsers() {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SHEETS.USERS);
+    var sheet = getOperationalSpreadsheet().getSheetByName(CONFIG.SHEETS.USERS);
     if (sheet && sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1);
     return { success: true };
   } catch(e) { return { success: false, message: e.message }; }
