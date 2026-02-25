@@ -440,6 +440,7 @@ html{scroll-behavior:smooth}
   <div class="action-buttons" style="display:flex;gap:10px;margin:10px 0">
     <button onclick="addBreak()">➕ เพิ่มพัก</button>
     <button onclick="copyPlaylist()">📋 คัดลอกลิส</button>
+    <button onclick="showHistory()" style="background:#4a5568">📗 ประวัติ</button>
     <button onclick="refreshPlaylist()" style="background:var(--danger)">🔄 รีเฟรชลิส</button>
   </div>
 
@@ -461,6 +462,17 @@ html{scroll-behavior:smooth}
 
 
 <div id="toast" class="toast">คัดลอกลิสสำเร็จ</div>
+
+<!-- History Modal -->
+<div id="historyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;overflow-y:auto;padding:16px">
+  <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:16px;padding:24px;position:relative">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin:0">📗 ประวัติลิสเพลง</h3>
+      <button onclick="closeHistory()" style="background:none;border:1.5px solid #cbd5e0;color:#4a5568;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;min-height:unset;padding:0;flex-shrink:0">✕</button>
+    </div>
+    <div id="historyList"><p style="text-align:center;color:#888">กำลังโหลด...</p></div>
+  </div>
+</div>
 
 
 <script>
@@ -1070,10 +1082,60 @@ function copyPlaylist(){
         setTimeout(()=>toast.style.display="none",300);
       },2000);
     }
+    // บันทึกประวัติอัตโนมัติ
+    saveHistory();
 
   } catch (err) {
     alert("คัดลอกไม่สำเร็จ: " + err.message);
   }
+}
+
+function saveHistory() {
+  if (playlistData.length === 0) return;
+  var bandId   = localStorage.getItem('bandId')   || '';
+  var bandName = localStorage.getItem('bandName') || '';
+  var useDateEl = document.getElementById('useDate');
+  var venueEl   = document.getElementById('venue');
+  var timeEl    = document.getElementById('timeSlot');
+  var songs = playlistData.filter(function(s){ return !s.break; }).map(function(s){
+    return { name: s.name, key: s.key || '', bpm: s.bpm || 0 };
+  });
+  gasRun('savePlaylistHistory', {
+    bandId:   bandId,
+    bandName: bandName,
+    date:     useDateEl ? useDateEl.value : '',
+    venue:    venueEl   ? venueEl.value   : '',
+    timeSlot: timeEl    ? timeEl.value    : '',
+    songs:    songs
+  }, function(r){ console.log('[history] saved', r && r.success); });
+}
+
+function showHistory() {
+  document.getElementById('historyModal').style.display = 'block';
+  var bandId   = localStorage.getItem('bandId')   || '';
+  var bandName = localStorage.getItem('bandName') || '';
+  gasRun('getPlaylistHistory', { bandId: bandId, bandName: bandName }, function(r) {
+    var el = document.getElementById('historyList');
+    if (!r || !r.success || !r.data || r.data.length === 0) {
+      el.innerHTML = '<p style="text-align:center;color:#888">ยังไม่มีประวัติ</p>'; return;
+    }
+    el.innerHTML = r.data.map(function(h, i) {
+      var label = [h.date, h.venue, h.timeSlot].filter(Boolean).join(' · ') || ('ลิสที่ ' + (i+1));
+      var ts = h.createdAt ? new Date(h.createdAt).toLocaleString('th-TH') : '';
+      var songs = (h.songs || []).map(function(s, n){
+        return (n+1) + '. ' + s.name + (s.key ? ' ['+s.key+']' : '') + (s.bpm ? ' ▸ '+s.bpm : '');
+      }).join('<br>');
+      return '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:12px">'+
+        '<div style="font-weight:700;font-size:15px;margin-bottom:2px">'+label+'</div>'+
+        '<div style="font-size:11px;color:#888;margin-bottom:10px">'+ts+'</div>'+
+        '<div style="font-size:13px;line-height:1.9;color:#374151">'+songs+'</div>'+
+        '</div>';
+    }).join('');
+  });
+}
+
+function closeHistory() {
+  document.getElementById('historyModal').style.display = 'none';
 }
 </script>
 </body>

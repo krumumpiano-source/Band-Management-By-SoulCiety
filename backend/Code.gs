@@ -149,6 +149,17 @@ function routeAction(req) {
       var _dbn = req.bandName || (req._session && req._session.bandName) || '';
       return deleteSong(req.songId, _dbn);
     }
+    case 'savePlaylistHistory': {
+      var _phd = req.data || req;
+      _phd.bandId   = _phd.bandId   || (req._session && req._session.bandId)   || '';
+      _phd.bandName = _phd.bandName || (req._session && req._session.bandName) || '';
+      return savePlaylistHistory(_phd);
+    }
+    case 'getPlaylistHistory': {
+      var _gphId = req.bandId   || (req._session && req._session.bandId)   || '';
+      var _gphBn = req.bandName || (req._session && req._session.bandName) || '';
+      return getPlaylistHistory(_gphId, _gphBn);
+    }
 
     // --- Band Members ---
     case 'getAllBandMembers':  return getAllBandMembers(req.bandId || (req._session && req._session.bandId) || '');

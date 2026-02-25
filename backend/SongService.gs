@@ -296,3 +296,50 @@ function deleteSong(songId, bandName) {
     return { success: false, message: e.toString() };
   }
 }
+
+// ── Playlist History ─────────────────────────────────────────────────────────
+function savePlaylistHistory(data) {
+  try {
+    var bandId   = data.bandId   || '';
+    var bandName = data.bandName || (bandId ? lookupBandName(bandId) : '');
+    if (!bandName && !bandId) return { success: false, message: 'ไม่ทราบชื่อวง' };
+    var sheet = getOrCreateSheet('PLAYLIST_HISTORY', ['historyId','bandId','bandName','date','venue','timeSlot','songsJson','createdAt']);
+    var id = 'PH_' + new Date().getTime();
+    sheet.appendRow([
+      id, bandId, bandName,
+      data.date     || '',
+      data.venue    || '',
+      data.timeSlot || '',
+      JSON.stringify(data.songs || []),
+      new Date().toISOString()
+    ]);
+    return { success: true, data: { historyId: id } };
+  } catch(e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function getPlaylistHistory(bandId, bandName) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('PLAYLIST_HISTORY');
+    if (!sheet) return { success: true, data: [] };
+    var rows = sheet.getDataRange().getValues();
+    if (rows.length < 2) return { success: true, data: [] };
+    var hdrs = rows[0];
+    var result = [];
+    for (var i = 1; i < rows.length; i++) {
+      var r = {};
+      for (var j = 0; j < hdrs.length; j++) r[hdrs[j]] = rows[i][j];
+      if (String(r.bandId) === String(bandId) || String(r.bandName) === String(bandName)) {
+        try { r.songs = JSON.parse(r.songsJson); } catch(e2) { r.songs = []; }
+        delete r.songsJson;
+        result.push(r);
+      }
+    }
+    result.reverse();
+    return { success: true, data: result };
+  } catch(e) {
+    return { success: false, message: e.toString() };
+  }
+}
