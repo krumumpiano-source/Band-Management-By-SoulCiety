@@ -12,10 +12,14 @@ var CONFIG = {
   SPREADSHEET_ID: '1U5Z-BkWFysDytkJt-QcOjtW70ExBZY7kIXvC5XWJfVQ',
 
   // ============================================================
-  // [B] คลังเพลงกลาง (Global Songs Library) — อ่านอย่างเดียว
+  // [B] คลังเพลงกลาง (Global Songs Library) — อ่าน/เขียนแยกตามวง
   //     ใส่ ID ของ Google Sheet คลังเพลงกลางที่นี่
   // ============================================================
   GLOBAL_SONGS_SPREADSHEET_ID: '1XISC-0mQzL69mnL3i7f1ITAQ4x5Uv5KkcUJP3vkpzDY',
+
+  // Prefix ชื่อ Sheet ในคลังเพลงกลาง: 'ลิสเพลง' + ชื่อวง
+  // เช่น SoulCiety → 'ลิสเพลงSoulCiety'
+  SONG_SHEET_PREFIX: 'ลิสเพลง',
 
   // ชื่อ Sheet ในแต่ละ Spreadsheet (ต้องตรงกับชื่อใน Google Sheets)
   SHEETS: {

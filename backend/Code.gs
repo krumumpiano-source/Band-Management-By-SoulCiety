@@ -11,7 +11,9 @@ function doGet(e) {
 
   // JSON API endpoints (GET)
   if (action === 'getAllSongs') {
-    return ContentService.createTextOutput(JSON.stringify(getAllSongs(e.parameter.source || 'global', e.parameter.bandId || '')))
+    var _bn = e.parameter.bandName || '';
+    var _bid = e.parameter.bandId || '';
+    return ContentService.createTextOutput(JSON.stringify(getAllSongs(e.parameter.source || 'global', _bid, _bn)))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
@@ -121,10 +123,28 @@ function routeAction(req) {
     case 'generateInviteCode': return generateInviteCode(req.bandId || '');
 
     // --- Settings ---
-    case 'getAllSongs':   return getAllSongs(req.source || 'global', req.bandId || '');
-    case 'addSong':      return addSong(req.data || req);
-    case 'updateSong':   return updateSong(req.songId, req.data || req);
-    case 'deleteSong':   return deleteSong(req.songId);
+    // --- Songs ---
+    case 'getAllSongs': {
+      var _bn = req.bandName || (req._session && req._session.bandName) || '';
+      var _bid = req.bandId || (req._session && req._session.bandId) || '';
+      return getAllSongs(req.source || 'global', _bid, _bn);
+    }
+    case 'addSong': {
+      var _sd = req.data || req;
+      _sd.bandName = _sd.bandName || (req._session && req._session.bandName) || '';
+      _sd.bandId   = _sd.bandId   || (req._session && req._session.bandId) || '';
+      return addSong(_sd);
+    }
+    case 'updateSong': {
+      var _ud = req.data || req;
+      _ud.bandName = _ud.bandName || (req._session && req._session.bandName) || '';
+      _ud.bandId   = _ud.bandId   || (req._session && req._session.bandId) || '';
+      return updateSong(req.songId, _ud);
+    }
+    case 'deleteSong': {
+      var _dbn = req.bandName || (req._session && req._session.bandName) || '';
+      return deleteSong(req.songId, _dbn);
+    }
 
     // --- Band Members ---
     case 'getAllBandMembers':  return getAllBandMembers(req.bandId || (req._session && req._session.bandId) || '');
