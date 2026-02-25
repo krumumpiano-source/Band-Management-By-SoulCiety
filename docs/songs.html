@@ -2,26 +2,57 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>โปรแกรมลิสเพลง — Band Management By SoulCiety</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
   <style>
-    .search-bar{display:flex;gap:var(--spacing-md);margin-bottom:var(--spacing-lg);flex-wrap:wrap}
-    .search-bar input{flex:1 1 220px}
-    .search-bar select{flex:0 0 160px}
-    .song-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--spacing-lg)}
-    .song-card{background:var(--premium-white);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--spacing-lg);border-left:4px solid var(--premium-gold);transition:box-shadow .2s}
-    .song-card:hover{box-shadow:var(--shadow-md)}
-    .song-card h4{font-size:var(--text-base);font-weight:600;margin:0 0 4px;color:var(--premium-text)}
-    .song-card .artist{font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:var(--spacing-sm)}
-    .song-card .tags{display:flex;gap:6px;flex-wrap:wrap}
-    .tag{background:var(--premium-off-white);border-radius:var(--radius-full);padding:2px 10px;font-size:11px;color:var(--premium-text-light)}
-    .tab-bar{display:flex;gap:0;border-bottom:2px solid var(--premium-light-gray);margin-bottom:var(--spacing-xl)}
-    .tab-btn{padding:var(--spacing-sm) var(--spacing-lg);border:none;background:transparent;cursor:pointer;font-family:var(--font-family-body);font-size:var(--text-sm);color:var(--premium-text-muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s}
-    .tab-btn.active{color:var(--premium-gold);border-bottom-color:var(--premium-gold);font-weight:600}
+    .sl-panel{background:var(--premium-white);border:1px solid var(--premium-light-gray);border-radius:var(--radius-lg);padding:var(--spacing-lg);margin-bottom:var(--spacing-lg);box-shadow:var(--shadow-sm)}
+    .sl-panel h3{font-size:var(--text-base);font-weight:700;color:var(--premium-text);margin:0 0 var(--spacing-md)}
+    .sl-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+    .sl-filters select,.sl-filters input{width:100%}
+    #searchText{width:100%;margin-top:10px}
+    .action-buttons{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap}
+    .action-buttons .btn{flex:1 1 auto}
+    .copy-options{display:flex;gap:24px;font-size:13px;margin-bottom:10px;flex-wrap:wrap}
+    .copy-options label{display:flex;align-items:center;gap:6px;color:var(--premium-text-light)}
+    .result-columns{column-gap:20px;column-width:min(280px,100%)}
+    .result-item{break-inside:avoid;padding:10px 8px;border-bottom:1px solid var(--premium-light-gray);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .result-item:hover{background:var(--premium-off-white);border-radius:var(--radius-md)}
+    .result-item-left{flex:1;min-width:0}
+    .song-title{font-weight:600;color:var(--premium-text);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+    .song-meta{font-size:12px;color:var(--premium-text-muted);margin-top:3px}
+    .new-tag{color:var(--premium-gold);font-size:11px;font-style:italic;margin-left:6px}
+    .add-song-btn{cursor:pointer;user-select:none;flex-shrink:0;font-size:18px;padding:4px}
+    .result-loading,.result-empty{text-align:center;padding:32px 16px;color:var(--premium-text-muted)}
+    .result-error{text-align:center;padding:32px 16px;color:var(--danger,#ef4444)}
+    .pagination{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+    .pagination .btn{width:auto}
+    .page-info{font-size:13px;color:var(--premium-text-muted)}
+    .pl-list{list-style:none;padding:0;margin:0}
+    .pl-list li{padding:12px 8px;border-bottom:1px solid var(--premium-light-gray);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+    .play-left{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+    .play-title{font-weight:600;color:var(--premium-text)}
+    .play-meta{font-size:13px;color:var(--premium-text-muted)}
+    .transpose{display:flex;align-items:center;gap:6px;font-size:12px;margin-top:4px}
+    .tp-btn{cursor:pointer;user-select:none;padding:2px 8px;border-radius:6px;background:var(--premium-off-white);border:1px solid var(--premium-light-gray);color:var(--premium-text);font-size:14px;font-weight:700;transition:background .15s}
+    .tp-btn:hover{background:var(--premium-light-gray)}
+    .key-val{font-weight:600;transition:color .12s}
+    .key-val.flash{color:var(--premium-gold)}
+    .key-val.transposed{color:var(--premium-gold);font-weight:700}
+    .move-btn{cursor:pointer;padding:0 6px;user-select:none;font-size:16px}
+    .move-btn:hover{opacity:.6}
+    .del{color:var(--danger,#ef4444);cursor:pointer;user-select:none;font-size:16px}
+    .del:hover{opacity:.6}
+    .pl-break{color:var(--premium-gold);font-weight:700}
+    .spinner{width:36px;height:36px;border:3px solid var(--premium-light-gray);border-top-color:var(--premium-gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:599px){.sl-filters{grid-template-columns:1fr 1fr;gap:8px}.action-buttons{flex-direction:column}.copy-options{flex-direction:column;gap:8px}.result-columns{column-width:100%}.pl-list li{flex-wrap:wrap;gap:8px}.tp-btn,.move-btn,.del{min-width:36px;min-height:36px;display:inline-flex;align-items:center;justify-content:center}input,select{font-size:16px}}
+    @media(hover:none){.result-item:hover{background:transparent}.tp-btn:active{opacity:.7}}
   </style>
 </head>
 <body>
@@ -33,49 +64,83 @@
       <div class="page-header">
         <h1 class="page-title" data-i18n="nav_songs">โปรแกรมลิสเพลง</h1>
         <div style="display:flex;gap:var(--spacing-sm)">
-          <a href="setlist.html" class="btn btn-secondary">📋 <span data-i18n="setlist">เซ็ตลิสต์</span></a>
           <a href="add-song.html" class="btn btn-primary">+ <span data-i18n="addSong">เพิ่มเพลง</span></a>
         </div>
       </div>
 
-      <div class="card">
-        <div class="tab-bar">
-          <button class="tab-btn active" data-tab="band" onclick="switchTab('band',this)" data-i18n="bandSongs">เพลงของวง</button>
-          <button class="tab-btn" data-tab="global" onclick="switchTab('global',this)" data-i18n="globalSongs">คลังเพลงสากล</button>
-        </div>
-        <div class="search-bar" style="flex-wrap:wrap;gap:8px">
-          <input type="text" id="searchQ" placeholder="ค้นหาชื่อเพลง..." oninput="filterSongs()" style="flex:1;min-width:180px">
-          <select id="filterKeyNote" onchange="filterSongs()">
-            <option value="">ทุกคีย์</option>
-            <option>C</option><option>Db</option><option>D</option><option>Eb</option>
-            <option>E</option><option>F</option><option>F#</option><option>G</option>
-            <option>Ab</option><option>A</option><option>Bb</option><option>B</option>
+      <!-- ===== SEARCH PANEL ===== -->
+      <div class="sl-panel">
+        <div class="sl-filters">
+          <select id="singer" onchange="onFilterChange()">
+            <option value="">นักร้อง</option>
+            <option value="ชาย">ชาย</option>
+            <option value="หญิง">หญิง</option>
           </select>
-          <select id="filterEra" onchange="filterSongs()">
-            <option value="">ทุกยุค</option>
-            <option>สากล</option>
-            <option>2523-2532 ('80s)</option>
-            <option>2533-2542 ('90s)</option>
-            <option>2543-2553 ('00s)</option>
-            <option>2554-ปัจจุบัน ('11s)</option>
-            <option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option>
+          <select id="era" onchange="onFilterChange()">
+            <option value="">ยุคเพลง</option>
+            <option value="2523-2532">2523-2532</option>
+            <option value="2533-2542">2533-2542</option>
+            <option value="2543-2553">2543-2553</option>
+            <option value="2554-ปัจจุบัน">2554-ปัจจุบัน</option>
+            <option value="สากล">สากล</option>
+            <option value="ลูกทุ่ง/อีสาน/เพื่อชีวิต">ลูกทุ่ง/อีสาน/เพื่อชีวิต</option>
           </select>
-          <select id="filterMood" onchange="filterSongs()">
-            <option value="">ทุกอารมณ์</option>
-            <option>เศร้า / เหงา (Sad)</option>
-            <option>สุข / สนุก (Happy)</option>
-            <option>นิ่ง / ผ่อนคลาย (Calm)</option>
-            <option>หวาน / อบอุ่น (Romantic)</option>
-            <option>มัน / ฮึกเหิม (Power)</option>
+          <select id="speed" onchange="onFilterChange()">
+            <option value="">ความเร็ว</option>
+            <option value="ช้า">ช้า</option>
+            <option value="กลาง">กลาง</option>
+            <option value="เร็ว">เร็ว</option>
           </select>
-          <select id="filterSinger" onchange="filterSongs()">
-            <option value="">ทุกเสียง</option>
-            <option value="male">ชาย</option>
-            <option value="female">หญิง</option>
-            <option value="duet">คู่</option>
+          <select id="mood" onchange="onFilterChange()">
+            <option value="">อารมณ์</option>
+            <option value="สุข / สนุก">สุข / สนุก</option>
+            <option value="เศร้า / เหงา">เศร้า / เหงา</option>
+            <option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option>
+            <option value="หวาน / อบอุ่น">หวาน / อบอุ่น</option>
+            <option value="มัน / ฮึกเหิม">มัน / ฮึกเหิม</option>
           </select>
         </div>
-        <div id="songGrid" class="song-grid"><div class="empty-state" style="grid-column:1/-1"><p data-i18n="loading">กำลังโหลด...</p></div></div>
+        <input id="searchText" class="input" placeholder="🔍 ค้นหาเพลง" oninput="applyTextFilter()">
+      </div>
+
+      <!-- ===== RESULT PANEL ===== -->
+      <div class="sl-panel">
+        <h3>🎼 เพลงที่ค้นพบ</h3>
+        <div id="result"></div>
+        <div class="pagination">
+          <button class="btn btn-secondary" onclick="prevPage()" id="prevBtn">⬅ ก่อนหน้า</button>
+          <div class="page-info" id="pageInfo"></div>
+          <button class="btn btn-secondary" onclick="nextPage()" id="nextBtn">ถัดไป ➡</button>
+        </div>
+      </div>
+
+      <!-- ===== PLAYLIST PANEL ===== -->
+      <div class="sl-panel">
+        <h3>📋 ลิสเพลงที่เลือก</h3>
+        <div class="sl-filters" style="margin-bottom:10px">
+          <input type="date" id="useDate" class="input">
+          <select id="venue">
+            <option value="">เลือกร้าน</option>
+            <option value="นิยมสุข">นิยมสุข</option>
+            <option value="ฉ่ำ">ฉ่ำ</option>
+          </select>
+          <select id="timeSlot">
+            <option value="">ช่วงเวลา</option>
+            <option value="19:30-20:30">19:30-20:30</option>
+            <option value="21:00-22:00">21:00-22:00</option>
+            <option value="22:30-23:30">22:30-23:30</option>
+          </select>
+        </div>
+        <div class="action-buttons">
+          <button class="btn btn-secondary" onclick="addBreak()">➕ เพิ่มพัก</button>
+          <button class="btn btn-primary" onclick="copyPlaylist()">📋 คัดลอกลิส</button>
+          <button class="btn btn-danger" onclick="refreshPlaylist()">🔄 รีเฟรชลิส</button>
+        </div>
+        <div class="copy-options">
+          <label><input type="checkbox" id="copySpeed" checked> แสดงความเร็ว (BPM)</label>
+          <label><input type="checkbox" id="copyKey" checked> แสดงคีย์</label>
+        </div>
+        <ul id="playlist" class="pl-list"></ul>
       </div>
     </div>
   </main>
@@ -84,81 +149,177 @@
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
   <script>
-  var allSongs = [];
-  var currentTab = 'band';
-
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
     renderMainNav('mainNav');
     applyTranslations();
-    loadSongs();
+    loadInitial();
+    var dateInput = document.getElementById('useDate');
+    if (dateInput) {
+      var today = new Date();
+      dateInput.value = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+    }
   });
-
-  function switchTab(tab, btn) {
-    currentTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active')});
-    btn.classList.add('active');
-    loadSongs();
-  }
-
-  function loadSongs() {
-    var action = currentTab === 'band' ? 'getAllBandSongs' : 'getAllGlobalSongs';
-    document.getElementById('songGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>กำลังโหลด...</p></div>';
-    gasRun(action, {}, function(r) {
-      allSongs = (r && r.success && r.data) ? r.data : [];
-      renderSongs(allSongs);
-    });
-  }
-
-  function filterSongs() {
-    var q       = (document.getElementById('searchQ').value || '').toLowerCase();
-    var keyNote = document.getElementById('filterKeyNote').value;
-    var era     = document.getElementById('filterEra').value;
-    var mood    = document.getElementById('filterMood').value;
-    var singer  = document.getElementById('filterSinger').value;
-    var filtered = allSongs.filter(function(s) {
-      if (q && !(s.name||'').toLowerCase().includes(q)) return false;
-      if (keyNote && s.keyNote !== keyNote) return false;
-      if (era && s.era !== era) return false;
-      if (mood && s.mood !== mood) return false;
-      if (singer === 'male'   && !s.male)   return false;
-      if (singer === 'female' && !s.female) return false;
-      if (singer === 'duet'   && !(s.male && s.female)) return false;
+  </script>
+  <script>
+  var allResults=[],filteredResults=[],currentPage=1,PER_PAGE=15,domCache={};
+  function getEl(id){if(!domCache[id])domCache[id]=document.getElementById(id);return domCache[id];}
+  function debounce(fn,w){var t;return function(){clearTimeout(t);t=setTimeout(fn,w);}}
+  function throttle(fn,l){var it;return function(){if(!it){fn();it=true;setTimeout(function(){it=false;},l);}}}
+  function setLoading(on){var el=getEl('result');if(!el)return;if(on){el.innerHTML='<div class="result-loading"><div class="spinner"></div><div style="margin-top:10px">กำลังโหลด...</div></div>';el.classList.add('is-loading');}else{el.classList.remove('is-loading');}}
+  function getFilterValues(){return{singer:(getEl('singer')||{}).value||'',era:(getEl('era')||{}).value||'',speed:(getEl('speed')||{}).value||'',mood:(getEl('mood')||{}).value||''};}
+  function getDropdownFiltered(){
+    var f=getFilterValues();
+    return allResults.filter(function(s){
+      if(f.singer==='ชาย'&&!s.male)return false;
+      if(f.singer==='หญิง'&&!s.female)return false;
+      if(f.era&&(s.era||'').indexOf(f.era)<0)return false;
+      if(f.speed){var b=s.bpm||0;if(f.speed==='ช้า'&&(b<1||b>79))return false;if(f.speed==='กลาง'&&(b<80||b>115))return false;if(f.speed==='เร็ว'&&b<116)return false;}
+      if(f.mood&&s.mood!==f.mood)return false;
       return true;
     });
-    renderSongs(filtered);
   }
-
-  function renderSongs(songs) {
-    var grid = document.getElementById('songGrid');
-    if (!songs.length) {
-      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>' + t('noData') + '</p></div>'; return;
-    }
-    grid.innerHTML = songs.map(function(s) {
-      var keyLabel   = s.keyNote ? (s.keyNote + (s.key ? ' ('+s.key+')' : '')) : '';
-      var singerIcon = s.singer === 'duet' ? '👫' : s.singer === 'male' ? '👨' : s.singer === 'female' ? '👩' : '';
-      var tags = [keyLabel && ('🎵 '+keyLabel), s.bpm && ('♩'+s.bpm), s.era, s.mood].filter(Boolean);
-      var editLink = '?page=edit-song&songId='+encodeURIComponent(s.songId||s.id||'');
-      return '<div class="song-card">'
-        +'<h4>'+escapeHtml(s.name||'')+(singerIcon?' <span style="font-size:0.85em">'+singerIcon+'</span>':'')+'</h4>'
-        +'<div class="artist">'+escapeHtml(s.artist||'&nbsp;')+'</div>'
-        +'<div class="tags">'+ tags.map(function(tg){return '<span class="tag">'+escapeHtml(tg)+'</span>';}).join('') +'</div>'
-        +(currentTab==='band'?'<div style="margin-top:var(--spacing-sm);display:flex;gap:6px">'
-          +'<a href="'+editLink+'" class="btn btn-ghost btn-sm">✏️</a>'
-          +'<button class="btn btn-danger btn-sm" onclick="deleteSong(\''+escapeHtml(s.songId||s.id||'')+'\')">🗑️</button>'
-          +'</div>':'')
-        +'</div>';
-    }).join('');
+  function applyFiltersAndRender(){
+    var base=getDropdownFiltered(),q='',se=getEl('searchText');
+    if(se&&se.value)q=se.value.trim().toLowerCase();
+    filteredResults=q?base.filter(function(s){return(s.name||'').toLowerCase().indexOf(q)>=0;}):base;
+    currentPage=1;renderPage();
   }
-
-  function deleteSong(id) {
-    showConfirm(t('confirmDeleteTitle'), t('confirmDeleteMsg')).then(function(ok) {
-      if (!ok) return;
-      gasRun('deleteSong', { songId: id }, function(r) {
-        if (r && r.success) { showToast(t('msg_deleted'), 'success'); loadSongs(); }
-        else showToast((r && r.message)||t('msg_error'), 'error');
-      });
+  var aFARD=debounce(applyFiltersAndRender,150);
+  function applyTextFilter(){aFARD();}
+  function onFilterChange(){applyFiltersAndRender();}
+  function loadInitial(){
+    setLoading(true);
+    gasRun('getAllBandSongs',{},function(r){
+      setLoading(false);
+      allResults=(r&&r.success&&r.data)?r.data:[];
+      applyFiltersAndRender();
     });
+  }
+  function escHtml(t){var d=document.createElement('div');d.textContent=t||'';return d.innerHTML;}
+  function renderPage(){
+    var el=getEl('result'),pi=getEl('pageInfo'),pb=getEl('prevBtn'),nb=getEl('nextBtn');
+    if(!el||el.classList.contains('is-loading'))return;
+    var start=(currentPage-1)*PER_PAGE,items=filteredResults.slice(start,start+PER_PAGE),tp=Math.max(1,Math.ceil(filteredResults.length/PER_PAGE));
+    if(items.length===0){el.innerHTML='<div class="result-empty">ไม่พบเพลงที่ตรงกับตัวกรอง</div>';}
+    else{
+      var buf=[];
+      for(var i=0;i<items.length;i++){var s=items[i],idx=start+i,bpm=s.bpm||'-',key=s.keyNote||s.key||'-',nt=s.isNew?'<span class="new-tag">New</span>':'';
+        buf.push('<div class="result-item" data-index="'+idx+'"><div class="result-item-left"><div class="song-title">'+escHtml(s.name)+nt+'</div><div class="song-meta">'+bpm+' BPM · '+key+'</div></div><span class="add-song-btn" data-index="'+idx+'">&#10133;</span></div>');}
+      el.innerHTML='<div class="result-columns">'+buf.join('')+'</div>';
+    }
+    if(pi)pi.textContent=filteredResults.length===0?'ไม่มีผลลัพธ์':'หน้า '+currentPage+' / '+tp;
+    if(pb)pb.disabled=currentPage<=1;
+    if(nb)nb.disabled=currentPage>=tp||filteredResults.length===0;
+  }
+  var nPT=throttle(function(){var tp=Math.max(1,Math.ceil(filteredResults.length/PER_PAGE));if(currentPage<tp){currentPage++;renderPage();}},200);
+  var pPT=throttle(function(){if(currentPage>1){currentPage--;renderPage();}},200);
+  function nextPage(){nPT();}function prevPage(){pPT();}
+  document.addEventListener('click',function(e){
+    if(e.target&&e.target.classList.contains('add-song-btn')){
+      var idx=parseInt(e.target.getAttribute('data-index'),10);
+      if(!isNaN(idx)&&filteredResults[idx])addSong(filteredResults[idx]);
+    }
+  });
+  </script>
+  <script>
+  var MAJOR_KEYS=[{degree:'C',semi:0},{degree:'1#',semi:7},{degree:'2#',semi:2},{degree:'3#',semi:9},{degree:'4#',semi:4},{degree:'5#',semi:11},{degree:'6#',semi:6},{degree:'1b',semi:5},{degree:'2b',semi:10},{degree:'3b',semi:3},{degree:'4b',semi:8},{degree:'5b',semi:1}];
+  var MAJOR_THEORY=[{degree:'7#',semi:1},{degree:'7b',semi:11}];
+  var MINOR_KEYS=[{degree:'0',semi:9},{degree:'1#',semi:4},{degree:'2#',semi:11},{degree:'3#',semi:6},{degree:'4#',semi:1},{degree:'1b',semi:2},{degree:'2b',semi:7},{degree:'3b',semi:0},{degree:'4b',semi:5},{degree:'5b',semi:10},{degree:'6b',semi:3}];
+  var MINOR_THEORY=[{degree:'7#',semi:10},{degree:'7b',semi:8}];
+  function transposeKey(degree,step,mode){
+    if(!degree)return'-';
+    mode=mode||'major';
+    var pool=mode==='minor'?MINOR_KEYS.concat(MINOR_THEORY):MAJOR_KEYS.concat(MAJOR_THEORY);
+    var cur=pool.find(function(k){return k.degree===degree;});
+    if(!cur)return degree;
+    var ns=((cur.semi+step)%12+12)%12;
+    var t=pool.find(function(k){return k.semi===ns&&k.degree.indexOf('7')<0;});
+    if(t)return t.degree;
+    t=pool.find(function(k){return k.semi===ns;});
+    return t?t.degree:degree;
+  }
+  </script>
+  <script>
+  var playlistData=[];
+  function addSong(song){if(!song)return;playlistData.push(Object.assign({},song,{transpose:0,mode:'major'}));renderPlaylist();}
+  function addBreak(){playlistData.push({isBreak:true});renderPlaylist();}
+  function refreshPlaylist(){
+    showConfirm('รีเฟรชลิส','ต้องการล้างลิสเพลงทั้งหมดหรือไม่?').then(function(ok){if(!ok)return;playlistData=[];renderPlaylist();});
+  }
+  function renderPlaylist(){
+    var ul=document.getElementById('playlist');
+    if(!ul)return;
+    requestAnimationFrame(function(){
+      ul.innerHTML='';
+      if(playlistData.length===0){ul.innerHTML='<li style="color:var(--premium-text-muted);text-align:center;padding:20px">ยังไม่มีเพลงในลิส</li>';return;}
+      var frag=document.createDocumentFragment();
+      playlistData.forEach(function(s,i){
+        var li=document.createElement('li');
+        if(s.isBreak){
+          li.innerHTML='<span class="pl-break">— พัก —</span><span style="display:flex;gap:4px"><span class="move-btn move-up" data-index="'+i+'">⬆️</span><span class="move-btn move-down" data-index="'+i+'">⬇️</span><span class="del remove-item" data-index="'+i+'">✕</span></span>';
+          frag.appendChild(li);return;
+        }
+        var tk=transposeKey(s.key,s.transpose,s.mode);
+        li.innerHTML='<div class="play-left"><div class="play-title">'+(i+1)+'. '+escHtml(s.name)+'</div><div class="play-meta">BPM '+(s.bpm||'-')+' · Key <span class="key-val'+(s.transpose!==0?' transposed':'')+'" data-index="'+i+'">'+tk+'</span></div><div class="transpose"><span class="tp-btn tp-down" data-index="'+i+'" data-step="-1">−</span><span class="tp-btn tp-up" data-index="'+i+'" data-step="1">+</span></div></div><span style="display:flex;gap:4px;flex-shrink:0"><span class="move-btn move-up" data-index="'+i+'">⬆️</span><span class="move-btn move-down" data-index="'+i+'">⬇️</span><span class="del remove-item" data-index="'+i+'">✕</span></span>';
+        frag.appendChild(li);
+      });
+      ul.appendChild(frag);
+    });
+  }
+  function transposeSong(i,step){
+    var s=playlistData[i];if(!s||s.isBreak)return;
+    s.transpose+=step;
+    var el=document.querySelector('.key-val[data-index="'+i+'"]');
+    if(!el)return;
+    requestAnimationFrame(function(){
+      el.textContent=transposeKey(s.key,s.transpose,s.mode);
+      el.classList.toggle('transposed',s.transpose!==0);
+      el.classList.add('flash');
+      setTimeout(function(){el.classList.remove('flash');},120);
+    });
+  }
+  function moveUp(i){if(i<=0)return;var t=playlistData[i-1];playlistData[i-1]=playlistData[i];playlistData[i]=t;renderPlaylist();}
+  function moveDown(i){if(i>=playlistData.length-1)return;var t=playlistData[i];playlistData[i]=playlistData[i+1];playlistData[i+1]=t;renderPlaylist();}
+  function removeItem(i){if(i<0||i>=playlistData.length)return;playlistData.splice(i,1);renderPlaylist();}
+  document.addEventListener('click',function(e){
+    var idx=parseInt(e.target.getAttribute('data-index'),10);
+    if(isNaN(idx))return;
+    if(e.target.classList.contains('tp-up')||e.target.classList.contains('tp-down'))transposeSong(idx,parseInt(e.target.getAttribute('data-step'),10));
+    else if(e.target.classList.contains('move-up'))moveUp(idx);
+    else if(e.target.classList.contains('move-down'))moveDown(idx);
+    else if(e.target.classList.contains('remove-item'))removeItem(idx);
+  });
+  </script>
+  <script>
+  function formatThaiDate(ds){if(!ds)return'';var d=new Date(ds);if(isNaN(d.getTime()))return'';var m=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];return d.getDate()+' '+m[d.getMonth()]+' '+(d.getFullYear()+543);}
+  function copyPlaylist(){
+    try{
+      if(playlistData.length===0){showToast('ไม่มีเพลงในลิส','warning');return;}
+      var ss=document.getElementById('copySpeed')&&document.getElementById('copySpeed').checked;
+      var sk=document.getElementById('copyKey')&&document.getElementById('copyKey').checked;
+      var date=formatThaiDate((document.getElementById('useDate')||{}).value);
+      var venue=(document.getElementById('venue')||{}).value||'';
+      var time=(document.getElementById('timeSlot')||{}).value||'';
+      var hdr='';
+      if(date)hdr+=date+'\n';
+      if(venue||time)hdr+=(venue+' '+time).trim()+'\n';
+      if(hdr)hdr+='---\n';
+      var n=0;
+      var body=playlistData.map(function(s){
+        if(s.isBreak)return'พัก';
+        n++;
+        return n+'. '+s.name+(ss&&s.bpm?' '+s.bpm:'')+(sk?' ['+transposeKey(s.key,s.transpose,s.mode)+']':'');
+      }).join('\n');
+      var text=hdr+body;
+      var ta=document.createElement('textarea');
+      ta.value=text;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;left:-9999px;top:0';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      var ok=false;try{ok=document.execCommand('copy');}catch(e){}
+      if(!ok&&navigator.clipboard)navigator.clipboard.writeText(text).then(function(){}).catch(function(){});
+      document.body.removeChild(ta);
+      showToast('คัดลอกลิสสำเร็จ ✓','success');
+    }catch(err){showToast('คัดลอกไม่สำเร็จ: '+err.message,'error');}
   }
   </script>
 </body>
