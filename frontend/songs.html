@@ -203,7 +203,10 @@ html{scroll-behavior:smooth}
       <h2 style="margin:0;font-family:var(--font-family-display);font-size:var(--text-xl);font-weight:700">โปรแกรมลิสเพลง</h2>
       <p style="margin:4px 0 0;font-size:var(--text-sm);color:#cbd5e0" id="songPageBandName"></p>
     </div>
-    <button onclick="loadInitial(true)" title="โหลดเพลงใหม่" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔄</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <button onclick="loadInitial(true)" title="โหลดเพลงใหม่" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">🔄</button>
+      <a href="?page=add-song" style="display:flex;align-items:center;gap:6px;background:var(--premium-gold,#d4a843);color:#fff;border:none;border-radius:24px;padding:0 16px;height:36px;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap;cursor:pointer">➕ เพิ่มเพลง</a>
+    </div>
   </div>
 
   <!-- ── Filter Panel ── -->
