@@ -18,15 +18,37 @@ var SONG_HEADERS = ['ชื่อเพลง','คีย์','คีย์ (ต
 // ──────────────────────────────────────────────────────────────
 
 /**
- * คืน object { ss, sheet } จากคลังเพลงกลาง
- * ถ้าไม่มี sheet ของวงนี้ จะสร้างใหม่พร้อม header
+ * คืน object { ss, sheet, resolvedBandName } จากคลังเพลงกลาง
+ * fallback: ถ้าชื่อ sheet ไม่ตรงพอดี ให้ค้นหา sheet แรกที่ขึ้นต้นด้วย prefix
+ * ถ้าไม่เจอเลย จะสร้างใหม่
  */
 function getSongSheet(bandName) {
-  if (!bandName) throw new Error('ต้องระบุชื่อวง (bandName)');
   var ss = SpreadsheetApp.openById(CONFIG.GLOBAL_SONGS_SPREADSHEET_ID);
-  var sheetName = CONFIG.SONG_SHEET_PREFIX + bandName;
-  var sheet = ss.getSheetByName(sheetName);
+  var prefix = CONFIG.SONG_SHEET_PREFIX; // 'ลิสเพลง'
+
+  // 1. ลองชื่อตรงๆ ก่อน
+  var sheetName = prefix + (bandName || '');
+  var sheet = bandName ? ss.getSheetByName(sheetName) : null;
+
+  // 2. fallback: หา sheet แรกที่ชื่อขึ้นต้นด้วย prefix
   if (!sheet) {
+    var allSheets = ss.getSheets();
+    for (var i = 0; i < allSheets.length; i++) {
+      if (allSheets[i].getName().indexOf(prefix) === 0) {
+        sheet = allSheets[i];
+        // อัปเดต bandName ให้ตรงกับ sheet ที่เจอ
+        bandName = allSheets[i].getName().replace(prefix, '');
+        sheetName = allSheets[i].getName();
+        Logger.log('getSongSheet: fallback to sheet "' + sheetName + '"');
+        break;
+      }
+    }
+  }
+
+  // 3. ถ้ายังไม่เจอเลย สร้างใหม่
+  if (!sheet) {
+    if (!bandName) bandName = 'Default';
+    sheetName = prefix + bandName;
     sheet = ss.insertSheet(sheetName);
     sheet.appendRow(SONG_HEADERS);
     var hRange = sheet.getRange(1, 1, 1, SONG_HEADERS.length);
@@ -34,8 +56,10 @@ function getSongSheet(bandName) {
     hRange.setBackground('#2d3748');
     hRange.setFontColor('#f6ad55');
     sheet.setFrozenRows(1);
+    Logger.log('getSongSheet: created new sheet "' + sheetName + '"');
   }
-  return { ss: ss, sheet: sheet };
+
+  return { ss: ss, sheet: sheet, bandName: bandName };
 }
 
 /**
@@ -109,24 +133,26 @@ function getAllSongs(source, bandId, bandName) {
 }
 
 function getAllSongsForBand(bandName) {
-  var cacheKey = 'songs_' + bandName;
+  var cacheKey = 'songs_' + (bandName || 'default');
   var cached = cacheGet(cacheKey);
   if (cached) return cached;
 
   try {
-    var obj   = getSongSheet(bandName);
-    var data  = obj.sheet.getDataRange().getValues();
+    var obj      = getSongSheet(bandName);   // obj.bandName may differ from arg if fallback
+    var resolved = obj.bandName;
+    var data     = obj.sheet.getDataRange().getValues();
     if (data.length <= 1) return { success: true, data: [] };
     var songs = [];
     for (var i = 1; i < data.length; i++) {
       var name = (data[i][0] || '').toString().trim();
       if (!name) continue;
-      songs.push(rowToSong(data[i], i + 1, bandName)); // row i+1 (sheet row, header=row1)
+      songs.push(rowToSong(data[i], i + 1, resolved));
     }
     var result = { success: true, data: songs };
     cacheSet(cacheKey, result, CACHE_TTL.GLOBAL_SONGS || 300);
     return result;
   } catch(e) {
+    Logger.log('getAllSongsForBand error: ' + e);
     return { success: false, message: e.toString() };
   }
 }
