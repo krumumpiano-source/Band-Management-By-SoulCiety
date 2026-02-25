@@ -605,21 +605,13 @@ function renderPage() {
       var idx = start + i;
       var nameEscaped = escapeHtml(s.name);
       var newTag = s.isNew ? '<span class="new-tag">New</span>' : '';
-      // badges
-      var badges = '';
-      if (s.key)    badges += '<span class="badge badge-key">🎹 ' + escapeHtml(s.key) + (s.keyNote ? ' / ' + escapeHtml(s.keyNote) : '') + '</span>';
-      if (s.singer === 'male')   badges += '<span class="badge badge-male">♂️ ชาย</span>';
-      if (s.singer === 'female') badges += '<span class="badge badge-female">♀️ หญิง</span>';
-      if (s.singer === 'duet')   badges += '<span class="badge badge-duet">🎤 คู่</span>';
-      if (s.mood)   badges += '<span class="badge badge-mood">' + escapeHtml(s.mood) + '</span>';
-      if (s.era)    badges += '<span class="badge badge-era">' + escapeHtml(s.era) + '</span>';
-
+      var songId = escapeHtml(s.id || s.songId || '');
       buf.push(
         '<div class="result-item" data-index="' + idx + '">' +
         '<div class="result-item-left">' +
         '<div class="song-title">' + nameEscaped + newTag + '</div>' +
-        (badges ? '<div class="song-badges">' + badges + '</div>' : '') +
         '</div>' +
+        '<span class="edit-song-btn" data-songid="' + songId + '" title="แก้ไขเพลง">✏️</span>' +
         '<span class="add-song-btn" data-index="' + idx + '" title="เพิ่มในลิส">➕</span>' +
         '</div>'
       );
@@ -660,6 +652,10 @@ document.addEventListener("click", function (e) {
   if (e.target && e.target.classList && e.target.classList.contains("add-song-btn")) {
     var idx = parseInt(e.target.getAttribute("data-index"), 10);
     if (!isNaN(idx) && filteredResults[idx]) addSong(filteredResults[idx]);
+  }
+  if (e.target && e.target.classList && e.target.classList.contains("edit-song-btn")) {
+    var sid = e.target.getAttribute("data-songid");
+    if (sid) window.location.href = 'edit-song.html?songId=' + encodeURIComponent(sid);
   }
 });
 

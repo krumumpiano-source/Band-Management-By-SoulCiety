@@ -129,6 +129,9 @@ function routeAction(req) {
       var _bid = req.bandId || (req._session && req._session.bandId) || '';
       return getAllSongs(req.source || 'global', _bid, _bn);
     }
+    case 'getSong': {
+      return getSong({ songId: req.songId });
+    }
     case 'addSong': {
       var _sd = req.data || req;
       _sd.bandName = _sd.bandName || (req._session && req._session.bandName) || '';

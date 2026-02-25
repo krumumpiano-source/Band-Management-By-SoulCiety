@@ -8,7 +8,13 @@
   <?!= include('css_theme') ?>
   <?!= include('css_nav') ?>
   <?!= include('css_browser-compat') ?>
-  <style>.form-r{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}@media(max-width:480px){.form-r{grid-template-columns:1fr}}</style>
+  <style>
+    .form-r{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+    @media(max-width:480px){.form-r{grid-template-columns:1fr}}
+    .singer-group{display:flex;gap:var(--spacing-md);flex-wrap:wrap}
+    .singer-option{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.95rem}
+    .singer-option input[type=radio]{accent-color:var(--premium-gold);width:16px;height:16px}
+  </style>
 </head>
 <body>
   <div id="mainNav"></div>
@@ -16,36 +22,37 @@
   <main>
     <div class="container" style="max-width:640px">
       <div class="page-header">
-        <h1 class="page-title" data-i18n="editSong">แก้ไขเพลง</h1>
-        <a href="?page=songs" class="btn btn-ghost" data-i18n="back">← กลับ</a>
+        <h1 class="page-title">แก้ไขเพลง</h1>
+        <a href="?page=songs" class="btn btn-ghost">← กลับ</a>
       </div>
       <div class="card">
         <form id="editSongForm">
           <input type="hidden" id="songId">
-          <div class="form-r">
-            <div class="form-group"><label data-i18n="songTitle">ชื่อเพลง *</label><input type="text" id="title" required></div>
-            <div class="form-group"><label data-i18n="artist">ศิลปิน</label><input type="text" id="artist"></div>
-          </div>
+          <div class="form-group"><label>ชื่อเพลง *</label><input type="text" id="songName" required placeholder="ชื่อเพลง"></div>
           <div class="form-r">
             <div class="form-group">
-              <label data-i18n="key">คีย์</label>
-              <select id="key"><option value="">—</option><option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option><option>F#</option><option>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option></select>
+              <label>คีย์</label>
+              <select id="key"><option value="">—</option><option>C</option><option>C#</option><option>Db</option><option>D</option><option>D#</option><option>Eb</option><option>E</option><option>F</option><option>F#</option><option>Gb</option><option>G</option><option>G#</option><option>Ab</option><option>A</option><option>A#</option><option>Bb</option><option>B</option></select>
             </div>
-            <div class="form-group">
-              <label data-i18n="tempo">จังหวะ</label>
-              <select id="tempo"><option value="">—</option><option value="ช้า">ช้า</option><option value="ปานกลาง">ปานกลาง</option><option value="เร็ว">เร็ว</option></select>
-            </div>
+            <div class="form-group"><label>คีย์ (ตัวโน้ต)</label><input type="text" id="keyNote" placeholder="เช่น Am, Em"></div>
           </div>
           <div class="form-r">
-            <div class="form-group"><label data-i18n="genre">แนวเพลง</label><input type="text" id="genre"></div>
-            <div class="form-group"><label data-i18n="duration">ความยาว (นาที)</label><input type="number" id="duration" min="0" step="0.5"></div>
+            <div class="form-group"><label>ความเร็ว (BPM)</label><input type="number" id="bpm" min="0" max="300" placeholder="0"></div>
+            <div class="form-group"><label>ปีของเพลง</label><input type="text" id="era" placeholder="เช่น 90s, 2000s"></div>
           </div>
-          <div class="form-group"><label data-i18n="lyrics">เนื้อเพลง / Chords</label><textarea id="lyrics" rows="5"></textarea></div>
-          <div class="form-group"><label data-i18n="youtubeUrl">YouTube / Link</label><input type="url" id="youtubeUrl"></div>
-          <div class="form-group"><label data-i18n="notes">หมายเหตุ</label><textarea id="notes" rows="2"></textarea></div>
-          <div style="display:flex;gap:var(--spacing-md);justify-content:flex-end">
-            <a href="?page=songs" class="btn btn-secondary" data-i18n="cancel">ยกเลิก</a>
-            <button type="submit" class="btn btn-primary" id="saveBtn" data-i18n="save">บันทึก</button>
+          <div class="form-group">
+            <label>นักร้อง</label>
+            <div class="singer-group">
+              <label class="singer-option"><input type="radio" name="singer" value="male"> 🎤 ชาย</label>
+              <label class="singer-option"><input type="radio" name="singer" value="female"> 🎤 หญิง</label>
+              <label class="singer-option"><input type="radio" name="singer" value="duet"> 🎤 คู่</label>
+              <label class="singer-option"><input type="radio" name="singer" value=""> — ไม่ระบุ</label>
+            </div>
+          </div>
+          <div class="form-group"><label>อารมณ์เพลง</label><input type="text" id="mood" placeholder="เช่น สนุก, โรแมนติก, เศร้า"></div>
+          <div style="display:flex;gap:var(--spacing-md);justify-content:flex-end;margin-top:var(--spacing-md)">
+            <a href="?page=songs" class="btn btn-secondary">ยกเลิก</a>
+            <button type="submit" class="btn btn-primary" id="saveBtn">💾 บันทึก</button>
           </div>
         </form>
       </div>
@@ -64,36 +71,37 @@
       gasRun('getSong', { songId: songId }, function(r) {
         if (r && r.success && r.data) {
           var s = r.data;
-          document.getElementById('title').value = s.title || '';
-          document.getElementById('artist').value = s.artist || '';
+          document.getElementById('songName').value = s.name || '';
           document.getElementById('key').value = s.key || '';
-          document.getElementById('tempo').value = s.tempo || '';
-          document.getElementById('genre').value = s.genre || '';
-          document.getElementById('duration').value = s.duration || '';
-          document.getElementById('lyrics').value = s.lyrics || '';
-          document.getElementById('youtubeUrl').value = s.youtubeUrl || '';
-          document.getElementById('notes').value = s.notes || '';
+          document.getElementById('keyNote').value = s.keyNote || '';
+          document.getElementById('bpm').value = s.bpm || 0;
+          document.getElementById('era').value = s.era || '';
+          document.getElementById('mood').value = s.mood || '';
+          var singerVal = s.singer || '';
+          var radios = document.querySelectorAll('input[name="singer"]');
+          radios.forEach(function(r){ r.checked = (r.value === singerVal); });
+        } else {
+          showToast((r&&r.message)||'ไม่พบเพลง','error');
         }
       });
     }
     document.getElementById('editSongForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      var btn = document.getElementById('saveBtn'); btn.disabled = true; btn.textContent = t('loading');
+      var btn = document.getElementById('saveBtn'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+      var singerRadio = document.querySelector('input[name="singer"]:checked');
       gasRun('updateSong', {
         songId: document.getElementById('songId').value,
-        title: document.getElementById('title').value.trim(),
-        artist: document.getElementById('artist').value.trim(),
+        name: document.getElementById('songName').value.trim(),
         key: document.getElementById('key').value,
-        tempo: document.getElementById('tempo').value,
-        genre: document.getElementById('genre').value.trim(),
-        duration: document.getElementById('duration').value,
-        lyrics: document.getElementById('lyrics').value,
-        youtubeUrl: document.getElementById('youtubeUrl').value.trim(),
-        notes: document.getElementById('notes').value.trim()
+        keyNote: document.getElementById('keyNote').value.trim(),
+        bpm: parseInt(document.getElementById('bpm').value) || 0,
+        era: document.getElementById('era').value.trim(),
+        singer: singerRadio ? singerRadio.value : '',
+        mood: document.getElementById('mood').value.trim()
       }, function(r) {
-        btn.disabled = false; btn.textContent = t('save');
-        if (r && r.success) { showToast(t('msg_saved'),'success'); setTimeout(function(){ window.location.href='?page=songs'; },1000); }
-        else showToast((r&&r.message)||t('msg_error'),'error');
+        btn.disabled = false; btn.textContent = '💾 บันทึก';
+        if (r && r.success) { showToast('บันทึกเรียบร้อย','success'); setTimeout(function(){ window.location.href='?page=songs'; },1000); }
+        else showToast((r&&r.message)||'เกิดข้อผิดพลาด','error');
       });
     });
   });

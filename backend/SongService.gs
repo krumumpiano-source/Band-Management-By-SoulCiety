@@ -120,9 +120,46 @@ function parseRowNum(songId) {
   return isNaN(n) ? -1 : n;
 }
 
+/**
+ * parse songId → bandName
+ * รูปแบบ: EXT_{encodedBandName}_{rowNum}
+ */
+function parseBandNameFromSongId(songId) {
+  if (!songId) return '';
+  var parts = String(songId).split('_');
+  if (parts.length < 3) return '';
+  // parts[0]='EXT', parts[last]=rowNum, middle parts = encoded band name
+  var encoded = parts.slice(1, parts.length - 1).join('_');
+  try { return decodeURIComponent(encoded); } catch(e) { return encoded; }
+}
+
 // ──────────────────────────────────────────────────────────────
 // PUBLIC API
 // ──────────────────────────────────────────────────────────────
+
+/**
+ * ดึงข้อมูลเพลงเดี่ยว
+ * params: { songId: 'EXT_{encodedBandName}_{rowNum}' }
+ */
+function getSong(params) {
+  try {
+    var songId = (params && params.songId) ? String(params.songId) : '';
+    if (!songId) return { success: false, message: 'ไม่มี songId' };
+    var rowNum  = parseRowNum(songId);
+    var bandName = parseBandNameFromSongId(songId);
+    if (rowNum < 2) return { success: false, message: 'songId ไม่ถูกต้อง' };
+    if (!bandName) return { success: false, message: 'ไม่พบชื่อวงใน songId' };
+    var obj  = getSongSheet(bandName);
+    var data = obj.sheet.getDataRange().getValues();
+    if (rowNum > data.length) return { success: false, message: 'ไม่พบแถวเพลงใน sheet' };
+    var row  = data[rowNum - 1];
+    var song = rowToSong(row, rowNum, obj.bandName);
+    return { success: true, data: song };
+  } catch(e) {
+    Logger.log('getSong error: ' + e);
+    return { success: false, message: e.toString() };
+  }
+}
 
 function getAllSongs(source, bandId, bandName) {
   try {
