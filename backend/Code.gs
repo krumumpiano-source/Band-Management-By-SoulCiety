@@ -130,7 +130,8 @@ function routeAction(req) {
       return getAllSongs(req.source || 'global', _bid, _bn);
     }
     case 'getSong': {
-      return getSong({ songId: req.songId });
+      var _gbn = req.bandName || (req._session && req._session.bandName) || '';
+      return getSong({ songId: req.songId, bandName: _gbn });
     }
     case 'addSong': {
       var _sd = req.data || req;

@@ -67,23 +67,32 @@
     var params = new URLSearchParams(window.location.search);
     var songId = params.get('songId') || '';
     document.getElementById('songId').value = songId;
+    console.log('[edit-song] songId =', songId);
     if (songId) {
-      gasRun('getSong', { songId: songId }, function(r) {
+      var bandName = localStorage.getItem('bandName') || '';
+      gasRun('getSong', { songId: songId, bandName: bandName }, function(r) {
+        console.log('[edit-song] getSong response =', r);
         if (r && r.success && r.data) {
           var s = r.data;
           document.getElementById('songName').value = s.name || '';
-          document.getElementById('key').value = s.key || '';
+          // set select: ต้องตรง option value
+          var keyEl = document.getElementById('key');
+          var keyOpts = Array.from(keyEl.options).map(function(o){ return o.value; });
+          keyEl.value = (keyOpts.indexOf(s.key) >= 0) ? s.key : '';
           document.getElementById('keyNote').value = s.keyNote || '';
-          document.getElementById('bpm').value = s.bpm || 0;
+          document.getElementById('bpm').value = (s.bpm > 0) ? s.bpm : '';
           document.getElementById('era').value = s.era || '';
           document.getElementById('mood').value = s.mood || '';
           var singerVal = s.singer || '';
           var radios = document.querySelectorAll('input[name="singer"]');
-          radios.forEach(function(r){ r.checked = (r.value === singerVal); });
+          radios.forEach(function(rd){ rd.checked = (rd.value === singerVal); });
         } else {
           showToast((r&&r.message)||'ไม่พบเพลง','error');
+          console.error('[edit-song] getSong failed:', r);
         }
       });
+    } else {
+      showToast('ไม่มี songId ใน URL', 'error');
     }
     document.getElementById('editSongForm').addEventListener('submit', function(e) {
       e.preventDefault();

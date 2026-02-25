@@ -145,13 +145,13 @@ function getSong(params) {
   try {
     var songId = (params && params.songId) ? String(params.songId) : '';
     if (!songId) return { success: false, message: 'ไม่มี songId' };
-    var rowNum  = parseRowNum(songId);
-    var bandName = parseBandNameFromSongId(songId);
-    if (rowNum < 2) return { success: false, message: 'songId ไม่ถูกต้อง' };
+    var rowNum   = parseRowNum(songId);
+    var bandName = parseBandNameFromSongId(songId) || (params && params.bandName) || '';
+    if (rowNum < 2) return { success: false, message: 'songId ไม่ถูกต้อง (rowNum=' + rowNum + ')' };
     if (!bandName) return { success: false, message: 'ไม่พบชื่อวงใน songId' };
     var obj  = getSongSheet(bandName);
     var data = obj.sheet.getDataRange().getValues();
-    if (rowNum > data.length) return { success: false, message: 'ไม่พบแถวเพลงใน sheet' };
+    if (rowNum > data.length) return { success: false, message: 'ไม่พบแถวเพลงใน sheet (row=' + rowNum + ', total=' + data.length + ')' };
     var row  = data[rowNum - 1];
     var song = rowToSong(row, rowNum, obj.bandName);
     return { success: true, data: song };
