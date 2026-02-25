@@ -8,7 +8,91 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
+  <style>
+    .form-r{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+    @media(max-width:480px){.form-r{grid-template-columns:1fr}}
+    .singer-group{display:flex;gap:var(--spacing-md);flex-wrap:wrap}
+    .singer-option{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.95rem}
+    .singer-option input[type=radio]{accent-color:var(--premium-gold);width:16px;height:16px}
+  </style>
 </head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <main>
+    <div class="container" style="max-width:640px">
+      <div class="page-header">
+        <h1 class="page-title">เพิ่มเพลง</h1>
+        <a href="songs.html" class="btn btn-ghost">← กลับ</a>
+      </div>
+      <div class="card">
+        <form id="addSongForm">
+          <div class="form-group"><label>ชื่อเพลง *</label><input type="text" id="songName" required placeholder="ชื่อเพลง"></div>
+          <div class="form-r">
+            <div class="form-group">
+              <label>คีย์</label>
+              <select id="key"><option value="">—</option><option>C</option><option>C#</option><option>Db</option><option>D</option><option>D#</option><option>Eb</option><option>E</option><option>F</option><option>F#</option><option>Gb</option><option>G</option><option>G#</option><option>Ab</option><option>A</option><option>A#</option><option>Bb</option><option>B</option></select>
+            </div>
+            <div class="form-group"><label>คีย์ (ตัวโน้ต)</label><input type="text" id="keyNote" placeholder="เช่น Am, Em"></div>
+          </div>
+          <div class="form-r">
+            <div class="form-group"><label>ความเร็ว (BPM)</label><input type="number" id="bpm" min="0" max="300" placeholder="0"></div>
+            <div class="form-group"><label>ยุคของเพลง</label><input type="text" id="era" placeholder="เช่น 90s, 2000s"></div>
+          </div>
+          <div class="form-group">
+            <label>นักร้อง</label>
+            <div class="singer-group">
+              <label class="singer-option"><input type="radio" name="singer" value="male"> 🎤 ชาย</label>
+              <label class="singer-option"><input type="radio" name="singer" value="female"> 🎤 หญิง</label>
+              <label class="singer-option"><input type="radio" name="singer" value="duet"> 🎤 คู่</label>
+              <label class="singer-option"><input type="radio" name="singer" value="" checked> — ไม่ระบุ</label>
+            </div>
+          </div>
+          <div class="form-group"><label>อารมณ์เพลง</label><input type="text" id="mood" placeholder="เช่น สนุก, โรแมนติก, เศร้า"></div>
+          <div style="display:flex;gap:var(--spacing-md);justify-content:flex-end;margin-top:var(--spacing-md)">
+            <a href="songs.html" class="btn btn-secondary">ยกเลิก</a>
+            <button type="submit" class="btn btn-primary" id="saveBtn">💾 บันทึก</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    document.getElementById('addSongForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('saveBtn');
+      btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+      var singerRadio = document.querySelector('input[name="singer"]:checked');
+      var bandId   = localStorage.getItem('bandId')   || '';
+      var bandName = localStorage.getItem('bandName') || '';
+      gasRun('addSong', {
+        name:    document.getElementById('songName').value.trim(),
+        key:     document.getElementById('key').value,
+        keyNote: document.getElementById('keyNote').value.trim(),
+        bpm:     parseInt(document.getElementById('bpm').value) || 0,
+        era:     document.getElementById('era').value.trim(),
+        singer:  singerRadio ? singerRadio.value : '',
+        mood:    document.getElementById('mood').value.trim(),
+        bandId:  bandId,
+        bandName: bandName
+      }, function(r) {
+        btn.disabled = false; btn.textContent = '💾 บันทึก';
+        if (r && r.success) {
+          try { sessionStorage.removeItem('songs_cache_' + (bandId || bandName)); } catch(ex) {}
+          showToast('เพิ่มเพลงเรียบร้อย', 'success');
+          setTimeout(function() { window.location.href = 'songs.html'; }, 1000);
+        } else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      });
+    });
+  });
+  </script>
+</body>
+</html>
 <body>
   <div id="mainNav"></div>
   <div id="toast"></div>
