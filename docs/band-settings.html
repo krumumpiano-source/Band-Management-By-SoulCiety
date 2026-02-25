@@ -75,12 +75,15 @@
     <div class="container">
       <div class="page-header">
         <h1 class="page-title">⚙️ ตั้งค่าวง</h1>
-        <button id="saveBtn" class="btn btn-primary">💾 บันทึกการตั้งค่า</button>
+        <button id="saveBtn" class="btn btn-primary">💾 บันทึกทั้งหมด</button>
       </div>
 
       <!-- Band Info -->
       <div class="card">
-        <div class="card-header"><h3 class="card-title">🎵 ข้อมูลวง</h3></div>
+        <div class="card-header" style="justify-content:space-between">
+          <h3 class="card-title">🎵 ข้อมูลวง</h3>
+          <button type="button" class="btn btn-primary btn-sm" onclick="saveBandInfo(this)">💾 บันทึก</button>
+        </div>
         <div class="info-grid">
           <div class="form-group"><label>ชื่อวง</label><input type="text" id="bandName" placeholder="ชื่อวงดนตรี"></div>
           <div class="form-group"><label>ผู้จัดการวง</label><input type="text" id="bandManager" placeholder="ชื่อผู้จัดการวง"></div>
@@ -91,7 +94,10 @@
       <div class="card">
         <div class="card-header" style="justify-content:space-between">
           <h3 class="card-title">👥 สมาชิกวง</h3>
-          <button id="addMemberBtn" class="btn btn-primary btn-sm">➕ เพิ่มสมาชิก</button>
+          <div style="display:flex;gap:8px">
+            <button id="addMemberBtn" class="btn btn-secondary btn-sm">➕ เพิ่มสมาชิก</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="saveMembers(this)">💾 บันทึก</button>
+          </div>
         </div>
         <div id="noMembers" style="display:none"><p class="empty-state-small">ยังไม่มีสมาชิก กดปุ่ม ➕ เพื่อเพิ่ม</p></div>
         <div id="membersList"></div>
@@ -118,16 +124,17 @@
       <div class="card">
         <div class="card-header" style="justify-content:space-between">
           <h3 class="card-title">🏪 ร้านและตารางงาน</h3>
-          <button id="addVenueBtn" class="btn btn-primary btn-sm">➕ เพิ่มร้าน</button>
+          <div style="display:flex;gap:8px">
+            <button id="addVenueBtn" class="btn btn-secondary btn-sm">➕ เพิ่มร้าน</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="saveVenues(this)">💾 บันทึก</button>
+          </div>
         </div>
         <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">① กดเพิ่มร้าน → กด ▶ เพื่อขยายร้าน → ② เลือกวัน → ③ เพิ่มช่วงเวลา → ④ เพิ่มสมาชิกและค่าแรง</p>
         <div id="noVenues" style="display:none"><p class="empty-state-small">ยังไม่มีร้าน กดปุ่ม ➕ เพื่อเพิ่มร้านแรก</p></div>
         <div id="venuesList"></div>
       </div>
 
-      <div style="display:flex;justify-content:flex-end;padding-bottom:var(--spacing-xl)">
-        <button class="btn btn-primary btn-lg" onclick="document.getElementById('saveBtn').click()">💾 บันทึกการตั้งค่า</button>
-      </div>
+
     </div>
   </main>
 

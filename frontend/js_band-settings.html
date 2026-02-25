@@ -1,4 +1,94 @@
 ﻿<script>
+/* ══════════════════════════════════════════
+   SAVE — per-section helpers
+══════════════════════════════════════════ */
+function _buildFullPayload() {
+  var bName = (getEl('bandName') && getEl('bandName').value.trim()) || bandNameVal;
+  var bMgr  = (getEl('bandManager') && getEl('bandManager').value.trim()) || currentBandManager;
+  var validMembers = bandMembersData.filter(function(m) { return m.name && m.name.trim(); });
+  var validVenues  = venues.filter(function(v) { return v.name && v.name.trim(); });
+  var hourlyRates = [];
+  validVenues.forEach(function(v) {
+    Object.keys(v.schedule || {}).forEach(function(day) {
+      (v.schedule[day].timeSlots || []).forEach(function(slot) {
+        (slot.members || []).forEach(function(mr) {
+          if (mr.memberId && mr.hourlyRate > 0) {
+            hourlyRates.push({ dayOfWeek: parseInt(day), startTime: slot.startTime, endTime: slot.endTime, memberId: mr.memberId, hourlyRate: mr.hourlyRate, venueId: v.id });
+          }
+        });
+      });
+    });
+  });
+  return {
+    bandId: currentBandId || ('BAND_' + Date.now()),
+    bandName: bName,
+    bandManager: bMgr,
+    venues: validVenues,
+    members: validMembers,
+    hourlyRates: hourlyRates,
+    scheduleData: buildScheduleData(),
+    inviteCode: currentInviteCode,
+    inviteExpires: currentInviteExpires,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function _doSave(data, btn, origText, successMsg) {
+  function onSuccess() {
+    currentBandId = data.bandId;
+    bandNameVal = data.bandName;
+    currentBandManager = data.bandManager;
+    localStorage.setItem('bandSettings', JSON.stringify(data));
+    localStorage.setItem('bandId', data.bandId);
+    localStorage.setItem('bandName', data.bandName);
+    localStorage.setItem('bandManager', data.bandManager);
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
+    showToast(successMsg || 'บันทึกเรียบร้อย ✅', 'success');
+  }
+  function onFail(msg) {
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
+    showToast(msg || 'ไม่สามารถบันทึกได้ ❌', 'error');
+  }
+  if (typeof gasRun === 'function') {
+    gasRun('saveBandSettings', data, function(r) {
+      if (r && r.success) onSuccess(); else onFail(r && r.message);
+    });
+  } else {
+    onSuccess();
+  }
+}
+
+function saveBandInfo(btn) {
+  var bName = getEl('bandName') && getEl('bandName').value.trim();
+  if (!bName) { showToast('กรุณากรอกชื่อวง', 'error'); return; }
+  var origText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+  _doSave(_buildFullPayload(), btn, origText, 'บันทึกข้อมูลวงเรียบร้อย ✅');
+}
+
+function saveMembers(btn) {
+  var origText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+  _doSave(_buildFullPayload(), btn, origText, 'บันทึกสมาชิกเรียบร้อย ✅');
+}
+
+function saveVenues(btn) {
+  var valid = venues.filter(function(v) { return v.name && v.name.trim(); });
+  if (valid.length === 0) { showToast('กรุณาเพิ่มร้านอย่างน้อย 1 ร้านที่มีชื่อ', 'error'); return; }
+  var origText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+  _doSave(_buildFullPayload(), btn, origText, 'บันทึกร้านและตารางงานเรียบร้อย ✅');
+}
+
+// Global save-all (header button)
+function saveBandSettings() {
+  var bName = (getEl('bandName') && getEl('bandName').value.trim()) || bandNameVal;
+  if (!bName) { showToast('กรุณากรอกชื่อวง', 'error'); return; }
+  var btn = getEl('saveBtn');
+  var origText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+  _doSave(_buildFullPayload(), btn, origText, 'บันทึกทั้งหมดเรียบร้อย ✅');
+}
 /**
  * Band Settings — merged venue+schedule, invite code
  * Data structure: venues[].schedule[dayOfWeek].timeSlots[].members[]
@@ -281,7 +371,11 @@ function renderVenues() {
             '<button type="button" class="btn btn-secondary btn-sm add-ts-btn" data-vi="' + vi + '" data-day="' + activeDay + '" style="margin-top:8px">\u279e \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32</button>' +
           '</div>';
       }
-      bodyHtml = '<div class="venue-accordion-body">' + infoHtml + daySection + slotSection + '</div>';
+      bodyHtml = '<div class="venue-accordion-body">' + infoHtml + daySection + slotSection +
+        '<div style="display:flex;justify-content:flex-end;padding-top:var(--spacing-md);margin-top:var(--spacing-md);border-top:1px solid #e2e8f0">' +
+        '<button type="button" class="btn btn-primary btn-sm save-venue-btn" data-vi="' + vi + '">💾 บันทึกร้านนี้</button>' +
+        '</div>' +
+        '</div>';
     }
     return '<div class="venue-accordion-item" data-vi="' + vi + '">' +
       '<div class="venue-accordion-header" data-vi="' + vi + '">' +
@@ -345,6 +439,9 @@ function renderVenues() {
     });
   });
   attachTimeSlotListeners();
+  list.querySelectorAll('.save-venue-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) { e.stopPropagation(); saveVenues(this); });
+  });
 }
 
 function renderTimeSlotsForVenueDay(v, vi, day) {
@@ -467,74 +564,6 @@ function buildScheduleData() {
 }
 
 /* ══════════════════════════════════════════
-   SAVE
-══════════════════════════════════════════ */
-function saveBandSettings() {
-  var bName = (getEl('bandName') && getEl('bandName').value) || bandNameVal;
-  var bMgr  = (getEl('bandManager') && getEl('bandManager').value) || currentBandManager;
-  var validMembers = bandMembersData.filter(function(m) { return m.name && m.name.trim(); });
-  var validVenues  = venues.filter(function(v) { return v.name && v.name.trim(); });
-
-  if (!bName || !bName.trim()) { alert('กรุณากรอกชื่อวง'); return; }
-  if (validVenues.length === 0) { alert('กรุณาเพิ่มร้านอย่างน้อย 1 ร้านที่มีชื่อ'); return; }
-
-  var scheduleData = buildScheduleData();
-
-  // Also build hourlyRates for backend compat
-  var hourlyRates = [];
-  validVenues.forEach(function(v) {
-    Object.keys(v.schedule || {}).forEach(function(day) {
-      (v.schedule[day].timeSlots || []).forEach(function(slot) {
-        (slot.members || []).forEach(function(mr) {
-          if (mr.memberId && mr.hourlyRate > 0) {
-            hourlyRates.push({ dayOfWeek: parseInt(day), startTime: slot.startTime, endTime: slot.endTime, memberId: mr.memberId, hourlyRate: mr.hourlyRate, venueId: v.id });
-          }
-        });
-      });
-    });
-  });
-
-  var data = {
-    bandId: currentBandId || ('BAND_' + Date.now()),
-    bandName: bName.trim(),
-    bandManager: bMgr,
-    venues: validVenues,
-    members: validMembers,
-    hourlyRates: hourlyRates,
-    scheduleData: scheduleData,
-    inviteCode: currentInviteCode,
-    inviteExpires: currentInviteExpires,
-    updatedAt: new Date().toISOString()
-  };
-
-  var saveBtn = getEl('saveBtn');
-  var orig = saveBtn ? saveBtn.textContent : '';
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'กำลังบันทึก...'; }
-
-  function onSuccess() {
-    currentBandId = data.bandId;
-    localStorage.setItem('bandSettings', JSON.stringify(data));
-    localStorage.setItem('bandId', data.bandId);
-    localStorage.setItem('bandName', data.bandName);
-    localStorage.setItem('bandManager', data.bandManager);
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = orig; }
-    showToast('บันทึกการตั้งค่าเรียบร้อยแล้ว ✅');
-  }
-  function onFail(msg) {
-    alert(msg || 'ไม่สามารถบันทึกได้');
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = orig; }
-  }
-
-  if (typeof gasRun === 'function') {
-    gasRun('saveBandSettings', data, function(r) {
-      if (r && r.success) onSuccess(); else onFail(r && r.message);
-    });
-  } else {
-    onSuccess();
-  }
-}
-
-/* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function() {
@@ -543,6 +572,4 @@ document.addEventListener('DOMContentLoaded', function() {
   var es = getEl('saveBtn');      if (es) es.addEventListener('click', function(e) { e.preventDefault(); saveBandSettings(); });
   loadBandSettings();
 });
-
-
 </script>
