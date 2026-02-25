@@ -32,7 +32,7 @@ body{
   line-height:1.6;
 }
 
-#mainNav{display:none}
+#mainNav{}
 
 .container{
   max-width:1200px;
@@ -771,7 +771,11 @@ document.addEventListener("click", function (e) {
   }
 });
 
-window.onload = loadInitial;
+window.onload = function() {
+  if (typeof renderMainNav === 'function') renderMainNav('mainNav');
+  if (typeof applyTranslations === 'function') applyTranslations();
+  loadInitial();
+};
 </script>
 
 <script>

@@ -36,7 +36,7 @@ body{
   line-height:1.6;
 }
 
-#mainNav{display:none}
+#mainNav{}
 
 .container{
   max-width:1200px;
@@ -770,9 +770,10 @@ document.addEventListener("click", function (e) {
 });
 
 window.onload = function() {
-  if (typeof requireAuth === 'function') requireAuth(loadInitial);
-  else loadInitial();
+  if (typeof requireAuth === 'function') requireAuth();
   if (typeof renderMainNav === 'function') renderMainNav('mainNav');
+  if (typeof applyTranslations === 'function') applyTranslations();
+  loadInitial();
 };
 </script>
 
