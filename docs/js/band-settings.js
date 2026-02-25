@@ -468,8 +468,8 @@ function renderTimeSlotsForVenueDay(v, vi, day) {
         '<button type="button" class="btn-icon-small ts-remove" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '">\ud83d\uddd1\ufe0f \u0e25\u0e1a\u0e0a\u0e48\u0e27\u0e07</button>' +
       '</div>' +
       '<div class="ts-inputs">' +
-        '<div class="form-group"><label>\u0e40\u0e27\u0e25\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21</label><input type="time" class="ts-start" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" value="' + (slot.startTime||'') + '"></div>' +
-        '<div class="form-group"><label>\u0e40\u0e27\u0e25\u0e32\u0e2a\u0e34\u0e49\u0e19\u0e2a\u0e38\u0e14</label><input type="time" class="ts-end" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" value="' + (slot.endTime||'') + '"></div>' +
+        '<div class="form-group"><label>\u0e40\u0e27\u0e25\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21 <small style="color:var(--premium-text-muted)">(HH:MM)</small></label><input type="text" inputmode="numeric" maxlength="5" placeholder="00:00" class="ts-start ts-time-text" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" value="' + (slot.startTime||'') + '"></div>' +
+        '<div class="form-group"><label>\u0e40\u0e27\u0e25\u0e32\u0e2a\u0e34\u0e49\u0e19\u0e2a\u0e38\u0e14 <small style="color:var(--premium-text-muted)">(HH:MM)</small></label><input type="text" inputmode="numeric" maxlength="5" placeholder="00:00" class="ts-end ts-time-text" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" value="' + (slot.endTime||'') + '"></div>' +
       '</div>' +
       '<div class="ts-members">' +
         '<label style="display:flex;align-items:center;gap:6px;font-size:var(--text-xs);font-weight:700;color:var(--premium-text);margin-bottom:6px"><span class="step-num" style="width:16px;height:16px;font-size:10px">\u2463</span> \u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e41\u0e25\u0e30\u0e04\u0e48\u0e32\u0e41\u0e23\u0e07</label>' +
@@ -483,11 +483,27 @@ function renderTimeSlotsForVenueDay(v, vi, day) {
 function attachTimeSlotListeners() {
   var list = getEl('venuesList');
   if (!list) return;
-  list.querySelectorAll('.ts-start').forEach(function(inp) {
-    inp.addEventListener('change', function() { ensureSlot(+this.dataset.vi,+this.dataset.day,+this.dataset.si).startTime=this.value; renderVenues(); });
-  });
-  list.querySelectorAll('.ts-end').forEach(function(inp) {
-    inp.addEventListener('change', function() { ensureSlot(+this.dataset.vi,+this.dataset.day,+this.dataset.si).endTime=this.value; renderVenues(); });
+  // Auto-format HH:MM as user types (24-hour)
+  list.querySelectorAll('.ts-time-text').forEach(function(inp) {
+    inp.addEventListener('input', function() {
+      var raw = this.value.replace(/[^0-9]/g, '');
+      if (raw.length >= 3) raw = raw.substring(0,2) + ':' + raw.substring(2,4);
+      this.value = raw;
+    });
+    inp.addEventListener('blur', function() {
+      var v = this.value.trim();
+      // Validate HH:MM format
+      if (v && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(v)) {
+        this.style.borderColor = '#e53e3e';
+        showToast('\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a\u0e40\u0e27\u0e25\u0e32\u0e15\u0e49\u0e2d\u0e07\u0e40\u0e1b\u0e47\u0e19 HH:MM (00:00 \u0e16\u0e36\u0e07 23:59)', 'error');
+        return;
+      }
+      this.style.borderColor = '';
+      var slot = ensureSlot(+this.dataset.vi, +this.dataset.day, +this.dataset.si);
+      if (this.classList.contains('ts-start')) slot.startTime = v;
+      else slot.endTime = v;
+      renderVenues();
+    });
   });
   list.querySelectorAll('.ts-remove').forEach(function(btn) {
     btn.addEventListener('click', function() {
