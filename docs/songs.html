@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -11,48 +11,96 @@
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
   <style>
-    .sl-panel{background:var(--premium-white);border:1px solid var(--premium-light-gray);border-radius:var(--radius-lg);padding:var(--spacing-lg);margin-bottom:var(--spacing-lg);box-shadow:var(--shadow-sm)}
-    .sl-panel h3{font-size:var(--text-base);font-weight:700;color:var(--premium-text);margin:0 0 var(--spacing-md)}
-    .sl-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
-    .sl-filters select,.sl-filters input{width:100%}
-    #searchText{width:100%;margin-top:10px}
-    .action-buttons{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap}
-    .action-buttons .btn{flex:1 1 auto}
-    .copy-options{display:flex;gap:24px;font-size:13px;margin-bottom:10px;flex-wrap:wrap}
-    .copy-options label{display:flex;align-items:center;gap:6px;color:var(--premium-text-light)}
-    .result-columns{column-gap:20px;column-width:min(280px,100%)}
-    .result-item{break-inside:avoid;padding:10px 8px;border-bottom:1px solid var(--premium-light-gray);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-    .result-item:hover{background:var(--premium-off-white);border-radius:var(--radius-md)}
-    .result-item-left{flex:1;min-width:0}
-    .song-title{font-weight:600;color:var(--premium-text);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
-    .song-meta{font-size:12px;color:var(--premium-text-muted);margin-top:3px}
-    .new-tag{color:var(--premium-gold);font-size:11px;font-style:italic;margin-left:6px}
-    .add-song-btn{cursor:pointer;user-select:none;flex-shrink:0;font-size:18px;padding:4px}
-    .result-loading,.result-empty{text-align:center;padding:32px 16px;color:var(--premium-text-muted)}
-    .result-error{text-align:center;padding:32px 16px;color:var(--danger,#ef4444)}
-    .pagination{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
-    .pagination .btn{width:auto}
-    .page-info{font-size:13px;color:var(--premium-text-muted)}
-    .pl-list{list-style:none;padding:0;margin:0}
-    .pl-list li{padding:12px 8px;border-bottom:1px solid var(--premium-light-gray);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-    .play-left{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
-    .play-title{font-weight:600;color:var(--premium-text)}
-    .play-meta{font-size:13px;color:var(--premium-text-muted)}
-    .transpose{display:flex;align-items:center;gap:6px;font-size:12px;margin-top:4px}
-    .tp-btn{cursor:pointer;user-select:none;padding:2px 8px;border-radius:6px;background:var(--premium-off-white);border:1px solid var(--premium-light-gray);color:var(--premium-text);font-size:14px;font-weight:700;transition:background .15s}
-    .tp-btn:hover{background:var(--premium-light-gray)}
-    .key-val{font-weight:600;transition:color .12s}
-    .key-val.flash{color:var(--premium-gold)}
-    .key-val.transposed{color:var(--premium-gold);font-weight:700}
-    .move-btn{cursor:pointer;padding:0 6px;user-select:none;font-size:16px}
-    .move-btn:hover{opacity:.6}
-    .del{color:var(--danger,#ef4444);cursor:pointer;user-select:none;font-size:16px}
-    .del:hover{opacity:.6}
-    .pl-break{color:var(--premium-gold);font-weight:700}
+    /* ── Tab bar ── */
+    .tab-bar{display:flex;background:var(--premium-white);border-bottom:2px solid var(--premium-light-gray);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+    .tab-btn{flex:1;padding:14px 8px;border:none;background:none;font-family:inherit;font-size:15px;font-weight:600;color:var(--premium-text-muted);cursor:pointer;position:relative;transition:color .2s;-webkit-tap-highlight-color:transparent}
+    .tab-btn.active{color:var(--premium-gold)}
+    .tab-btn.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--premium-gold);border-radius:2px 2px 0 0}
+    .tab-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--premium-gold);color:#fff;border-radius:99px;font-size:11px;font-weight:700;min-width:18px;height:18px;padding:0 5px;margin-left:5px;line-height:1;transition:background .3s}
+    /* ── Panels ── */
+    .panel-section{display:none;padding:16px 0 100px}
+    .panel-section.active{display:block}
+    .card{background:var(--premium-white);border-radius:var(--radius-lg);box-shadow:0 2px 10px rgba(0,0,0,.07);margin-bottom:14px;overflow:hidden}
+    .card-header{padding:14px 16px;border-bottom:1px solid var(--premium-light-gray);display:flex;justify-content:space-between;align-items:center}
+    .card-header h3{margin:0;font-size:15px;font-weight:700;color:var(--premium-text)}
+    .card-body{padding:14px 16px}
+    /* ── Filters ── */
+    .filter-toggle-btn{background:none;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);padding:7px 13px;font-size:13px;color:var(--premium-text-muted);cursor:pointer;font-family:inherit;transition:all .2s}
+    .filter-toggle-btn.has-filter{border-color:var(--premium-gold);color:var(--premium-gold);background:#fffbeb}
+    .filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+    .filter-grid select{width:100%}
+    .search-wrap{position:relative;margin-top:12px}
+    .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+    .search-wrap input{padding-left:38px;width:100%}
+    /* ── Song cards ── */
+    .song-card{border-bottom:1px solid var(--premium-light-gray);padding:12px 16px;display:flex;align-items:center;gap:10px;transition:background .15s}
+    .song-card:last-child{border-bottom:none}
+    .song-card:active{background:var(--premium-off-white)}
+    .song-card-info{flex:1;min-width:0}
+    .song-card-title{font-weight:600;font-size:14px;color:var(--premium-text);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .song-card-meta{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;align-items:center}
+    .badge{display:inline-block;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:600;line-height:1.4}
+    .badge-bpm{background:#f3f4f6;color:#6b7280}
+    .badge-key{background:#fef3c7;color:#92400e}
+    .badge-new{background:var(--premium-gold);color:#fff}
+    .badge-era{background:#ede9fe;color:#5b21b6}
+    .badge-mood{background:#fce7f3;color:#9d174d}
+    .song-card-actions{display:flex;gap:6px;flex-shrink:0}
+    .icon-btn{width:40px;height:40px;border-radius:var(--radius-md);border:1px solid var(--premium-light-gray);background:var(--premium-white);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .15s;-webkit-tap-highlight-color:transparent;text-decoration:none}
+    .icon-btn:active{transform:scale(.92)}
+    .icon-btn.edit-btn{border-color:#ddd6fe;background:#f5f3ff}
+    .icon-btn.add-btn{border-color:#bbf7d0;background:#f0fdf4;font-size:20px}
+    /* ── Result states ── */
+    .result-state{text-align:center;padding:40px 20px;color:var(--premium-text-muted)}
+    .state-icon{font-size:40px;margin-bottom:10px}
     .spinner{width:36px;height:36px;border:3px solid var(--premium-light-gray);border-top-color:var(--premium-gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
     @keyframes spin{to{transform:rotate(360deg)}}
-    @media(max-width:599px){.sl-filters{grid-template-columns:1fr 1fr;gap:8px}.action-buttons{flex-direction:column}.copy-options{flex-direction:column;gap:8px}.result-columns{column-width:100%}.pl-list li{flex-wrap:wrap;gap:8px}.tp-btn,.move-btn,.del{min-width:36px;min-height:36px;display:inline-flex;align-items:center;justify-content:center}input,select{font-size:16px}}
-    @media(hover:none){.result-item:hover{background:transparent}.tp-btn:active{opacity:.7}}
+    /* ── Pagination ── */
+    .pagination{display:flex;justify-content:center;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--premium-light-gray)}
+    .pagination .btn{width:auto;padding:8px 18px}
+    .page-info{font-size:13px;color:var(--premium-text-muted)}
+    /* ── Playlist ── */
+    .pl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+    .pl-full{margin-bottom:10px}
+    .pl-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+    .pl-actions .btn{white-space:nowrap;padding:10px 6px;font-size:13px}
+    .pl-options{display:flex;gap:20px;padding:10px 0;border-top:1px solid var(--premium-light-gray);border-bottom:1px solid var(--premium-light-gray);margin-bottom:4px}
+    .pl-options label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--premium-text-muted);cursor:pointer}
+    .pl-list{list-style:none;padding:0;margin:0}
+    .pl-item{display:flex;align-items:flex-start;gap:8px;padding:11px 16px;border-bottom:1px solid var(--premium-light-gray)}
+    .pl-item:last-child{border-bottom:none}
+    .pl-num{width:26px;height:26px;border-radius:50%;background:var(--premium-gold);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+    .pl-num.break-num{background:var(--premium-light-gray);color:var(--premium-text-muted)}
+    .pl-item-info{flex:1;min-width:0}
+    .pl-item-title{font-weight:600;font-size:14px;color:var(--premium-text)}
+    .pl-item-meta{font-size:12px;color:var(--premium-text-muted);margin-top:2px}
+    .pl-break-label{font-weight:700;color:var(--premium-gold);font-size:14px}
+    .transpose-row{display:flex;align-items:center;gap:6px;margin-top:5px}
+    .tp-btn{min-width:34px;height:30px;border-radius:8px;background:var(--premium-off-white);border:1px solid var(--premium-light-gray);color:var(--premium-text);font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;line-height:1}
+    .tp-btn:active{background:var(--premium-light-gray);transform:scale(.93)}
+    .key-val{font-size:13px;font-weight:700;min-width:30px;text-align:center;color:var(--premium-text);padding:2px 6px;border-radius:5px;background:var(--premium-off-white)}
+    .key-val.transposed{color:#fff;background:var(--premium-gold)}
+    .key-val.flash{color:#fff;background:var(--premium-gold)}
+    .pl-item-btns{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+    .move-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;border-radius:6px;-webkit-tap-highlight-color:transparent;user-select:none;color:var(--premium-text-muted)}
+    .move-btn:active{background:var(--premium-light-gray)}
+    .del-btn{color:var(--danger,#ef4444);width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;border-radius:6px;-webkit-tap-highlight-color:transparent;user-select:none}
+    .del-btn:active{background:#fee2e2}
+    .pl-empty{text-align:center;padding:36px 16px;color:var(--premium-text-muted);font-size:14px;line-height:1.8}
+    /* ── FAB ── */
+    .fab-wrap{position:fixed;bottom:24px;right:18px;display:flex;flex-direction:column;align-items:flex-end;gap:10px;z-index:200}
+    .fab{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.22);border:none;transition:transform .15s;-webkit-tap-highlight-color:transparent;text-decoration:none;line-height:1}
+    .fab:active{transform:scale(.9)}
+    .fab-gold{background:var(--premium-gold);color:#fff}
+    .fab-tip{background:rgba(30,30,30,.75);color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:99px;white-space:nowrap}
+    /* ── Responsive ── */
+    @media(min-width:700px){
+      .filter-grid{grid-template-columns:repeat(4,1fr)}
+      .pl-grid{grid-template-columns:1fr 1fr 1fr}
+      .panel-section{padding:16px 0 40px}
+      .tab-btn{font-size:16px}
+    }
+    @media(hover:none){.song-card:hover{background:transparent}}
   </style>
 </head>
 <body>
@@ -60,113 +108,186 @@
   <div id="toast"></div>
   <div id="confirmModal"></div>
   <main>
-    <div class="container">
-      <div class="page-header">
+    <div class="container" style="padding-bottom:0">
+      <div class="page-header" style="padding-bottom:0">
         <h1 class="page-title" data-i18n="nav_songs">โปรแกรมลิสเพลง</h1>
-        <div style="display:flex;gap:var(--spacing-sm)">
-          <a href="add-song.html" class="btn btn-primary">+ <span data-i18n="addSong">เพิ่มเพลง</span></a>
-        </div>
-      </div>
-
-      <!-- ===== SEARCH PANEL ===== -->
-      <div class="sl-panel">
-        <div class="sl-filters">
-          <select id="singer" onchange="onFilterChange()">
-            <option value="">นักร้อง</option>
-            <option value="ชาย">ชาย</option>
-            <option value="หญิง">หญิง</option>
-          </select>
-          <select id="era" onchange="onFilterChange()">
-            <option value="">ยุคเพลง</option>
-            <option value="2523-2532">2523-2532</option>
-            <option value="2533-2542">2533-2542</option>
-            <option value="2543-2553">2543-2553</option>
-            <option value="2554-ปัจจุบัน">2554-ปัจจุบัน</option>
-            <option value="สากล">สากล</option>
-            <option value="ลูกทุ่ง/อีสาน/เพื่อชีวิต">ลูกทุ่ง/อีสาน/เพื่อชีวิต</option>
-          </select>
-          <select id="speed" onchange="onFilterChange()">
-            <option value="">ความเร็ว</option>
-            <option value="ช้า">ช้า</option>
-            <option value="กลาง">กลาง</option>
-            <option value="เร็ว">เร็ว</option>
-          </select>
-          <select id="mood" onchange="onFilterChange()">
-            <option value="">อารมณ์</option>
-            <option value="สุข / สนุก">สุข / สนุก</option>
-            <option value="เศร้า / เหงา">เศร้า / เหงา</option>
-            <option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option>
-            <option value="หวาน / อบอุ่น">หวาน / อบอุ่น</option>
-            <option value="มัน / ฮึกเหิม">มัน / ฮึกเหิม</option>
-          </select>
-        </div>
-        <input id="searchText" class="input" placeholder="🔍 ค้นหาเพลง" oninput="applyTextFilter()">
-      </div>
-
-      <!-- ===== RESULT PANEL ===== -->
-      <div class="sl-panel">
-        <h3>🎼 เพลงที่ค้นพบ</h3>
-        <div id="result"></div>
-        <div class="pagination">
-          <button class="btn btn-secondary" onclick="prevPage()" id="prevBtn">⬅ ก่อนหน้า</button>
-          <div class="page-info" id="pageInfo"></div>
-          <button class="btn btn-secondary" onclick="nextPage()" id="nextBtn">ถัดไป ➡</button>
-        </div>
-      </div>
-
-      <!-- ===== PLAYLIST PANEL ===== -->
-      <div class="sl-panel">
-        <h3>📋 ลิสเพลงที่เลือก</h3>
-        <div class="sl-filters" style="margin-bottom:10px">
-          <input type="date" id="useDate" class="input">
-          <select id="venue">
-            <option value="">เลือกร้าน</option>
-            <option value="นิยมสุข">นิยมสุข</option>
-            <option value="ฉ่ำ">ฉ่ำ</option>
-          </select>
-          <select id="timeSlot">
-            <option value="">ช่วงเวลา</option>
-            <option value="19:30-20:30">19:30-20:30</option>
-            <option value="21:00-22:00">21:00-22:00</option>
-            <option value="22:30-23:30">22:30-23:30</option>
-          </select>
-        </div>
-        <div class="action-buttons">
-          <button class="btn btn-secondary" onclick="addBreak()">➕ เพิ่มพัก</button>
-          <button class="btn btn-primary" onclick="copyPlaylist()">📋 คัดลอกลิส</button>
-          <button class="btn btn-danger" onclick="refreshPlaylist()">🔄 รีเฟรชลิส</button>
-        </div>
-        <div class="copy-options">
-          <label><input type="checkbox" id="copySpeed" checked> แสดงความเร็ว (BPM)</label>
-          <label><input type="checkbox" id="copyKey" checked> แสดงคีย์</label>
-        </div>
-        <ul id="playlist" class="pl-list"></ul>
       </div>
     </div>
+
+    <!-- ── Tab bar ── -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-search" onclick="switchTab('search')">🔍 ค้นหาเพลง</button>
+      <button class="tab-btn" id="tab-playlist" onclick="switchTab('playlist')">📋 ลิสเพลง<span class="tab-badge" id="plBadge" style="display:none">0</span></button>
+    </div>
+
+    <div class="container">
+
+      <!-- ══ SEARCH TAB ══ -->
+      <div class="panel-section active" id="section-search">
+
+        <!-- Filter card -->
+        <div class="card">
+          <div class="card-header">
+            <h3>🎚 ค้นหา &amp; กรอง</h3>
+            <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilters()">⚙ ตัวกรอง</button>
+          </div>
+          <div class="card-body">
+            <div id="filterGrid" class="filter-grid" style="display:none">
+              <select id="singer" onchange="onFilterChange()">
+                <option value="">👤 นักร้อง</option>
+                <option value="ชาย">ชาย</option>
+                <option value="หญิง">หญิง</option>
+              </select>
+              <select id="era" onchange="onFilterChange()">
+                <option value="">📅 ยุคเพลง</option>
+                <option value="2523-2532">2523-2532</option>
+                <option value="2533-2542">2533-2542</option>
+                <option value="2543-2553">2543-2553</option>
+                <option value="2554-ปัจจุบัน">2554-ปัจจุบัน</option>
+                <option value="สากล">สากล</option>
+                <option value="ลูกทุ่ง/อีสาน/เพื่อชีวิต">ลูกทุ่ง/อีสาน/เพื่อชีวิต</option>
+              </select>
+              <select id="speed" onchange="onFilterChange()">
+                <option value="">⚡ ความเร็ว</option>
+                <option value="ช้า">ช้า</option>
+                <option value="กลาง">กลาง</option>
+                <option value="เร็ว">เร็ว</option>
+              </select>
+              <select id="mood" onchange="onFilterChange()">
+                <option value="">💫 อารมณ์</option>
+                <option value="สุข / สนุก">สุข / สนุก</option>
+                <option value="เศร้า / เหงา">เศร้า / เหงา</option>
+                <option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option>
+                <option value="หวาน / อบอุ่น">หวาน / อบอุ่น</option>
+                <option value="มัน / ฮึกเหิม">มัน / ฮึกเหิม</option>
+              </select>
+            </div>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input id="searchText" class="input" type="search" placeholder="ค้นหาชื่อเพลง..." oninput="applyTextFilter()" autocomplete="off">
+            </div>
+          </div>
+        </div>
+
+        <!-- Results card -->
+        <div class="card">
+          <div class="card-header">
+            <h3>🎼 เพลงที่ค้นพบ</h3>
+            <span id="resultCount" class="badge badge-bpm">—</span>
+          </div>
+          <div id="result"></div>
+          <div class="pagination" id="paginationBar" style="display:none">
+            <button class="btn btn-secondary" onclick="prevPage()" id="prevBtn">⬅ ก่อนหน้า</button>
+            <div class="page-info" id="pageInfo"></div>
+            <button class="btn btn-secondary" onclick="nextPage()" id="nextBtn">ถัดไป ➡</button>
+          </div>
+        </div>
+
+      </div><!-- /section-search -->
+
+      <!-- ══ PLAYLIST TAB ══ -->
+      <div class="panel-section" id="section-playlist">
+        <div class="card">
+          <div class="card-header">
+            <h3>📋 ลิสเพลง</h3>
+            <span id="plCount" style="font-size:13px;color:var(--premium-text-muted)">0 เพลง</span>
+          </div>
+          <div class="card-body">
+            <div class="pl-grid">
+              <input type="date" id="useDate" class="input">
+              <select id="venue" class="input">
+                <option value="">🏪 เลือกร้าน</option>
+                <option value="นิยมสุข">นิยมสุข</option>
+                <option value="ฉ่ำ">ฉ่ำ</option>
+              </select>
+            </div>
+            <div class="pl-full">
+              <select id="timeSlot" class="input" style="width:100%">
+                <option value="">🕐 ช่วงเวลา</option>
+                <option value="19:30-20:30">19:30-20:30</option>
+                <option value="21:00-22:00">21:00-22:00</option>
+                <option value="22:30-23:30">22:30-23:30</option>
+              </select>
+            </div>
+            <div class="pl-actions">
+              <button class="btn btn-secondary" onclick="addBreak()">➕ เพิ่มพัก</button>
+              <button class="btn btn-primary" onclick="copyPlaylist()">📋 คัดลอก</button>
+              <button class="btn btn-danger" onclick="refreshPlaylist()">🗑 ล้างลิส</button>
+            </div>
+            <div class="pl-options">
+              <label><input type="checkbox" id="copySpeed" checked> แสดง BPM</label>
+              <label><input type="checkbox" id="copyKey" checked> แสดงคีย์</label>
+            </div>
+          </div>
+          <ul id="playlist" class="pl-list"></ul>
+        </div>
+      </div><!-- /section-playlist -->
+
+    </div><!-- /.container -->
   </main>
+
+  <!-- FAB: Add Song -->
+  <div class="fab-wrap">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="fab-tip">เพิ่มเพลงใหม่</span>
+      <a href="add-song.html" class="fab fab-gold" title="เพิ่มเพลง">＋</a>
+    </div>
+  </div>
 
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
   <script>
+  /* ── Init ── */
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
     renderMainNav('mainNav');
     applyTranslations();
-    loadInitial();
     var dateInput = document.getElementById('useDate');
     if (dateInput) {
       var today = new Date();
       dateInput.value = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
     }
+    renderPlaylist();
+    loadInitial();
   });
+  /* ── Tabs ── */
+  var currentTab = 'search';
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('section-search').classList.toggle('active', tab==='search');
+    document.getElementById('section-playlist').classList.toggle('active', tab==='playlist');
+    document.getElementById('tab-search').classList.toggle('active', tab==='search');
+    document.getElementById('tab-playlist').classList.toggle('active', tab==='playlist');
+  }
+  /* ── Filter toggle ── */
+  var filtersOpen = false;
+  function toggleFilters() {
+    filtersOpen = !filtersOpen;
+    document.getElementById('filterGrid').style.display = filtersOpen ? 'grid' : 'none';
+    updateFilterBtnLabel();
+  }
+  function updateFilterBtnLabel() {
+    var f = getFilterValues(), has = !!(f.singer||f.era||f.speed||f.mood);
+    var btn = document.getElementById('filterToggleBtn');
+    if (!btn) return;
+    btn.classList.toggle('has-filter', has);
+    btn.textContent = (filtersOpen ? '✕ ปิดกรอง' : '⚙ ตัวกรอง') + (has ? ' 🔴' : '');
+  }
   </script>
   <script>
+  /* ── Search engine ── */
   var allResults=[],filteredResults=[],currentPage=1,PER_PAGE=15,domCache={};
   function getEl(id){if(!domCache[id])domCache[id]=document.getElementById(id);return domCache[id];}
   function debounce(fn,w){var t;return function(){clearTimeout(t);t=setTimeout(fn,w);}}
   function throttle(fn,l){var it;return function(){if(!it){fn();it=true;setTimeout(function(){it=false;},l);}}}
-  function setLoading(on){var el=getEl('result');if(!el)return;if(on){el.innerHTML='<div class="result-loading"><div class="spinner"></div><div style="margin-top:10px">กำลังโหลด...</div></div>';el.classList.add('is-loading');}else{el.classList.remove('is-loading');}}
+  function escHtml(t){var d=document.createElement('div');d.textContent=t||'';return d.innerHTML;}
+  function setLoading(on){
+    var el=getEl('result');if(!el)return;
+    if(on){el.innerHTML='<div class="result-state"><div class="spinner"></div><div style="margin-top:12px">กำลังโหลด...</div></div>';el.classList.add('is-loading');}
+    else{el.classList.remove('is-loading');}
+    var pb=getEl('paginationBar');if(pb)pb.style.display=on?'none':'';
+  }
   function getFilterValues(){return{singer:(getEl('singer')||{}).value||'',era:(getEl('era')||{}).value||'',speed:(getEl('speed')||{}).value||'',mood:(getEl('mood')||{}).value||''};}
   function getDropdownFiltered(){
     var f=getFilterValues();
@@ -183,7 +304,7 @@
     var base=getDropdownFiltered(),q='',se=getEl('searchText');
     if(se&&se.value)q=se.value.trim().toLowerCase();
     filteredResults=q?base.filter(function(s){return(s.name||'').toLowerCase().indexOf(q)>=0;}):base;
-    currentPage=1;renderPage();
+    currentPage=1;renderPage();updateFilterBtnLabel();
   }
   var aFARD=debounce(applyFiltersAndRender,150);
   function applyTextFilter(){aFARD();}
@@ -196,17 +317,39 @@
       applyFiltersAndRender();
     });
   }
-  function escHtml(t){var d=document.createElement('div');d.textContent=t||'';return d.innerHTML;}
   function renderPage(){
-    var el=getEl('result'),pi=getEl('pageInfo'),pb=getEl('prevBtn'),nb=getEl('nextBtn');
+    var el=getEl('result'),pi=getEl('pageInfo'),pb=getEl('prevBtn'),nb=getEl('nextBtn'),rc=getEl('resultCount');
     if(!el||el.classList.contains('is-loading'))return;
     var start=(currentPage-1)*PER_PAGE,items=filteredResults.slice(start,start+PER_PAGE),tp=Math.max(1,Math.ceil(filteredResults.length/PER_PAGE));
-    if(items.length===0){el.innerHTML='<div class="result-empty">ไม่พบเพลงที่ตรงกับตัวกรอง</div>';}
-    else{
+    if(rc)rc.textContent=filteredResults.length+' เพลง';
+    if(items.length===0){
+      el.innerHTML='<div class="result-state"><div class="state-icon">🎵</div><div>ไม่พบเพลงที่ตรงกับตัวกรอง</div></div>';
+      var pbar=getEl('paginationBar');if(pbar)pbar.style.display='none';
+    } else {
       var buf=[];
-      for(var i=0;i<items.length;i++){var s=items[i],idx=start+i,bpm=s.bpm||'-',key=s.keyNote||s.key||'-',nt=s.isNew?'<span class="new-tag">New</span>':'';
-        buf.push('<div class="result-item" data-index="'+idx+'"><div class="result-item-left"><div class="song-title">'+escHtml(s.name)+nt+'</div><div class="song-meta">'+bpm+' BPM · '+key+'</div></div><span class="add-song-btn" data-index="'+idx+'">&#10133;</span></div>');}
-      el.innerHTML='<div class="result-columns">'+buf.join('')+'</div>';
+      for(var i=0;i<items.length;i++){
+        var s=items[i],idx=start+i,bpm=s.bpm||'-',key=s.keyNote||s.key||'-';
+        var editId=encodeURIComponent(s.id||s.name||'');
+        buf.push(
+          '<div class="song-card">'+
+            '<div class="song-card-info">'+
+              '<div class="song-card-title">'+escHtml(s.name)+(s.isNew?'<span class="badge badge-new" style="margin-left:6px;font-size:10px">New</span>':'')+'</div>'+
+              '<div class="song-card-meta">'+
+                '<span class="badge badge-bpm">'+bpm+' BPM</span>'+
+                '<span class="badge badge-key">'+escHtml(key)+'</span>'+
+                (s.era?'<span class="badge badge-era">'+escHtml(s.era)+'</span>':'')+
+                (s.mood?'<span class="badge badge-mood">'+escHtml(s.mood)+'</span>':'')+
+              '</div>'+
+            '</div>'+
+            '<div class="song-card-actions">'+
+              '<a href="edit-song.html?id='+editId+'" class="icon-btn edit-btn" title="แก้ไขเพลง">✏️</a>'+
+              '<button class="icon-btn add-btn add-song-btn" data-index="'+idx+'" title="เพิ่มลงลิส">➕</button>'+
+            '</div>'+
+          '</div>'
+        );
+      }
+      el.innerHTML=buf.join('');
+      var pbar=getEl('paginationBar');if(pbar)pbar.style.display=filteredResults.length>PER_PAGE?'flex':'none';
     }
     if(pi)pi.textContent=filteredResults.length===0?'ไม่มีผลลัพธ์':'หน้า '+currentPage+' / '+tp;
     if(pb)pb.disabled=currentPage<=1;
@@ -216,82 +359,100 @@
   var pPT=throttle(function(){if(currentPage>1){currentPage--;renderPage();}},200);
   function nextPage(){nPT();}function prevPage(){pPT();}
   document.addEventListener('click',function(e){
-    if(e.target&&e.target.classList.contains('add-song-btn')){
-      var idx=parseInt(e.target.getAttribute('data-index'),10);
-      if(!isNaN(idx)&&filteredResults[idx])addSong(filteredResults[idx]);
-    }
+    var btn=e.target.closest('.add-song-btn');
+    if(btn){var idx=parseInt(btn.getAttribute('data-index'),10);if(!isNaN(idx)&&filteredResults[idx])addSong(filteredResults[idx]);}
   });
   </script>
   <script>
+  /* ── Transpose engine ── */
   var MAJOR_KEYS=[{degree:'C',semi:0},{degree:'1#',semi:7},{degree:'2#',semi:2},{degree:'3#',semi:9},{degree:'4#',semi:4},{degree:'5#',semi:11},{degree:'6#',semi:6},{degree:'1b',semi:5},{degree:'2b',semi:10},{degree:'3b',semi:3},{degree:'4b',semi:8},{degree:'5b',semi:1}];
   var MAJOR_THEORY=[{degree:'7#',semi:1},{degree:'7b',semi:11}];
   var MINOR_KEYS=[{degree:'0',semi:9},{degree:'1#',semi:4},{degree:'2#',semi:11},{degree:'3#',semi:6},{degree:'4#',semi:1},{degree:'1b',semi:2},{degree:'2b',semi:7},{degree:'3b',semi:0},{degree:'4b',semi:5},{degree:'5b',semi:10},{degree:'6b',semi:3}];
   var MINOR_THEORY=[{degree:'7#',semi:10},{degree:'7b',semi:8}];
   function transposeKey(degree,step,mode){
-    if(!degree)return'-';
-    mode=mode||'major';
+    if(!degree)return'-';mode=mode||'major';
     var pool=mode==='minor'?MINOR_KEYS.concat(MINOR_THEORY):MAJOR_KEYS.concat(MAJOR_THEORY);
-    var cur=pool.find(function(k){return k.degree===degree;});
-    if(!cur)return degree;
+    var cur=pool.find(function(k){return k.degree===degree;});if(!cur)return degree;
     var ns=((cur.semi+step)%12+12)%12;
     var t=pool.find(function(k){return k.semi===ns&&k.degree.indexOf('7')<0;});
-    if(t)return t.degree;
-    t=pool.find(function(k){return k.semi===ns;});
-    return t?t.degree:degree;
+    if(t)return t.degree;t=pool.find(function(k){return k.semi===ns;});return t?t.degree:degree;
   }
   </script>
   <script>
+  /* ── Playlist manager ── */
   var playlistData=[];
-  function addSong(song){if(!song)return;playlistData.push(Object.assign({},song,{transpose:0,mode:'major'}));renderPlaylist();}
-  function addBreak(){playlistData.push({isBreak:true});renderPlaylist();}
+  function updatePlBadge(){
+    var n=playlistData.filter(function(s){return!s.isBreak;}).length;
+    var badge=document.getElementById('plBadge'),cnt=document.getElementById('plCount');
+    if(badge){badge.textContent=n;badge.style.display=n>0?'inline-flex':'none';}
+    if(cnt)cnt.textContent=n+' เพลง';
+  }
+  function addSong(song){
+    if(!song)return;
+    playlistData.push(Object.assign({},song,{transpose:0,mode:'major'}));
+    renderPlaylist();updatePlBadge();
+    var badge=document.getElementById('plBadge');
+    if(badge){badge.style.background='#22c55e';setTimeout(function(){badge.style.background='';},350);}
+    showToast('เพิ่ม "'+song.name+'" แล้ว ✓','success');
+  }
+  function addBreak(){playlistData.push({isBreak:true});renderPlaylist();updatePlBadge();}
   function refreshPlaylist(){
-    showConfirm('รีเฟรชลิส','ต้องการล้างลิสเพลงทั้งหมดหรือไม่?').then(function(ok){if(!ok)return;playlistData=[];renderPlaylist();});
+    showConfirm('ล้างลิส','ต้องการล้างลิสเพลงทั้งหมดหรือไม่?').then(function(ok){if(!ok)return;playlistData=[];renderPlaylist();updatePlBadge();});
   }
   function renderPlaylist(){
-    var ul=document.getElementById('playlist');
-    if(!ul)return;
+    var ul=document.getElementById('playlist');if(!ul)return;
     requestAnimationFrame(function(){
       ul.innerHTML='';
-      if(playlistData.length===0){ul.innerHTML='<li style="color:var(--premium-text-muted);text-align:center;padding:20px">ยังไม่มีเพลงในลิส</li>';return;}
-      var frag=document.createDocumentFragment();
+      if(playlistData.length===0){
+        ul.innerHTML='<li class="pl-empty">ยังไม่มีเพลงในลิส<br><small>ค้นหาเพลงแล้วกด ➕ เพื่อเพิ่ม</small></li>';return;
+      }
+      var frag=document.createDocumentFragment(),songNum=0;
       playlistData.forEach(function(s,i){
-        var li=document.createElement('li');
+        var li=document.createElement('li');li.className='pl-item';
         if(s.isBreak){
-          li.innerHTML='<span class="pl-break">— พัก —</span><span style="display:flex;gap:4px"><span class="move-btn move-up" data-index="'+i+'">⬆️</span><span class="move-btn move-down" data-index="'+i+'">⬇️</span><span class="del remove-item" data-index="'+i+'">✕</span></span>';
+          li.innerHTML='<div class="pl-num break-num">—</div><div class="pl-item-info"><div class="pl-break-label">— พัก —</div></div><div class="pl-item-btns"><span class="move-btn move-up" data-index="'+i+'">▲</span><span class="move-btn move-down" data-index="'+i+'">▼</span><span class="del-btn remove-item" data-index="'+i+'">✕</span></div>';
           frag.appendChild(li);return;
         }
-        var tk=transposeKey(s.key,s.transpose,s.mode);
-        li.innerHTML='<div class="play-left"><div class="play-title">'+(i+1)+'. '+escHtml(s.name)+'</div><div class="play-meta">BPM '+(s.bpm||'-')+' · Key <span class="key-val'+(s.transpose!==0?' transposed':'')+'" data-index="'+i+'">'+tk+'</span></div><div class="transpose"><span class="tp-btn tp-down" data-index="'+i+'" data-step="-1">−</span><span class="tp-btn tp-up" data-index="'+i+'" data-step="1">+</span></div></div><span style="display:flex;gap:4px;flex-shrink:0"><span class="move-btn move-up" data-index="'+i+'">⬆️</span><span class="move-btn move-down" data-index="'+i+'">⬇️</span><span class="del remove-item" data-index="'+i+'">✕</span></span>';
+        songNum++;var tk=transposeKey(s.key,s.transpose,s.mode);
+        li.innerHTML=
+          '<div class="pl-num">'+songNum+'</div>'+
+          '<div class="pl-item-info">'+
+            '<div class="pl-item-title">'+escHtml(s.name)+'</div>'+
+            '<div class="pl-item-meta">BPM '+(s.bpm||'-')+'</div>'+
+            '<div class="transpose-row">'+
+              '<button class="tp-btn tp-down" data-index="'+i+'" data-step="-1">−</button>'+
+              '<span class="key-val'+(s.transpose!==0?' transposed':'')+'" data-index="'+i+'" data-tp="1">'+tk+'</span>'+
+              '<button class="tp-btn tp-up" data-index="'+i+'" data-step="1">+</button>'+
+            '</div>'+
+          '</div>'+
+          '<div class="pl-item-btns"><span class="move-btn move-up" data-index="'+i+'">▲</span><span class="move-btn move-down" data-index="'+i+'">▼</span><span class="del-btn remove-item" data-index="'+i+'">✕</span></div>';
         frag.appendChild(li);
       });
       ul.appendChild(frag);
     });
   }
   function transposeSong(i,step){
-    var s=playlistData[i];if(!s||s.isBreak)return;
-    s.transpose+=step;
-    var el=document.querySelector('.key-val[data-index="'+i+'"]');
-    if(!el)return;
+    var s=playlistData[i];if(!s||s.isBreak)return;s.transpose+=step;
+    var el=document.querySelector('.key-val[data-index="'+i+'"][data-tp="1"]');if(!el)return;
     requestAnimationFrame(function(){
       el.textContent=transposeKey(s.key,s.transpose,s.mode);
       el.classList.toggle('transposed',s.transpose!==0);
-      el.classList.add('flash');
-      setTimeout(function(){el.classList.remove('flash');},120);
+      el.classList.add('flash');setTimeout(function(){el.classList.remove('flash');},150);
     });
   }
   function moveUp(i){if(i<=0)return;var t=playlistData[i-1];playlistData[i-1]=playlistData[i];playlistData[i]=t;renderPlaylist();}
   function moveDown(i){if(i>=playlistData.length-1)return;var t=playlistData[i];playlistData[i]=playlistData[i+1];playlistData[i+1]=t;renderPlaylist();}
-  function removeItem(i){if(i<0||i>=playlistData.length)return;playlistData.splice(i,1);renderPlaylist();}
+  function removeItem(i){if(i<0||i>=playlistData.length)return;playlistData.splice(i,1);renderPlaylist();updatePlBadge();}
   document.addEventListener('click',function(e){
-    var idx=parseInt(e.target.getAttribute('data-index'),10);
-    if(isNaN(idx))return;
-    if(e.target.classList.contains('tp-up')||e.target.classList.contains('tp-down'))transposeSong(idx,parseInt(e.target.getAttribute('data-step'),10));
-    else if(e.target.classList.contains('move-up'))moveUp(idx);
-    else if(e.target.classList.contains('move-down'))moveDown(idx);
-    else if(e.target.classList.contains('remove-item'))removeItem(idx);
+    var tgt=e.target,idx=parseInt(tgt.getAttribute('data-index'),10);if(isNaN(idx))return;
+    if(tgt.classList.contains('tp-up')||tgt.classList.contains('tp-down'))transposeSong(idx,parseInt(tgt.getAttribute('data-step'),10));
+    else if(tgt.classList.contains('move-up'))moveUp(idx);
+    else if(tgt.classList.contains('move-down'))moveDown(idx);
+    else if(tgt.classList.contains('remove-item'))removeItem(idx);
   });
   </script>
   <script>
+  /* ── Copy playlist ── */
   function formatThaiDate(ds){if(!ds)return'';var d=new Date(ds);if(isNaN(d.getTime()))return'';var m=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];return d.getDate()+' '+m[d.getMonth()]+' '+(d.getFullYear()+543);}
   function copyPlaylist(){
     try{
@@ -301,22 +462,17 @@
       var date=formatThaiDate((document.getElementById('useDate')||{}).value);
       var venue=(document.getElementById('venue')||{}).value||'';
       var time=(document.getElementById('timeSlot')||{}).value||'';
-      var hdr='';
-      if(date)hdr+=date+'\n';
-      if(venue||time)hdr+=(venue+' '+time).trim()+'\n';
-      if(hdr)hdr+='---\n';
+      var hdr='';if(date)hdr+=date+'\n';if(venue||time)hdr+=(venue+' '+time).trim()+'\n';if(hdr)hdr+='---\n';
       var n=0;
       var body=playlistData.map(function(s){
-        if(s.isBreak)return'พัก';
-        n++;
-        return n+'. '+s.name+(ss&&s.bpm?' '+s.bpm:'')+(sk?' ['+transposeKey(s.key,s.transpose,s.mode)+']':'');
+        if(s.isBreak)return'- พัก -';n++;
+        return n+'. '+s.name+(ss&&s.bpm?' ('+s.bpm+' BPM)':'')+(sk?' ['+transposeKey(s.key,s.transpose,s.mode)+']':'');
       }).join('\n');
       var text=hdr+body;
-      var ta=document.createElement('textarea');
-      ta.value=text;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;left:-9999px;top:0';
+      var ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;left:-9999px;top:0';
       document.body.appendChild(ta);ta.focus();ta.select();
       var ok=false;try{ok=document.execCommand('copy');}catch(e){}
-      if(!ok&&navigator.clipboard)navigator.clipboard.writeText(text).then(function(){}).catch(function(){});
+      if(!ok&&navigator.clipboard)navigator.clipboard.writeText(text).catch(function(){});
       document.body.removeChild(ta);
       showToast('คัดลอกลิสสำเร็จ ✓','success');
     }catch(err){showToast('คัดลอกไม่สำเร็จ: '+err.message,'error');}
