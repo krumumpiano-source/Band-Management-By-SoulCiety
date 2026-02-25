@@ -13,15 +13,18 @@ $DEPLOYMENT_ID = if ($env:GAS_DEPLOYMENT_ID) { $env:GAS_DEPLOYMENT_ID } else { "
 
 Set-Location $ROOT
 
-# ── Auth: use project-local .clasprc.json if available (separate from other projects) ──
-$LOCAL_AUTH = Join-Path $ROOT ".clasprc.json"
-$PREV_CLASP_CONFIG = $env:CLASP_CONFIG
+# ── Auth: clasp always uses ~/.clasprc.json — swap in project credentials ──
+$LOCAL_AUTH  = Join-Path $ROOT ".clasprc.json"
+$HOME_CLASP  = "$env:USERPROFILE\.clasprc.json"
+$BACKUP_CLASP = "$env:USERPROFILE\.clasprc.json.bak"
+$didSwap = $false
 if (Test-Path $LOCAL_AUTH) {
-  $env:CLASP_CONFIG = $LOCAL_AUTH
-  Write-Host "   Using project credentials: .clasprc.json" -ForegroundColor DarkGray
+  if (Test-Path $HOME_CLASP) { Copy-Item $HOME_CLASP $BACKUP_CLASP -Force }
+  Copy-Item $LOCAL_AUTH $HOME_CLASP -Force
+  $didSwap = $true
+  Write-Host "   Swapped in project credentials (krumum.piano@gmail.com)" -ForegroundColor DarkGray
 } else {
-  Write-Host "   WARNING: .clasprc.json not found, using global ~/.clasprc.json" -ForegroundColor Yellow
-  Write-Host "   To separate: run 'clasp login' then copy ~/.clasprc.json here as .clasprc.json" -ForegroundColor DarkGray
+  Write-Host "   WARNING: .clasprc.json not found -- using current global credentials" -ForegroundColor Yellow
 }
 
 # ── Step 1: Flatten frontend HTML templates to root so clasp picks them up ──
@@ -64,5 +67,8 @@ Write-Host ""
 Write-Host "Web App URL (unchanged):"
 Write-Host "   https://script.google.com/macros/s/$DEPLOYMENT_ID/exec" -ForegroundColor Yellow
 
-# ── Restore CLASP_CONFIG env var ──
-$env:CLASP_CONFIG = $PREV_CLASP_CONFIG
+# ── Restore previous global credentials ──
+if ($didSwap -and (Test-Path $BACKUP_CLASP)) {
+  Copy-Item $BACKUP_CLASP $HOME_CLASP -Force
+  Write-Host "   Restored previous global credentials" -ForegroundColor DarkGray
+}
