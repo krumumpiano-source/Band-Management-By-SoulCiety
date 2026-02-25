@@ -84,6 +84,17 @@ function getBandSettings(bandId) {
     var memberResult = getAllBandMembers();
     if (memberResult.success) result.members = memberResult.data.filter(function(m) { return m.bandId === bandId; });
 
+    // Load hourly rates for time slot info
+    var rateSheet = getOrCreateSheet(CONFIG.SHEETS.HOURLY_RATES, ['rateId','bandId','memberId','venueId','startTime','endTime','hourlyRate','createdAt','updatedAt']);
+    var rateData = rateSheet.getDataRange().getValues();
+    var rateHdrs = rateData[0];
+    for (var i = 1; i < rateData.length; i++) {
+      if (String(rateData[i][1]) === String(bandId)) {
+        var r = {}; for (var j = 0; j < rateHdrs.length; j++) r[rateHdrs[j]] = rateData[i][j];
+        result.hourlyRates.push(r);
+      }
+    }
+
     // Load active invite code for this band
     try {
       // schema ต้องตรงกับ Code.gs:generateInviteCode (และ Setup.gs)

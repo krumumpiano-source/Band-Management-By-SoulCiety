@@ -427,15 +427,10 @@ html{scroll-behavior:smooth}
 
     <select id="venue">
       <option value="">เลือกร้าน</option>
-      <option value="นิยมสุข">นิยมสุข</option>
-      <option value="ฉ่ำ">ฉ่ำ</option>
     </select>
 
     <select id="timeSlot">
       <option value="">ช่วงเวลา</option>
-      <option value="19:30-20:30">19:30-20:30</option>
-      <option value="21:00-22:00">21:00-22:00</option>
-      <option value="22:30-23:30">22:30-23:30</option>
     </select>
   </div>
 
@@ -689,11 +684,59 @@ document.addEventListener("click", function (e) {
   }
 });
 
+function loadBandSettings() {
+  var bandId = localStorage.getItem('bandId') || '';
+  var bandName = localStorage.getItem('bandName') || '';
+  if (!bandId && !bandName) return;
+  var SKEY = 'band_settings_' + (bandId || bandName);
+  var cached = null;
+  try { cached = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); } catch(e) {}
+  function applySettings(s) {
+    var venueEl = document.getElementById('venue');
+    var timeEl  = document.getElementById('timeSlot');
+    if (!venueEl || !timeEl) return;
+    // เติม venues
+    var venues = (s && s.venues) || [];
+    venueEl.innerHTML = '<option value="">เลือกร้าน</option>';
+    venues.forEach(function(v) {
+      var opt = document.createElement('option');
+      opt.value = v.venueName || '';
+      opt.textContent = v.venueName || '';
+      venueEl.appendChild(opt);
+    });
+    // เติม timeSlots จาก hourlyRates
+    var rates = (s && s.hourlyRates) || [];
+    var seen = {}; var slots = [];
+    rates.forEach(function(r) {
+      if (r.startTime && r.endTime) {
+        var key = r.startTime + '-' + r.endTime;
+        if (!seen[key]) { seen[key] = true; slots.push(key); }
+      }
+    });
+    timeEl.innerHTML = '<option value="">ช่วงเวลา</option>';
+    slots.sort().forEach(function(slot) {
+      var opt = document.createElement('option');
+      opt.value = slot; opt.textContent = slot;
+      timeEl.appendChild(opt);
+    });
+  }
+  if (cached && cached.ts && (Date.now() - cached.ts) < 10*60*1000 && cached.data) {
+    applySettings(cached.data); return;
+  }
+  gasRun('getBandSettings', { bandId: bandId }, function(r) {
+    if (r && r.success && r.data) {
+      try { sessionStorage.setItem(SKEY, JSON.stringify({ ts: Date.now(), data: r.data })); } catch(e) {}
+      applySettings(r.data);
+    }
+  });
+}
+
 window.onload = function() {
   if (typeof requireAuth === 'function') requireAuth();
   if (typeof renderMainNav === 'function') renderMainNav('mainNav');
   if (typeof applyTranslations === 'function') applyTranslations();
   loadInitial();
+  loadBandSettings();
 };
 </script>
 
