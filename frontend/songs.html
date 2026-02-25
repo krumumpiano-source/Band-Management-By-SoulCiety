@@ -195,10 +195,11 @@ html{scroll-behavior:smooth}
 
   <div style="background:linear-gradient(135deg,#2d3748,#4a5568);color:#fff;border-radius:var(--radius-xl);padding:var(--spacing-lg) var(--spacing-xl);margin-bottom:var(--spacing-lg);display:flex;align-items:center;gap:16px">
     <div style="font-size:36px">🎵</div>
-    <div>
+    <div style="flex:1">
       <h2 style="margin:0;font-family:var(--font-family-display);font-size:var(--text-xl);font-weight:700">โปรแกรมลิสเพลง</h2>
       <p style="margin:4px 0 0;font-size:var(--text-sm);color:#cbd5e0" id="songPageBandName"></p>
     </div>
+    <button onclick="loadInitial(true)" title="โหลดเพลงใหม่" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔄</button>
   </div>
 
   <!-- ── Filter Panel ── -->
@@ -398,16 +399,33 @@ function onFilterChange() {
   applyFiltersAndRender();
 }
 
-function loadInitial() {
+function loadInitial(forceRefresh) {
   setLoading(true);
   var bandName = localStorage.getItem('bandName') || '';
   var bandId   = localStorage.getItem('bandId')   || '';
   var bnEl = document.getElementById('songPageBandName');
   if (bnEl && bandName) bnEl.textContent = 'วง ' + bandName;
+
+  // ── browser cache (sessionStorage) ──
+  var CACHE_KEY = 'songs_cache_' + (bandId || bandName);
+  var CACHE_TTL = 5 * 60 * 1000; // 5 นาที
+  if (!forceRefresh) {
+    try {
+      var cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
+      if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.data) {
+        allResults = cached.data;
+        setLoading(false);
+        applyFiltersAndRender();
+        return;
+      }
+    } catch(e) {}
+  }
+
   google.script.run
     .withSuccessHandler(function (result) {
       if (result && result.success && result.data) {
         allResults = result.data;
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: allResults })); } catch(e) {}
       } else {
         allResults = [];
         var resultEl = getEl("result");

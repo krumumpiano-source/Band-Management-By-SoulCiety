@@ -109,7 +109,14 @@
         mood: document.getElementById('mood').value.trim()
       }, function(r) {
         btn.disabled = false; btn.textContent = '💾 บันทึก';
-        if (r && r.success) { showToast('บันทึกเรียบร้อย','success'); setTimeout(function(){ window.location.href='?page=songs'; },1000); }
+        if (r && r.success) {
+          // ล้าง cache เพลงเพื่อให้หน้าลิสโหลดใหม่
+          var bid = localStorage.getItem('bandId') || '';
+          var bn  = localStorage.getItem('bandName') || '';
+          try { sessionStorage.removeItem('songs_cache_' + (bid || bn)); } catch(e) {}
+          showToast('บันทึกเรียบร้อย','success');
+          setTimeout(function(){ window.location.href='?page=songs'; },1000);
+        }
         else showToast((r&&r.message)||'เกิดข้อผิดพลาด','error');
       });
     });
