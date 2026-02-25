@@ -8,7 +8,8 @@ param(
 )
 
 $ROOT = "D:\AI CURSER\Band Management By SoulCiety"
-$DEPLOYMENT_ID = "AKfycbxbJ15GWQIl9loFneJeooAhTPM5iYW460k04s2n1BGtN6RuKjnQUFWd3NNrqYmX64UI"
+# DEPLOYMENT_ID: set env var GAS_DEPLOYMENT_ID to override, or update the fallback below
+$DEPLOYMENT_ID = if ($env:GAS_DEPLOYMENT_ID) { $env:GAS_DEPLOYMENT_ID } else { "AKfycbxbJ15GWQIl9loFneJeooAhTPM5iYW460k04s2n1BGtN6RuKjnQUFWd3NNrqYmX64UI" }
 
 Set-Location $ROOT
 

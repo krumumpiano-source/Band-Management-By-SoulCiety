@@ -23,11 +23,12 @@ function esc(text) {
   d.textContent = text;
   return d.innerHTML;
 }
-function showToast(msg) {
+function showToast(msg, type) {
   var toast = getEl('toast');
   if (!toast) { alert(msg); return; }
   var m = toast.querySelector('.toast-message');
   if (m) m.textContent = msg;
+  toast.className = 'toast' + (type === 'error' ? ' toast-error' : type === 'success' ? ' toast-success' : '');
   toast.style.display = 'block';
   toast.classList.add('show');
   setTimeout(function() {
@@ -318,7 +319,7 @@ function renderTimeSlotsForVenueDay(v, vi, day) {
         '<select class="mr-select" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" data-mi="' + mi + '">' +
           '<option value="">เลือกสมาชิก</option>' +
           bandMembersData.map(function(m) {
-            return '<option value="' + esc(m.id||'') + '"' + (mr.memberId === m.id ? ' selected' : '') + '>' + esc(m.name||'(ไม่มีชื่อ)') + (m.position?' ('+esc(m.position)+')':'') + '</option>';
+            return '<option value="' + esc(m.memberId||m.id||'') + '"' + (mr.memberId === (m.memberId||m.id) ? ' selected' : '') + '>' + esc(m.name||'(ไม่มีชื่อ)') + (m.position?' ('+esc(m.position)+')':'') + '</option>';
           }).join('') +
         '</select>' +
         '<input type="number" class="mr-rate" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" data-mi="' + mi + '" value="' + (mr.hourlyRate||'') + '" placeholder="0" min="0">' +

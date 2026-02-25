@@ -84,14 +84,16 @@
 
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    var bandId = localStorage.getItem('bandId') || '';
+    var year = new Date().getFullYear();
     Promise.all([
-      new Promise(function(res){ gasRun('getSchedule',{},function(r){ jobs=(r&&r.data)||[]; res(); }); }),
-      new Promise(function(res){ gasRun('getBandMembers',{},function(r){ members=(r&&r.data)||[]; res(); }); })
+      new Promise(function(res){ gasRun('getSchedule',{ bandId: bandId, year: year },function(r){ jobs=(r&&r.data)||[]; res(); }); }),
+      new Promise(function(res){ gasRun('getAllBandMembers',{ bandId: bandId },function(r){ members=(r&&r.data)||[]; res(); }); })
     ]).then(function(){
       var sel=document.getElementById('jobPicker');
       jobs.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
       jobs.forEach(function(j){
-        var o=document.createElement('option'); o.value=j.jobId||''; o.textContent=formatDate(j.date)+' — '+(j.venue||'');
+        var o=document.createElement('option'); o.value=j.scheduleId||''; o.textContent=formatDate(j.date)+' — '+(j.venueName||j.venue||'');
         sel.appendChild(o);
       });
     });
@@ -102,8 +104,8 @@
     currentJobId=document.getElementById('jobPicker').value;
     if(!currentJobId){ document.getElementById('jobInfo').style.display='none'; document.getElementById('memberGrid').innerHTML='<div class="empty-state"><p>กรุณาเลือกงานก่อน</p></div>'; return; }
     document.getElementById('jobInfo').style.display='block';
-    var job=jobs.find(function(j){return j.jobId===currentJobId;});
-    var payment=job?parseFloat(job.payment||0):0;
+    var job=jobs.find(function(j){return j.scheduleId===currentJobId;});
+    var payment=job?parseFloat(job.totalPay||job.payment||0):0;
     attendance={};
     members.forEach(function(m){ attendance[m.memberId||m.name]={status:'present',memberId:m.memberId,name:m.name}; });
     renderMembers(payment);
@@ -134,29 +136,30 @@
 
   function setAtt(id,status){
     if(attendance[id]) attendance[id].status=status;
-    var job=jobs.find(function(j){return j.jobId===currentJobId;});
-    renderMembers(job?parseFloat(job.payment||0):0);
+    var job=jobs.find(function(j){return j.scheduleId===currentJobId;});
+    renderMembers(job?parseFloat(job.totalPay||job.payment||0):0);
   }
 
   function saveAttendance(){
     if(!currentJobId){ showToast('กรุณาเลือกงานก่อน','info'); return; }
-    var job=jobs.find(function(j){return j.jobId===currentJobId;});
-    gasRun('addAttendancePayroll',{ jobId:currentJobId, attendance:attendance, totalPayment:job?job.payment:0 },function(r){
+    var job=jobs.find(function(j){return j.scheduleId===currentJobId;});
+    gasRun('addAttendancePayroll',{ scheduleId:currentJobId, bandId:localStorage.getItem('bandId')||'', venue:job?(job.venueName||job.venue||''):currentJobId, date:job?job.date:'', attendance:attendance, totalAmount:job?(job.totalPay||job.payment||0):0 },function(r){
       if(r&&r.success){ showToast(t('msg_saved'),'success'); loadHistory(); }
       else showToast((r&&r.message)||t('msg_error'),'error');
     });
   }
 
   function loadHistory(){
-    gasRun('getAllAttendancePayroll',{},function(r){
+    var bandId = localStorage.getItem('bandId') || '';
+    gasRun('getAllAttendancePayroll',{ bandId: bandId },function(r){
       var rows=(r&&r.data)||[];
       var tbody=document.getElementById('historyBody');
       if(!rows.length){ tbody.innerHTML='<tr><td colspan="6" class="text-center">'+t('noData')+'</td></tr>'; return; }
       tbody.innerHTML=rows.map(function(row){
-        return '<tr><td>'+escapeHtml(row.venue||row.jobId||'')+'</td><td>'+formatDate(row.date)+'</td>'
-          +'<td>'+formatCurrency(row.totalPayment||0)+'</td><td>'+escapeHtml(String(row.presentCount||''))+'</td>'
+        return '<tr><td>'+escapeHtml(row.venue||'')+'</td><td>'+formatDate(row.date)+'</td>'
+          +'<td>'+formatCurrency(row.totalAmount||0)+'</td><td>'+escapeHtml(String(row.presentCount||''))+'</td>'
           +'<td>'+formatCurrency(row.payPerPerson||0)+'</td>'
-          +'<td><button class="btn btn-danger btn-sm" onclick="deleteAttRecord(\''+escapeHtml(row.recordId||'')+'\')">🗑️</button></td></tr>';
+          +'<td><button class="btn btn-danger btn-sm" onclick="deleteAttRecord(\''+escapeHtml(row.id||row.recordId||'')+"')\">\uD83D\uDDD1\uFE0F</button></td></tr>';
       }).join('');
     });
   }

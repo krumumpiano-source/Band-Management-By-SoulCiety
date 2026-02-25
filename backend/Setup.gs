@@ -57,7 +57,8 @@ var SHEET_SCHEMAS = [
     name: 'ATTENDANCE_PAYROLL',
     color: '#ff5722',
     description: 'บันทึกลงเวลาและเบิกเงิน',
-    columns: ['recordId','bandId','date','venueName','venueId','timeSlots','attendance','substitutes','priceAdjustments','totalAmount','paymentStatus','paidAt','createdAt','updatedAt']
+    // ⚠️ schema ต้องตรงกับ AttendancePayrollService.gs
+    columns: ['id','date','venue','bandId','timeSlots','attendance','substitutes','priceAdjustments','totalAmount','createdAt','updatedAt']
   },
   {
     name: 'BAND_SONGS',
@@ -93,7 +94,8 @@ var SHEET_SCHEMAS = [
     name: 'INVITE_CODES',
     color: '#673ab7',
     description: 'รหัสเชิญสมาชิกเข้าวง (อายุ 7 วัน)',
-    columns: ['code','bandId','createdBy','createdAt','expiresAt','usageCount']
+    // ⚠️ schema ต้องตรงกับ Code.gs:generateInviteCode & _redeemInviteCode
+    columns: ['code','bandId','bandName','createdAt','expiresAt','status','usedBy']
   }
 ];
 
@@ -275,7 +277,8 @@ function initSpreadsheet() {
 // วิธีใช้: แก้ EMAIL_TO_PROMOTE แล้วกด ▶ Run
 // ============================================================
 function promoteToAdmin() {
-  var EMAIL_TO_PROMOTE = 'krumum.piano@gmail.com';
+  // ⚠️ แก้ไขอีเมลด้านล่างให้ตรงกับ Google Account ของ Admin ก่อนรันฟังก์ชันนี้
+  var EMAIL_TO_PROMOTE = 'ใส่อีเมลของคุณที่นี่';
 
   if (EMAIL_TO_PROMOTE === 'ใส่อีเมลของคุณที่นี่' || !EMAIL_TO_PROMOTE.includes('@')) {
     Logger.log('❌ กรุณาแก้ EMAIL_TO_PROMOTE ให้เป็นอีเมลจริงก่อน');

@@ -3,7 +3,11 @@
  * Band Management By SoulCiety
  */
 
-function getAllBandMembers() {
+/**
+ * getAllBandMembers
+ * @param {string} bandId  กรองตาม bandId (ถ้าส่งมา)
+ */
+function getAllBandMembers(bandId) {
   try {
     var sheet = getOrCreateSheet(CONFIG.SHEETS.BAND_MEMBERS, [
       'memberId','bandId','name','position','phone','email','defaultHourlyRate','status','joinedAt','createdAt','updatedAt'
@@ -16,7 +20,10 @@ function getAllBandMembers() {
       if (!data[i][0]) continue;
       var member = {};
       for (var j = 0; j < headers.length; j++) member[headers[j]] = data[i][j];
-      if (member.status !== 'inactive') members.push(member);
+      if (member.status === 'inactive') continue;
+      // กรองตาม bandId (ถ้าระบุมา จะแสดงเฉพาะ band นั้น)
+      if (bandId && member.bandId !== bandId) continue;
+      members.push(member);
     }
     return { success: true, data: members };
   } catch (error) {

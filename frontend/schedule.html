@@ -128,7 +128,9 @@
   });
 
   function loadJobs() {
-    gasRun('getSchedule', {}, function(r) {
+    var bandId = localStorage.getItem('bandId') || '';
+    var year = curYear;
+    gasRun('getSchedule', { bandId: bandId, year: year }, function(r) {
       allJobs = (r && r.success && r.data) ? r.data : [];
       renderCalendar(); renderTable();
     });
@@ -154,8 +156,12 @@
       var dateStr=curYear+'-'+String(curMonth+1).padStart(2,'0')+'-'+String(d2).padStart(2,'0');
       var dayJobs=allJobs.filter(function(j){return (j.date||'').startsWith(dateStr);});
       html+='<div class="cal-day'+(isToday?' today':'')+'" onclick="openJobModal(null,\''+dateStr+'\')"><div class="day-num">'+d2+'</div>'
-        +dayJobs.map(function(j){return '<div class="cal-event'+(new Date(j.date)<today?' past':'')+'" title="'+escapeHtml(j.venue||'')+'" onclick="event.stopPropagation();openJobModal(j.jobId,null)">'+escapeHtml(j.venue||'')+'</div>';}).join('')
-        +'</div>';
+        +dayJobs.map(function(j){
+          var sid=encodeURIComponent(j.scheduleId||'');
+          var vname=escapeHtml(j.venueName||j.venue||'');
+          var past=new Date(j.date)<today?' past':'';
+          return '<div class="cal-event'+past+'" title="'+vname+'" onclick="event.stopPropagation();openJobModal(\''+sid+'\',null)">'+vname+'</div>';
+        }).join('')+'</div>';
     }
     var remain=(7-( (firstDay+daysInMonth)%7 ))%7;
     for(var i=1;i<=remain;i++) html+='<div class="cal-day other-month"><div class="day-num">'+i+'</div></div>';
@@ -169,10 +175,10 @@
     if(!monthJobs.length){ tbody.innerHTML='<tr><td colspan="7" class="text-center" data-i18n="noData">ไม่มีข้อมูล</td></tr>'; return; }
     tbody.innerHTML=monthJobs.map(function(j){
       var badge={confirmed:'badge-success',tentative:'badge-warning',cancelled:'badge-danger'}[j.status]||'';
-      return '<tr><td>'+formatDate(j.date)+'</td><td>'+escapeHtml(j.venue||'')+'</td><td>'+escapeHtml(j.client||'')+'</td>'
-        +'<td>'+escapeHtml(j.type||j.jobType||'')+'</td><td>'+formatCurrency(j.payment||0)+'</td>'
+      return '<tr><td>'+formatDate(j.date)+'</td><td>'+escapeHtml(j.venueName||j.venue||'')+'</td><td>'+escapeHtml(j.description||j.client||'')+'</td>'
+        +'<td>'+escapeHtml(j.type||'')+'</td><td>'+formatCurrency(j.totalPay||j.payment||0)+'</td>'
         +'<td><span class="badge '+badge+'">'+escapeHtml(j.status||'')+'</span></td>'
-        +'<td><button class="btn btn-ghost btn-sm" onclick="openJobModal(\''+escapeHtml(j.jobId||'')+'\',null)">✏️</button></td></tr>';
+        +'<td><button class="btn btn-ghost btn-sm" onclick="openJobModal(\''+encodeURIComponent(j.scheduleId||'')+"',null)\">✏️</button></td></tr>';
     }).join('');
   }
 
@@ -184,16 +190,16 @@
     document.getElementById('jobModalTitle').textContent = id ? t('editJob')||'แก้ไขงาน' : t('addJob')||'เพิ่มงาน';
     if (date) document.getElementById('dateInput').value=date;
     if (id) {
-      var j=allJobs.find(function(x){return x.jobId===id;});
+      var j=allJobs.find(function(x){return x.scheduleId===id || decodeURIComponent(x.scheduleId||'')===id;});
       if(j){
-        document.getElementById('jobId').value=j.jobId||'';
-        document.getElementById('venue').value=j.venue||'';
-        document.getElementById('client').value=j.client||'';
+        document.getElementById('jobId').value=j.scheduleId||'';
+        document.getElementById('venue').value=j.venueName||j.venue||'';
+        document.getElementById('client').value=j.description||j.client||'';
         document.getElementById('dateInput').value=(j.date||'').substring(0,10);
-        document.getElementById('jobType').value=j.type||j.jobType||'งานแต่ง';
-        document.getElementById('startTime').value=j.startTime||'';
-        document.getElementById('endTime').value=j.endTime||'';
-        document.getElementById('payment').value=j.payment||'';
+        document.getElementById('jobType').value=j.type||'งานแต่ง';
+        document.getElementById('startTime').value=(j.timeSlots&&j.timeSlots[0]&&j.timeSlots[0].startTime)||j.startTime||'';
+        document.getElementById('endTime').value=(j.timeSlots&&j.timeSlots[0]&&j.timeSlots[0].endTime)||j.endTime||'';
+        document.getElementById('payment').value=j.totalPay||j.payment||'';
         document.getElementById('jobStatus').value=j.status||'confirmed';
         document.getElementById('jobNotes').value=j.notes||'';
         document.getElementById('deleteJobBtn').style.display='inline-flex';
@@ -208,7 +214,8 @@
     var btn=document.getElementById('saveJobBtn'); btn.disabled=true; btn.textContent=t('loading');
     var id=document.getElementById('jobId').value;
     var data={
-      jobId:id, venue:document.getElementById('venue').value.trim(),
+      scheduleId:id, bandId:localStorage.getItem('bandId')||'',
+      venue:document.getElementById('venue').value.trim(),
       client:document.getElementById('client').value.trim(),
       date:document.getElementById('dateInput').value,
       type:document.getElementById('jobType').value,
@@ -230,7 +237,7 @@
     var id=document.getElementById('jobId').value;
     showConfirm(t('confirmDeleteTitle'),t('confirmDeleteMsg')).then(function(ok){
       if(!ok) return;
-      gasRun('deleteJob',{jobId:id},function(r){
+      gasRun('deleteJob',{scheduleId:id},function(r){
         if(r&&r.success){ showToast(t('msg_deleted'),'success'); closeJobModal(); loadJobs(); }
         else showToast((r&&r.message)||t('msg_error'),'error');
       });

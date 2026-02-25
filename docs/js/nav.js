@@ -46,13 +46,13 @@ function renderMainNav(containerId) {
     navLink('songs',           '🎵 ' + _t('nav_songs')) +
     navLink('song-insights',   '🎙️ ' + _t('nav_songInsights')) +
     navLink('leave',           '🔄 ' + _t('nav_leave')) +
-    navLink('external-payout', '💵 ' + _t('nav_externalPayout')) +
+    // navLink('external-payout', '💵 ' + _t('nav_externalPayout')) +  // ปิดชั่วคราว
     navLink('schedule',        '📅 ' + _t('nav_schedule')) +
-    navLink('quotation',       '📄 ' + _t('nav_quotation')) +
-    navLink('contract',        '📜 ' + _t('nav_contract')) +
+    // navLink('quotation',       '📄 ' + _t('nav_quotation')) +        // ปิดชั่วคราว
+    // navLink('contract',        '📜 ' + _t('nav_contract')) +         // ปิดชั่วคราว
     navLink('statistics',      '📈 ' + _t('nav_statistics')) +
-    navLink('equipment',       '🎸 ' + _t('nav_equipment')) +
-    navLink('clients',         '🤝 ' + _t('nav_clients')) +
+    // navLink('equipment',       '🎸 ' + _t('nav_equipment')) +        // ปิดชั่วคราว
+    // navLink('clients',         '🤝 ' + _t('nav_clients')) +          // ปิดชั่วคราว
     navLink('band-info',       '👥 ' + _t('nav_bandInfo')) +
     navLink('user-manual',     '📖 ' + _t('nav_userManual'));
 
@@ -189,10 +189,16 @@ function renderLangSwitcher(containerId) { _renderNavLang(containerId); }
 
 function doLogout() {
   var token = typeof getAuthToken === 'function' ? getAuthToken() : (localStorage.getItem('auth_token') || '');
-  if (token && token.indexOf('demo_') !== 0 && typeof google !== 'undefined' && google.script && google.script.run) {
-    google.script.run.doPostFromClient({ action: 'logout', _token: token });
+  if (token && token.indexOf('demo_') !== 0) {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      // GAS-embedded context
+      google.script.run.doPostFromClient({ action: 'logout', _token: token });
+    } else if (typeof gasRun === 'function') {
+      // GitHub Pages / standalone context — fire-and-forget
+      gasRun('logout', { _token: token }, function() {});
+    }
   }
-  ['auth_token','bandId','bandName','bandManager','userRole','userName'].forEach(function(k) {
+  ['auth_token','bandId','bandName','bandManager','userRole','userName','bandSettings'].forEach(function(k) {
     localStorage.removeItem(k);
     sessionStorage.removeItem(k);
   });

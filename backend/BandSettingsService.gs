@@ -86,14 +86,22 @@ function getBandSettings(bandId) {
 
     // Load active invite code for this band
     try {
-      var inviteSheet = getOrCreateSheet(CONFIG.SHEETS.INVITE_CODES, ['code','bandId','createdBy','createdAt','expiresAt','usageCount']);
+      // schema ต้องตรงกับ Code.gs:generateInviteCode (และ Setup.gs)
+      var inviteSheet = getOrCreateSheet(CONFIG.SHEETS.INVITE_CODES, ['code','bandId','bandName','createdAt','expiresAt','status','usedBy']);
       var inviteData = inviteSheet.getDataRange().getValues();
+      var invHdrs = inviteData[0];
+      var invCi = {};
+      invHdrs.forEach(function(h, idx) { invCi[h] = idx; });
       var now = new Date();
       var activeCode = null;
       for (var i = inviteData.length - 1; i >= 1; i--) {
-        if (inviteData[i][1] === bandId) {
-          var exp = new Date(inviteData[i][4]);
-          if (exp > now) { activeCode = { code: inviteData[i][0], expiresAt: inviteData[i][4] }; break; }
+        var row = inviteData[i];
+        if (String(row[invCi['bandId']]) !== bandId) continue;
+        if (row[invCi['status']] !== 'active') continue;
+        var exp = new Date(row[invCi['expiresAt']]);
+        if (exp > now) {
+          activeCode = { code: row[invCi['code']], expiresAt: row[invCi['expiresAt']] };
+          break;
         }
       }
       if (activeCode) {
@@ -102,6 +110,7 @@ function getBandSettings(bandId) {
       }
     } catch(e) {
       // Invite codes are optional — don't fail getBandSettings because of this
+      Logger.log('getBandSettings invite code error: ' + e);
     }
 
     return { success: true, data: result };

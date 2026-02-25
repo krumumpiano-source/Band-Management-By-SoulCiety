@@ -129,17 +129,18 @@
       var tbody = document.getElementById('userTbody');
       if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center">'+t('noData')+'</td></tr>'; return; }
       tbody.innerHTML = users.map(function(u) {
+        var isActive = (u.status === 'active' || u.status === '' || !u.status);
         return '<tr>'
-          +'<td>'+escapeHtml(u.name||'')+'</td>'
+          +'<td>'+escapeHtml(u.userName||u.name||'(ไม่มีชื่อ)')+'</td>'
           +'<td>'+escapeHtml(u.email||'')+'</td>'
           +'<td>'+escapeHtml(u.bandName||'')+'</td>'
-          +'<td><select class="role-select" onchange="updateUserRole(\''+escapeHtml(u.userId||'')+'\',this.value)">'
+          +'<td><select class="role-select" onchange="updateUserRole(\''+encodeURIComponent(u.userId||'')+'\',this.value)">'
           +'<option value="member"'+(u.role==='member'?' selected':'')+'>member</option>'
           +'<option value="manager"'+(u.role==='manager'?' selected':'')+'>manager</option>'
           +'<option value="admin"'+(u.role==='admin'?' selected':'')+'>admin</option>'
           +'</select></td>'
-          +'<td><span class="badge '+(u.active?'badge-success':'badge-danger')+'">'+(u.active?'ใช้งาน':'ปิด')+'</span></td>'
-          +'<td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+escapeHtml(u.userId||'')+'\')">🗑️</button></td>'
+          +'<td><span class="badge '+(isActive?'badge-success':'badge-danger')+'">'+(isActive?'ใช้งาน':'ปิด')+'</span></td>'
+          +'<td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+encodeURIComponent(u.userId||'')+'\')">🗑️</button></td>'
           +'</tr>';
       }).join('');
     });

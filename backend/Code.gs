@@ -14,10 +14,6 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(getAllSongs(e.parameter.source || 'global', e.parameter.bandId || '')))
       .setMimeType(ContentService.MimeType.JSON);
   }
-  if (action === 'getAllBandMembers') {
-    return ContentService.createTextOutput(JSON.stringify(getAllBandMembers()))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
 
   // Serve HTML pages
   var page = (e.parameter && e.parameter.page) || 'index';
@@ -131,7 +127,7 @@ function routeAction(req) {
     case 'deleteSong':   return deleteSong(req.songId);
 
     // --- Band Members ---
-    case 'getAllBandMembers':  return getAllBandMembers();
+    case 'getAllBandMembers':  return getAllBandMembers(req.bandId || (req._session && req._session.bandId) || '');
     case 'addBandMember':     return addBandMember(req.data || req);
     case 'updateBandMember':  return updateBandMember(req.memberId, req.data || req);
     case 'deleteBandMember':  return deleteBandMember(req.memberId);
@@ -159,7 +155,11 @@ function routeAction(req) {
 
     // --- Schedule ---
     case 'saveSchedule': return saveSchedule(req);
-    case 'getSchedule':  return getSchedule(req.bandId || '', req.year);
+    case 'getSchedule':  return getSchedule(req.bandId || (req._session && req._session.bandId) || '', req.year);
+    // เพิ่ม/แก้/ลบงานทีละรายการ (ใช้โดย schedule.html และ attendance-payroll.html)
+    case 'addJob':    return addJob(req);
+    case 'updateJob': return updateJob(req);
+    case 'deleteJob': return deleteJob(req);
 
     // --- Equipment ---
     case 'getAllEquipment':  return getAllEquipment(req.bandId || '');
@@ -180,16 +180,34 @@ function routeAction(req) {
     case 'deleteQuotation':        return deleteQuotation(req.quotationId);
     case 'generateQuotationPdf':   return generateQuotationPdf(req.quotationId);
 
-    // --- Admin ---
-    case 'getAllUsers':            return adminGetAllUsers();
-    case 'updateUserRole':         return adminUpdateUserRole(req.userId, req.role);
-    case 'deleteUser':             return adminDeleteUser(req.userId);
-    case 'getSystemInfo':          return adminGetSystemInfo();
-    case 'createBackup':           return adminCreateBackup();
-    case 'getSpreadsheetUrl':      return adminGetSpreadsheetUrl();
-    case 'runSetupFromAdmin':      return adminRunSetup();
-    case 'clearAllData':           return adminClearAllData();
-    case 'resetUsers':             return adminResetUsers();
+    // --- Admin (ต้องเป็น admin เท่านั้น — ตรวจสอบ session.role ทุกคดี) ---
+    case 'getAllUsers':
+      if (!req._session || req._session.role !== 'admin') return { success: false, message: 'Access denied — admin only' };
+      return adminGetAllUsers();
+    case 'updateUserRole':
+      if (!req._session || req._session.role !== 'admin') return { success: false, message: 'Access denied — admin only' };
+      return adminUpdateUserRole(req.userId, req.role);
+    case 'deleteUser':
+      if (!req._session || req._session.role !== 'admin') return { success: false, message: 'Access denied — admin only' };
+      return adminDeleteUser(req.userId);
+    case 'getSystemInfo':
+      if (!req._session || req._session.role !== 'admin') return { success: false, message: 'Access denied — admin only' };
+      return adminGetSystemInfo();
+    case 'createBackup':
+      if (!req._session || req._session.role !== 'admin') return { success: false, message: 'Access denied — admin only' };
+      return adminCreateBackup();
+    case 'getSpreadsheetUrl':
+      if (!req._session || req._session.role !== 'admin') return { success: false, message: 'Access denied — admin only' };
+      return adminGetSpreadsheetUrl();
+    case 'runSetupFromAdmin':
+      if (!req._session || req._session.role !== 'admin') return { success: false, message: 'Access denied — admin only' };
+      return adminRunSetup();
+    case 'clearAllData':
+      if (!req._session || req._session.role !== 'admin') return { success: false, message: '⚠️ Access denied — admin only' };
+      return adminClearAllData();
+    case 'resetUsers':
+      if (!req._session || req._session.role !== 'admin') return { success: false, message: '⚠️ Access denied — admin only' };
+      return adminResetUsers();
 
     default:
       return { success: false, message: 'Unknown action: ' + action };
@@ -341,13 +359,14 @@ function _redeemInviteCode(code, userId, userName) {
 }
 
 function requestPasswordReset(email) {
-  return { success: true, message: 'ส่ง OTP ไปที่อีเมลแล้ว (หากมีบัญชีในระบบ)' };
+  // TODO: ยังไม่ได้เชื่อมต่อ Email service — ยิงคืน false เพื่อให้ UI แสดงข้อความที่ถูกต้อง
+  return { success: false, message: 'ฟีเจอร์รีเซ็ตรหัสผ่านยังไม่เปิดให้บริการ กรุณาติดต่อ Admin ปรับรหัสผ่านแทน' };
 }
 function verifyPasswordResetOtp(email, otp) {
-  return { success: false, message: 'ฟีเจอร์นี้ต้องการการเชื่อมต่อกับ Email service' };
+  return { success: false, message: 'ฟีเจอร์นี้ยังไม่เปิดให้บริการ' };
 }
 function resetPassword(email, otp, newPassword) {
-  return { success: false, message: 'ฟีเจอร์นี้ต้องการการเชื่อมต่อกับ Email service' };
+  return { success: false, message: 'ฟีเจอร์นี้ยังไม่เปิดให้บริการ' };
 }
 
 // ============================================================
@@ -400,7 +419,7 @@ function adminGetAllUsers() {
       users.push(obj);
     }
     return { success: true, data: users };
-  } catch(e) { return { success: false, message: e.message }; }
+  } catch(e) { Logger.log('adminGetAllUsers error: ' + e); return { success: false, message: e.message }; }
 }
 
 function adminUpdateUserRole(userId, role) {
@@ -419,7 +438,7 @@ function adminUpdateUserRole(userId, role) {
       }
     }
     return { success: false, message: 'User not found' };
-  } catch(e) { return { success: false, message: e.message }; }
+  } catch(e) { Logger.log('adminUpdateUserRole error: ' + e); return { success: false, message: e.message }; }
 }
 
 function adminDeleteUser(userId) {
@@ -437,7 +456,7 @@ function adminDeleteUser(userId) {
       }
     }
     return { success: false, message: 'User not found' };
-  } catch(e) { return { success: false, message: e.message }; }
+  } catch(e) { Logger.log('adminDeleteUser error: ' + e); return { success: false, message: e.message }; }
 }
 
 function adminGetSystemInfo() {
@@ -500,7 +519,7 @@ function adminClearAllData() {
       }
     });
     return { success: true };
-  } catch(e) { return { success: false, message: e.message }; }
+  } catch(e) { Logger.log('adminClearAllData error: ' + e); return { success: false, message: e.message }; }
 }
 
 function adminResetUsers() {
@@ -508,5 +527,5 @@ function adminResetUsers() {
     var sheet = getOperationalSpreadsheet().getSheetByName(CONFIG.SHEETS.USERS);
     if (sheet && sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1);
     return { success: true };
-  } catch(e) { return { success: false, message: e.message }; }
+  } catch(e) { Logger.log('adminResetUsers error: ' + e); return { success: false, message: e.message }; }
 }

@@ -31,6 +31,16 @@
       nav_songInsights: 'สถิติเพลง', nav_bandFund: 'เงินกองกลาง', nav_settings: 'ตั้งค่า',
       nav_bandInfo: 'ข้อมูลวง', nav_userManual: 'คู่มือ', nav_admin: 'แอดมิน',
       nav_equipment: 'อุปกรณ์', nav_clients: 'ลูกค้า',
+      // คีย์ form fields ทั่วไป
+      venue: 'สถานที่', client: 'ลูกค้า/ผู้จ้าง', date: 'วันที่',
+      jobType: 'ประเภทงาน', payment: 'ค่าตัว (บาท)', status: 'สถานะ', notes: 'หมายเหตุ',
+      today: 'วันนี้',
+      // Schedule
+      addJob: 'เพิ่มงาน', editJob: 'แก้ไขงาน',
+      // Attendance-Payroll
+      nav_payroll: 'ตรวจสอบ/เบิกค่าตัว',
+      selectJob: 'เลือกงาน', selectJobFirst: 'กรุณาเลือกงานก่อน',
+      attendance: 'การเข้าร่วม',
       dash_title: 'แดชบอร์ด', dash_subtitle: 'ภาพรวมวงดนตรีและสิ่งที่ต้องทำ',
       dash_todaySummary: 'สรุปด่วนวันนี้', dash_date: 'วันที่', dash_todayGigs: 'งานวันนี้',
       dash_todayMembers: 'สมาชิกทำงานวันนี้', dash_nextGig: 'งานถัดไป', dash_noJobs: 'ยังไม่มีข้อมูลงาน',
@@ -108,6 +118,16 @@
       nav_songInsights: 'Song Insights', nav_bandFund: 'Band Fund', nav_settings: 'Settings',
       nav_bandInfo: 'Band Info', nav_userManual: 'User Manual', nav_admin: 'Admin',
       nav_equipment: 'Equipment', nav_clients: 'Clients',
+      // Common form fields
+      venue: 'Venue', client: 'Client/Booker', date: 'Date',
+      jobType: 'Job Type', payment: 'Pay (THB)', status: 'Status', notes: 'Notes',
+      today: 'Today',
+      // Schedule
+      addJob: 'Add Gig', editJob: 'Edit Gig',
+      // Attendance-Payroll
+      nav_payroll: 'Check Payroll',
+      selectJob: 'Select Gig', selectJobFirst: 'Please select a gig first',
+      attendance: 'Attendance',
       dash_title: 'Dashboard', dash_subtitle: 'Band overview and tasks',
       dash_todaySummary: "Today's Summary", dash_date: 'Date', dash_todayGigs: "Today's Gigs",
       dash_todayMembers: 'Members Today', dash_nextGig: 'Next Gig', dash_noJobs: 'No jobs yet',

@@ -128,6 +128,11 @@ function updateSong(songId, songData) {
         sheet.getRange(rowIndex, headers.indexOf(f) + 1).setValue(songData[f]);
       }
     });
+    // tags เป็น JSON array — ต้อง stringify ก่อนบันทึก
+    if (songData.tags !== undefined) {
+      var tagsCol = headers.indexOf('tags');
+      if (tagsCol >= 0) sheet.getRange(rowIndex, tagsCol + 1).setValue(JSON.stringify(songData.tags || []));
+    }
     sheet.getRange(rowIndex, headers.indexOf('updatedAt') + 1).setValue(new Date().toISOString());
     // Invalidate cache (ไม่รู้ bandId แน่ๆ → ลบ global songs ด้วยเผื่อ)
     cacheDelete('global_songs');
