@@ -257,6 +257,18 @@ function loadBandSettings() {
         if (d.payroll) payroll = Object.assign({ period: 'daily', weekStart: 1, weekEnd: 0 }, d.payroll);
         if (d.members) bandMembersData = d.members;
         if (d.inviteCode) { currentInviteCode = d.inviteCode; currentInviteExpires = d.inviteExpires || null; }
+        // ถ้า server ไม่ส่ง inviteCode กลับมา ให้ดึงจาก invite_codes table
+        if (!currentInviteCode) {
+          gasRun('getBandCode', { bandId: currentBandId }, function(r2) {
+            if (r2 && r2.success && r2.code) {
+              currentInviteCode = r2.code;
+              var s2 = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+              s2.inviteCode = r2.code; s2.inviteExpires = null;
+              localStorage.setItem('bandSettings', JSON.stringify(s2));
+              renderBandCode();
+            }
+          });
+        }
         renderAll();
       }
     });
@@ -271,6 +283,18 @@ function renderAll() {
   renderMembers();
   renderVenueNames();
   renderScheduleGrid();
+  // ดึงรหัสประจำวงจาก DB ถ้ายังไม่มีใน localStorage
+  if (!currentInviteCode && currentBandId && typeof gasRun === 'function') {
+    gasRun('getBandCode', { bandId: currentBandId }, function(r) {
+      if (r && r.success && r.code) {
+        currentInviteCode = r.code;
+        var s = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+        s.inviteCode = r.code; s.inviteExpires = null;
+        localStorage.setItem('bandSettings', JSON.stringify(s));
+        renderBandCode();
+      }
+    });
+  }
   renderBandCode();
   loadPendingMembers();
   renderPayrollSettings();

@@ -105,9 +105,10 @@
         case 'resetPassword':
           return { success: false, message: 'ฟีเจอร์นี้ยังไม่เปิด กรุณาติดต่อ Admin' };
 
-        // ── Invite ─────────────────────────────────────────────────
+        // ── Invite / Band Code ─────────────────────────────────────
         case 'generateInviteCode':  return doGenerateInviteCode(d);
         case 'lookupInviteCode':    return doLookupInviteCode(d);
+        case 'getBandCode':         return doGetBandCode(d);
 
         // ── Songs ──────────────────────────────────────────────────
         case 'getAllSongs':         return doGetAllSongs(d);
@@ -513,6 +514,21 @@
     }
 
     // ── Band Code (รหัสประจำวง) ─────────────────────────────────
+    async function doGetBandCode(d) {
+      var bandId = d.bandId || getBandId();
+      var { data, error } = await sb.from('invite_codes')
+        .select('code')
+        .eq('band_id', bandId)
+        .eq('status', 'permanent')
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (data && data.code) {
+        return { success: true, code: data.code };
+      }
+      return { success: false };
+    }
+
     async function doGenerateInviteCode(d) {
       var bandId   = d.bandId   || getBandId();
       var bandName = d.bandName || localStorage.getItem('bandName') || '';
