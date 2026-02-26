@@ -1,181 +1,25 @@
 ﻿/* ══════════════════════════════════════════
-   SAVE — per-section helpers
+   Band Settings — Horizontal Timetable
+   v2: venues (names only) + schedule flat + payroll
 ══════════════════════════════════════════ */
-function _buildFullPayload() {
-  var bName = (getEl('bandName') && getEl('bandName').value.trim()) || bandNameVal;
-  var bMgr  = (getEl('bandManager') && getEl('bandManager').value.trim()) || currentBandManager;
-  var validMembers = bandMembersData.filter(function(m) { return m.name && m.name.trim(); });
-  var validVenues  = venues.filter(function(v) { return v.name && v.name.trim(); });
-  var hourlyRates = [];
-  validVenues.forEach(function(v) {
-    Object.keys(v.schedule || {}).forEach(function(day) {
-      (v.schedule[day].timeSlots || []).forEach(function(slot) {
-        (slot.members || []).forEach(function(mr) {
-          if (mr.memberId && mr.hourlyRate > 0) {
-            hourlyRates.push({ dayOfWeek: parseInt(day), startTime: slot.startTime, endTime: slot.endTime, memberId: mr.memberId, hourlyRate: mr.hourlyRate, venueId: v.id });
-          }
-        });
-      });
-    });
-  });
-  return {
-    bandId: currentBandId || ('BAND_' + Date.now()),
-    bandName: bName,
-    bandManager: bMgr,
-    venues: validVenues,
-    members: validMembers,
-    hourlyRates: hourlyRates,
-    scheduleData: buildScheduleData(),
-    inviteCode: currentInviteCode,
-    inviteExpires: currentInviteExpires,
-    updatedAt: new Date().toISOString()
-  };
-}
 
-// Persist current in-memory state to localStorage immediately — no server call.
-// Called on every timeslot change so data survives navigation even without clicking Save.
-function autoSaveLocal() {
-  try {
-    var data = _buildFullPayload();
-    localStorage.setItem('bandSettings', JSON.stringify(data));
-    if (data.bandId)      localStorage.setItem('bandId',      data.bandId);
-    if (data.bandName)    localStorage.setItem('bandName',    data.bandName);
-    if (data.bandManager) localStorage.setItem('bandManager', data.bandManager);
-  } catch(e) {}
-}
-
-function _doSave(data, btn, origText, successMsg) {
-  function onSuccess() {
-    currentBandId = data.bandId;
-    bandNameVal = data.bandName;
-    currentBandManager = data.bandManager;
-    localStorage.setItem('bandSettings', JSON.stringify(data));
-    localStorage.setItem('bandId', data.bandId);
-    localStorage.setItem('bandName', data.bandName);
-    localStorage.setItem('bandManager', data.bandManager);
-    if (btn) { btn.disabled = false; btn.textContent = origText; }
-    showToast(successMsg || 'บันทึกเรียบร้อย ✅', 'success');
-  }
-  function onFail(msg) {
-    if (btn) { btn.disabled = false; btn.textContent = origText; }
-    showToast(msg || 'ไม่สามารถบันทึกได้ ❌', 'error');
-  }
-  if (typeof gasRun === 'function') {
-    gasRun('saveBandSettings', data, function(r) {
-      if (r && r.success) onSuccess(); else onFail(r && r.message);
-    });
-  } else {
-    onSuccess();
-  }
-}
-
-function saveBandInfo(btn) {
-  var bName = getEl('bandName') && getEl('bandName').value.trim();
-  if (!bName) { showToast('กรุณากรอกชื่อวง', 'error'); return; }
-  var origText = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
-  _doSave(_buildFullPayload(), btn, origText, 'บันทึกข้อมูลวงเรียบร้อย ✅');
-}
-
-function saveMembers(btn) {
-  var origText = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
-  _doSave(_buildFullPayload(), btn, origText, 'บันทึกสมาชิกเรียบร้อย ✅');
-}
-
-function saveVenues(btn) {
-  var valid = venues.filter(function(v) { return v.name && v.name.trim(); });
-  if (valid.length === 0) { showToast('กรุณาเพิ่มร้านอย่างน้อย 1 ร้านที่มีชื่อ', 'error'); return; }
-  var origText = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
-  _doSave(_buildFullPayload(), btn, origText, 'บันทึกร้านและตารางงานเรียบร้อย ✅');
-}
-
-// Global save-all (header button)
-function saveBandSettings() {
-  var bName = (getEl('bandName') && getEl('bandName').value.trim()) || bandNameVal;
-  if (!bName) { showToast('กรุณากรอกชื่อวง', 'error'); return; }
-  var btn = getEl('saveBtn');
-  var origText = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
-  _doSave(_buildFullPayload(), btn, origText, 'บันทึกทั้งหมดเรียบร้อย ✅');
-}
-/**
- * Band Settings — merged venue+schedule, invite code
- * Data structure: venues[].schedule[dayOfWeek].timeSlots[].members[]
- */
-
-var currentBandId = null;
+/* ── State ─────────────────────────────────────────── */
+var currentBandId      = null;
 var currentBandManager = null;
-var bandNameVal = '';
-var venues = [];       // [{ id, name, address, phone, schedule: { '1': { timeSlots: [] } } }]
+var bandNameVal        = '';
+var venues = [];   // [{id, name}]
+var schedule = {}; // {dayOfWeek: [{id, venueId, startTime, endTime, members:[{memberId,rate,rateType}]}]}
+var payroll  = { period: 'daily', weekStart: 1, weekEnd: 0 };
 var bandMembersData = [];
-var currentInviteCode = null;
+var currentInviteCode   = null;
 var currentInviteExpires = null;
-// Track which day tab is active per venue: venueActiveDays[venueIndex] = dayNum
-var venueActiveDays = {};
-var expandedVenues  = {}; // accordion open state: { vi: true }
 
-// Save/restore the expand + active-day state so the UI looks the same after page reload
-function saveViewState() {
-  try { localStorage.setItem('bs_expandedVenues', JSON.stringify(expandedVenues)); } catch(e){}
-  try { localStorage.setItem('bs_venueActiveDays', JSON.stringify(venueActiveDays)); } catch(e){}
-}
-function restoreViewState() {
-  try { var s = localStorage.getItem('bs_expandedVenues'); if (s) expandedVenues = JSON.parse(s); } catch(e){}
-  try { var s2 = localStorage.getItem('bs_venueActiveDays'); if (s2) venueActiveDays = JSON.parse(s2); } catch(e){}
-}
-// After loading venues, auto-expand those with a name and auto-select first day with data
-function autoExpandVenues() {
-  venues.forEach(function(v, vi) {
-    if (!v.name && !v.name) return; // no name, skip
-    // Expand by default
-    if (expandedVenues[vi] === undefined) expandedVenues[vi] = true;
-    // Auto-select first day with timeslot data, if none already selected
-    if (venueActiveDays[vi] === undefined || venueActiveDays[vi] === -1) {
-      var sched = v.schedule || {};
-      var firstDay = Object.keys(sched).map(Number).sort().find(function(d) {
-        return sched[d] && (sched[d].timeSlots || []).length > 0;
-      });
-      venueActiveDays[vi] = firstDay !== undefined ? firstDay : -1;
-    }
-  });
-}
+var _editDay    = -1;
+var _editSlotId = null;
+var _detailDay  = -1;
+var _detailSlotId = null;
 
-var DAY_NAMES = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-var POSITIONS = [
-  // เสียง
-  'นักร้อง (Vocal)',
-  'นักร้องนำ (Lead Vocal)',
-  'นักร้องประสาน (Backing Vocal)',
-  // กีตาร์
-  'กีตาร์นำ (Lead Guitar)',
-  'กีตาร์ริธึม (Rhythm Guitar)',
-  'เบส (Bass Guitar)',
-  // กลอง
-  'กลองชุด (Drum Set)',
-  'เปอร์คัชชัน (Percussion)',
-  'กาออน (Cajon)',
-  // คีย์บอร์ด / เปียโน
-  'คีย์บอร์ด (Keyboard)',
-  'เปียโน (Piano)',
-  'ออร์แกน (Organ)',
-  // สายลม
-  'ซอกโซโฟน (Saxophone)',
-  'ทรัมเป็ต (Trumpet)',
-  'ทรอมโบน (Trombone)',
-  'ฟลุต (Flute)',
-  // เครื่องสาย
-  'ไวโอลิน (Violin)',
-  'เชลโล (Cello)',
-  'อุคูเลเล (Ukulele)',
-  // ดีเจ / โปรแกรม
-  'DJ / โปรแกรมเมอร์ (Programmer)',
-  'เสียง (Sound Engineer)',
-  // อื่นๆ
-  'อื่นๆ'
-];
-
+/* ── Helpers ────────────────────────────────────────── */
 function getEl(id) { return document.getElementById(id); }
 function esc(text) {
   if (!text) return '';
@@ -196,168 +40,297 @@ function showToast(msg, type) {
     setTimeout(function() { toast.style.display = 'none'; }, 300);
   }, 3000);
 }
+function timeToMin(t) {
+  if (!t || typeof t !== 'string') return null;
+  var p = t.split(':');
+  if (p.length < 2) return null;
+  var h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
+}
+function minToTime(min) {
+  var h = Math.floor(min / 60) % 24, m = min % 60;
+  return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+}
+function autoFormatTime(inp) {
+  inp.addEventListener('input', function() {
+    var raw = this.value.replace(/[^0-9]/g, '');
+    if (raw.length >= 3) raw = raw.substring(0, 2) + ':' + raw.substring(2, 4);
+    this.value = raw;
+  });
+}
+
+var DAY_NAMES  = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+var SLOT_COLORS = [
+  {bg:'#f6ad55',text:'#7b341e'}, {bg:'#63b3ed',text:'#1a365d'},
+  {bg:'#68d391',text:'#1c4532'}, {bg:'#fc8181',text:'#742a2a'},
+  {bg:'#b794f4',text:'#44337a'}, {bg:'#f687b3',text:'#702459'},
+  {bg:'#76e4f7',text:'#065666'}, {bg:'#faf089',text:'#744210'}
+];
+var POSITIONS = [
+  'นักร้อง (Vocal)','นักร้องนำ (Lead Vocal)','นักร้องประสาน (Backing Vocal)',
+  'กีตาร์นำ (Lead Guitar)','กีตาร์ริธึม (Rhythm Guitar)','เบส (Bass Guitar)',
+  'กลองชุด (Drum Set)','เปอร์คัชชัน (Percussion)','กาออน (Cajon)',
+  'คีย์บอร์ด (Keyboard)','เปียโน (Piano)','ออร์แกน (Organ)',
+  'ซักโซโฟน (Saxophone)','ทรัมเป็ต (Trumpet)','ทรอมโบน (Trombone)','ฟลุต (Flute)',
+  'ไวโอลิน (Violin)','เชลโล (Cello)','อุคูเลเล (Ukulele)',
+  'DJ / โปรแกรมเมอร์','เสียง (Sound Engineer)','อื่นๆ'
+];
+
+function getVenueColor(venueId) {
+  var idx = venues.findIndex(function(v) { return v.id === venueId; });
+  return SLOT_COLORS[(idx < 0 ? 0 : idx) % SLOT_COLORS.length];
+}
+function getVenueName(venueId) {
+  var v = venues.find(function(v) { return v.id === venueId; });
+  return v ? v.name : '?';
+}
+
+/* ══════════════════════════════════════════
+   PAYLOAD / AUTO-SAVE / SAVE
+══════════════════════════════════════════ */
+function _buildFullPayload() {
+  var bName = (getEl('bandName') && getEl('bandName').value.trim()) || bandNameVal;
+  var bMgr  = (getEl('bandManager') && getEl('bandManager').value.trim()) || currentBandManager;
+  var validVenues  = venues.filter(function(v) { return v.name && v.name.trim(); });
+  var validMembers = bandMembersData.filter(function(m) { return m.name && m.name.trim(); });
+  // hourlyRates for backend compat
+  var hourlyRates = [];
+  Object.keys(schedule).forEach(function(day) {
+    (schedule[day] || []).forEach(function(slot) {
+      (slot.members || []).forEach(function(mr) {
+        if (mr.memberId && mr.rate > 0) {
+          hourlyRates.push({ dayOfWeek: parseInt(day), startTime: slot.startTime, endTime: slot.endTime, memberId: mr.memberId, hourlyRate: mr.rate, rateType: mr.rateType || 'shift', venueId: slot.venueId });
+        }
+      });
+    });
+  });
+  return {
+    bandId: currentBandId || ('BAND_' + Date.now()),
+    bandName: bName, bandManager: bMgr,
+    venues: validVenues, members: validMembers,
+    schedule: schedule, payroll: payroll,
+    hourlyRates: hourlyRates,
+    inviteCode: currentInviteCode, inviteExpires: currentInviteExpires,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+
+function autoSaveLocal() {
+  try {
+    var d = _buildFullPayload();
+    localStorage.setItem('bandSettings', JSON.stringify(d));
+    if (d.bandId)      localStorage.setItem('bandId',      d.bandId);
+    if (d.bandName)    localStorage.setItem('bandName',    d.bandName);
+    if (d.bandManager) localStorage.setItem('bandManager', d.bandManager);
+  } catch(e) {}
+}
+
+function _doSave(data, btn, origText, successMsg) {
+  function onSuccess() {
+    currentBandId = data.bandId; bandNameVal = data.bandName; currentBandManager = data.bandManager;
+    localStorage.setItem('bandSettings', JSON.stringify(data));
+    localStorage.setItem('bandId', data.bandId);
+    localStorage.setItem('bandName', data.bandName);
+    localStorage.setItem('bandManager', data.bandManager);
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
+    showToast(successMsg || 'บันทึกเรียบร้อย ✅', 'success');
+  }
+  function onFail(msg) {
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
+    showToast(msg || 'ไม่สามารถบันทึกได้ ❌', 'error');
+  }
+  if (typeof gasRun === 'function') {
+    gasRun('saveBandSettings', data, function(r) { if (r && r.success) onSuccess(); else onFail(r && r.message); });
+  } else { onSuccess(); }
+}
+
+function saveBandInfo(btn) {
+  if (!(getEl('bandName') && getEl('bandName').value.trim())) { showToast('กรุณากรอกชื่อวง', 'error'); return; }
+  var orig = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+  _doSave(_buildFullPayload(), btn, orig, 'บันทึกข้อมูลวงเรียบร้อย ✅');
+}
+function saveMembers(btn) {
+  var orig = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+  _doSave(_buildFullPayload(), btn, orig, 'บันทึกสมาชิกเรียบร้อย ✅');
+}
+function saveVenueNames(btn) {
+  var orig = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+  _doSave(_buildFullPayload(), btn, orig, 'บันทึกร้านเรียบร้อย ✅');
+}
+function savePayroll(btn) {
+  var sel = getEl('payrollPeriod'); if (sel) payroll.period = sel.value;
+  var ws = getEl('weekStart');      if (ws)  payroll.weekStart = parseInt(ws.value, 10);
+  var we = getEl('weekEnd');        if (we)  payroll.weekEnd   = parseInt(we.value, 10);
+  var orig = btn ? btn.textContent : ''; if (btn) { btn.disabled = true; btn.textContent = 'บันทึก...'; }
+  _doSave(_buildFullPayload(), btn, orig, 'บันทึกการตั้งค่าค่าแรงเรียบร้อย ✅');
+}
+function saveBandSettings() {
+  var btn = getEl('saveBtn'); var orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+  _doSave(_buildFullPayload(), btn, orig, 'บันทึกทั้งหมดเรียบร้อย ✅');
+}
 
 /* ══════════════════════════════════════════
    LOAD
 ══════════════════════════════════════════ */
 function loadBandSettings() {
-  currentBandId = localStorage.getItem('bandId') || sessionStorage.getItem('bandId');
-  bandNameVal = localStorage.getItem('bandName') || '';
+  currentBandId      = localStorage.getItem('bandId') || sessionStorage.getItem('bandId');
+  bandNameVal        = localStorage.getItem('bandName') || '';
   currentBandManager = localStorage.getItem('bandManager') || localStorage.getItem('userName') || '';
-
-  // Restore previously saved view state (which venues were expanded, which day was selected)
-  restoreViewState();
 
   var stored = localStorage.getItem('bandSettings');
   if (stored) {
     try {
       var s = JSON.parse(stored);
-      if (s.bandName) bandNameVal = s.bandName;
-      venues = (s.venues || []).map(normalizeVenue);
-      bandMembersData = s.members || [];
+      if (s.bandName)    bandNameVal        = s.bandName;
+      if (s.bandManager) currentBandManager = s.bandManager;
+      // Venues — new format: [{id,name}], old format: [{id,name,address,phone,schedule}]
+      if (s.venues) {
+        venues = s.venues.map(function(v) {
+          return { id: v.id || v.venueId || ('venue_' + Math.random().toString(36).substr(2,6)), name: v.name || v.venueName || '' };
+        });
+      }
+      // Schedule — new flat format
+      if (s.schedule && typeof s.schedule === 'object' && !Array.isArray(s.schedule)) {
+        // Check if it's new format (values are arrays of slot objects with id/venueId)
+        var keys = Object.keys(s.schedule);
+        var isNew = keys.length === 0 || (s.schedule[keys[0]] && Array.isArray(s.schedule[keys[0]]) && s.schedule[keys[0]][0] && s.schedule[keys[0]][0].venueId !== undefined);
+        if (isNew) {
+          schedule = s.schedule;
+        } else {
+          // Old format: schedule[day].timeSlots (from scheduleData / buildScheduleData)
+          schedule = {};
+          keys.forEach(function(day) {
+            var dayData = s.schedule[day];
+            var slots = dayData.timeSlots || [];
+            if (slots.length) {
+              schedule[day] = slots.map(function(slot) {
+                return {
+                  id: 'slot_' + Date.now() + '_' + Math.random().toString(36).substr(2,4),
+                  venueId: slot.venueId || (venues[0] && venues[0].id) || '',
+                  startTime: slot.startTime || '', endTime: slot.endTime || '',
+                  members: (slot.members || []).map(function(mr) {
+                    return { memberId: mr.memberId || '', rate: mr.hourlyRate || mr.rate || 0, rateType: mr.rateType || 'shift' };
+                  })
+                };
+              });
+            }
+          });
+        }
+      } else if (s.venues) {
+        // Very old format: schedule embedded in venues[].schedule[day].timeSlots
+        schedule = {};
+        s.venues.forEach(function(v) {
+          var vid = v.id || v.venueId || '';
+          Object.keys(v.schedule || {}).forEach(function(day) {
+            if (!schedule[day]) schedule[day] = [];
+            (v.schedule[day].timeSlots || []).forEach(function(slot) {
+              schedule[day].push({
+                id: 'slot_' + Date.now() + '_' + Math.random().toString(36).substr(2,4),
+                venueId: vid, startTime: slot.startTime || '', endTime: slot.endTime || '',
+                members: (slot.members || []).map(function(mr) {
+                  return { memberId: mr.memberId || '', rate: mr.hourlyRate || mr.rate || 0, rateType: 'shift' };
+                })
+              });
+            });
+          });
+        });
+      }
+      if (s.payroll) payroll = Object.assign({ period: 'daily', weekStart: 1, weekEnd: 0 }, s.payroll);
+      if (s.members)  bandMembersData = s.members;
       if (s.inviteCode) { currentInviteCode = s.inviteCode; currentInviteExpires = s.inviteExpires || null; }
     } catch(e) {}
   }
-
-  // Auto-expand venues and select first day with data so schedule is visible immediately
-  autoExpandVenues();
-
-  // Render immediately from localStorage data — no waiting for server
   renderAll();
 
+  // Silent server refresh
   if (currentBandId && typeof gasRun === 'function') {
-    // Silent background refresh from server — merge without blocking UI
     gasRun('getBandSettings', { bandId: currentBandId }, function(r) {
       if (r && r.success && r.data) {
         var d = r.data;
-        if (d.bandName) bandNameVal = d.bandName;
-        if (d.venues) {
-          // Snapshot current UI state so the server refresh doesn't collapse open panels
-          var prevExpanded = JSON.parse(JSON.stringify(expandedVenues));
-          var prevActiveDays = JSON.parse(JSON.stringify(venueActiveDays));
-          // Keep locally-cached schedule as fallback for venues that predate scheduleJson column
-          var cachedVenues = venues.slice();
-          venues = d.venues.map(function(sv, vi) {
-            if (!sv.id)   sv.id   = sv.venueId  || '';
-            if (!sv.name) sv.name = sv.venueName || '';
-            // Server schedule takes priority; fall back to local cache if server returned empty
-            if (!sv.schedule || Object.keys(sv.schedule).length === 0) {
-              // Try ID-based match first
-              var cv = cachedVenues.find(function(lv) {
-                return lv.id && (lv.id === sv.id || lv.id === sv.venueId);
-              });
-              // Fallback: match by position (same index)
-              if (!cv && cachedVenues[vi]) cv = cachedVenues[vi];
-              if (cv && cv.schedule && Object.keys(cv.schedule).length > 0) {
-                sv.schedule = cv.schedule;
-              }
-            }
-            return normalizeVenue(sv);
-          });
-          // Restore the UI state the user had before server refresh,
-          // then re-run autoExpandVenues to select correct days for any new data
-          expandedVenues = prevExpanded;
-          venueActiveDays = prevActiveDays;
-          autoExpandVenues();
-        }
+        if (d.bandName)    bandNameVal        = d.bandName;
+        if (d.bandManager) currentBandManager = d.bandManager;
+        if (d.venues)  venues = d.venues.map(function(v) { return { id: v.id || v.venueId || ('venue_' + Math.random().toString(36).substr(2,6)), name: v.name || v.venueName || '' }; });
+        if (d.schedule && typeof d.schedule === 'object') schedule = d.schedule;
+        if (d.payroll) payroll = Object.assign({ period: 'daily', weekStart: 1, weekEnd: 0 }, d.payroll);
         if (d.members) bandMembersData = d.members;
         if (d.inviteCode) { currentInviteCode = d.inviteCode; currentInviteExpires = d.inviteExpires || null; }
-        // Re-render quietly after server data is merged
         renderAll();
       }
     });
   }
 }
 
-function normalizeVenue(v) {
-  if (!v.schedule) v.schedule = {};
-  return v;
-}
-
+/* ══════════════════════════════════════════
+   RENDER ALL
+══════════════════════════════════════════ */
 function renderAll() {
   updateBandInfo();
   renderMembers();
-  renderVenues();
+  renderVenueNames();
+  renderScheduleGrid();
   renderInviteCode();
-  renderWeeklyTimetable();
+  renderPayrollSettings();
 }
-
 function updateBandInfo() {
-  var el = getEl('bandName'); if (el) el.value = bandNameVal || '';
-  var mg = getEl('bandManager'); if (mg) mg.value = currentBandManager || '';
+  var e = getEl('bandName');    if (e) e.value = bandNameVal        || '';
+  var m = getEl('bandManager'); if (m) m.value = currentBandManager || '';
 }
 
 /* ══════════════════════════════════════════
    INVITE CODE
 ══════════════════════════════════════════ */
 function renderInviteCode() {
-  var disp = getEl('inviteCodeDisplay');
-  var exp  = getEl('inviteExpires');
-  var copyBtn = getEl('copyInviteBtn');
+  var disp = getEl('inviteCodeDisplay'), exp = getEl('inviteExpires'), copyBtn = getEl('copyInviteBtn');
   if (!disp) return;
   if (currentInviteCode) {
-    disp.textContent = currentInviteCode;
-    disp.classList.remove('empty');
+    disp.textContent = currentInviteCode; disp.classList.remove('empty');
     if (copyBtn) copyBtn.style.display = 'inline-flex';
     if (exp && currentInviteExpires) {
       var d = new Date(currentInviteExpires);
       exp.textContent = 'หมดอายุ: ' + d.toLocaleDateString('th-TH') + ' ' + d.toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'});
     } else if (exp) exp.textContent = '';
   } else {
-    disp.textContent = 'ยังไม่มีรหัสเชิญ';
-    disp.classList.add('empty');
+    disp.textContent = 'ยังไม่มีรหัสเชิญ'; disp.classList.add('empty');
     if (copyBtn) copyBtn.style.display = 'none';
     if (exp) exp.textContent = '';
   }
 }
-
 function generateInviteCode() {
-  var btn = getEl('genInviteBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'กำลังสร้าง...'; }
+  var btn = getEl('genInviteBtn'); if (btn) { btn.disabled = true; btn.textContent = 'กำลังสร้าง...'; }
   function done(code, expires) {
-    currentInviteCode = code;
-    currentInviteExpires = expires;
-    renderInviteCode();
-    showToast('สร้างรหัสเชิญเรียบร้อย: ' + code);
+    currentInviteCode = code; currentInviteExpires = expires; renderInviteCode();
+    showToast('สร้างรหัสเชิญ: ' + code);
     if (btn) { btn.disabled = false; btn.textContent = '🎲 สร้างรหัสใหม่'; }
   }
   if (typeof gasRun === 'function' && currentBandId) {
     gasRun('generateInviteCode', { bandId: currentBandId }, function(r) {
       if (r && r.success) {
-        // Save to localStorage for display
-        var stored = JSON.parse(localStorage.getItem('bandSettings') || '{}');
-        stored.inviteCode = r.data.code;
-        stored.inviteExpires = r.data.expiresAt;
-        localStorage.setItem('bandSettings', JSON.stringify(stored));
+        var s = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+        s.inviteCode = r.data.code; s.inviteExpires = r.data.expiresAt;
+        localStorage.setItem('bandSettings', JSON.stringify(s));
         done(r.data.code, r.data.expiresAt);
-      } else {
-        showToast((r && r.message) || 'เกิดข้อผิดพลาด');
-        if (btn) { btn.disabled = false; btn.textContent = '🎲 สร้างรหัสใหม่'; }
-      }
+      } else { showToast((r && r.message) || 'เกิดข้อผิดพลาด'); if (btn) { btn.disabled = false; btn.textContent = '🎲 สร้างรหัสใหม่'; } }
     });
   } else {
-    // Offline/demo: generate locally
-    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    var code = '';
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code = '';
     for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
     var exp = new Date(); exp.setDate(exp.getDate() + 7);
-    var stored = JSON.parse(localStorage.getItem('bandSettings') || '{}');
-    stored.inviteCode = code; stored.inviteExpires = exp.toISOString();
-    localStorage.setItem('bandSettings', JSON.stringify(stored));
+    var s = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+    s.inviteCode = code; s.inviteExpires = exp.toISOString();
+    localStorage.setItem('bandSettings', JSON.stringify(s));
     done(code, exp.toISOString());
   }
 }
-
 function copyInviteCode() {
   if (!currentInviteCode) return;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(currentInviteCode).then(function() { showToast('คัดลอกรหัส ' + currentInviteCode + ' แล้ว'); });
   } else {
-    var t = document.createElement('textarea');
-    t.value = currentInviteCode;
-    document.body.appendChild(t); t.select();
-    document.execCommand('copy');
-    document.body.removeChild(t);
+    var t = document.createElement('textarea'); t.value = currentInviteCode;
+    document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
     showToast('คัดลอกรหัส ' + currentInviteCode + ' แล้ว');
   }
 }
@@ -366,9 +339,7 @@ function copyInviteCode() {
    MEMBERS
 ══════════════════════════════════════════ */
 function renderMembers() {
-  var list = getEl('membersList');
-  var noEl = getEl('noMembers');
-  if (!list) return;
+  var list = getEl('membersList'), noEl = getEl('noMembers'); if (!list) return;
   if (bandMembersData.length === 0) {
     list.innerHTML = '';
     if (noEl) { noEl.style.display = 'block'; noEl.innerHTML = '<p class="empty-state-small">ยังไม่มีสมาชิก กดปุ่ม ➕ เพื่อเพิ่ม</p>'; }
@@ -377,494 +348,366 @@ function renderMembers() {
   if (noEl) noEl.style.display = 'none';
   list.innerHTML = bandMembersData.map(function(m, i) {
     return '<div class="member-item" data-mi="' + i + '">' +
-      '<div class="form-group"><label>ชื่อสมาชิก</label>' +
-      '<input type="text" class="mi-name" data-mi="' + i + '" value="' + esc(m.name||'') + '" placeholder="ชื่อสมาชิก"></div>' +
-      '<div class="form-group"><label>ตำแหน่ง</label>' +
-      '<select class="mi-pos" data-mi="' + i + '">' +
-        '<option value="">เลือกตำแหน่ง</option>' +
-        POSITIONS.map(function(p){ return '<option' + (m.position===p?' selected':'') + '>' + p + '</option>'; }).join('') +
-      '</select></div>' +
-      '<button type="button" class="member-remove" data-mi="' + i + '">🗑️</button>' +
-      '</div>';
+      '<div class="form-group"><label>ชื่อสมาชิก</label><input type="text" class="mi-name" data-mi="' + i + '" value="' + esc(m.name||'') + '" placeholder="ชื่อ"></div>' +
+      '<div class="form-group"><label>ตำแหน่ง</label><select class="mi-pos" data-mi="' + i + '"><option value="">เลือกตำแหน่ง</option>' +
+        POSITIONS.map(function(p) { return '<option' + (m.position === p ? ' selected' : '') + '>' + p + '</option>'; }).join('') +
+      '</select></div><button type="button" class="member-remove" data-mi="' + i + '">🗑️</button></div>';
   }).join('');
-  list.querySelectorAll('.mi-name').forEach(function(inp) {
-    inp.addEventListener('input', function() { bandMembersData[+this.dataset.mi].name = this.value; });
-  });
-  list.querySelectorAll('.mi-pos').forEach(function(sel) {
-    sel.addEventListener('change', function() { bandMembersData[+this.dataset.mi].position = this.value; });
-  });
+  list.querySelectorAll('.mi-name').forEach(function(e) { e.addEventListener('input', function() { bandMembersData[+this.dataset.mi].name = this.value; }); });
+  list.querySelectorAll('.mi-pos').forEach(function(e) { e.addEventListener('change', function() { bandMembersData[+this.dataset.mi].position = this.value; }); });
   list.querySelectorAll('.member-remove').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      if (confirm('ลบสมาชิกคนนี้หรือไม่?')) { bandMembersData.splice(+this.dataset.mi, 1); renderMembers(); }
-    });
+    btn.addEventListener('click', function() { if (confirm('ลบสมาชิกคนนี้?')) { bandMembersData.splice(+this.dataset.mi, 1); renderMembers(); } });
   });
 }
-
 function addMember() {
   bandMembersData.push({ id: 'member_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), name: '', position: '' });
   renderMembers();
-  setTimeout(function() {
-    var last = document.querySelector('.mi-name[data-mi="' + (bandMembersData.length-1) + '"]');
-    if (last) last.focus();
-  }, 80);
+  setTimeout(function() { var l = document.querySelector('.mi-name[data-mi="' + (bandMembersData.length-1) + '"]'); if (l) l.focus(); }, 80);
 }
 
 /* ══════════════════════════════════════════
-   VENUES — hierarchical: ① ร้าน → ② วัน → ③ เวลา → ④ สมาชิก
+   VENUE NAMES (simplified list)
 ══════════════════════════════════════════ */
-function renderVenues() {
-  var list = getEl('venuesList');
-  var noEl = getEl('noVenues');
-  if (!list) return;
+function renderVenueNames() {
+  var list = getEl('venueNamesList'); if (!list) return;
   if (venues.length === 0) {
-    list.innerHTML = '';
-    if (noEl) { noEl.style.display = 'block'; noEl.innerHTML = '<p class="empty-state-small">ยังไม่มีร้าน กดปุ่ม ➕ เพื่อเพิ่มร้านแรก</p>'; }
+    list.innerHTML = '<p class="empty-state-small" style="margin:8px 0">ยังไม่มีร้าน กดปุ่ม ➕ เพื่อเพิ่ม</p>';
     return;
   }
-  if (noEl) noEl.style.display = 'none';
   list.innerHTML = venues.map(function(v, vi) {
-    var isExpanded = !!expandedVenues[vi];
-    var activeDay  = venueActiveDays[vi] !== undefined ? venueActiveDays[vi] : -1;
-    // Compact summary for collapsed header
-    var activeDayNums = Object.keys(v.schedule || {}).filter(function(d) {
-      return (v.schedule[d].timeSlots || []).length > 0;
-    }).map(Number).sort();
-    var totalSlots = activeDayNums.reduce(function(s, d) { return s + (v.schedule[d].timeSlots || []).length; }, 0);
-    var summaryParts = [];
-    if (activeDayNums.length > 0) summaryParts.push(activeDayNums.map(function(d) { return DAY_NAMES[d]; }).join(', '));
-    if (totalSlots > 0) summaryParts.push(totalSlots + ' ช่วงเวลา');
-    var summary = summaryParts.length ? summaryParts.join(' • ') : 'ยังไม่ได้ตั้งตาราง';
-    var bodyHtml = '';
-    if (isExpanded) {
-      // ① Venue info
-      var infoHtml =
-        '<div class="venue-step-section">' +
-          '<div class="venue-step-label"><span class="step-num">\u2460</span> \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e23\u0e49\u0e32\u0e19</div>' +
-          '<div class="venue-info-inputs">' +
-            '<div class="form-group"><label>\u0e0a\u0e37\u0e48\u0e2d\u0e23\u0e49\u0e32\u0e19 <span style="color:#e53e3e">*</span></label>' +
-              '<input type="text" class="vc-name" data-vi="' + vi + '" value="' + esc(v.name||'') + '" placeholder="\u0e0a\u0e37\u0e48\u0e2d\u0e23\u0e49\u0e32\u0e19"></div>' +
-            '<div class="form-group"><label>\u0e17\u0e35\u0e48\u0e2d\u0e22\u0e39\u0e48</label>' +
-              '<input type="text" class="vc-addr" data-vi="' + vi + '" value="' + esc(v.address||'') + '" placeholder="\u0e17\u0e35\u0e48\u0e2d\u0e22\u0e39\u0e48"></div>' +
-            '<div class="form-group"><label>\u0e40\u0e1a\u0e2d\u0e23\u0e4c\u0e42\u0e17\u0e23</label>' +
-              '<input type="tel" class="vc-phone" data-vi="' + vi + '" value="' + esc(v.phone||'') + '" placeholder="\u0e40\u0e1a\u0e2d\u0e23\u0e4c\u0e42\u0e17\u0e23"></div>' +
-          '</div>' +
-        '</div>';
-      // ② Day selection
-      var dayTabsHtml = DAY_NAMES.map(function(dn, di) {
-        var hasData = !!(v.schedule && v.schedule[di] && (v.schedule[di].timeSlots||[]).length > 0);
-        var cls = 'day-tab' + (di === activeDay ? ' active' : '') + (hasData ? ' has-data' : '');
-        return '<button type="button" class="' + cls + '" data-vi="' + vi + '" data-day="' + di + '">' + dn + '</button>';
-      }).join('');
-      var daySection =
-        '<div class="venue-step-section">' +
-          '<div class="venue-step-label"><span class="step-num">\u2461</span> \u0e40\u0e25\u0e37\u0e2d\u0e01\u0e27\u0e31\u0e19\u0e17\u0e33\u0e07\u0e32\u0e19</div>' +
-          '<div class="day-tabs">' + dayTabsHtml + '</div>' +
-        '</div>';
-      // ③+④ time slots — only shown when a day is active
-      var slotSection = '';
-      if (activeDay >= 0) {
-        slotSection =
-          '<div class="venue-step-section venue-day-content">' +
-            '<div class="venue-step-label"><span class="step-num">\u2462</span> \u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 \u2014 ' + DAY_NAMES[activeDay] + '</div>' +
-            renderTimeSlotsForVenueDay(v, vi, activeDay) +
-            '<button type="button" class="btn btn-secondary btn-sm add-ts-btn" data-vi="' + vi + '" data-day="' + activeDay + '" style="margin-top:8px">\u279e \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32</button>' +
-          '</div>';
-      }
-      bodyHtml = '<div class="venue-accordion-body">' + infoHtml + daySection + slotSection +
-        '<div style="display:flex;justify-content:flex-end;padding-top:var(--spacing-md);margin-top:var(--spacing-md);border-top:1px solid #e2e8f0">' +
-        '<button type="button" class="btn btn-primary btn-sm save-venue-btn" data-vi="' + vi + '">💾 บันทึกร้านนี้</button>' +
-        '</div>' +
-        '</div>';
-    }
-    return '<div class="venue-accordion-item" data-vi="' + vi + '">' +
-      '<div class="venue-accordion-header" data-vi="' + vi + '">' +
-        '<div class="venue-expand-arrow">' + (isExpanded ? '\u25bc' : '\u25b6') + '</div>' +
-        '<div class="venue-header-info">' +
-          '<div class="venue-header-name">' + esc(v.name || '(\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e31\u0e49\u0e07\u0e0a\u0e37\u0e48\u0e2d)') + '</div>' +
-          '<div class="venue-header-summary">' + (v.address ? esc(v.address) + ' \u2022 ' : '') + summary + '</div>' +
-        '</div>' +
-        '<button type="button" class="venue-remove-btn" data-vi="' + vi + '">\ud83d\uddd1\ufe0f \u0e25\u0e1a</button>' +
-      '</div>' +
-      bodyHtml +
+    return '<div class="vn-row" data-vi="' + vi + '">' +
+      '<span class="vn-num">' + (vi + 1) + '</span>' +
+      '<input type="text" class="vn-input" data-vi="' + vi + '" value="' + esc(v.name) + '" placeholder="ชื่อร้าน">' +
+      '<button type="button" class="vn-del" data-vi="' + vi + '">🗑️</button>' +
       '</div>';
   }).join('');
-  // Header click → toggle accordion
-  list.querySelectorAll('.venue-accordion-header').forEach(function(hdr) {
-    hdr.addEventListener('click', function(e) {
-      if (e.target.classList && e.target.classList.contains('venue-remove-btn')) return;
-      if (e.target.closest && e.target.closest('.venue-remove-btn')) return;
-      var vi = +this.dataset.vi;
-      expandedVenues[vi] = !expandedVenues[vi];
-      saveViewState();
-      renderVenues();
-    });
+  list.querySelectorAll('.vn-input').forEach(function(inp) {
+    inp.addEventListener('input', function() { venues[+this.dataset.vi].name = this.value; autoSaveLocal(); renderScheduleGrid(); });
   });
-  list.querySelectorAll('.venue-remove-btn').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (!confirm('\u0e25\u0e1a\u0e23\u0e49\u0e32\u0e19\u0e19\u0e35\u0e49\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?')) return;
-      var vi = +this.dataset.vi;
-      venues.splice(vi, 1);
-      delete venueActiveDays[vi]; delete expandedVenues[vi];
-      renderVenues();
-    });
-  });
-  list.querySelectorAll('.vc-name').forEach(function(inp) {
-    inp.addEventListener('input', function() {
-      venues[+this.dataset.vi].name = this.value;
-      var hn = this.closest('.venue-accordion-item').querySelector('.venue-header-name');
-      if (hn) hn.textContent = this.value || '(\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e31\u0e49\u0e07\u0e0a\u0e37\u0e48\u0e2d)';
-    });
-  });
-  list.querySelectorAll('.vc-addr').forEach(function(inp) {
-    inp.addEventListener('input', function() { venues[+this.dataset.vi].address = this.value; });
-  });
-  list.querySelectorAll('.vc-phone').forEach(function(inp) {
-    inp.addEventListener('input', function() { venues[+this.dataset.vi].phone = this.value; });
-  });
-  list.querySelectorAll('.day-tab').forEach(function(btn) {
+  list.querySelectorAll('.vn-del').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      var vi = +this.dataset.vi, day = +this.dataset.day;
-      venueActiveDays[vi] = (venueActiveDays[vi] === day) ? -1 : day;
-      saveViewState();
-      renderVenues();
-    });
-  });
-  list.querySelectorAll('.add-ts-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var vi = +this.dataset.vi, day = +this.dataset.day;
-      if (!venues[vi].schedule) venues[vi].schedule = {};
-      if (!venues[vi].schedule[day]) venues[vi].schedule[day] = { timeSlots: [] };
-      venues[vi].schedule[day].timeSlots.push({ startTime: '', endTime: '', members: [] });
-      autoSaveLocal();
-      renderVenues();
-    });
-  });
-  attachTimeSlotListeners();
-  list.querySelectorAll('.save-venue-btn').forEach(function(btn) {
-    btn.addEventListener('click', function(e) { e.stopPropagation(); saveVenues(this); });
-  });
-  // อัปเดตตารางภาพรวมทุกครั้งที่ render venues
-  if (typeof renderWeeklyTimetable === 'function') renderWeeklyTimetable();
-}
-
-function renderTimeSlotsForVenueDay(v, vi, day) {
-  var slots = ((v.schedule || {})[day] || {}).timeSlots || [];
-  if (slots.length === 0) return '<p class="empty-state-small">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 \u0e01\u0e14 \u279e \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32\u0e14\u0e49\u0e32\u0e19\u0e25\u0e48\u0e32\u0e07</p>';
-  return slots.map(function(slot, si) {
-    var label = (slot.startTime || '--:--') + ' - ' + (slot.endTime || '--:--');
-    var membersHtml = (slot.members || []).map(function(mr, mi) {
-      return '<div class="member-rate-row">' +
-        '<select class="mr-select" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" data-mi="' + mi + '">' +
-          '<option value="">\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01</option>' +
-          bandMembersData.map(function(m) {
-            var mid = m.memberId||m.id||'';
-            return '<option value="' + esc(mid) + '"' + (mr.memberId === mid ? ' selected' : '') + '>' + esc(m.name||'(\u0e44\u0e21\u0e48\u0e21\u0e35\u0e0a\u0e37\u0e48\u0e2d)') + (m.position ? ' ('+esc(m.position)+')' : '') + '</option>';
-          }).join('') +
-        '</select>' +
-        '<input type="number" class="mr-rate" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" data-mi="' + mi + '" value="' + (mr.hourlyRate||'') + '" placeholder="0" min="0">' +
-        '<span class="rate-unit">\u0e1a\u0e32\u0e17/\u0e0a\u0e21.</span>' +
-        '<button type="button" class="member-rate-remove" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" data-mi="' + mi + '">\ud83d\uddd1\ufe0f</button>' +
-      '</div>';
-    }).join('');
-    return '<div class="time-slot-item">' +
-      '<div class="ts-header">' +
-        '<span class="ts-time-label">\u23f0 ' + label + '</span>' +
-        '<button type="button" class="btn-icon-small ts-remove" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '">\ud83d\uddd1\ufe0f \u0e25\u0e1a\u0e0a\u0e48\u0e27\u0e07</button>' +
-      '</div>' +
-      '<div class="ts-inputs">' +
-        '<div class="form-group"><label>\u0e40\u0e27\u0e25\u0e32\u0e40\u0e23\u0e34\u0e48\u0e21 <small style="color:var(--premium-text-muted)">(HH:MM)</small></label><input type="text" inputmode="numeric" maxlength="5" placeholder="00:00" class="ts-start ts-time-text" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" value="' + (slot.startTime||'') + '"></div>' +
-        '<div class="form-group"><label>\u0e40\u0e27\u0e25\u0e32\u0e2a\u0e34\u0e49\u0e19\u0e2a\u0e38\u0e14 <small style="color:var(--premium-text-muted)">(HH:MM)</small></label><input type="text" inputmode="numeric" maxlength="5" placeholder="00:00" class="ts-end ts-time-text" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" value="' + (slot.endTime||'') + '"></div>' +
-      '</div>' +
-      '<div class="ts-members">' +
-        '<label style="display:flex;align-items:center;gap:6px;font-size:var(--text-xs);font-weight:700;color:var(--premium-text);margin-bottom:6px"><span class="step-num" style="width:16px;height:16px;font-size:10px">\u2463</span> \u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e41\u0e25\u0e30\u0e04\u0e48\u0e32\u0e41\u0e23\u0e07</label>' +
-        (membersHtml || '<p class="empty-state-small">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e43\u0e19\u0e0a\u0e48\u0e27\u0e07\u0e19\u0e35\u0e49</p>') +
-        '<button type="button" class="btn btn-sm btn-primary add-mr-btn" data-vi="' + vi + '" data-day="' + day + '" data-si="' + si + '" style="margin-top:6px">\u279e \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01</button>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-function attachTimeSlotListeners() {
-  var list = getEl('venuesList');
-  if (!list) return;
-  // Auto-format HH:MM as user types (24-hour)
-  list.querySelectorAll('.ts-time-text').forEach(function(inp) {
-    inp.addEventListener('input', function() {
-      var raw = this.value.replace(/[^0-9]/g, '');
-      if (raw.length >= 3) raw = raw.substring(0,2) + ':' + raw.substring(2,4);
-      this.value = raw;
-    });
-    inp.addEventListener('blur', function() {
-      var v = this.value.trim();
-      // Validate HH:MM format
-      if (v && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(v)) {
-        this.style.borderColor = '#e53e3e';
-        showToast('\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a\u0e40\u0e27\u0e25\u0e32\u0e15\u0e49\u0e2d\u0e07\u0e40\u0e1b\u0e47\u0e19 HH:MM (00:00 \u0e16\u0e36\u0e07 23:59)', 'error');
-        return;
-      }
-      this.style.borderColor = '';
-      var slot = ensureSlot(+this.dataset.vi, +this.dataset.day, +this.dataset.si);
-      if (this.classList.contains('ts-start')) slot.startTime = v;
-      else slot.endTime = v;
-      autoSaveLocal();
-      renderVenues();
-    });
-  });
-  list.querySelectorAll('.ts-remove').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      venues[+this.dataset.vi].schedule[+this.dataset.day].timeSlots.splice(+this.dataset.si,1); autoSaveLocal(); renderVenues();
-    });
-  });
-  list.querySelectorAll('.add-mr-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var vi=+this.dataset.vi,day=+this.dataset.day,si=+this.dataset.si;
-      if (bandMembersData.length===0) { alert('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e43\u0e19\u0e2a\u0e48\u0e27\u0e19 "\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e27\u0e07" \u0e01\u0e48\u0e2d\u0e19'); return; }
-      ensureSlot(vi,day,si).members.push({ memberId:'', hourlyRate:0 });
-      renderVenues();
-    });
-  });
-  list.querySelectorAll('.mr-select').forEach(function(sel) {
-    sel.addEventListener('change', function() {
-      ensureSlot(+this.dataset.vi,+this.dataset.day,+this.dataset.si).members[+this.dataset.mi].memberId=this.value;
-    });
-  });
-  list.querySelectorAll('.mr-rate').forEach(function(inp) {
-    inp.addEventListener('input', function() {
-      ensureSlot(+this.dataset.vi,+this.dataset.day,+this.dataset.si).members[+this.dataset.mi].hourlyRate=parseFloat(this.value)||0;
-    });
-  });
-  list.querySelectorAll('.member-rate-remove').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      ensureSlot(+this.dataset.vi,+this.dataset.day,+this.dataset.si).members.splice(+this.dataset.mi,1); renderVenues();
+      if (!confirm('ลบร้านนี้? ช่วงงานทั้งหมดของร้านนี้จะถูกลบด้วย')) return;
+      var vid = venues[+this.dataset.vi].id;
+      venues.splice(+this.dataset.vi, 1);
+      Object.keys(schedule).forEach(function(day) {
+        schedule[day] = (schedule[day] || []).filter(function(s) { return s.venueId !== vid; });
+      });
+      autoSaveLocal(); renderVenueNames(); renderScheduleGrid();
     });
   });
 }
-
-function ensureSlot(vi, day, si) {
-  if (!venues[vi].schedule) venues[vi].schedule = {};
-  if (!venues[vi].schedule[day]) venues[vi].schedule[day] = { timeSlots: [] };
-  return venues[vi].schedule[day].timeSlots[si];
-}
-
 function addVenue() {
-  var vi = venues.length;
-  venues.push({ id: 'venue_' + Date.now(), name: '', address: '', phone: '', schedule: {} });
-  expandedVenues[vi] = true; // auto-expand new venue
-  venueActiveDays[vi] = -1;
-  var noEl = getEl('noVenues'); if (noEl) noEl.style.display = 'none';
-  renderVenues();
+  venues.push({ id: 'venue_' + Date.now(), name: '' });
+  renderVenueNames();
   setTimeout(function() {
-    var inp = document.querySelector('.vc-name[data-vi="' + vi + '"]');
-    if (inp) { inp.focus(); inp.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    var inp = document.querySelector('.vn-input[data-vi="' + (venues.length - 1) + '"]');
+    if (inp) inp.focus();
   }, 80);
 }
 
 /* ══════════════════════════════════════════
-   BUILD scheduleData (backward compat)
-   Merge all venues' schedules by day
+   PAYROLL SETTINGS
 ══════════════════════════════════════════ */
-function buildScheduleData() {
-  var merged = {};
-  venues.forEach(function(v) {
-    if (!v.schedule) return;
-    Object.keys(v.schedule).forEach(function(day) {
-      if (!merged[day]) merged[day] = { timeSlots: [] };
-      (v.schedule[day].timeSlots || []).forEach(function(slot) {
-        merged[day].timeSlots.push({
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          venueId: v.id,
-          venueName: v.name,
-          members: slot.members || []
-        });
-      });
-    });
-  });
-  return merged;
+function renderPayrollSettings() {
+  var sel = getEl('payrollPeriod');        if (sel) sel.value = payroll.period || 'daily';
+  var ws  = getEl('payrollWeeklySettings');if (ws)  ws.style.display = payroll.period === 'weekly' ? '' : 'none';
+  var wS  = getEl('weekStart');            if (wS)  wS.value = String(payroll.weekStart !== undefined ? payroll.weekStart : 1);
+  var wE  = getEl('weekEnd');              if (wE)  wE.value = String(payroll.weekEnd   !== undefined ? payroll.weekEnd   : 0);
 }
 
 /* ══════════════════════════════════════════
-   WEEKLY TIMETABLE
+   SCHEDULE GRID  (Horizontal)
+   Rows = days, Columns = time axis →
 ══════════════════════════════════════════ */
-var WT_COLORS = [
-  { bg: '#f6ad55', text: '#7b341e' }, // orange
-  { bg: '#63b3ed', text: '#1a365d' }, // blue
-  { bg: '#68d391', text: '#1c4532' }, // green
-  { bg: '#fc8181', text: '#742a2a' }, // red
-  { bg: '#b794f4', text: '#44337a' }, // purple
-  { bg: '#f687b3', text: '#702459' }, // pink
-  { bg: '#76e4f7', text: '#065666' }, // cyan
-  { bg: '#faf089', text: '#744210' }, // yellow
-];
+var GRID_DEFAULT_START = 8;   // default earliest hour shown
+var GRID_DEFAULT_END   = 26;  // default latest hour (26 = 02:00 next day)
+var PX_PER_MIN = 3.5;         // pixels per minute
 
-function wtTimeToMin(t) {
-  if (!t || typeof t !== 'string') return null;
-  var parts = t.split(':');
-  if (parts.length < 2) return null;
-  var h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
-  if (isNaN(h) || isNaN(m)) return null;
-  return h * 60 + m;
-}
+function renderScheduleGrid() {
+  var wrap = getEl('schedGridWrap'); if (!wrap) return;
 
-function wtMinToLabel(min) {
-  var h = Math.floor(min / 60) % 24;
-  var m = min % 60;
-  return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
-}
-
-function renderWeeklyTimetable() {
-  var card   = getEl('weeklyTimetableCard');
-  var wrap   = getEl('weeklyTimetable');
-  var legend = getEl('wtLegend');
-  var badge  = getEl('wtConflictBadge');
-  if (!card || !wrap) return;
-
-  // Collect all slots: { venueIdx, venueName, day(0-6), startMin, endMin }
+  // Collect all slots with computed min offsets
   var allSlots = [];
-  venues.forEach(function(v, vi) {
-    if (!v.name || !v.name.trim()) return;
-    var sched = v.schedule || {};
-    Object.keys(sched).forEach(function(dayStr) {
-      var day = parseInt(dayStr, 10);
-      if (isNaN(day)) return;
-      var slots = sched[dayStr].timeSlots || [];
-      slots.forEach(function(slot) {
-        var s = wtTimeToMin(slot.startTime);
-        var e = wtTimeToMin(slot.endTime);
-        if (s === null || e === null) return;
-        // Handle overnight: e.g. 21:00 - 01:00 → endMin = 25*60
-        if (e <= s) e += 24 * 60;
-        allSlots.push({ vi: vi, name: v.name.trim(), day: day, startMin: s, endMin: e });
+  for (var di = 0; di < 7; di++) {
+    (schedule[di] || []).forEach(function(slot) {
+      var s = timeToMin(slot.startTime), e = timeToMin(slot.endTime);
+      if (s === null || e === null) return;
+      if (e <= s) e += 24 * 60; // overnight
+      allSlots.push({ day: di, slot: slot, startMin: s, endMin: e });
+    });
+  }
+
+  // Grid time range
+  var gStart = GRID_DEFAULT_START * 60, gEnd = GRID_DEFAULT_END * 60;
+  if (allSlots.length > 0) {
+    var minS = Math.min.apply(null, allSlots.map(function(a) { return a.startMin; }));
+    var maxE = Math.max.apply(null, allSlots.map(function(a) { return a.endMin;   }));
+    gStart = Math.floor(Math.min(minS, gStart) / 60) * 60;
+    gEnd   = Math.ceil(Math.max(maxE, gEnd) / 60) * 60;
+  }
+  var totalMin = gEnd - gStart;
+  var trackW   = Math.round(totalMin * PX_PER_MIN);
+
+  // ── Header row (time ticks) ────────────────────────
+  var ticksHtml = '<div class="sg-corner"></div>' +
+    '<div class="sg-time-axis" style="width:' + trackW + 'px">';
+  for (var t = gStart; t <= gEnd; t += 60) {
+    var tx = Math.round((t - gStart) * PX_PER_MIN);
+    ticksHtml += '<div class="sg-tick" style="left:' + tx + 'px">' + minToTime(t) + '</div>';
+  }
+  ticksHtml += '</div>';
+
+  // ── Day rows ──────────────────────────────────────
+  var rowsHtml = '';
+  for (var dayIdx = 0; dayIdx < 7; dayIdx++) {
+    var daySlots = allSlots.filter(function(a) { return a.day === dayIdx; });
+
+    // Hour grid lines (full = hour, half = 30min)
+    var linesHtml = '';
+    for (var hh = gStart; hh <= gEnd; hh += 30) {
+      var lx = Math.round((hh - gStart) * PX_PER_MIN);
+      var cls = hh % 60 === 0 ? 'sg-hour-line' : 'sg-hour-line half';
+      linesHtml += '<div class="' + cls + '" style="left:' + lx + 'px"></div>';
+    }
+
+    // Slot blocks — detect overlap within same day for stacking
+    var slotsHtml = '';
+    daySlots.forEach(function(a, ai) {
+      // Find overlapping peers
+      var peers = daySlots.filter(function(b, bi) {
+        return bi !== ai && b.startMin < a.endMin && a.startMin < b.endMin;
       });
+      var posInGroup = 0, groupSize = 1;
+      if (peers.length > 0) {
+        var group = daySlots.filter(function(b) {
+          return b.startMin < a.endMin && a.startMin < b.endMin;
+        }).sort(function(x, y) { return x.startMin - y.startMin; });
+        posInGroup = group.indexOf(a);
+        groupSize  = group.length;
+      }
+
+      var x = Math.round((a.startMin - gStart) * PX_PER_MIN);
+      var w = Math.max(Math.round((a.endMin - a.startMin) * PX_PER_MIN), 26);
+      var col     = getVenueColor(a.slot.venueId);
+      var vname   = esc(getVenueName(a.slot.venueId));
+      var timeStr = minToTime(a.startMin) + '–' + minToTime(a.endMin % (24 * 60));
+      var mCount  = (a.slot.members || []).length;
+      var leftPct = groupSize > 1 ? (posInGroup / groupSize * 100) : 0;
+      var wPct    = groupSize > 1 ? (100 / groupSize) : 100;
+      var stylePos = groupSize > 1
+        ? 'left:calc(' + x + 'px + ' + leftPct + '%);width:calc(' + wPct + '% - 4px);'
+        : 'left:' + x + 'px;width:' + w + 'px;';
+
+      slotsHtml += '<div class="sg-slot" data-day="' + dayIdx + '" data-sid="' + esc(a.slot.id) + '" ' +
+        'title="' + vname + ' ' + timeStr + (mCount ? ' | ' + mCount + ' คน' : '') + '" ' +
+        'style="' + stylePos + 'background:' + col.bg + ';color:' + col.text + ';">' +
+        '<div class="sg-slot-name">' + vname + '</div>' +
+        (w >= 70 ? '<div class="sg-slot-time">' + timeStr + '</div>' : '') +
+        (mCount > 0 && w >= 90 ? '<div class="sg-slot-members">👥 ' + mCount + ' คน</div>' : '') +
+        '</div>';
+    });
+
+    rowsHtml += '<div class="sg-row">' +
+      '<div class="sg-day-label">' + DAY_NAMES[dayIdx] + '</div>' +
+      '<div class="sg-track" data-day="' + dayIdx + '" style="width:' + trackW + 'px">' +
+        linesHtml + slotsHtml +
+        (daySlots.length === 0 ? '<div class="sg-track-hint">+ คลิกเพิ่มช่วงงาน</div>' : '') +
+      '</div>' +
+      '</div>';
+  }
+
+  wrap.innerHTML =
+    '<div class="sg-grid">' +
+      '<div class="sg-header-row">' + ticksHtml + '</div>' +
+      rowsHtml +
+    '</div>';
+
+  // ── Event: click track empty area → add slot modal ────
+  wrap.querySelectorAll('.sg-track').forEach(function(track) {
+    track.addEventListener('click', function(e) {
+      // Ignore clicks on existing slots
+      if (e.target.classList.contains('sg-slot') || e.target.closest('.sg-slot')) return;
+      var day  = +this.dataset.day;
+      var rect = this.getBoundingClientRect();
+      var relX = e.clientX - rect.left;
+      var approxMin = gStart + Math.round(relX / PX_PER_MIN);
+      approxMin = Math.floor(approxMin / 30) * 30; // snap 30 min
+      var approxEnd = Math.min(approxMin + 180, gEnd); // default 3h
+      approxMin = Math.max(approxMin, gStart);
+      openSlotModal(day, null, minToTime(approxMin), minToTime(approxEnd));
     });
   });
 
-  var namedVenues = venues.filter(function(v) { return v.name && v.name.trim(); });
-  if (namedVenues.length === 0) { card.style.display = 'none'; return; }
-  card.style.display = '';
+  // ── Event: click slot → detail modal ──────────────────
+  wrap.querySelectorAll('.sg-slot').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openSlotDetailModal(+this.dataset.day, this.dataset.sid);
+    });
+  });
 
-  if (allSlots.length === 0) {
-    wrap.innerHTML = '<div class="wt-empty">ยังไม่มีช่วงเวลา — เพิ่มร้านและตารางเวลาก่อนครับ</div>';
-    if (legend) legend.innerHTML = '';
-    if (badge) badge.style.display = 'none';
+  // ── Legend ─────────────────────────────────────────────
+  var legendEl = getEl('schedLegend');
+  if (legendEl) {
+    var namedV = venues.filter(function(v) { return v.name && v.name.trim(); });
+    legendEl.innerHTML = namedV.map(function(v) {
+      var col = getVenueColor(v.id);
+      return '<div class="sg-legend-item"><div class="sg-legend-dot" style="background:' + col.bg + '"></div>' + esc(v.name) + '</div>';
+    }).join('');
+  }
+}
+
+/* ══════════════════════════════════════════
+   SLOT MODAL  (Add / Edit slot)
+══════════════════════════════════════════ */
+function openSlotModal(day, slotId, defaultStart, defaultEnd) {
+  _editDay = day; _editSlotId = slotId;
+  var modal = getEl('slotModal'); if (!modal) return;
+  var namedV = venues.filter(function(v) { return v.name && v.name.trim(); });
+  if (namedV.length === 0) { showToast('กรุณาเพิ่มร้านก่อน', 'error'); return; }
+
+  var existingSlot = null;
+  if (slotId) { (schedule[day] || []).forEach(function(s) { if (s.id === slotId) existingSlot = s; }); }
+
+  // Populate venue select
+  var venSel = getEl('smVenue');
+  if (venSel) {
+    venSel.innerHTML = '<option value="">— เลือกร้าน —</option>' +
+      namedV.map(function(v) {
+        return '<option value="' + esc(v.id) + '"' + (existingSlot && existingSlot.venueId === v.id ? ' selected' : '') + '>' + esc(v.name) + '</option>';
+      }).join('');
+  }
+  var dl = getEl('smDayLabel'); if (dl) dl.textContent = DAY_NAMES[day];
+  var ss = getEl('smStart'); if (ss) { ss.value = existingSlot ? existingSlot.startTime : (defaultStart || '18:00'); autoFormatTime(ss); }
+  var se = getEl('smEnd');   if (se) { se.value = existingSlot ? existingSlot.endTime   : (defaultEnd   || '21:00'); autoFormatTime(se); }
+
+  var delBtn = getEl('smDeleteBtn'); if (delBtn) delBtn.style.display = slotId ? '' : 'none';
+  modal.style.display = 'flex';
+}
+function closeSlotModal() { var m = getEl('slotModal'); if (m) m.style.display = 'none'; }
+function confirmSlotModal() {
+  var venSel = getEl('smVenue'), ss = getEl('smStart'), se = getEl('smEnd');
+  var venueId = venSel ? venSel.value : '';
+  var start   = ss ? ss.value.trim() : '', end = se ? se.value.trim() : '';
+  if (!venueId) { showToast('กรุณาเลือกร้าน', 'error'); return; }
+  if (!/^\d{1,2}:\d{2}$/.test(start) || !/^\d{1,2}:\d{2}$/.test(end)) { showToast('กรุณากรอกเวลาให้ถูกต้อง (HH:MM)', 'error'); return; }
+  // Pad HH
+  if (start.length === 4) start = '0' + start;
+  if (end.length === 4)   end   = '0' + end;
+  if (!schedule[_editDay]) schedule[_editDay] = [];
+  if (_editSlotId) {
+    schedule[_editDay].forEach(function(s) { if (s.id === _editSlotId) { s.venueId = venueId; s.startTime = start; s.endTime = end; } });
+  } else {
+    schedule[_editDay].push({ id: 'slot_' + Date.now() + '_' + Math.random().toString(36).substr(2,4), venueId: venueId, startTime: start, endTime: end, members: [] });
+  }
+  autoSaveLocal(); closeSlotModal(); renderScheduleGrid();
+  showToast('บันทึกช่วงงานเรียบร้อย ✅', 'success');
+}
+function deleteSlotFromModal() {
+  if (!confirm('ลบช่วงงานนี้?')) return;
+  if (_editSlotId !== null && _editDay >= 0) {
+    schedule[_editDay] = (schedule[_editDay] || []).filter(function(s) { return s.id !== _editSlotId; });
+  }
+  autoSaveLocal(); closeSlotModal(); renderScheduleGrid();
+}
+
+/* ══════════════════════════════════════════
+   SLOT DETAIL MODAL  (Members + Rates)
+══════════════════════════════════════════ */
+function openSlotDetailModal(day, slotId) {
+  _detailDay = day; _detailSlotId = slotId;
+  var slot = null; (schedule[day] || []).forEach(function(s) { if (s.id === slotId) slot = s; });
+  if (!slot) return;
+  var modal = getEl('slotDetailModal'); if (!modal) return;
+  var t = getEl('sdTitle');
+  if (t) t.textContent = getVenueName(slot.venueId) + ' — ' + DAY_NAMES[day] + '  ' + (slot.startTime || '') + '–' + (slot.endTime || '');
+  renderSlotMembers(slot);
+  modal.style.display = 'flex';
+}
+function closeSlotDetailModal() { var m = getEl('slotDetailModal'); if (m) m.style.display = 'none'; }
+
+function getEditingSlot() {
+  if (_detailDay < 0 || !_detailSlotId) return null;
+  var found = null; (schedule[_detailDay] || []).forEach(function(s) { if (s.id === _detailSlotId) found = s; });
+  return found;
+}
+
+function renderSlotMembers(slot) {
+  var list = getEl('sdMemberList'); if (!list) return;
+  if (!slot) slot = getEditingSlot(); if (!slot) return;
+  if (!slot.members) slot.members = [];
+
+  var validBM = bandMembersData.filter(function(m) { return m.name && m.name.trim(); });
+  if (slot.members.length === 0) {
+    list.innerHTML = '<p class="empty-state-small">ยังไม่มีสมาชิกในช่วงนี้ กด ➕ เพื่อเพิ่ม</p>';
     return;
   }
 
-  // Grid time range: round to hour
-  var minStart = Math.min.apply(null, allSlots.map(function(s) { return s.startMin; }));
-  var maxEnd   = Math.max.apply(null, allSlots.map(function(s) { return s.endMin; }));
-  var gridStart = Math.floor(minStart / 60) * 60;       // round down to hour
-  var gridEnd   = Math.ceil(maxEnd   / 60) * 60;        // round up to hour
-  if (gridEnd - gridStart < 60) gridEnd = gridStart + 60;
-  var totalMin  = gridEnd - gridStart;
-  var PX_PER_MIN = 2.2;                                  // pixel per minute
-  var gridHeight = Math.round(totalMin * PX_PER_MIN);
+  list.innerHTML = slot.members.map(function(mr, mi) {
+    var selOpts = validBM.map(function(m) {
+      var mid = m.memberId || m.id || '';
+      return '<option value="' + esc(mid) + '"' + (mr.memberId === mid ? ' selected' : '') + '>' + esc(m.name) + (m.position ? ' (' + m.position + ')' : '') + '</option>';
+    }).join('');
+    return '<div class="sd-member-row" data-mi="' + mi + '">' +
+      '<select class="sd-m-sel" data-mi="' + mi + '"><option value="">เลือกสมาชิก</option>' + selOpts + '</select>' +
+      '<input type="number" class="sd-m-rate" data-mi="' + mi + '" value="' + (mr.rate || '') + '" placeholder="ค่าแรง" min="0">' +
+      '<select class="sd-m-rtype" data-mi="' + mi + '">' +
+        '<option value="shift"'   + (mr.rateType === 'shift'   || !mr.rateType ? ' selected' : '') + '>บาท/เบรค</option>' +
+        '<option value="hourly"'  + (mr.rateType === 'hourly'  ? ' selected' : '') + '>บาท/ชม</option>' +
+        '<option value="fixed"'   + (mr.rateType === 'fixed'   ? ' selected' : '') + '>คงที่</option>' +
+      '</select>' +
+      '<button type="button" class="sd-m-del" data-mi="' + mi + '">🗑️</button>' +
+      '</div>';
+  }).join('');
 
-  // Conflict detection: per day, check overlaps
-  var conflictSet = {};  // key "vi-day-startMin" for each slot involved in conflict
-  var hasConflict = false;
-  var days = [0,1,2,3,4,5,6];
-  days.forEach(function(day) {
-    var daySlots = allSlots.filter(function(s) { return s.day === day; });
-    for (var a = 0; a < daySlots.length; a++) {
-      for (var b = a + 1; b < daySlots.length; b++) {
-        var sa = daySlots[a], sb = daySlots[b];
-        if (sa.startMin < sb.endMin && sb.startMin < sa.endMin) {
-          conflictSet[sa.vi + '-' + sa.day + '-' + sa.startMin] = true;
-          conflictSet[sb.vi + '-' + sb.day + '-' + sb.startMin] = true;
-          hasConflict = true;
-        }
-      }
-    }
+  list.querySelectorAll('.sd-m-sel').forEach(function(sel) {
+    sel.addEventListener('change', function() { var s = getEditingSlot(); if (s && s.members[+this.dataset.mi]) s.members[+this.dataset.mi].memberId = this.value; autoSaveLocal(); });
   });
-
-  // Color map: venueIdx → color
-  var venueColorMap = {};
-  namedVenues.forEach(function(v, ci) {
-    var realIdx = venues.indexOf(v);
-    venueColorMap[realIdx] = WT_COLORS[ci % WT_COLORS.length];
+  list.querySelectorAll('.sd-m-rate').forEach(function(inp) {
+    inp.addEventListener('input', function() { var s = getEditingSlot(); if (s && s.members[+this.dataset.mi]) s.members[+this.dataset.mi].rate = parseFloat(this.value) || 0; autoSaveLocal(); });
   });
-
-  // Build HTML
-  var DAY_SHORT = ['อา','จ','อ','พ','พฤ','ศ','ส'];
-  var html = '<div class="wt-grid">';
-
-  // Time column
-  html += '<div class="wt-time-col"><div class="wt-header"></div><div class="wt-body" style="height:' + gridHeight + 'px;position:relative;">';
-  for (var t = gridStart; t <= gridEnd; t += 60) {
-    var pct = ((t - gridStart) / totalMin) * gridHeight;
-    html += '<div class="wt-time-tick" style="top:' + Math.round(pct) + 'px">' + wtMinToLabel(t) + '</div>';
-  }
-  html += '</div></div>';
-
-  // Day columns
-  days.forEach(function(day) {
-    var daySlots = allSlots.filter(function(s) { return s.day === day; });
-    html += '<div class="wt-day-col"><div class="wt-header">' + DAY_SHORT[day] + '</div>';
-    html += '<div class="wt-body" style="height:' + gridHeight + 'px;position:relative;">';
-    // Hour lines
-    for (var hh = gridStart; hh <= gridEnd; hh += 60) {
-      var linePct = Math.round(((hh - gridStart) / totalMin) * gridHeight);
-      var isFullHour = (hh % 60 === 0);
-      html += '<div class="wt-hour-line' + (isFullHour ? ' full' : '') + '" style="top:' + linePct + 'px"></div>';
-    }
-    // Slots
-    daySlots.forEach(function(slot) {
-      var topPx   = Math.round(((slot.startMin - gridStart) / totalMin) * gridHeight);
-      var height  = Math.max(Math.round(((slot.endMin - slot.startMin) / totalMin) * gridHeight), 18);
-      var color   = venueColorMap[slot.vi] || WT_COLORS[0];
-      var cKey    = slot.vi + '-' + slot.day + '-' + slot.startMin;
-      var isConflict = conflictSet[cKey] ? ' conflict' : '';
-      // Stagger overlapping slots (simple: left/right halves)
-      var sameDayDups = daySlots.filter(function(x) { return x.startMin < slot.endMin && slot.startMin < x.endMin && x !== slot; });
-      var leftStyle = '', rightStyle = '';
-      if (sameDayDups.length > 0) {
-        var myIdx = daySlots.indexOf(slot);
-        var overlapGroup = daySlots.filter(function(x) { return x.startMin < slot.endMin && slot.startMin < x.endMin; });
-        var posInGroup = overlapGroup.indexOf(slot);
-        var groupSize = overlapGroup.length;
-        var widthPct = Math.floor(100 / groupSize);
-        leftStyle = 'left:' + (2 + posInGroup * widthPct) + '%;right:auto;width:calc(' + widthPct + '% - 4px);';
-      }
-      html += '<div class="wt-slot' + isConflict + '" title="' + esc(slot.name) + ' ' + wtMinToLabel(slot.startMin) + '-' + wtMinToLabel(slot.endMin % (24*60)) + '" style="top:' + topPx + 'px;height:' + height + 'px;background:' + color.bg + ';color:' + color.text + ';' + leftStyle + '">';
-      html += '<div class="wt-slot-name">' + esc(slot.name) + '</div>';
-      if (height >= 30) html += '<div class="wt-slot-time">' + wtMinToLabel(slot.startMin) + '–' + wtMinToLabel(slot.endMin % (24*60)) + '</div>';
-      html += '</div>';
+  list.querySelectorAll('.sd-m-rtype').forEach(function(sel) {
+    sel.addEventListener('change', function() { var s = getEditingSlot(); if (s && s.members[+this.dataset.mi]) s.members[+this.dataset.mi].rateType = this.value; autoSaveLocal(); });
+  });
+  list.querySelectorAll('.sd-m-del').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var s = getEditingSlot(); if (!s) return;
+      s.members.splice(+this.dataset.mi, 1);
+      autoSaveLocal(); renderSlotMembers(s); renderScheduleGrid();
     });
-    html += '</div></div>';
   });
-  html += '</div>';
-  wrap.innerHTML = html;
-
-  // Legend
-  if (legend) {
-    var lgHtml = '';
-    namedVenues.forEach(function(v, ci) {
-      var realIdx = venues.indexOf(v);
-      var col = venueColorMap[realIdx] || WT_COLORS[0];
-      lgHtml += '<div class="wt-legend-item"><div class="wt-legend-dot" style="background:' + col.bg + '"></div>' + esc(v.name) + '</div>';
-    });
-    legend.innerHTML = lgHtml;
-  }
-
-  // Conflict badge
-  if (badge) badge.style.display = hasConflict ? '' : 'none';
 }
 
-// Called whenever a timeslot changes — re-render timetable live
-function refreshTimetable() {
-  autoSaveLocal();
-  renderWeeklyTimetable();
+function addMemberToSlot() {
+  var slot = getEditingSlot(); if (!slot) return;
+  if (!slot.members) slot.members = [];
+  slot.members.push({ memberId: '', rate: 0, rateType: 'shift' });
+  autoSaveLocal(); renderSlotMembers(slot);
+}
+function applyBulkRate() {
+  var rateInp = getEl('bulkRate'), typesel = getEl('bulkType');
+  var rate = parseFloat(rateInp ? rateInp.value : '') || 0;
+  var rtype = typesel ? typesel.value : 'shift';
+  var slot = getEditingSlot(); if (!slot) return;
+  (slot.members || []).forEach(function(m) { m.rate = rate; m.rateType = rtype; });
+  autoSaveLocal(); renderSlotMembers(slot);
+  showToast('ตั้งค่าแรงทุกคนเป็น ' + rate + ' (' + rtype + ') แล้ว', 'success');
+}
+function saveSlotDetail() {
+  autoSaveLocal(); showToast('บันทึกสมาชิกเรียบร้อย ✅', 'success');
+  closeSlotDetailModal(); renderScheduleGrid();
+}
+function editThisSlot() {
+  closeSlotDetailModal(); openSlotModal(_detailDay, _detailSlotId, null, null);
 }
 
 /* ══════════════════════════════════════════
    INIT
 ══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function() {
-  var el = getEl('addMemberBtn'); if (el) el.addEventListener('click', function(e) { e.preventDefault(); addMember(); });
-  var ev = getEl('addVenueBtn');  if (ev) ev.addEventListener('click', function(e) { e.preventDefault(); addVenue(); });
-  var es = getEl('saveBtn');      if (es) es.addEventListener('click', function(e) { e.preventDefault(); saveBandSettings(); });
+  var em = getEl('addMemberBtn');   if (em) em.addEventListener('click', function(e) { e.preventDefault(); addMember(); });
+  var ev = getEl('addVenueNameBtn');if (ev) ev.addEventListener('click', function(e) { e.preventDefault(); addVenue(); });
+  var es = getEl('saveBtn');        if (es) es.addEventListener('click', function(e) { e.preventDefault(); saveBandSettings(); });
+  var pp = getEl('payrollPeriod');  if (pp) pp.addEventListener('change', function() { payroll.period = this.value; renderPayrollSettings(); });
   loadBandSettings();
-});
-
+});
