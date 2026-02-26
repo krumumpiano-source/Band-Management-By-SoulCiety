@@ -24,6 +24,19 @@
     .job-form{display:flex;flex-direction:column;gap:var(--spacing-md)}
     .form-r2{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
     @media(max-width:480px){.form-r2{grid-template-columns:1fr}}
+    /* Weekly Timetable */
+    .wt-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    @media(max-width:768px){.wt-grid{grid-template-columns:1fr}}
+    .wt-day{background:var(--premium-off-white);border-radius:var(--radius-md);padding:10px;min-height:80px}
+    .wt-day.wt-today{border:2px solid var(--premium-gold);background:#fffbeb}
+    .wt-day.wt-off{opacity:.5}
+    .wt-day-name{font-weight:700;font-size:var(--text-sm);margin-bottom:8px;color:var(--premium-text)}
+    .wt-badge-today{background:var(--premium-gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:var(--radius-full,999px);font-weight:600;margin-left:4px}
+    .wt-slot{background:var(--premium-white);border-radius:var(--radius-sm,4px);padding:6px 8px;margin-bottom:4px;font-size:var(--text-xs,12px);border-left:3px solid var(--premium-gold)}
+    .wt-time{display:block;font-weight:600;color:var(--premium-text)}
+    .wt-venue{display:block;color:var(--premium-text-light)}
+    .wt-members{display:block;color:var(--premium-text-muted);font-size:11px}
+    .wt-off-text{color:var(--premium-text-muted);font-size:var(--text-xs,12px);font-style:italic}
   </style>
 </head>
 <body>
@@ -86,6 +99,17 @@
         <h1 class="page-title" data-i18n="nav_schedule">ตารางงาน</h1>
         <button class="btn btn-primary" onclick="openJobModal(null,null)">+ <span data-i18n="addJob">เพิ่มงาน</span></button>
       </div>
+
+      <!-- Weekly Timetable -->
+      <div class="card" style="margin-bottom:var(--spacing-xl)" id="weeklyTimetableCard">
+        <div class="card-header">
+          <h3 class="card-title">📅 ตารางงานสัปดาห์</h3>
+        </div>
+        <div id="weeklyTimetable" class="wt-grid" style="padding:var(--spacing-md)">
+          <span style="color:var(--premium-text-muted);font-size:var(--text-sm)">⏳ กำลังโหลด...</span>
+        </div>
+      </div>
+
       <div class="card">
         <div class="cal-nav">
           <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">◀</button>
@@ -128,7 +152,78 @@
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
     loadPricingData();
     loadJobs();
+    loadWeeklyTimetable();
   });
+
+  /* ===== WEEKLY TIMETABLE ===== */
+  var weeklyVenues = [], weeklySchedule = {}, wtMembers = [];
+  function loadWeeklyTimetable() {
+    var bandId = localStorage.getItem('bandId') || '';
+    var stored = localStorage.getItem('bandSettings');
+    if (stored) {
+      try {
+        var s = JSON.parse(stored);
+        weeklyVenues = (s.venues || []).map(function(v) { return { id: v.id || v.venueId || '', name: v.name || v.venueName || '' }; });
+        weeklySchedule = s.schedule || {};
+        if (s.members) wtMembers = s.members;
+      } catch(e) {}
+    }
+    renderWeeklyTimetable();
+    if (bandId && typeof gasRun === 'function') {
+      gasRun('getBandSettings', { bandId: bandId }, function(r) {
+        if (r && r.success && r.data) {
+          if (r.data.venues) weeklyVenues = r.data.venues.map(function(v) { return { id: v.id || v.venueId || '', name: v.name || v.venueName || '' }; });
+          if (r.data.schedule) weeklySchedule = r.data.schedule;
+          if (r.data.members) wtMembers = r.data.members;
+          renderWeeklyTimetable();
+        }
+      });
+    }
+  }
+  function renderWeeklyTimetable() {
+    var container = document.getElementById('weeklyTimetable');
+    if (!container) return;
+    var dayNames = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+    var today = new Date().getDay();
+    var hasAny = false;
+    for (var d = 0; d < 7; d++) {
+      var sl = weeklySchedule[d] || weeklySchedule[String(d)];
+      var sArr = Array.isArray(sl) ? sl : (sl && sl.timeSlots ? sl.timeSlots : []);
+      if (sArr.length) { hasAny = true; break; }
+    }
+    if (!hasAny) {
+      container.innerHTML = '<div style="text-align:center;padding:var(--spacing-lg);color:var(--premium-text-muted);grid-column:1/-1">ยังไม่ได้กำหนดตารางงานสัปดาห์<br><span style="font-size:12px">ตั้งค่าได้ที่หน้า ตั้งค่าวง</span></div>';
+      return;
+    }
+    var html = '';
+    for (var d = 0; d < 7; d++) {
+      var sl = weeklySchedule[d] || weeklySchedule[String(d)];
+      var slots = Array.isArray(sl) ? sl : (sl && sl.timeSlots ? sl.timeSlots : []);
+      var isToday = d === today;
+      html += '<div class="wt-day' + (isToday ? ' wt-today' : '') + (slots.length ? '' : ' wt-off') + '">';
+      html += '<div class="wt-day-name">' + dayNames[d] + (isToday ? ' <span class="wt-badge-today">วันนี้</span>' : '') + '</div>';
+      if (slots.length) {
+        slots.forEach(function(slot) {
+          var venue = weeklyVenues.find(function(v) { return v.id === slot.venueId; });
+          var venueName = venue ? venue.name : '';
+          var mNames = (slot.members || []).map(function(mr) {
+            var mid = mr.memberId || mr;
+            var m = wtMembers.find(function(x) { return x.id === mid; });
+            return m ? m.name : '';
+          }).filter(Boolean).join(', ');
+          html += '<div class="wt-slot">';
+          html += '<span class="wt-time">🕐 ' + escapeHtml(slot.startTime || '') + ' – ' + escapeHtml(slot.endTime || '') + '</span>';
+          if (venueName) html += '<span class="wt-venue">📍 ' + escapeHtml(venueName) + '</span>';
+          if (mNames) html += '<span class="wt-members">👥 ' + escapeHtml(mNames) + '</span>';
+          html += '</div>';
+        });
+      } else {
+        html += '<div class="wt-off-text">— ว่าง —</div>';
+      }
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  }
 
   /* ─── Load pricing from localStorage/GAS ─── */
   function loadPricingData(){

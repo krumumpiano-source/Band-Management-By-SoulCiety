@@ -415,6 +415,83 @@ function deleteGig(index) {
   }
 }
 
+/* ===== WEEKLY TIMETABLE ===== */
+var weeklyVenues = [];
+var weeklySchedule = {};
+
+function loadWeeklyTimetable() {
+  var stored = localStorage.getItem('bandSettings');
+  if (stored) {
+    try {
+      var s = JSON.parse(stored);
+      weeklyVenues = (s.venues || []).map(function(v) {
+        return { id: v.id || v.venueId || '', name: v.name || v.venueName || '' };
+      });
+      weeklySchedule = s.schedule || {};
+      if (s.members && s.members.length > 0) bandMembersData = s.members;
+    } catch(e) {}
+  }
+  renderWeeklyTimetable();
+  if (currentBandId && typeof gasRun === 'function') {
+    gasRun('getBandSettings', { bandId: currentBandId }, function(r) {
+      if (r && r.success && r.data) {
+        if (r.data.venues) weeklyVenues = r.data.venues.map(function(v) { return { id: v.id || v.venueId || '', name: v.name || v.venueName || '' }; });
+        if (r.data.schedule) weeklySchedule = r.data.schedule;
+        if (r.data.members) bandMembersData = r.data.members;
+        renderWeeklyTimetable();
+      }
+    });
+  }
+}
+
+function renderWeeklyTimetable() {
+  var container = getEl('weeklyTimetable');
+  if (!container) return;
+  var dayNames = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  var today = new Date().getDay();
+
+  var hasAny = false;
+  for (var d = 0; d < 7; d++) {
+    var sl = weeklySchedule[d] || weeklySchedule[String(d)];
+    var sArr = Array.isArray(sl) ? sl : (sl && sl.timeSlots ? sl.timeSlots : []);
+    if (sArr.length) { hasAny = true; break; }
+  }
+
+  if (!hasAny) {
+    container.innerHTML = '<div style="text-align:center;padding:var(--spacing-lg);color:var(--premium-text-muted);grid-column:1/-1">ยังไม่ได้กำหนดตารางงานสัปดาห์<br><span style="font-size:12px">ตั้งค่าได้ที่หน้า ตั้งค่าวง</span></div>';
+    return;
+  }
+
+  var html = '';
+  for (var d = 0; d < 7; d++) {
+    var sl = weeklySchedule[d] || weeklySchedule[String(d)];
+    var slots = Array.isArray(sl) ? sl : (sl && sl.timeSlots ? sl.timeSlots : []);
+    var isToday = d === today;
+    html += '<div class="wt-day' + (isToday ? ' wt-today' : '') + (slots.length ? '' : ' wt-off') + '">';
+    html += '<div class="wt-day-name">' + dayNames[d] + (isToday ? ' <span class="wt-badge-today">วันนี้</span>' : '') + '</div>';
+    if (slots.length) {
+      slots.forEach(function(slot) {
+        var venue = weeklyVenues.find(function(v) { return v.id === slot.venueId; });
+        var venueName = venue ? venue.name : '';
+        var memberNames = (slot.members || []).map(function(mr) {
+          var mid = mr.memberId || mr;
+          var m = bandMembersData.find(function(x) { return x.id === mid; });
+          return m ? m.name : '';
+        }).filter(Boolean).join(', ');
+        html += '<div class="wt-slot">';
+        html += '<span class="wt-time">🕐 ' + escapeHtml(slot.startTime || '') + ' – ' + escapeHtml(slot.endTime || '') + '</span>';
+        if (venueName) html += '<span class="wt-venue">📍 ' + escapeHtml(venueName) + '</span>';
+        if (memberNames) html += '<span class="wt-members">👥 ' + escapeHtml(memberNames) + '</span>';
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="wt-off-text">— ว่าง —</div>';
+    }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
 /* ===== INIT ===== */
 document.addEventListener('DOMContentLoaded', function() {
   var today = new Date();
@@ -457,4 +534,5 @@ document.addEventListener('DOMContentLoaded', function() {
   if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
 
   loadBandData();
+  loadWeeklyTimetable();
 });

@@ -34,6 +34,19 @@
     #noScheduleData{display:none;text-align:center;padding:var(--spacing-xl);color:var(--premium-text-muted)}
     #toast{display:none;position:fixed;bottom:24px;right:24px;background:var(--premium-gold);color:#fff;padding:12px 20px;border-radius:var(--radius-md);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.25)}
     #toast.show{display:block}
+    /* Weekly Timetable */
+    .wt-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    @media(max-width:768px){.wt-grid{grid-template-columns:1fr}}
+    .wt-day{background:var(--premium-off-white);border-radius:var(--radius-md);padding:10px;min-height:80px}
+    .wt-day.wt-today{border:2px solid var(--premium-gold);background:#fffbeb}
+    .wt-day.wt-off{opacity:.5}
+    .wt-day-name{font-weight:700;font-size:var(--text-sm);margin-bottom:8px;color:var(--premium-text)}
+    .wt-badge-today{background:var(--premium-gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:var(--radius-full,999px);font-weight:600;margin-left:4px}
+    .wt-slot{background:var(--premium-white);border-radius:var(--radius-sm,4px);padding:6px 8px;margin-bottom:4px;font-size:var(--text-xs,12px);border-left:3px solid var(--premium-gold)}
+    .wt-time{display:block;font-weight:600;color:var(--premium-text)}
+    .wt-venue{display:block;color:var(--premium-text-light)}
+    .wt-members{display:block;color:var(--premium-text-muted);font-size:11px}
+    .wt-off-text{color:var(--premium-text-muted);font-size:var(--text-xs,12px);font-style:italic}
   </style>
 </head>
 <body>
@@ -72,6 +85,16 @@
       <div class="page-header">
         <h1 class="page-title">📅 <span data-i18n="nav_schedule">ตารางงาน</span></h1>
         <button id="addExternalGigBtn" class="btn btn-primary">➕ เพิ่มงานนอก</button>
+      </div>
+
+      <!-- Weekly Timetable from Band Settings -->
+      <div class="card" style="margin-bottom:var(--spacing-xl)" id="weeklyTimetableCard">
+        <div class="card-header">
+          <h3 class="card-title">📅 ตารางงานสัปดาห์</h3>
+        </div>
+        <div id="weeklyTimetable" class="wt-grid" style="padding:var(--spacing-md)">
+          <span style="color:var(--premium-text-muted);font-size:var(--text-sm)">⏳ กำลังโหลด...</span>
+        </div>
       </div>
 
       <!-- Summary Stats -->
