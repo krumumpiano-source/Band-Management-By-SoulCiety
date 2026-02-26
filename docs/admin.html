@@ -51,8 +51,8 @@
             </div>
             <div class="table-responsive">
               <table class="table">
-                <thead><tr><th>ชื่อ</th><th>อีเมล</th><th>วง</th><th>Role</th><th>สถานะ</th><th></th></tr></thead>
-                <tbody id="userTbody"><tr><td colspan="6" class="text-center">กำลังโหลด...</td></tr></tbody>
+                <thead><tr><th>ชื่อ-นามสกุล</th><th>ชื่อเล่น</th><th>อีเมล</th><th>วง</th><th>ตำแหน่ง</th><th>Role</th><th>สถานะ</th><th></th></tr></thead>
+                <tbody id="userTbody"><tr><td colspan="8" class="text-center">กำลังโหลด...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -111,7 +111,7 @@
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
     var role = localStorage.getItem('userRole') || '';
-    if (role !== 'admin') { showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error'); setTimeout(function(){ window.location.href='?page=dashboard'; },1500); return; }
+    if (role !== 'admin') { showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error'); setTimeout(function(){ window.location.href='dashboard.html'; },1500); return; }
     renderMainNav('mainNav'); applyTranslations();
     loadUsers(); loadSysInfo();
   });
@@ -127,19 +127,27 @@
     gasRun('getAllUsers', {}, function(r) {
       var users = (r && r.data) || [];
       var tbody = document.getElementById('userTbody');
-      if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center">'+t('noData')+'</td></tr>'; return; }
+      if (!users.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center">ไม่มีข้อมูล</td></tr>'; return; }
       tbody.innerHTML = users.map(function(u) {
+        var title     = u.title     || '';
+        var firstName = u.firstName || u.first_name || '';
+        var lastName  = u.lastName  || u.last_name  || '';
+        var nickname  = u.nickname  || u.userName   || '';
+        var fullName  = [title !== 'ไม่ระบุ' ? title : '', firstName, lastName].filter(Boolean).join(' ') || nickname || '—';
+        var userId    = u.id || '';
         return '<tr>'
-          +'<td>'+escapeHtml(u.name||'')+'</td>'
+          +'<td>'+escapeHtml(fullName)+'</td>'
+          +'<td>'+escapeHtml(nickname)+'</td>'
           +'<td>'+escapeHtml(u.email||'')+'</td>'
-          +'<td>'+escapeHtml(u.bandName||'')+'</td>'
-          +'<td><select class="role-select" onchange="updateUserRole(\''+escapeHtml(u.userId||'')+'\',this.value)">'
+          +'<td>'+escapeHtml(u.bandName||u.band_name||'—')+'</td>'
+          +'<td><span style="font-size:var(--text-xs)">'+escapeHtml(u.instrument||'—')+'</span></td>'
+          +'<td><select class="role-select" onchange="updateUserRole(\''+escapeHtml(userId)+'\',this.value)">'
           +'<option value="member"'+(u.role==='member'?' selected':'')+'>member</option>'
           +'<option value="manager"'+(u.role==='manager'?' selected':'')+'>manager</option>'
           +'<option value="admin"'+(u.role==='admin'?' selected':'')+'>admin</option>'
           +'</select></td>'
-          +'<td><span class="badge '+(u.active?'badge-success':'badge-danger')+'">'+(u.active?'ใช้งาน':'ปิด')+'</span></td>'
-          +'<td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+escapeHtml(u.userId||'')+'\')">🗑️</button></td>'
+          +'<td><span class="badge '+(u.status==='active'?'badge-success':'badge-danger')+'">'+(u.status==='active'?'ใช้งาน':u.status||'—')+'</span></td>'
+          +'<td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+escapeHtml(userId)+'\')">🗑️</button></td>'
           +'</tr>';
       }).join('');
     });
