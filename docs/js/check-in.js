@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var today = new Date().toISOString().split('T')[0];
   ciSelectedDate = today;
   var dateInput = ciGetEl('ciDate');
-  if (dateInput) { dateInput.value = today; dateInput.max = today; }
+  if (dateInput) { dateInput.value = today; }
 
   // Show member name
   var nameEl = ciGetEl('ciMemberName');

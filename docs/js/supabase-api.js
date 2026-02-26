@@ -142,6 +142,8 @@
         case 'assignSubstitute':   return doUpdate('leave_requests', d.leaveId, { substitute_id: d.substituteId, substitute_name: d.substituteName, status: 'approved' });
         case 'rejectLeave':        return doUpdate('leave_requests', d.leaveId, { status: 'rejected' });
 
+        case 'getDashboardSummary': return doGetDashboardSummary();
+
         // ── Band Settings ──────────────────────────────────────────
         case 'saveBandSettings':   return doSaveBandSettings(d);
         case 'getBandSettings':    return doGetBandSettings(d.bandId || getBandId());
@@ -455,6 +457,39 @@
     }
 
     // ── Band Settings ─────────────────────────────────────────────
+    // ── Dashboard Summary ─────────────────────────────────────────
+    async function doGetDashboardSummary() {
+      var bandId = getBandId();
+      var today = new Date().toISOString().split('T')[0];
+      var firstOfMonth = today.substring(0, 7) + '-01';
+
+      var [memberRes, jobRes, upcomingRes, quotRes, finRes] = await Promise.all([
+        sb.from('band_members').select('id', { count: 'exact', head: true }).eq('band_id', bandId),
+        sb.from('schedule').select('id,venue_name,date,type').eq('band_id', bandId).gte('date', today).order('date', { ascending: true }).limit(5),
+        sb.from('schedule').select('id', { count: 'exact', head: true }).eq('band_id', bandId).gte('date', today),
+        sb.from('quotations').select('id', { count: 'exact', head: true }).eq('band_id', bandId),
+        sb.from('attendance_payroll').select('total_amount').eq('band_id', bandId).gte('date', firstOfMonth)
+      ]);
+
+      var income = 0;
+      (finRes.data || []).forEach(function(r) { income += (r.total_amount || 0); });
+
+      // fund/expense: future tables; use 0 for now
+      return {
+        success: true,
+        data: {
+          memberCount:    memberRes.count  || 0,
+          upcomingJobs:   upcomingRes.count || 0,
+          revenueMonth:   income,
+          quotationCount: quotRes.count    || 0,
+          jobs: (jobRes.data || []).map(function(j) {
+            return { date: j.date, venue: j.venue_name || '', band: '', type: j.type || '' };
+          }),
+          finance: { income: income, expense: 0, fund: 0 }
+        }
+      };
+    }
+
     async function doGetBandSettings(bandId) {
       var { data } = await sb.from('band_settings').select('settings').eq('band_id', bandId || getBandId()).single();
       return { success: true, data: (data && data.settings) || {} };
@@ -466,6 +501,14 @@
       delete settings.bandId; delete settings.action; delete settings._token;
       var { error } = await sb.from('band_settings').upsert({ band_id: bandId, settings: settings, updated_at: new Date().toISOString() }, { onConflict: 'band_id' });
       if (error) throw error;
+      // Sync band_name to profiles so dashboard shows correct name after next login
+      if (d.bandName) {
+        var { data: authUser } = await sb.auth.getUser();
+        if (authUser && authUser.user) {
+          await sb.from('profiles').update({ band_name: d.bandName }).eq('id', authUser.user.id);
+        }
+        localStorage.setItem('bandName', d.bandName);
+      }
       return { success: true };
     }
 

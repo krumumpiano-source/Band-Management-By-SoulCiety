@@ -388,9 +388,23 @@
     applyTranslations();
 
     var name = localStorage.getItem('userName') || 'ผู้ใช้งาน';
-    var band = localStorage.getItem('bandName') || 'วงดนตรี';
+    var band = localStorage.getItem('bandName') || '';
+    if (!band) {
+      try { var bs = JSON.parse(localStorage.getItem('bandSettings') || '{}'); band = bs.bandName || ''; } catch(e) {}
+    }
+    if (!band) band = 'วงดนตรี';
     document.getElementById('welcomeName').textContent = 'สวัสดี, ' + name;
     document.getElementById('welcomeBand').textContent = '🎵 ' + band;
+    // Refresh band name from server (in case localStorage is stale/empty)
+    var _wbBandId = localStorage.getItem('bandId') || '';
+    if (_wbBandId) {
+      gasRun('getBandSettings', { bandId: _wbBandId }, function(r) {
+        if (r && r.success && r.data && r.data.bandName) {
+          localStorage.setItem('bandName', r.data.bandName);
+          document.getElementById('welcomeBand').textContent = '🎵 ' + r.data.bandName;
+        }
+      });
+    }
 
     // Quick Check-In init
     qciBandId = localStorage.getItem('bandId') || '';
