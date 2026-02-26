@@ -22,6 +22,13 @@
     .form-row-3{display:grid;grid-template-columns:auto 1fr 1fr;gap:var(--spacing-md)}
     @media(max-width:480px){.form-row,.form-row-3{grid-template-columns:1fr}}
     .form-section-label{font-size:var(--text-xs);font-weight:600;color:var(--premium-text-muted);text-transform:uppercase;letter-spacing:.05em;margin:var(--spacing-md) 0 var(--spacing-xs);border-bottom:1px solid var(--premium-light-gray);padding-bottom:4px}
+    .invite-preview{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #22c55e;border-radius:var(--radius-lg);padding:var(--spacing-md);margin-top:var(--spacing-sm);display:none}
+    .invite-preview.show{display:block}
+    .invite-preview.error{background:#fff5f5;border-color:#fc8181}
+    .invite-preview .band-name{font-size:var(--text-lg);font-weight:700;color:#166534}
+    .invite-preview .band-meta{font-size:var(--text-sm);color:#15803d;margin-top:2px}
+    .invite-preview.error .band-name{color:#c53030}
+    .invite-preview.error .band-meta{color:#fc8181}
   </style>
 </head>
 <body>
@@ -122,17 +129,74 @@
         <div class="form-section-label">🎵 วงดนตรี</div>
 
         <!-- Create band mode -->
-        <div id="bandNameGroup" class="form-group">
-          <label data-i18n="bandName">ชื่อวง <span style="color:#c53030">*</span></label>
-          <input type="text" id="bandNameInput" placeholder="กรุณากรอกชื่อวงดนตรี" required>
-          <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px">คุณจะเป็นผู้จัดการวง — สมาชิกอื่นเข้าร่วมด้วยรหัสเชิญที่คุณสร้างได้</div>
+        <div id="bandNameGroup">
+          <div class="form-group">
+            <label data-i18n="bandName">ชื่อวง <span style="color:#c53030">*</span></label>
+            <input type="text" id="bandNameInput" placeholder="กรุณากรอกชื่อวงดนตรี" required>
+          </div>
+          <div class="form-group" id="provinceGroup">
+            <label>จังหวัด <span style="color:#c53030">*</span></label>
+            <input type="text" id="provinceInput" placeholder="พิมพ์ชื่อจังหวัด..." list="provinceList" autocomplete="off" required
+              style="font-size:var(--text-sm)">
+            <datalist id="provinceList">
+              <option value="กรุงเทพมหานคร"></option><option value="กระบี่"></option>
+              <option value="กาญจนบุรี"></option><option value="กาฬสินธุ์"></option>
+              <option value="กำแพงเพชร"></option><option value="ขอนแก่น"></option>
+              <option value="จันทบุรี"></option><option value="ฉะเชิงเทรา"></option>
+              <option value="ชลบุรี"></option><option value="ชัยนาท"></option>
+              <option value="ชัยภูมิ"></option><option value="ชุมพร"></option>
+              <option value="เชียงราย"></option><option value="เชียงใหม่"></option>
+              <option value="ตรัง"></option><option value="ตราด"></option>
+              <option value="ตาก"></option><option value="นครนายก"></option>
+              <option value="นครปฐม"></option><option value="นครพนม"></option>
+              <option value="นครราชสีมา"></option><option value="นครศรีธรรมราช"></option>
+              <option value="นครสวรรค์"></option><option value="นนทบุรี"></option>
+              <option value="นราธิวาส"></option><option value="น่าน"></option>
+              <option value="บึงกาฬ"></option><option value="บุรีรัมย์"></option>
+              <option value="ปทุมธานี"></option><option value="ประจวบคีรีขันธ์"></option>
+              <option value="ปราจีนบุรี"></option><option value="ปัตตานี"></option>
+              <option value="พระนครศรีอยุธยา"></option><option value="พะเยา"></option>
+              <option value="พังงา"></option><option value="พัทลุง"></option>
+              <option value="พิจิตร"></option><option value="พิษณุโลก"></option>
+              <option value="เพชรบุรี"></option><option value="เพชรบูรณ์"></option>
+              <option value="แพร่"></option><option value="ภูเก็ต"></option>
+              <option value="มหาสารคาม"></option><option value="มุกดาหาร"></option>
+              <option value="แม่ฮ่องสอน"></option><option value="ยโสธร"></option>
+              <option value="ยะลา"></option><option value="ร้อยเอ็ด"></option>
+              <option value="ระนอง"></option><option value="ระยอง"></option>
+              <option value="ราชบุรี"></option><option value="ลพบุรี"></option>
+              <option value="ลำปาง"></option><option value="ลำพูน"></option>
+              <option value="เลย"></option><option value="ศรีสะเกษ"></option>
+              <option value="สกลนคร"></option><option value="สงขลา"></option>
+              <option value="สตูล"></option><option value="สมุทรปราการ"></option>
+              <option value="สมุทรสงคราม"></option><option value="สมุทรสาคร"></option>
+              <option value="สระแก้ว"></option><option value="สระบุรี"></option>
+              <option value="สิงห์บุรี"></option><option value="สุโขทัย"></option>
+              <option value="สุพรรณบุรี"></option><option value="สุราษฎร์ธานี"></option>
+              <option value="สุรินทร์"></option><option value="หนองคาย"></option>
+              <option value="หนองบัวลำภู"></option><option value="อ่างทอง"></option>
+              <option value="อำนาจเจริญ"></option><option value="อุดรธานี"></option>
+              <option value="อุตรดิตถ์"></option><option value="อุทัยธานี"></option>
+              <option value="อุบลราชธานี"></option>
+            </datalist>
+            <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px">คุณจะเป็นผู้จัดการวง — สมาชิกอื่นเข้าร่วมด้วยรหัสเชิญที่คุณสร้างได้</div>
+          </div>
         </div>
 
         <!-- Join with invite code mode -->
         <div id="inviteGroup" class="form-group" style="display:none">
           <label>🔑 รหัสเชิญจากผู้จัดการวง</label>
-          <input type="text" id="inviteCode" placeholder="กรอกรหัส 6 หลัก เช่น AB3X7Q" maxlength="6" style="text-transform:uppercase;font-family:monospace;font-size:1.2rem;letter-spacing:.2em;text-align:center">
-          <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px">ขอรหัสจากผู้จัดการวง แล้วนำมากรอกที่นี่</div>
+          <input type="text" id="inviteCode" placeholder="กรอกรหัส 6 หลัก เช่น AB3X7Q" maxlength="6"
+            style="text-transform:uppercase;font-family:monospace;font-size:1.2rem;letter-spacing:.2em;text-align:center" autocomplete="off">
+          <!-- Preview card —— แสดงอัตโนมัติเมื่อกรอกครบ 6 ตัว -->
+          <div id="invitePreview" class="invite-preview">
+            <div id="previewLoading" style="color:#6b7280;font-size:var(--text-sm)">🔍 กำลังตรวจสอบรหัส...</div>
+            <div id="previewInfo" style="display:none">
+              <div class="band-name" id="previewBandName"></div>
+              <div class="band-meta" id="previewBandMeta"></div>
+              <div style="font-size:var(--text-xs);color:#15803d;margin-top:6px">✅ รหัสถูกต้อง — กดสมัครเพื่อเข้าร่วมวงนี้</div>
+            </div>
+          </div>
         </div>
 
         <div class="err-msg" id="generalError"></div>
@@ -169,14 +233,54 @@
     function switchMode(mode) {
       var joinMode = mode === 'join';
       document.getElementById('bandNameGroup').style.display = joinMode ? 'none' : '';
-      document.getElementById('inviteGroup').style.display = joinMode ? '' : 'none';
+      document.getElementById('inviteGroup').style.display   = joinMode ? '' : 'none';
       document.getElementById('bandNameInput').required = !joinMode;
-      document.getElementById('inviteCode').required = joinMode;
+      document.getElementById('inviteCode').required    = joinMode;
+      document.getElementById('provinceInput').required = !joinMode;
+      // reset preview
+      document.getElementById('invitePreview').className = 'invite-preview';
       document.querySelectorAll('[data-mode]').forEach(function(b) {
-        b.classList.toggle('btn-primary', b.dataset.mode === mode);
+        b.classList.toggle('btn-primary',   b.dataset.mode === mode);
         b.classList.toggle('btn-secondary', b.dataset.mode !== mode);
       });
     }
+
+    // ── Invite code live preview ──────────────────────────────
+    var previewTimer = null;
+    document.getElementById('inviteCode').addEventListener('input', function() {
+      var code = this.value.trim().toUpperCase();
+      this.value = code;
+      var preview = document.getElementById('invitePreview');
+      var loading = document.getElementById('previewLoading');
+      var info    = document.getElementById('previewInfo');
+      preview.className = 'invite-preview';
+      loading.style.display = 'none';
+      info.style.display    = 'none';
+      clearTimeout(previewTimer);
+      if (code.length < 6) return;
+      // แสดง loading
+      preview.className = 'invite-preview show';
+      loading.style.display = '';
+      info.style.display    = 'none';
+      previewTimer = setTimeout(function() {
+        gasRun('lookupInviteCode', { code: code }, function(r) {
+          loading.style.display = 'none';
+          if (r && r.success) {
+            var province = r.province ? ' (' + r.province + ')' : '';
+            document.getElementById('previewBandName').textContent = '🎵 ' + (r.bandName || r.band_name || '');
+            document.getElementById('previewBandMeta').textContent =
+              province + (r.memberCount != null ? ' · ' + r.memberCount + ' สมาชิก' : '');
+            info.style.display    = '';
+            preview.className     = 'invite-preview show';
+          } else {
+            document.getElementById('previewBandName').textContent = '❌ ' + ((r && r.message) || 'รหัสไม่ถูกต้อง');
+            document.getElementById('previewBandMeta').textContent = 'กรุณาตรวจสอบรหัสอีกครั้ง';
+            info.style.display    = '';
+            preview.className     = 'invite-preview show error';
+          }
+        });
+      }, 500);
+    });
 
     function $v(id) { return document.getElementById(id) ? document.getElementById(id).value.trim() : ''; }
     function $err(id, msg) { var el = document.getElementById(id); if (el) el.textContent = msg || ''; }
@@ -194,6 +298,7 @@
       var pw         = document.getElementById('password').value;
       var cpw        = document.getElementById('confirmPassword').value;
       var band       = $v('bandNameInput');
+      var province   = $v('provinceInput');
       var invite     = $v('inviteCode').toUpperCase();
       var joinMode   = document.getElementById('inviteGroup').style.display !== 'none';
 
@@ -204,8 +309,13 @@
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $err('emailError', 'อีเมลไม่ถูกต้อง'); ok = false; }
       if (pw.length < 8) { $err('passwordError', 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); ok = false; }
       if (pw !== cpw)  { $err('confirmError', 'รหัสผ่านไม่ตรงกัน'); ok = false; }
-      if (!joinMode && !band) { $err('generalError', 'กรุณากรอกชื่อวง'); ok = false; }
-      if (joinMode && !invite) { $err('generalError', 'กรุณากรอกรหัสเชิญ'); ok = false; }
+      if (!joinMode && !band)     { $err('generalError', 'กรุณากรอกชื่อวง'); ok = false; }
+      if (!joinMode && !province) { $err('generalError', 'กรุณาเลือกจังหวัด'); ok = false; }
+      if (joinMode && !invite)    { $err('generalError', 'กรุณากรอกรหัสเชิญ'); ok = false; }
+      // ตรวจว่า invite preview ไม่ error ก่อน submit
+      if (joinMode && document.getElementById('invitePreview').classList.contains('error')) {
+        $err('generalError', 'รหัสเชิญไม่ถูกต้อง กรุณาตรวจสอบ'); ok = false;
+      }
       if (!ok) return;
 
       var btn = document.getElementById('regBtn');
@@ -223,6 +333,7 @@
         email:       email,
         password:    pw,
         bandName:    band,
+        province:    province,
         inviteCode:  invite
       }, function(r) {
         btn.disabled = false; btn.textContent = 'สมัครสมาชิก';

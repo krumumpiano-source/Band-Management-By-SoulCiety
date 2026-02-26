@@ -51,12 +51,14 @@
       localStorage.setItem('userEmail',  profile.email      || '');
       localStorage.setItem('bandId',     profile.band_id    || '');
       localStorage.setItem('bandName',   profile.band_name  || '');
-      localStorage.setItem('userRole',   profile.role       || 'member');
+      localStorage.setItem('userRole',     profile.role       || 'member');
+      localStorage.setItem('bandProvince',  profile.province   || '');
     }
 
     function clearSession() {
       ['auth_token','bandId','bandName','bandManager','userRole','userName',
-       'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail'].forEach(function (k) {
+       'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail',
+       'bandProvince'].forEach(function (k) {
         localStorage.removeItem(k);
       });
     }
@@ -104,7 +106,8 @@
           return { success: false, message: 'ฟีเจอร์นี้ยังไม่เปิด กรุณาติดต่อ Admin' };
 
         // ── Invite ─────────────────────────────────────────────────
-        case 'generateInviteCode': return doGenerateInviteCode(d);
+        case 'generateInviteCode':  return doGenerateInviteCode(d);
+        case 'lookupInviteCode':    return doLookupInviteCode(d);
 
         // ── Songs ──────────────────────────────────────────────────
         case 'getAllSongs':         return doGetAllSongs(d);
@@ -319,13 +322,15 @@
           await sb.auth.admin.deleteUser(data.user.id).catch(function(){});
           return { success: false, message: (result && result.message) || 'รหัสเชิญไม่ถูกต้อง' };
         }
-        return { success: true, message: 'สมัครสมาชิกสำเร็จ เข้าร่วมวง ' + result.band_name + ' แล้ว!' };
+        var provincePart = result.province ? ' (' + result.province + ')' : '';
+        return { success: true, message: 'สมัครสมาชิกสำเร็จ เข้าร่วมวง ' + result.band_name + provincePart + ' แล้ว!' };
       }
 
       // manager ใหม่ → สร้าง band แล้วอัปเดต profile
       if (data.user) {
         var { data: band } = await sb.from('bands').insert({
           band_name:     meta.band_name || (meta.user_name + "'s Band"),
+          province:      d.province || '',
           manager_id:    data.user.id,
           manager_email: d.email,
           status:        'active'
@@ -335,6 +340,7 @@
           await sb.from('profiles').update({
             band_id:   band.id,
             band_name: band.band_name,
+            province:  band.province || '',
             role:      'manager'
           }).eq('id', data.user.id);
         }
@@ -467,12 +473,23 @@
     async function doGenerateInviteCode(d) {
       var bandId   = d.bandId   || getBandId();
       var bandName = d.bandName || localStorage.getItem('bandName') || '';
+      var province = d.province || localStorage.getItem('bandProvince') || '';
       var { data, error } = await sb.rpc('generate_invite_code', {
         p_band_id:   bandId,
-        p_band_name: bandName
+        p_band_name: bandName,
+        p_province:  province
       });
       if (error) throw error;
       return data;
+    }
+
+    async function doLookupInviteCode(d) {
+      var code = (d.code || '').toUpperCase();
+      if (!code) return { success: false, message: 'ไม่มีรหัส' };
+      var { data, error } = await sb.rpc('lookup_invite_code', { p_code: code });
+      if (error) return { success: false, message: error.message };
+      if (!data || !data.success) return { success: false, message: (data && data.message) || 'รหัสเชิญไม่ถูกต้อง' };
+      return { success: true, band_name: data.band_name, province: data.province, member_count: data.member_count };
     }
 
     // ── Profile ───────────────────────────────────────────────────

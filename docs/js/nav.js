@@ -9,7 +9,8 @@ function renderMainNav(containerId) {
   if (!container) return;
 
   var isGas = typeof google !== 'undefined' && google.script;
-  var bandName   = localStorage.getItem('bandName') || (typeof t === 'function' ? t('yourBand') : 'วงของคุณ');
+  var bandName     = localStorage.getItem('bandName') || (typeof t === 'function' ? t('yourBand') : 'วงของคุณ');
+  var bandProvince = localStorage.getItem('bandProvince') || '';
   // ชื่อสั้นเพื่อแสดง topbar: ชื่อเล่น
   var nickName   = localStorage.getItem('userNickname') || '';
   var firstName  = localStorage.getItem('userFirstName') || '';
@@ -106,7 +107,7 @@ function renderMainNav(containerId) {
     /* ── Sidebar ───────────────────────────── */
     '<aside class="nav-sidebar" id="navSidebar" aria-label="เมนูหลัก">' +
       '<div class="sidebar-header">' +
-        '<a href="' + dashHref() + '" class="sidebar-brand">🎵 ' + _escHtml(bandName) + '</a>' +
+        '<a href="' + dashHref() + '" class="sidebar-brand">🎵 ' + _escHtml(bandName) + (bandProvince ? '<span class="sidebar-province"> (' + _escHtml(bandProvince) + ')</span>' : '') + '</a>' +
         '<button class="sidebar-close" id="navClose" aria-label="ปิดเมนู">✕</button>' +
       '</div>' +
       '<div class="sidebar-user">' +
