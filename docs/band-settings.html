@@ -33,53 +33,54 @@
     .payroll-row label{font-weight:600;font-size:var(--text-sm);white-space:nowrap;color:var(--premium-text)}
     .payroll-row select{padding:8px 12px;border:1px solid #e2e8f0;border-radius:var(--radius-sm);font-family:inherit;font-size:var(--text-sm);background:var(--premium-white)}
     /* ── Schedule Grid (Horizontal) ────────────── */
-    .sg-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e2e8f0;border-radius:var(--radius-md);background:var(--premium-white)}
-    .sg-grid{display:inline-block;min-width:100%}
-    .sg-header-row{display:flex;align-items:stretch;background:linear-gradient(135deg,#1a202c,#2d3748);border-bottom:2px solid var(--premium-gold);position:sticky;top:0;z-index:10}
-    .sg-corner{width:90px;min-width:90px;flex-shrink:0;border-right:1px solid #374151;display:flex;align-items:center;justify-content:center;height:32px}
-    .sg-time-axis{position:relative;height:32px;flex:1}
-    .sg-tick{position:absolute;transform:translateX(-50%);font-size:10px;color:#9ca3af;top:8px;white-space:nowrap;user-select:none}
-    .sg-row{display:flex;align-items:stretch;border-bottom:1px solid #f0f0f0}
+    .sg-outer{border:1px solid #e2e8f0;border-radius:var(--radius-md);background:var(--premium-white);overflow:hidden}
+    .sg-grid{width:100%;border-collapse:collapse;table-layout:fixed;display:block}
+    .sg-header-row{display:flex;align-items:stretch;background:linear-gradient(135deg,#1a202c,#2d3748);border-bottom:2px solid var(--premium-gold)}
+    .sg-corner{width:80px;min-width:80px;flex-shrink:0;border-right:1px solid #374151;display:flex;align-items:center;justify-content:center;height:36px;font-size:10px;color:#6b7280}
+    .sg-time-axis{position:relative;flex:1;height:36px;overflow:visible}
+    .sg-tick{position:absolute;transform:translateX(-50%);font-size:11px;color:#9ca3af;top:9px;white-space:nowrap;user-select:none;font-weight:600}
+    .sg-tick-line{position:absolute;top:26px;bottom:-2px;width:1px;background:rgba(249,207,69,.35);pointer-events:none}
+    .sg-row{display:flex;align-items:stretch;border-bottom:1px solid #e8ecf0}
     .sg-row:last-child{border-bottom:none}
-    .sg-day-label{width:90px;min-width:90px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:linear-gradient(180deg,#1a202c,#2d3748);color:#f3f4f6;border-right:1px solid #374151;padding:4px 0;min-height:56px}
-    .sg-track{position:relative;flex:1;min-height:56px;cursor:pointer;background:#fafafa;transition:background .15s;border:none}
-    .sg-track:hover{background:#f5f0e8}
+    .sg-day-label{width:80px;min-width:80px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;font-weight:700;background:linear-gradient(180deg,#1a202c 0%,#2d3748 100%);color:#f3f4f6;border-right:1px solid #374151;min-height:80px;gap:2px}
+    .sg-day-sub{font-size:9px;font-weight:400;color:#9ca3af;letter-spacing:.05em}
+    .sg-track{position:relative;flex:1;min-height:80px;cursor:pointer;background:#fafafa;transition:background .12s;overflow:hidden}
+    .sg-track:hover{background:#f3f0ea}
     .sg-hour-line{position:absolute;top:0;bottom:0;width:1px;background:#e2e8f0;pointer-events:none;z-index:0}
-    .sg-hour-line.half{background:#f0f0f0}
-    .sg-slot{position:absolute;top:5px;bottom:5px;border-radius:6px;padding:3px 6px;font-size:11px;font-weight:600;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.18);z-index:2;transition:filter .15s,box-shadow .15s;user-select:none;min-width:20px}
-    .sg-slot:hover{filter:brightness(1.09);z-index:5;box-shadow:0 2px 10px rgba(0,0,0,.28)}
-    .sg-slot-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .sg-slot-time{font-size:9px;opacity:.85;white-space:nowrap}
-    .sg-slot-members{font-size:9px;opacity:.75;white-space:nowrap}
-    .sg-track-hint{position:absolute;top:50%;right:8px;transform:translateY(-50%);font-size:10px;color:#cbd5e0;pointer-events:none;user-select:none}
+    .sg-hour-line.half{background:#efefef;opacity:.7}
+    .sg-slot{position:absolute;top:6px;bottom:6px;border-radius:7px;padding:5px 9px;overflow:hidden;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18);z-index:2;transition:filter .15s,box-shadow .15s,transform .1s;user-select:none;display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:16px}
+    .sg-slot:hover{filter:brightness(1.08);z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.28);transform:translateY(-1px)}
+    .sg-slot:active{transform:translateY(0)}
+    .sg-slot-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:800;letter-spacing:0.01em;line-height:1.2}
+    .sg-slot-time{font-size:12px;opacity:.95;white-space:nowrap;font-weight:600;line-height:1.2}
+    .sg-slot-members{font-size:11px;opacity:.8;white-space:nowrap;line-height:1.2}
+    .sg-track-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#c0cad8;pointer-events:none;user-select:none;letter-spacing:.02em}
     .sg-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:var(--spacing-md)}
-    .sg-legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--premium-text)}
-    .sg-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
-    .sg-empty{text-align:center;padding:32px 16px;color:var(--premium-text-muted);font-size:var(--text-sm)}
+    .sg-legend-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--premium-text);font-weight:500}
+    .sg-legend-dot{width:14px;height:14px;border-radius:4px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+    .sg-empty{text-align:center;padding:40px 16px;color:var(--premium-text-muted);font-size:var(--text-sm)}
     /* ── Modals ─────────────────────────────────── */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center;padding:16px}
     .modal-box{background:var(--premium-white);border-radius:var(--radius-lg);padding:var(--spacing-xl);max-width:500px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)}
     .modal-title{font-size:var(--text-lg);font-weight:700;margin-bottom:var(--spacing-lg);display:flex;align-items:center;gap:8px;color:var(--premium-text)}
     .modal-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:var(--spacing-md);border-top:1px solid #e2e8f0;margin-top:var(--spacing-md);flex-wrap:wrap}
-    .sd-member-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;padding:8px;background:var(--premium-off-white);border-radius:var(--radius-sm)}
+    .sd-member-row{display:flex;align-items:center;gap:6px;margin-bottom:0;flex-wrap:wrap;padding:8px 10px;background:var(--premium-off-white);border-radius:0}
     .sd-member-row select,.sd-member-row input{padding:7px 10px;border:1px solid #e2e8f0;border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:inherit;background:var(--premium-white)}
     .sd-member-row select.sd-m-sel{flex:1;min-width:130px}
     .sd-member-row input.sd-m-rate{width:85px;min-width:60px;flex-shrink:0}
     .sd-member-row select.sd-m-rtype{min-width:100px}
+    .sd-m-check-label{display:flex;align-items:center;gap:7px;cursor:pointer;flex:1;min-width:130px;padding:0}
+    .sd-m-check-label input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:var(--premium-gold);flex-shrink:0}
+    .sd-m-name{font-size:var(--text-sm);color:var(--premium-text);transition:all .15s;white-space:nowrap}
+    .sd-m-pos{font-size:11px;color:var(--premium-text-muted);font-weight:400}
     .sd-m-del{padding:5px 9px;background:#e53e3e;color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;flex-shrink:0;font-size:13px}
     .bulk-rate-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px;background:rgba(249,207,69,.08);border:1px solid rgba(249,207,69,.3);border-radius:var(--radius-sm);margin-bottom:var(--spacing-md)}
     .bulk-rate-row label{font-size:var(--text-xs);font-weight:600;color:var(--premium-text-muted);white-space:nowrap}
     .bulk-rate-row input,.bulk-rate-row select{padding:6px 10px;border:1px solid #e2e8f0;border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:inherit}
     .empty-state-small{color:var(--premium-text-muted);font-size:var(--text-sm);margin:6px 0}
-    /* ── Leave / Replacement ──────────────────── */
+    /* ── Member block ─────────────────────────── */
     .sd-member-block{border:1px solid #e2e8f0;border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden}
     .sd-member-block .sd-member-row{border-radius:0;margin-bottom:0;background:var(--premium-white)}
-    .sd-m-leave-btn{padding:4px 10px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #e2e8f0;background:var(--premium-off-white);color:#4a5568;transition:all .15s;flex-shrink:0;white-space:nowrap}
-    .sd-m-leave-btn:hover{border-color:#f6ad55;color:#7b341e}
-    .sd-m-leave-btn.on-leave{background:#e53e3e;color:#fff;border-color:#e53e3e}
-    .sd-repl-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;background:rgba(229,62,62,.06);border-top:1px solid rgba(229,62,62,.2)}
-    .sd-repl-row label{font-size:11px;color:#e53e3e;font-weight:700;white-space:nowrap;flex-shrink:0}
-    .sd-repl-row select,.sd-repl-row input[type=text]{flex:1;min-width:90px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:var(--radius-sm);font-size:var(--text-sm);font-family:inherit;background:var(--premium-white)}
     /* ── Toast ─────────────────────────────────── */
     #toast{display:none;position:fixed;bottom:24px;right:24px;background:var(--premium-gold);color:#1a202c;padding:12px 20px;border-radius:var(--radius-md);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.25);font-weight:600}
     #toast.toast-error{background:#e53e3e;color:#fff}
@@ -141,17 +142,21 @@
         <div class="invite-box">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
             <div>
-              <div style="font-weight:700;color:var(--premium-gold);font-size:var(--text-sm)">🔑 รหัสเชิญสมาชิก</div>
-              <div style="font-size:var(--text-xs);color:#9ca3af;margin-top:2px">แชร์รหัสนี้ให้สมาชิกใช้ในหน้าสมัครเพื่อเข้าร่วมวง</div>
+              <div style="font-weight:700;color:var(--premium-gold);font-size:var(--text-sm)">🔑 รหัสประจำวง</div>
+              <div style="font-size:var(--text-xs);color:#9ca3af;margin-top:2px">แชร์รหัสนี้ให้สมาชิกใช้ในหน้าสมัครเพื่อขอเข้าร่วมวง</div>
             </div>
           </div>
-          <div id="inviteCodeDisplay" class="invite-code-display empty" title="คลิกเพื่อคัดลอก" onclick="copyInviteCode()">ยังไม่มีรหัสเชิญ</div>
-          <div class="invite-expires" id="inviteExpires"></div>
+          <div id="inviteCodeDisplay" class="invite-code-display empty" title="คลิกเพื่อคัดลอก" onclick="copyBandCode()">ยังไม่มีรหัสประจำวง</div>
           <div class="invite-actions">
-            <button type="button" class="btn btn-sm btn-secondary" id="genInviteBtn" onclick="generateInviteCode()">🎲 สร้างรหัสใหม่</button>
-            <button type="button" class="btn btn-sm btn-primary" id="copyInviteBtn" style="display:none" onclick="copyInviteCode()">📋 คัดลอก</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="genInviteBtn" onclick="generateBandCode()">🔑 สร้างรหัสประจำวง</button>
+            <button type="button" class="btn btn-sm btn-primary" id="copyInviteBtn" style="display:none" onclick="copyBandCode()">📋 คัดลอก</button>
           </div>
-          <div class="invite-hint">รหัสมีอายุ 7 วัน • สมาชิกกรอกรหัสนี้ในหน้าสมัครเพื่อเข้าร่วมวงทันที</div>
+          <div class="invite-hint">รหัสใช้ได้ตลอด ไม่มีวันหมดอายุ • สมาชิกกรอกรหัสนี้ในหน้าสมัคร → ผู้จัดการวงอนุมัติ</div>
+        </div>
+        <!-- Pending Members -->
+        <div id="pendingMembersBox" style="display:none;margin-top:var(--spacing-md)">
+          <div style="font-weight:700;color:var(--premium-gold);font-size:var(--text-sm);margin-bottom:8px">⏳ คำขอเข้าร่วมวง</div>
+          <div id="pendingMembersList"></div>
         </div>
       </div>
 
@@ -252,21 +257,20 @@
       <div class="modal-title">👥 <span id="sdTitle" style="font-size:var(--text-md)"></span></div>
       <!-- Bulk rate -->
       <div class="bulk-rate-row" id="bulkRateRow">
-        <label>💰 ตั้งค่าแรงทุกคนพร้อมกัน</label>
+        <label>💰 ตั้งค่าแรงพร้อมกัน (เฉพาะผู้ที่เลือก)</label>
         <input type="number" id="bulkRate" placeholder="จำนวน" min="0" style="width:90px">
         <select id="bulkType">
           <option value="shift">บาท/เบรค</option>
           <option value="hourly">บาท/ชม</option>
           <option value="fixed">บาท คงที่</option>
         </select>
-        <button type="button" class="btn btn-sm" style="background:var(--premium-gold);color:#1a202c;font-weight:700" onclick="applyBulkRate()">ใช้</button>
+        <button type="button" class="btn btn-sm" style="background:var(--premium-gold);color:#1a202c;font-weight:700" onclick="applyBulkRate()">ใช้กับทุกคนที่เลือก</button>
       </div>
       <!-- Member list -->
       <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:8px">
-        กรอกค่าแรงแต่ละคน หรือใช้ "ตั้งพร้อมกัน" ด้านบน
+        ✅ ติ๊กเลือกสมาชิกที่ร่วมเบรคนี้ · กำหนดค่าแรงแต่ละคนได้อิสระ
       </div>
       <div id="sdMemberList"></div>
-      <button type="button" class="btn btn-sm btn-secondary" style="margin-top:8px;width:100%" onclick="addMemberToSlot()">➕ เพิ่มสมาชิก</button>
       <div class="modal-actions">
         <button type="button" class="btn btn-sm btn-secondary" onclick="editThisSlot()">✏️ แก้ไขเวลา/ร้าน</button>
         <button type="button" class="btn btn-sm btn-secondary" onclick="closeSlotDetailModal()">ปิด</button>

@@ -79,6 +79,15 @@
         <div style="font-size:32px">🥁</div>
       </div>
 
+      <!-- ===== Pending Members Approval ===== -->
+      <div class="card" id="dashPendingCard" style="margin-bottom:var(--spacing-xl);display:none;border:2px solid var(--premium-gold)">
+        <div class="card-header" style="background:linear-gradient(135deg,#fffbeb,#fef3c7)">
+          <h3 class="card-title" style="margin:0">⏳ คำขอเข้าร่วมวง</h3>
+          <span id="dashPendingBadge" style="background:var(--premium-gold);color:#1a202c;padding:2px 10px;border-radius:12px;font-size:var(--text-xs);font-weight:700"></span>
+        </div>
+        <div id="dashPendingList" style="padding:4px 0"></div>
+      </div>
+
       <!-- ===== Quick Daily Check-In ===== -->
       <div class="card" id="qciCard" style="margin-bottom:var(--spacing-xl)">
         <div class="card-header">
@@ -431,7 +440,53 @@
     });
 
     loadDashboard();
+    // Load pending member requests (manager/admin only)
+    var _role = localStorage.getItem('userRole') || '';
+    if (_role === 'manager' || _role === 'admin') {
+      loadDashPendingMembers();
+    }
   });
+
+  function loadDashPendingMembers() {
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId) return;
+    gasRun('getPendingMembers', { bandId: bandId }, function(r) {
+      var card = document.getElementById('dashPendingCard');
+      var list = document.getElementById('dashPendingList');
+      var badge = document.getElementById('dashPendingBadge');
+      if (!card || !list) return;
+      if (!r || !r.success || !r.data || r.data.length === 0) { card.style.display = 'none'; return; }
+      card.style.display = '';
+      badge.textContent = r.data.length + ' คำขอ';
+      list.innerHTML = r.data.map(function(m) {
+        var name = (m.nickname || m.first_name || m.user_name || m.email || '?');
+        var detail = (m.instrument ? m.instrument + ' · ' : '') + (m.email || '');
+        var created = m.created_at ? new Date(m.created_at).toLocaleDateString('th-TH') : '';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--premium-off-white);border-radius:var(--radius-sm);margin-bottom:6px;flex-wrap:wrap">' +
+          '<div style="flex:1;min-width:120px">' +
+            '<div style="font-weight:700;font-size:var(--text-sm)">' + escapeHtml(name) + '</div>' +
+            '<div style="font-size:var(--text-xs);color:var(--premium-text-muted)">' + escapeHtml(detail) + (created ? ' · ' + created : '') + '</div>' +
+          '</div>' +
+          '<button class="btn btn-sm btn-primary" style="padding:4px 12px" onclick="dashApproveMember(\'' + m.id + '\')">✅ อนุมัติ</button>' +
+          '<button class="btn btn-sm" style="padding:4px 12px;background:#e53e3e;color:#fff" onclick="dashRejectMember(\'' + m.id + '\')">❌ ปฏิเสธ</button>' +
+        '</div>';
+      }).join('');
+    });
+  }
+  function dashApproveMember(userId) {
+    if (!confirm('อนุมัติสมาชิกคนนี้เข้าร่วมวง?')) return;
+    gasRun('approveMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
+      if (r && r.success) { showDashToast('อนุมัติเรียบร้อย', 'success'); loadDashPendingMembers(); }
+      else showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    });
+  }
+  function dashRejectMember(userId) {
+    if (!confirm('ปฏิเสธคำขอเข้าร่วมวงนี้?')) return;
+    gasRun('rejectMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
+      if (r && r.success) { showDashToast('ปฏิเสธเรียบร้อย', 'success'); loadDashPendingMembers(); }
+      else showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    });
+  }
 
   function loadDashboard() {
     gasRun('getDashboardSummary', {}, function(r) {

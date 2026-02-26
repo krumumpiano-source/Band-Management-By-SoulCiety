@@ -322,10 +322,10 @@
         if (rErr || !result.success) {
           // ลบ user ที่สร้างไปแล้ว
           await sb.auth.admin.deleteUser(data.user.id).catch(function(){});
-          return { success: false, message: (result && result.message) || 'รหัสเชิญไม่ถูกต้อง' };
+          return { success: false, message: (result && result.message) || 'รหัสวงไม่ถูกต้อง' };
         }
         var provincePart = result.province ? ' (' + result.province + ')' : '';
-        return { success: true, message: 'สมัครสมาชิกสำเร็จ เข้าร่วมวง ' + result.band_name + provincePart + ' แล้ว!' };
+        return { success: true, message: 'สมัครสำเร็จ! ส่งคำขอเข้าร่วมวง ' + result.band_name + provincePart + ' แล้ว รอผู้จัดการวงอนุมัติ' };
       }
 
       // manager ใหม่ → สร้าง band แล้วอัปเดต profile
@@ -512,12 +512,12 @@
       return { success: true };
     }
 
-    // ── Invite Code ───────────────────────────────────────────────
+    // ── Band Code (รหัสประจำวง) ─────────────────────────────────
     async function doGenerateInviteCode(d) {
       var bandId   = d.bandId   || getBandId();
       var bandName = d.bandName || localStorage.getItem('bandName') || '';
       var province = d.province || localStorage.getItem('bandProvince') || '';
-      var { data, error } = await sb.rpc('generate_invite_code', {
+      var { data, error } = await sb.rpc('generate_band_code', {
         p_band_id:   bandId,
         p_band_name: bandName,
         p_province:  province
@@ -531,8 +531,30 @@
       if (!code) return { success: false, message: 'ไม่มีรหัส' };
       var { data, error } = await sb.rpc('lookup_invite_code', { p_code: code });
       if (error) return { success: false, message: error.message };
-      if (!data || !data.success) return { success: false, message: (data && data.message) || 'รหัสเชิญไม่ถูกต้อง' };
+      if (!data || !data.success) return { success: false, message: (data && data.message) || 'รหัสวงไม่ถูกต้อง' };
       return { success: true, band_name: data.band_name, province: data.province, member_count: data.member_count };
+    }
+
+    // ── Pending Members (อนุมัติสมาชิก) ──────────────────────────
+    async function doGetPendingMembers(d) {
+      var bandId = d.bandId || getBandId();
+      var { data, error } = await sb.rpc('get_pending_members', { p_band_id: bandId });
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    }
+
+    async function doApproveMember(d) {
+      var bandId = d.bandId || getBandId();
+      var { data, error } = await sb.rpc('approve_member', { p_user_id: d.userId, p_band_id: bandId });
+      if (error) throw error;
+      return data;
+    }
+
+    async function doRejectMember(d) {
+      var bandId = d.bandId || getBandId();
+      var { data, error } = await sb.rpc('reject_member', { p_user_id: d.userId, p_band_id: bandId });
+      if (error) throw error;
+      return data;
     }
 
     // ── Profile ───────────────────────────────────────────────────

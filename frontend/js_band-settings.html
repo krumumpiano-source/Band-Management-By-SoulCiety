@@ -279,7 +279,8 @@ function renderAll() {
   updateBandInfo();
   renderMembers();
   renderVenues();
-  renderInviteCode();
+  renderBandCode();
+  loadPendingMembers();
 }
 
 function updateBandInfo() {
@@ -288,51 +289,46 @@ function updateBandInfo() {
 }
 
 /* ══════════════════════════════════════════
-   INVITE CODE
+   BAND CODE (รหัสประจำวง — ใช้ได้ตลอด)
 ══════════════════════════════════════════ */
-function renderInviteCode() {
+function renderBandCode() {
   var disp = getEl('inviteCodeDisplay');
-  var exp  = getEl('inviteExpires');
   var copyBtn = getEl('copyInviteBtn');
   if (!disp) return;
   if (currentInviteCode) {
     disp.textContent = currentInviteCode;
     disp.classList.remove('empty');
     if (copyBtn) copyBtn.style.display = 'inline-flex';
-    if (exp && currentInviteExpires) {
-      var d = new Date(currentInviteExpires);
-      exp.textContent = 'หมดอายุ: ' + d.toLocaleDateString('th-TH') + ' ' + d.toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'});
-    } else if (exp) exp.textContent = '';
+    var genBtn = getEl('genInviteBtn');
+    if (genBtn) genBtn.textContent = '🔄 สร้างรหัสใหม่';
   } else {
-    disp.textContent = 'ยังไม่มีรหัสเชิญ';
+    disp.textContent = 'ยังไม่มีรหัสประจำวง';
     disp.classList.add('empty');
     if (copyBtn) copyBtn.style.display = 'none';
-    if (exp) exp.textContent = '';
   }
 }
 
-function generateInviteCode() {
+function generateBandCode() {
   var btn = getEl('genInviteBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังสร้าง...'; }
-  function done(code, expires) {
+  function done(code) {
     currentInviteCode = code;
-    currentInviteExpires = expires;
-    renderInviteCode();
-    showToast('สร้างรหัสเชิญเรียบร้อย: ' + code);
-    if (btn) { btn.disabled = false; btn.textContent = '🎲 สร้างรหัสใหม่'; }
+    currentInviteExpires = null;
+    renderBandCode();
+    showToast('รหัสประจำวง: ' + code);
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 สร้างรหัสใหม่'; }
   }
   if (typeof gasRun === 'function' && currentBandId) {
     gasRun('generateInviteCode', { bandId: currentBandId }, function(r) {
       if (r && r.success) {
-        // Save to localStorage for display
         var stored = JSON.parse(localStorage.getItem('bandSettings') || '{}');
         stored.inviteCode = r.data.code;
-        stored.inviteExpires = r.data.expiresAt;
+        stored.inviteExpires = null;
         localStorage.setItem('bandSettings', JSON.stringify(stored));
-        done(r.data.code, r.data.expiresAt);
+        done(r.data.code);
       } else {
         showToast((r && r.message) || 'เกิดข้อผิดพลาด');
-        if (btn) { btn.disabled = false; btn.textContent = '🎲 สร้างรหัสใหม่'; }
+        if (btn) { btn.disabled = false; btn.textContent = '🔑 สร้างรหัสประจำวง'; }
       }
     });
   } else {
@@ -340,15 +336,14 @@ function generateInviteCode() {
     var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     var code = '';
     for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    var exp = new Date(); exp.setDate(exp.getDate() + 7);
     var stored = JSON.parse(localStorage.getItem('bandSettings') || '{}');
-    stored.inviteCode = code; stored.inviteExpires = exp.toISOString();
+    stored.inviteCode = code; stored.inviteExpires = null;
     localStorage.setItem('bandSettings', JSON.stringify(stored));
-    done(code, exp.toISOString());
+    done(code);
   }
 }
 
-function copyInviteCode() {
+function copyBandCode() {
   if (!currentInviteCode) return;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(currentInviteCode).then(function() { showToast('คัดลอกรหัส ' + currentInviteCode + ' แล้ว'); });
@@ -360,6 +355,48 @@ function copyInviteCode() {
     document.body.removeChild(t);
     showToast('คัดลอกรหัส ' + currentInviteCode + ' แล้ว');
   }
+}
+
+/* ══════════════════════════════════════════
+   PENDING MEMBERS (อนุมัติสมาชิก)
+══════════════════════════════════════════ */
+function loadPendingMembers() {
+  var box = getEl('pendingMembersBox'), list = getEl('pendingMembersList');
+  if (!box || !list) return;
+  if (typeof gasRun !== 'function' || !currentBandId) return;
+  gasRun('getPendingMembers', { bandId: currentBandId }, function(r) {
+    if (!r || !r.success || !r.data || r.data.length === 0) {
+      box.style.display = 'none'; return;
+    }
+    box.style.display = '';
+    list.innerHTML = r.data.map(function(m) {
+      var name = (m.nickname || m.first_name || m.user_name || m.email || '?');
+      var detail = (m.instrument ? m.instrument + ' · ' : '') + (m.email || '');
+      var created = m.created_at ? new Date(m.created_at).toLocaleDateString('th-TH') : '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--premium-off-white);border-radius:var(--radius-sm);margin-bottom:6px;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:120px">' +
+          '<div style="font-weight:700;font-size:var(--text-sm)">' + esc(name) + '</div>' +
+          '<div style="font-size:var(--text-xs);color:var(--premium-text-muted)">' + esc(detail) + (created ? ' · ' + created : '') + '</div>' +
+        '</div>' +
+        '<button class="btn btn-sm btn-primary" style="padding:4px 12px" onclick="approveMember(\'' + esc(m.id) + '\')">✅ อนุมัติ</button>' +
+        '<button class="btn btn-sm" style="padding:4px 12px;background:#e53e3e;color:#fff" onclick="rejectMember(\'' + esc(m.id) + '\')">❌ ปฏิเสธ</button>' +
+      '</div>';
+    }).join('');
+  });
+}
+function approveMember(userId) {
+  if (!confirm('อนุมัติสมาชิกคนนี้เข้าร่วมวง?')) return;
+  gasRun('approveMember', { userId: userId, bandId: currentBandId }, function(r) {
+    if (r && r.success) { showToast('อนุมัติเรียบร้อย'); loadPendingMembers(); }
+    else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+  });
+}
+function rejectMember(userId) {
+  if (!confirm('ปฏิเสธคำขอเข้าร่วมวงนี้?')) return;
+  gasRun('rejectMember', { userId: userId, bandId: currentBandId }, function(r) {
+    if (r && r.success) { showToast('ปฏิเสธเรียบร้อย'); loadPendingMembers(); }
+    else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+  });
 }
 
 /* ══════════════════════════════════════════

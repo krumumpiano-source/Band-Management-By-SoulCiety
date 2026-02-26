@@ -43,7 +43,7 @@ function renderMainNav(containerId) {
     navLink('dashboard',       'ðŸ“Š ' + _t('nav_dashboard')) +
     navLink('songs',           'ðŸŽµ ' + _t('nav_songs')) +
     navLink('song-insights',   'ðŸŽ™ï¸ ' + _t('nav_songInsights')) +
-    navLink('leave',           'ðŸ”„ ' + _t('nav_leave')) +
+    // navLink('leave',           'ðŸ"„ ' + _t('nav_leave')) +  // ปิดชั่วคราว
     // navLink('external-payout', 'ðŸ'µ ' + _t('nav_externalPayout')) +  // ปิดชั่วคราว
     navLink('schedule',        'ðŸ"… ' + _t('nav_schedule')) +
     // navLink('quotation',       'ðŸ"„ ' + _t('nav_quotation')) +        // ปิดชั่วคราว
@@ -57,8 +57,7 @@ function renderMainNav(containerId) {
   var managerLinks = isManager ? (
     navSection('ðŸ‘” à¸œà¸¹à¹‰à¸ˆà¸±à¸”à¸à¸²à¸£à¸§à¸‡') +
     navLink('attendance-payroll', 'ðŸ“‹ ' + _t('nav_attendance')) +
-    navLink('job-calculator',     'ðŸ§® ' + _t('nav_jobCalculator')) +
-    navLink('band-fund',          'ðŸ’° ' + _t('nav_bandFund')) +
+    navLink('job-calculator',     'ðŸ§® ' + _t('nav_jobCalculator')) +    navLink('pricing',            'ðŸ'² ' + _t('nav_pricing')) +    navLink('band-fund',          'ðŸ’° ' + _t('nav_bandFund')) +
     navLink('band-settings',      'âš™ï¸ ' + _t('nav_settings'))
   ) : '';
 

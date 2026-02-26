@@ -97,17 +97,21 @@
         <div class="invite-box">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
             <div>
-              <div style="font-weight:700;color:var(--premium-gold);font-size:var(--text-sm)">🔑 รหัสเชิญสมาชิก</div>
-              <div style="font-size:var(--text-xs);color:#9ca3af;margin-top:2px">แชร์รหัสนี้ให้สมาชิกใช้ในหน้าสมัครเพื่อเข้าร่วมวงอัตโนมัติ</div>
+              <div style="font-weight:700;color:var(--premium-gold);font-size:var(--text-sm)">🔑 รหัสประจำวง</div>
+              <div style="font-size:var(--text-xs);color:#9ca3af;margin-top:2px">แชร์รหัสนี้ให้สมาชิกใช้ในหน้าสมัครเพื่อขอเข้าร่วมวง</div>
             </div>
           </div>
-          <div id="inviteCodeDisplay" class="invite-code-display empty" onclick="copyInviteCode()">ยังไม่มีรหัสเชิญ</div>
-          <div class="invite-expires" id="inviteExpires"></div>
+          <div id="inviteCodeDisplay" class="invite-code-display empty" onclick="copyBandCode()">ยังไม่มีรหัสประจำวง</div>
           <div class="invite-actions">
-            <button type="button" class="btn btn-sm btn-secondary" id="genInviteBtn" onclick="generateInviteCode()">🎲 สร้างรหัสใหม่</button>
-            <button type="button" class="btn btn-sm btn-primary" id="copyInviteBtn" style="display:none" onclick="copyInviteCode()">📋 คัดลอก</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="genInviteBtn" onclick="generateBandCode()">🔑 สร้างรหัสประจำวง</button>
+            <button type="button" class="btn btn-sm btn-primary" id="copyInviteBtn" style="display:none" onclick="copyBandCode()">📋 คัดลอก</button>
           </div>
-          <div class="invite-hint">รหัสมีอายุ 7 วัน • สมาชิกกรอกรหัสนี้ในหน้าสมัครเพื่อเข้าร่วมวงทันที</div>
+          <div class="invite-hint">รหัสใช้ได้ตลอด ไม่มีวันหมดอายุ • สมาชิกกรอกรหัสนี้ในหน้าสมัคร → ผู้จัดการวงอนุมัติ</div>
+        </div>
+        <!-- Pending Members -->
+        <div id="pendingMembersBox" style="display:none;margin-top:var(--spacing-md)">
+          <div style="font-weight:700;color:var(--premium-gold);font-size:var(--text-sm);margin-bottom:8px">⏳ คำขอเข้าร่วมวง</div>
+          <div id="pendingMembersList"></div>
         </div>
       </div>
 

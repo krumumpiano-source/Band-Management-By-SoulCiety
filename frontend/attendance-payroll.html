@@ -81,9 +81,11 @@
   <?!= include('js_nav') ?>
   <script>
   var jobs=[], members=[], currentJobId='', attendance={};
+  var pricingData=null;
 
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    loadPayrollPricing();
     var bandId = localStorage.getItem('bandId') || '';
     var year = new Date().getFullYear();
     Promise.all([
@@ -100,6 +102,19 @@
     loadHistory();
   });
 
+  function loadPayrollPricing(){
+    try { var c=localStorage.getItem('pricingData'); if(c) pricingData=JSON.parse(c); } catch(e){}
+    gasRun('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
+      if(r&&r.success&&r.data){ pricingData=r.data; localStorage.setItem('pricingData',JSON.stringify(pricingData)); }
+    });
+  }
+
+  function getPositionRate(position){
+    if(!pricingData||!pricingData.positions||!position) return null;
+    var match=pricingData.positions.find(function(p){ return p.name===position; });
+    return match ? match.rate : null;
+  }
+
   function loadJobDetail(){
     currentJobId=document.getElementById('jobPicker').value;
     if(!currentJobId){ document.getElementById('jobInfo').style.display='none'; document.getElementById('memberGrid').innerHTML='<div class="empty-state"><p>กรุณาเลือกงานก่อน</p></div>'; return; }
@@ -113,23 +128,51 @@
 
   function renderMembers(totalPay){
     var present=Object.values(attendance).filter(function(a){return a.status==='present';}).length;
+    var hasPositionRates=pricingData&&pricingData.positions&&pricingData.positions.length>0;
     var each=present>0?Math.floor(totalPay/present):0;
+
+    // Calculate position-based rates if available
+    var positionPayMap={};
+    if(hasPositionRates){
+      var totalRateWeight=0;
+      members.forEach(function(m){
+        var att=attendance[m.memberId||m.name]||{status:'present'};
+        if(att.status==='present'){
+          var rate=getPositionRate(m.position||m.role)||each;
+          totalRateWeight+=rate;
+        }
+      });
+      members.forEach(function(m){
+        var att=attendance[m.memberId||m.name]||{status:'present'};
+        if(att.status==='present'&&totalRateWeight>0){
+          var rate=getPositionRate(m.position||m.role)||each;
+          positionPayMap[m.memberId||m.name]=Math.floor(totalPay*(rate/totalRateWeight));
+        } else {
+          positionPayMap[m.memberId||m.name]=0;
+        }
+      });
+    }
+
     document.getElementById('sumTotal').textContent=formatCurrency(totalPay);
     document.getElementById('sumPresent').textContent=present;
     document.getElementById('sumAbsent').textContent=members.length-present;
-    document.getElementById('sumEach').textContent=formatCurrency(each);
+    document.getElementById('sumEach').textContent=hasPositionRates?'ตามตำแหน่ง':formatCurrency(each);
     document.getElementById('memberGrid').innerHTML=members.map(function(m){
       var att=attendance[m.memberId||m.name]||{status:'present'};
+      var memberPay=hasPositionRates?(positionPayMap[m.memberId||m.name]||0):(att.status==='present'?each:0);
+      var posRate=getPositionRate(m.position||m.role);
+      var rateHint=posRate?'<div style="font-size:9px;color:var(--premium-gold)">อัตรา: '+formatCurrency(posRate)+'</div>':'';
       return '<div class="member-att-card">'
         +'<div style="font-size:36px">👤</div>'
         +'<div class="name">'+escapeHtml(m.name||'')+'</div>'
         +'<div class="role">'+escapeHtml(m.position||m.role||'')+'</div>'
+        +rateHint
         +'<div class="att-toggle">'
         +'<button class="att-btn '+(att.status==='present'?'present':'')+'" onclick="setAtt(\''+escapeHtml(m.memberId||m.name)+'\',\'present\')" title="มาร่วม">✓</button>'
         +'<button class="att-btn '+(att.status==='absent'?'absent':'')+'" onclick="setAtt(\''+escapeHtml(m.memberId||m.name)+'\',\'absent\')" title="ขาด">✗</button>'
         +'<button class="att-btn '+(att.status==='substitute'?'substitute':'')+'" onclick="setAtt(\''+escapeHtml(m.memberId||m.name)+'\',\'substitute\')" title="มาแทน">S</button>'
         +'</div>'
-        +'<div style="font-size:var(--text-xs);color:var(--premium-text-muted)">ค่าตัว: '+formatCurrency(att.status==='present'?each:0)+'</div>'
+        +'<div style="font-size:var(--text-xs);color:var(--premium-text-muted)">ค่าตัว: '+formatCurrency(memberPay)+'</div>'
         +'</div>';
     }).join('') || '<div class="empty-state"><p>ไม่มีสมาชิก</p></div>';
   }

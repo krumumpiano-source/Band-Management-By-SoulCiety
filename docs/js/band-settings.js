@@ -271,7 +271,8 @@ function renderAll() {
   renderMembers();
   renderVenueNames();
   renderScheduleGrid();
-  renderInviteCode();
+  renderBandCode();
+  loadPendingMembers();
   renderPayrollSettings();
 }
 function updateBandInfo() {
@@ -280,51 +281,48 @@ function updateBandInfo() {
 }
 
 /* ══════════════════════════════════════════
-   INVITE CODE
+   BAND CODE (รหัสประจำวง — ใช้ได้ตลอด)
 ══════════════════════════════════════════ */
-function renderInviteCode() {
-  var disp = getEl('inviteCodeDisplay'), exp = getEl('inviteExpires'), copyBtn = getEl('copyInviteBtn');
+function renderBandCode() {
+  var disp = getEl('inviteCodeDisplay'), copyBtn = getEl('copyInviteBtn');
   if (!disp) return;
   if (currentInviteCode) {
     disp.textContent = currentInviteCode; disp.classList.remove('empty');
     if (copyBtn) copyBtn.style.display = 'inline-flex';
-    if (exp && currentInviteExpires) {
-      var d = new Date(currentInviteExpires);
-      exp.textContent = 'หมดอายุ: ' + d.toLocaleDateString('th-TH') + ' ' + d.toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'});
-    } else if (exp) exp.textContent = '';
+    // ซ่อนปุ่มสร้าง ถ้ามีรหัสแล้ว
+    var genBtn = getEl('genInviteBtn');
+    if (genBtn) genBtn.textContent = '🔄 สร้างรหัสใหม่';
   } else {
-    disp.textContent = 'ยังไม่มีรหัสเชิญ'; disp.classList.add('empty');
+    disp.textContent = 'ยังไม่มีรหัสประจำวง'; disp.classList.add('empty');
     if (copyBtn) copyBtn.style.display = 'none';
-    if (exp) exp.textContent = '';
   }
 }
-function generateInviteCode() {
+function generateBandCode() {
   var btn = getEl('genInviteBtn'); if (btn) { btn.disabled = true; btn.textContent = 'กำลังสร้าง...'; }
-  function done(code, expires) {
-    currentInviteCode = code; currentInviteExpires = expires; renderInviteCode();
-    showToast('สร้างรหัสเชิญ: ' + code);
-    if (btn) { btn.disabled = false; btn.textContent = '🎲 สร้างรหัสใหม่'; }
+  function done(code) {
+    currentInviteCode = code; currentInviteExpires = null; renderBandCode();
+    showToast('รหัสประจำวง: ' + code);
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 สร้างรหัสใหม่'; }
   }
   if (typeof gasRun === 'function' && currentBandId) {
     gasRun('generateInviteCode', { bandId: currentBandId }, function(r) {
       if (r && r.success) {
         var s = JSON.parse(localStorage.getItem('bandSettings') || '{}');
-        s.inviteCode = r.data.code; s.inviteExpires = r.data.expiresAt;
+        s.inviteCode = r.data.code; s.inviteExpires = null;
         localStorage.setItem('bandSettings', JSON.stringify(s));
-        done(r.data.code, r.data.expiresAt);
-      } else { showToast((r && r.message) || 'เกิดข้อผิดพลาด'); if (btn) { btn.disabled = false; btn.textContent = '🎲 สร้างรหัสใหม่'; } }
+        done(r.data.code);
+      } else { showToast((r && r.message) || 'เกิดข้อผิดพลาด'); if (btn) { btn.disabled = false; btn.textContent = '🔑 สร้างรหัสประจำวง'; } }
     });
   } else {
     var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code = '';
     for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    var exp = new Date(); exp.setDate(exp.getDate() + 7);
     var s = JSON.parse(localStorage.getItem('bandSettings') || '{}');
-    s.inviteCode = code; s.inviteExpires = exp.toISOString();
+    s.inviteCode = code; s.inviteExpires = null;
     localStorage.setItem('bandSettings', JSON.stringify(s));
-    done(code, exp.toISOString());
+    done(code);
   }
 }
-function copyInviteCode() {
+function copyBandCode() {
   if (!currentInviteCode) return;
   if (navigator.clipboard) {
     navigator.clipboard.writeText(currentInviteCode).then(function() { showToast('คัดลอกรหัส ' + currentInviteCode + ' แล้ว'); });
@@ -333,6 +331,48 @@ function copyInviteCode() {
     document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
     showToast('คัดลอกรหัส ' + currentInviteCode + ' แล้ว');
   }
+}
+
+/* ══════════════════════════════════════════
+   PENDING MEMBERS (อนุมัติสมาชิก)
+══════════════════════════════════════════ */
+function loadPendingMembers() {
+  var box = getEl('pendingMembersBox'), list = getEl('pendingMembersList');
+  if (!box || !list) return;
+  if (typeof gasRun !== 'function' || !currentBandId) return;
+  gasRun('getPendingMembers', { bandId: currentBandId }, function(r) {
+    if (!r || !r.success || !r.data || r.data.length === 0) {
+      box.style.display = 'none'; return;
+    }
+    box.style.display = '';
+    list.innerHTML = r.data.map(function(m) {
+      var name = (m.nickname || m.first_name || m.user_name || m.email || '?');
+      var detail = (m.instrument ? m.instrument + ' · ' : '') + (m.email || '');
+      var created = m.created_at ? new Date(m.created_at).toLocaleDateString('th-TH') : '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--premium-off-white);border-radius:var(--radius-sm);margin-bottom:6px;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:120px">' +
+          '<div style="font-weight:700;font-size:var(--text-sm)">' + esc(name) + '</div>' +
+          '<div style="font-size:var(--text-xs);color:var(--premium-text-muted)">' + esc(detail) + (created ? ' · ' + created : '') + '</div>' +
+        '</div>' +
+        '<button class="btn btn-sm btn-primary" style="padding:4px 12px" onclick="approveMember(\'' + esc(m.id) + '\')">✅ อนุมัติ</button>' +
+        '<button class="btn btn-sm" style="padding:4px 12px;background:#e53e3e;color:#fff" onclick="rejectMember(\'' + esc(m.id) + '\')">❌ ปฏิเสธ</button>' +
+      '</div>';
+    }).join('');
+  });
+}
+function approveMember(userId) {
+  if (!confirm('อนุมัติสมาชิกคนนี้เข้าร่วมวง?')) return;
+  gasRun('approveMember', { userId: userId, bandId: currentBandId }, function(r) {
+    if (r && r.success) { showToast('อนุมัติเรียบร้อย'); loadPendingMembers(); }
+    else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+  });
+}
+function rejectMember(userId) {
+  if (!confirm('ปฏิเสธคำขอเข้าร่วมวงนี้?')) return;
+  gasRun('rejectMember', { userId: userId, bandId: currentBandId }, function(r) {
+    if (r && r.success) { showToast('ปฏิเสธเรียบร้อย'); loadPendingMembers(); }
+    else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+  });
 }
 
 /* ══════════════════════════════════════════
@@ -416,10 +456,9 @@ function renderPayrollSettings() {
 }
 
 /* ══════════════════════════════════════════
-   SCHEDULE GRID  (Horizontal)
+   SCHEDULE GRID  (Horizontal — full-width %)
    Rows = days, Columns = time axis →
 ══════════════════════════════════════════ */
-var PX_PER_MIN = 3.5;         // pixels per minute
 
 function renderScheduleGrid() {
   var wrap = getEl('schedGridWrap'); if (!wrap) return;
@@ -435,46 +474,48 @@ function renderScheduleGrid() {
     });
   }
 
-  // Grid time range — only actual data range, no fixed default window
+  // Grid time range
   var gStart, gEnd;
   if (allSlots.length > 0) {
     var minS = Math.min.apply(null, allSlots.map(function(a) { return a.startMin; }));
-    var maxE = Math.max.apply(null, allSlots.map(function(a) { return a.endMin;   }));
+    var maxE = Math.max.apply(null, allSlots.map(function(a) { return a.endMin; }));
     gStart = Math.floor(minS / 60) * 60;
     gEnd   = Math.ceil(maxE  / 60) * 60;
     if (gEnd - gStart < 60) gEnd = gStart + 60;
   } else {
-    gStart = 18 * 60; gEnd = 22 * 60; // default empty view
+    gStart = 18 * 60; gEnd = 23 * 60;
   }
   var totalMin = gEnd - gStart;
-  var trackW   = Math.round(totalMin * PX_PER_MIN);
 
-  // ── Header row (time ticks) ────────────────────────
-  var ticksHtml = '<div class="sg-corner"></div>' +
-    '<div class="sg-time-axis" style="width:' + trackW + 'px">';
+  // Helper: minutes offset → percentage string
+  function pct(min) { return (min / totalMin * 100).toFixed(4) + '%'; }
+
+  // ── Header row (time ticks) ──────────────────────────
+  var ticksHtml = '<div class="sg-corner">&#128197;</div>' +
+    '<div class="sg-time-axis">';
   for (var t = gStart; t <= gEnd; t += 60) {
-    var tx = Math.round((t - gStart) * PX_PER_MIN);
-    ticksHtml += '<div class="sg-tick" style="left:' + tx + 'px">' + minToTime(t) + '</div>';
+    var lp = pct(t - gStart);
+    ticksHtml += '<div class="sg-tick" style="left:' + lp + '">' + minToTime(t) + '</div>' +
+      (t < gEnd ? '<div class="sg-tick-line" style="left:' + lp + '"></div>' : '');
   }
   ticksHtml += '</div>';
 
-  // ── Day rows ──────────────────────────────────────
+  // ── Day rows ──────────────────────────────────────────
   var rowsHtml = '';
   for (var dayIdx = 0; dayIdx < 7; dayIdx++) {
     var daySlots = allSlots.filter(function(a) { return a.day === dayIdx; });
 
-    // Hour grid lines (full = hour, half = 30min)
+    // Grid lines (hour + half-hour)
     var linesHtml = '';
     for (var hh = gStart; hh <= gEnd; hh += 30) {
-      var lx = Math.round((hh - gStart) * PX_PER_MIN);
+      var lp2 = pct(hh - gStart);
       var cls = hh % 60 === 0 ? 'sg-hour-line' : 'sg-hour-line half';
-      linesHtml += '<div class="' + cls + '" style="left:' + lx + 'px"></div>';
+      linesHtml += '<div class="' + cls + '" style="left:' + lp2 + '"></div>';
     }
 
-    // Slot blocks — detect overlap within same day for stacking
+    // Slot blocks — overlap detection → vertical subdivision
     var slotsHtml = '';
     daySlots.forEach(function(a, ai) {
-      // Find overlapping peers
       var peers = daySlots.filter(function(b, bi) {
         return bi !== ai && b.startMin < a.endMin && a.startMin < b.endMin;
       });
@@ -487,31 +528,36 @@ function renderScheduleGrid() {
         groupSize  = group.length;
       }
 
-      var x = Math.round((a.startMin - gStart) * PX_PER_MIN);
-      var w = Math.max(Math.round((a.endMin - a.startMin) * PX_PER_MIN), 26);
-      var col      = getVenueColor(a.slot.venueId);
-      var vname    = esc(getVenueName(a.slot.venueId));
-      var timeStr  = minToTime(a.startMin) + '–' + minToTime(a.endMin % (24 * 60));
-      var mCount   = (a.slot.members || []).length;
-      var leaveCount = (a.slot.members || []).filter(function(m) { return m.onLeave; }).length;
-      var leftPct  = groupSize > 1 ? (posInGroup / groupSize * 100) : 0;
-      var wPct     = groupSize > 1 ? (100 / groupSize) : 100;
-      var stylePos = groupSize > 1
-        ? 'left:calc(' + x + 'px + ' + leftPct + '%);width:calc(' + wPct + '% - 4px);'
-        : 'left:' + x + 'px;width:' + w + 'px;';
+      var slotWidthMin = a.endMin - a.startMin;
+      var leftP  = pct(a.startMin - gStart);
+      var widthP = pct(slotWidthMin);
+      var col    = getVenueColor(a.slot.venueId);
+      var vname  = esc(getVenueName(a.slot.venueId));
+      var timeStr = minToTime(a.startMin) + '–' + minToTime(a.endMin % (24 * 60));
+      var mCount  = (a.slot.members || []).length;
+
+      var topStr    = groupSize > 1 ? (posInGroup / groupSize * 100).toFixed(2) + '%' : '6px';
+      var heightStr = groupSize > 1 ? (100 / groupSize).toFixed(2) + '%'             : 'calc(100% - 12px)';
+      var stylePos  = 'left:' + leftP + ';width:calc(' + widthP + ' - 3px);top:' + topStr + ';height:' + heightStr + ';bottom:auto;';
+
+      // Rough pixel estimate (assume 900px usable width) to decide text verbosity
+      var approxPx = slotWidthMin / totalMin * 900;
 
       slotsHtml += '<div class="sg-slot" data-day="' + dayIdx + '" data-sid="' + esc(a.slot.id) + '" ' +
-        'title="' + vname + ' ' + timeStr + (mCount ? ' | ' + mCount + ' คน' : '') + (leaveCount ? ' | 🏖️ ลา ' + leaveCount + ' คน' : '') + '" ' +
-        'style="' + stylePos + 'background:' + col.bg + ';color:' + col.text + ';">' +
-        '<div class="sg-slot-name">' + vname + (leaveCount ? ' <span style="font-size:10px">🏖️' + leaveCount + '</span>' : '') + '</div>' +
-        (w >= 70 ? '<div class="sg-slot-time">' + timeStr + '</div>' : '') +
-        (mCount > 0 && w >= 90 ? '<div class="sg-slot-members">👥 ' + mCount + (leaveCount ? ' (ลา ' + leaveCount + ')' : '') + '</div>' : '') +
+        'title="' + vname + ' ' + timeStr + (mCount ? ' | ' + mCount + ' คน' : '') + '" ' +
+        'style="' + stylePos + 'background:' + col.bg + ';color:' + col.text + '">' +
+        '<div class="sg-slot-name">' + vname + '</div>' +
+        (approxPx >= 55 ? '<div class="sg-slot-time">' + timeStr + '</div>' : '') +
+        (mCount > 0 && approxPx >= 80 ? '<div class="sg-slot-members">👥 ' + mCount + '</div>' : '') +
         '</div>';
     });
 
     rowsHtml += '<div class="sg-row">' +
-      '<div class="sg-day-label">' + DAY_NAMES[dayIdx] + '</div>' +
-      '<div class="sg-track" data-day="' + dayIdx + '" style="width:' + trackW + 'px">' +
+      '<div class="sg-day-label">' +
+        '<span>' + DAY_NAMES[dayIdx] + '</span>' +
+        '<span class="sg-day-sub">' + (daySlots.length > 0 ? daySlots.length + ' เบรค' : '–') + '</span>' +
+      '</div>' +
+      '<div class="sg-track" data-day="' + dayIdx + '">' +
         linesHtml + slotsHtml +
         (daySlots.length === 0 ? '<div class="sg-track-hint">+ คลิกเพิ่มช่วงงาน</div>' : '') +
       '</div>' +
@@ -524,17 +570,17 @@ function renderScheduleGrid() {
       rowsHtml +
     '</div>';
 
-  // ── Event: click track empty area → add slot modal ────
+  // ── Event: click track → add slot modal ───────────────
   wrap.querySelectorAll('.sg-track').forEach(function(track) {
     track.addEventListener('click', function(e) {
-      // Ignore clicks on existing slots
       if (e.target.classList.contains('sg-slot') || e.target.closest('.sg-slot')) return;
       var day  = +this.dataset.day;
       var rect = this.getBoundingClientRect();
       var relX = e.clientX - rect.left;
-      var approxMin = gStart + Math.round(relX / PX_PER_MIN);
-      approxMin = Math.floor(approxMin / 30) * 30; // snap 30 min
-      var approxEnd = Math.min(approxMin + 180, gEnd); // default 3h
+      var frac = relX / rect.width;
+      var approxMin = gStart + Math.round(frac * totalMin);
+      approxMin = Math.floor(approxMin / 30) * 30;
+      var approxEnd = Math.min(approxMin + 180, gEnd);
       approxMin = Math.max(approxMin, gStart);
       openSlotModal(day, null, minToTime(approxMin), minToTime(approxEnd));
     });
@@ -548,11 +594,11 @@ function renderScheduleGrid() {
     });
   });
 
-  // ── Legend ─────────────────────────────────────────────
+  // ── Legend ────────────────────────────────────────────
   var legendEl = getEl('schedLegend');
   if (legendEl) {
     var namedV = venues.filter(function(v) { return v.name && v.name.trim(); });
-    legendEl.innerHTML = namedV.map(function(v) {
+    legendEl.innerHTML = namedV.length === 0 ? '' : namedV.map(function(v) {
       var col = getVenueColor(v.id);
       return '<div class="sg-legend-item"><div class="sg-legend-dot" style="background:' + col.bg + '"></div>' + esc(v.name) + '</div>';
     }).join('');
@@ -634,108 +680,97 @@ function getEditingSlot() {
   return found;
 }
 
+function findMemberRec(slot, mid) {
+  return (slot.members || []).find(function(x) { return x.memberId === mid; }) || null;
+}
+
 function renderSlotMembers(slot) {
   var list = getEl('sdMemberList'); if (!list) return;
   if (!slot) slot = getEditingSlot(); if (!slot) return;
   if (!slot.members) slot.members = [];
 
   var validBM = bandMembersData.filter(function(m) { return m.name && m.name.trim(); });
-  if (slot.members.length === 0) {
-    list.innerHTML = '<p class="empty-state-small">ยังไม่มีสมาชิกในช่วงนี้ กด ➕ เพื่อเพิ่ม</p>';
+  if (validBM.length === 0) {
+    list.innerHTML = '<p class="empty-state-small">ยังไม่มีสมาชิกในวง กรุณาเพิ่มสมาชิกในหน้าตั้งค่าก่อน</p>';
     return;
   }
 
-  list.innerHTML = slot.members.map(function(mr, mi) {
-    var selOpts = validBM.map(function(m) {
-      var mid = m.memberId || m.id || '';
-      return '<option value="' + esc(mid) + '"' + (mr.memberId === mid ? ' selected' : '') + '>' + esc(m.name) + (m.position ? ' (' + m.position + ')' : '') + '</option>';
-    }).join('');
-    var replMemberOpts = '<option value="">— เลือกจากวง —</option>' + validBM.map(function(m) {
-      var mid = m.memberId || m.id || '';
-      return '<option value="' + esc(mid) + '"' + (mr.replacementId === mid ? ' selected' : '') + '>' + esc(m.name) + '</option>';
-    }).join('');
-    var isLeave = !!mr.onLeave;
-    var leaveBtnCls = isLeave ? 'sd-m-leave-btn on-leave' : 'sd-m-leave-btn';
-    var leaveBtnTxt = isLeave ? '🏖️ ลาแล้ว' : '🏖️ ลา';
-    var dimStyle = isLeave ? 'opacity:.5;text-decoration:line-through;' : '';
-    var replRow = isLeave ?
-      '<div class="sd-repl-row">' +
-        '<label>คนแทน</label>' +
-        '<select class="sd-m-repl-sel" data-mi="' + mi + '">' + replMemberOpts + '</select>' +
-        '<span style="font-size:11px;color:var(--premium-text-muted);flex-shrink:0">หรือพิมพ์ชื่อ</span>' +
-        '<input type="text" class="sd-m-repl-name" data-mi="' + mi + '" placeholder="ชื่อคนนอก" value="' + esc(mr.replacementName || '') + '">' +
-      '</div>' : '';
-    return '<div class="sd-member-block" data-mi="' + mi + '">' +
+  list.innerHTML = validBM.map(function(m) {
+    var mid = m.memberId || m.id || '';
+    var mr  = findMemberRec(slot, mid);
+    var included = !!mr;
+    var rate     = included ? (mr.rate != null ? mr.rate : '') : '';
+    var rateType = included ? (mr.rateType || 'shift') : 'shift';
+
+    var nameStyle   = !included ? 'opacity:.35;' : 'font-weight:700;';
+    var inputDim    = !included ? 'opacity:.25;' : '';
+
+    return '<div class="sd-member-block" data-mid="' + esc(mid) + '">' +
       '<div class="sd-member-row">' +
-        '<select class="sd-m-sel" data-mi="' + mi + '" style="' + dimStyle + '"><option value="">เลือกสมาชิก</option>' + selOpts + '</select>' +
-        '<input type="number" class="sd-m-rate" data-mi="' + mi + '" value="' + (mr.rate || '') + '" placeholder="ค่าแรง" min="0" style="' + dimStyle + '">' +
-        '<select class="sd-m-rtype" data-mi="' + mi + '" style="' + dimStyle + '">' +
-          '<option value="shift"'   + (mr.rateType === 'shift'   || !mr.rateType ? ' selected' : '') + '>บาท/เบรค</option>' +
-          '<option value="hourly"'  + (mr.rateType === 'hourly'  ? ' selected' : '') + '>บาท/ชม</option>' +
-          '<option value="fixed"'   + (mr.rateType === 'fixed'   ? ' selected' : '') + '>คงที่</option>' +
+        '<label class="sd-m-check-label">' +
+          '<input type="checkbox" class="sd-m-check" data-mid="' + esc(mid) + '"' + (included ? ' checked' : '') + '>' +
+          '<span class="sd-m-name" style="' + nameStyle + '">' + esc(m.name) +
+            (m.position ? '<span class="sd-m-pos"> (' + esc(m.position) + ')</span>' : '') +
+          '</span>' +
+        '</label>' +
+        '<input type="number" class="sd-m-rate" data-mid="' + esc(mid) + '" value="' + esc(String(rate)) + '" placeholder="ค่าแรง" min="0"' +
+          (!included ? ' disabled' : '') + ' style="' + inputDim + '">' +
+        '<select class="sd-m-rtype" data-mid="' + esc(mid) + '"' + (!included ? ' disabled' : '') + ' style="' + inputDim + '">' +
+          '<option value="shift"'  + (rateType === 'shift'  ? ' selected' : '') + '>บาท/เบรค</option>' +
+          '<option value="hourly"' + (rateType === 'hourly' ? ' selected' : '') + '>บาท/ชม</option>' +
+          '<option value="fixed"'  + (rateType === 'fixed'  ? ' selected' : '') + '>คงที่</option>' +
         '</select>' +
-        '<button type="button" class="' + leaveBtnCls + '" data-mi="' + mi + '">' + leaveBtnTxt + '</button>' +
-        '<button type="button" class="sd-m-del" data-mi="' + mi + '">🗑️</button>' +
       '</div>' +
-      replRow +
       '</div>';
   }).join('');
 
-  list.querySelectorAll('.sd-m-sel').forEach(function(sel) {
-    sel.addEventListener('change', function() { var s = getEditingSlot(); if (s && s.members[+this.dataset.mi]) s.members[+this.dataset.mi].memberId = this.value; autoSaveLocal(); });
-  });
-  list.querySelectorAll('.sd-m-rate').forEach(function(inp) {
-    inp.addEventListener('input', function() { var s = getEditingSlot(); if (s && s.members[+this.dataset.mi]) s.members[+this.dataset.mi].rate = parseFloat(this.value) || 0; autoSaveLocal(); });
-  });
-  list.querySelectorAll('.sd-m-rtype').forEach(function(sel) {
-    sel.addEventListener('change', function() { var s = getEditingSlot(); if (s && s.members[+this.dataset.mi]) s.members[+this.dataset.mi].rateType = this.value; autoSaveLocal(); });
-  });
-  list.querySelectorAll('.sd-m-leave-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
+  // checkbox: include / exclude member
+  list.querySelectorAll('.sd-m-check').forEach(function(chk) {
+    chk.addEventListener('change', function() {
       var s = getEditingSlot(); if (!s) return;
-      var mi = +this.dataset.mi;
-      s.members[mi].onLeave = !s.members[mi].onLeave;
-      if (!s.members[mi].onLeave) { s.members[mi].replacementId = ''; s.members[mi].replacementName = ''; }
+      var mid = this.dataset.mid;
+      if (this.checked) {
+        if (!findMemberRec(s, mid)) {
+          s.members.push({ memberId: mid, rate: 0, rateType: 'shift' });
+        }
+      } else {
+        s.members = s.members.filter(function(x) { return x.memberId !== mid; });
+      }
       autoSaveLocal(); renderSlotMembers(s); renderScheduleGrid();
     });
   });
-  list.querySelectorAll('.sd-m-repl-sel').forEach(function(sel) {
-    sel.addEventListener('change', function() {
-      var s = getEditingSlot(); if (!s) return;
-      s.members[+this.dataset.mi].replacementId = this.value;
-      autoSaveLocal();
-    });
-  });
-  list.querySelectorAll('.sd-m-repl-name').forEach(function(inp) {
+
+  // rate input
+  list.querySelectorAll('.sd-m-rate').forEach(function(inp) {
     inp.addEventListener('input', function() {
       var s = getEditingSlot(); if (!s) return;
-      s.members[+this.dataset.mi].replacementName = this.value;
-      autoSaveLocal();
+      var mr = findMemberRec(s, this.dataset.mid);
+      if (mr) { mr.rate = parseFloat(this.value) || 0; autoSaveLocal(); }
     });
   });
-  list.querySelectorAll('.sd-m-del').forEach(function(btn) {
-    btn.addEventListener('click', function() {
+
+  // rateType select
+  list.querySelectorAll('.sd-m-rtype').forEach(function(sel) {
+    sel.addEventListener('change', function() {
       var s = getEditingSlot(); if (!s) return;
-      s.members.splice(+this.dataset.mi, 1);
-      autoSaveLocal(); renderSlotMembers(s); renderScheduleGrid();
+      var mr = findMemberRec(s, this.dataset.mid);
+      if (mr) { mr.rateType = this.value; autoSaveLocal(); }
     });
   });
+
 }
 
-function addMemberToSlot() {
-  var slot = getEditingSlot(); if (!slot) return;
-  if (!slot.members) slot.members = [];
-  slot.members.push({ memberId: '', rate: 0, rateType: 'shift', onLeave: false, replacementId: '', replacementName: '' });
-  autoSaveLocal(); renderSlotMembers(slot);
-}
 function applyBulkRate() {
   var rateInp = getEl('bulkRate'), typesel = getEl('bulkType');
-  var rate = parseFloat(rateInp ? rateInp.value : '') || 0;
+  var rate = parseFloat(rateInp ? rateInp.value : '');
+  if (isNaN(rate) || rate < 0) { showToast('กรุณากรอกค่าแรงให้ถูกต้อง', 'error'); return; }
   var rtype = typesel ? typesel.value : 'shift';
   var slot = getEditingSlot(); if (!slot) return;
+  // Apply only to currently-included (checked) members
   (slot.members || []).forEach(function(m) { m.rate = rate; m.rateType = rtype; });
   autoSaveLocal(); renderSlotMembers(slot);
-  showToast('ตั้งค่าแรงทุกคนเป็น ' + rate + ' (' + rtype + ') แล้ว', 'success');
+  var rtypeLabel = { shift: 'บาท/เบรค', hourly: 'บาท/ชม', fixed: 'บาท คงที่' }[rtype] || rtype;
+  showToast('ตั้งค่าแรง ' + rate.toLocaleString('th-TH') + ' ' + rtypeLabel + ' ให้ทุกคนแล้ว ✅', 'success');
 }
 function saveSlotDetail() {
   autoSaveLocal(); showToast('บันทึกสมาชิกเรียบร้อย ✅', 'success');

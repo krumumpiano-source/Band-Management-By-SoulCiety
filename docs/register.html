@@ -45,7 +45,7 @@
         <!-- Mode toggle -->
         <div id="modeSwitchBtns" style="display:flex;gap:6px;margin-bottom:var(--spacing-md)">
           <button type="button" class="btn btn-primary btn-sm" data-mode="create" style="flex:1">🎵 สร้างวงใหม่</button>
-          <button type="button" class="btn btn-secondary btn-sm" data-mode="join" style="flex:1">🔑 เข้าร่วมวงด้วยรหัสเชิญ</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-mode="join" style="flex:1">🔑 เข้าร่วมวงด้วยรหัสวง</button>
         </div>
 
         <!-- ── ข้อมูลส่วนตัว ── -->
@@ -179,13 +179,13 @@
               <option value="อุตรดิตถ์"></option><option value="อุทัยธานี"></option>
               <option value="อุบลราชธานี"></option>
             </datalist>
-            <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px">คุณจะเป็นผู้จัดการวง — สมาชิกอื่นเข้าร่วมด้วยรหัสเชิญที่คุณสร้างได้</div>
+            <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px">คุณจะเป็นผู้จัดการวง — สมาชิกอื่นเข้าร่วมด้วยรหัสประจำวงที่คุณสร้างได้</div>
           </div>
         </div>
 
         <!-- Join with invite code mode -->
         <div id="inviteGroup" class="form-group" style="display:none">
-          <label>🔑 รหัสเชิญจากผู้จัดการวง</label>
+          <label>🔑 รหัสประจำวง</label>
           <input type="text" id="inviteCode" placeholder="กรอกรหัส 6 หลัก เช่น AB3X7Q" maxlength="6"
             style="text-transform:uppercase;font-family:monospace;font-size:1.2rem;letter-spacing:.2em;text-align:center" autocomplete="off">
           <!-- Preview card —— แสดงอัตโนมัติเมื่อกรอกครบ 6 ตัว -->
@@ -194,7 +194,7 @@
             <div id="previewInfo" style="display:none">
               <div class="band-name" id="previewBandName"></div>
               <div class="band-meta" id="previewBandMeta"></div>
-              <div style="font-size:var(--text-xs);color:#15803d;margin-top:6px">✅ รหัสถูกต้อง — กดสมัครเพื่อเข้าร่วมวงนี้</div>
+              <div style="font-size:var(--text-xs);color:#15803d;margin-top:6px">✅ รหัสถูกต้อง — กดสมัครเพื่อส่งคำขอเข้าร่วมวง (รอผู้จัดการวงอนุมัติ)</div>
             </div>
           </div>
         </div>
@@ -274,7 +274,7 @@
             preview.className     = 'invite-preview show';
           } else {
             document.getElementById('previewBandName').textContent = '❌ ' + ((r && r.message) || 'รหัสไม่ถูกต้อง');
-            document.getElementById('previewBandMeta').textContent = 'กรุณาตรวจสอบรหัสอีกครั้ง';
+            document.getElementById('previewBandMeta').textContent = 'กรุณาตรวจสอบรหัสประจำวงอีกครั้ง';
             info.style.display    = '';
             preview.className     = 'invite-preview show error';
           }
@@ -311,10 +311,10 @@
       if (pw !== cpw)  { $err('confirmError', 'รหัสผ่านไม่ตรงกัน'); ok = false; }
       if (!joinMode && !band)     { $err('generalError', 'กรุณากรอกชื่อวง'); ok = false; }
       if (!joinMode && !province) { $err('generalError', 'กรุณาเลือกจังหวัด'); ok = false; }
-      if (joinMode && !invite)    { $err('generalError', 'กรุณากรอกรหัสเชิญ'); ok = false; }
+      if (joinMode && !invite)    { $err('generalError', 'กรุณากรอกรหัสประจำวง'); ok = false; }
       // ตรวจว่า invite preview ไม่ error ก่อน submit
       if (joinMode && document.getElementById('invitePreview').classList.contains('error')) {
-        $err('generalError', 'รหัสเชิญไม่ถูกต้อง กรุณาตรวจสอบ'); ok = false;
+        $err('generalError', 'รหัสวงไม่ถูกต้อง กรุณาตรวจสอบ'); ok = false;
       }
       if (!ok) return;
 
@@ -338,8 +338,8 @@
       }, function(r) {
         btn.disabled = false; btn.textContent = 'สมัครสมาชิก';
         if (r && r.success) {
-          if (typeof showToast === 'function') showToast((r.message || 'สมัครเรียบร้อย!') + ' กำลังไปหน้าล็อกอิน...', 'success');
-          setTimeout(function() { window.location.href = 'index.html'; }, 1800);
+          if (typeof showToast === 'function') showToast((r.message || 'สมัครเรียบร้อย!'), 'success');
+          setTimeout(function() { window.location.href = 'index.html'; }, 2500);
         } else {
           $err('generalError', (r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
         }

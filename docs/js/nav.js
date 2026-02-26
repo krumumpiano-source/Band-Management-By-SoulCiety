@@ -61,7 +61,7 @@ function renderMainNav(containerId) {
     navLink('dashboard',       '📊 ' + _t('nav_dashboard')) +
     navLink('songs',           '🎵 ' + _t('nav_songs')) +
     navLink('song-insights',   '🎙️ ' + _t('nav_songInsights')) +
-    navLink('leave',           '🔄 ' + _t('nav_leave')) +
+    // navLink('leave',           '🔄 ' + _t('nav_leave')) +  // ปิดชั่วคราว
     // navLink('external-payout', '💵 ' + _t('nav_externalPayout')) +  // ปิดชั่วคราว
     navLink('schedule',        '📅 ' + _t('nav_schedule')) +
     // navLink('quotation',       '📄 ' + _t('nav_quotation')) +        // ปิดชั่วคราว

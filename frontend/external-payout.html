@@ -23,7 +23,7 @@
         <form id="payoutForm">
           <div class="form-group"><label>ชื่อผู้รับเงิน *</label><input type="text" id="payeeName" required></div>
           <div class="form-group"><label>ประเภท</label>
-            <select id="payeeType">
+            <select id="payeeType" onchange="onPayeeTypeChange()">
               <option value="นักดนตรีเกสต์">นักดนตรีเกสต์</option>
               <option value="นักร้องเกสต์">นักร้องเกสต์</option>
               <option value="เทคนิเชียน">เทคนิเชียน</option>
@@ -31,6 +31,7 @@
             </select>
           </div>
           <div class="form-group"><label>ค่าตัว (บาท) *</label><input type="number" id="amount" min="0" required></div>
+          <div id="extPricingHint" style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:-8px;margin-bottom:var(--spacing-sm)"></div>
           <div class="form-group"><label>วันที่</label><input type="date" id="payDate"></div>
           <div class="form-group"><label>งาน (ถ้ามี)</label>
             <select id="jobRef"><option value="">— ไม่ระบุ —</option></select>
@@ -55,15 +56,51 @@
   <?!= include('js_app') ?>
   <?!= include('js_nav') ?>
   <script>
+  var pricingData=null;
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
     document.getElementById('payDate').value = new Date().toISOString().substring(0,10);
+    loadExtPricing();
     gasRun('getSchedule',{},function(r){
       var sel=document.getElementById('jobRef'); var jobs=(r&&r.data)||[];
       jobs.forEach(function(j){ var o=document.createElement('option'); o.value=j.jobId||''; o.textContent=formatDate(j.date)+' — '+(j.venue||''); sel.appendChild(o); });
     });
     loadPayouts();
   });
+
+  function loadExtPricing(){
+    try { var c=localStorage.getItem('pricingData'); if(c) pricingData=JSON.parse(c); } catch(e){}
+    gasRun('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
+      if(r&&r.success&&r.data){ pricingData=r.data; localStorage.setItem('pricingData',JSON.stringify(pricingData)); }
+      populateExtTypes();
+    });
+    populateExtTypes();
+  }
+
+  function populateExtTypes(){
+    if(!pricingData||!pricingData.external||!pricingData.external.length) return;
+    var sel=document.getElementById('payeeType');
+    sel.innerHTML='';
+    pricingData.external.forEach(function(e){
+      var o=document.createElement('option'); o.value=e.type;
+      o.textContent=e.type+(e.rate?' ('+formatCurrency(e.rate)+')':'');
+      sel.appendChild(o);
+    });
+  }
+
+  function onPayeeTypeChange(){
+    if(!pricingData||!pricingData.external) return;
+    var type=document.getElementById('payeeType').value;
+    var match=pricingData.external.find(function(e){return e.type===type;});
+    var hint=document.getElementById('extPricingHint');
+    if(match&&match.rate>0){
+      var amtInput=document.getElementById('amount');
+      if(!amtInput.value || amtInput.value==='0') amtInput.value=match.rate;
+      hint.textContent='💡 อัตรามาตรฐาน: '+formatCurrency(match.rate)+(match.note?' — '+match.note:'');
+    } else {
+      hint.textContent='';
+    }
+  }
   document.getElementById('payoutForm').addEventListener('submit', function(e){
     e.preventDefault();
     var btn=document.getElementById('saveBtn'); btn.disabled=true; btn.textContent=t('loading');

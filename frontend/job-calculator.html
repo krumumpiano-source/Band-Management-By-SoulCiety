@@ -29,6 +29,13 @@
         <!-- Input -->
         <div class="card">
           <div class="card-header"><h3 class="card-title">ข้อมูลงาน</h3></div>
+          <div class="form-group">
+            <label>ประเภทงาน</label>
+            <select id="calcJobType" onchange="onCalcJobTypeChange()">
+              <option value="">— เลือกประเภท (เติมราคาอัตโนมัติ) —</option>
+            </select>
+          </div>
+          <div id="calcPricingHint" style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-sm)"></div>
           <div class="form-group"><label>ค่าตัวรวม (บาท) *</label><input type="number" id="totalAmount" value="20000" min="0" oninput="recalc()"></div>
           <div class="form-group"><label>เปอร์เซ็นต์กองกลาง (%)</label><input type="number" id="fundPct" value="10" min="0" max="100" step="0.5" oninput="recalc()"></div>
           <div class="form-group"><label>ค่าใช้จ่ายอื่นๆ (บาท)</label><input type="number" id="otherExpense" value="0" min="0" oninput="recalc()"></div>
@@ -61,8 +68,10 @@
   <?!= include('js_nav') ?>
   <script>
   var members=[];
+  var pricingData=null;
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    loadCalcPricing();
     gasRun('getBandMembers',{},function(r){
       members=(r&&r.data)||[];
       buildMemberRates();
@@ -76,6 +85,48 @@
       recalc();
     });
   });
+
+  function loadCalcPricing(){
+    try { var c=localStorage.getItem('pricingData'); if(c) pricingData=JSON.parse(c); } catch(e){}
+    gasRun('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
+      if(r&&r.success&&r.data){ pricingData=r.data; localStorage.setItem('pricingData',JSON.stringify(pricingData)); }
+      populateCalcJobTypes();
+      applyPricingDefaults();
+    });
+    populateCalcJobTypes();
+    applyPricingDefaults();
+  }
+
+  function populateCalcJobTypes(){
+    var sel=document.getElementById('calcJobType');
+    sel.innerHTML='<option value="">— เลือกประเภท (เติมราคาอัตโนมัติ) —</option>';
+    if(pricingData&&pricingData.jobTypes){
+      pricingData.jobTypes.forEach(function(jt){
+        var o=document.createElement('option'); o.value=jt.name;
+        o.textContent=jt.name+' ('+formatCurrency(jt.price)+')';
+        sel.appendChild(o);
+      });
+    }
+  }
+
+  function applyPricingDefaults(){
+    if(!pricingData) return;
+    if(pricingData.fundPercent!==undefined) document.getElementById('fundPct').value=pricingData.fundPercent;
+    if(pricingData.defaultExpense) document.getElementById('otherExpense').value=pricingData.defaultExpense;
+    recalc();
+  }
+
+  function onCalcJobTypeChange(){
+    var type=document.getElementById('calcJobType').value;
+    var hint=document.getElementById('calcPricingHint');
+    if(!type||!pricingData||!pricingData.jobTypes){ hint.textContent=''; return; }
+    var match=pricingData.jobTypes.find(function(jt){return jt.name===type;});
+    if(match){
+      document.getElementById('totalAmount').value=match.price;
+      hint.textContent='💡 ราคามาตรฐาน '+escapeHtml(match.name)+': '+formatCurrency(match.price);
+      recalc();
+    }
+  }
   function buildMemberRates(){
     document.getElementById('memberRates').innerHTML=members.map(function(m){
       return '<div class="member-rate-row"><label>'+escapeHtml(m.name||'')+'</label>'

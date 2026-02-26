@@ -43,8 +43,16 @@
           <div class="form-group"><label>สถานที่</label><input type="text" id="qVenue"></div>
         </div>
         <div class="form-group"><label>รายการ</label>
+          <div style="display:flex;gap:var(--spacing-sm);margin-bottom:var(--spacing-sm);flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="addItem()">+ เพิ่มรายการ</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="showServiceCatalog()" id="catalogBtn" style="display:none">📋 เลือกจากรายการบริการ</button>
+          </div>
+          <div id="serviceCatalog" style="display:none;background:var(--premium-off-white);border:1px solid var(--premium-gold);border-radius:var(--radius-md);padding:var(--spacing-md);margin-bottom:var(--spacing-md)">
+            <div style="font-size:var(--text-sm);font-weight:600;margin-bottom:var(--spacing-sm)">📋 รายการบริการสำเร็จรูป (กดเลือกเพื่อเพิ่ม)</div>
+            <div id="catalogItems"></div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="hideServiceCatalog()" style="margin-top:var(--spacing-sm)">ปิด</button>
+          </div>
           <div id="qItems"></div>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="addItem()">+ เพิ่มรายการ</button>
         </div>
         <div class="form-r">
           <div class="form-group"><label>ส่วนลด (บาท)</label><input type="number" id="qDiscount" value="0" min="0" oninput="calcTotal()"></div>
@@ -94,10 +102,49 @@
   <?!= include('js_nav') ?>
   <script>
   var quotations=[];
+  var pricingData=null;
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    loadQuotPricing();
     loadQuotations();
   });
+
+  function loadQuotPricing(){
+    try { var c=localStorage.getItem('pricingData'); if(c) pricingData=JSON.parse(c); } catch(e){}
+    gasRun('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
+      if(r&&r.success&&r.data){ pricingData=r.data; localStorage.setItem('pricingData',JSON.stringify(pricingData)); }
+      if(pricingData&&pricingData.services&&pricingData.services.length){
+        document.getElementById('catalogBtn').style.display='inline-flex';
+      }
+    });
+    if(pricingData&&pricingData.services&&pricingData.services.length){
+      document.getElementById('catalogBtn').style.display='inline-flex';
+    }
+  }
+
+  function showServiceCatalog(){
+    if(!pricingData||!pricingData.services||!pricingData.services.length){ showToast('ยังไม่มีรายการบริการ กรุณาตั้งค่าในตารางราคา','info'); return; }
+    var cat=document.getElementById('serviceCatalog');
+    cat.style.display='block';
+    document.getElementById('catalogItems').innerHTML=pricingData.services.map(function(s,i){
+      return '<div style="display:flex;align-items:center;gap:var(--spacing-sm);padding:6px 0;border-bottom:1px solid #e2e8f0;cursor:pointer" onclick="addFromCatalog('+i+')">'
+        +'<span style="flex:1;font-size:var(--text-sm)">'+escapeHtml(s.desc)+'</span>'
+        +'<span style="font-size:var(--text-xs);color:var(--premium-text-muted)">×'+s.qty+'</span>'
+        +'<span style="font-size:var(--text-sm);font-weight:600;color:var(--premium-gold)">'+formatCurrency(s.price)+'</span>'
+        +'<span style="font-size:16px">➕</span>'
+        +'</div>';
+    }).join('');
+  }
+
+  function hideServiceCatalog(){ document.getElementById('serviceCatalog').style.display='none'; }
+
+  function addFromCatalog(idx){
+    if(!pricingData||!pricingData.services[idx]) return;
+    var s=pricingData.services[idx];
+    addItem(s.desc, s.qty, s.price);
+    calcTotal();
+    showToast('เพิ่ม "'+s.desc+'" แล้ว','success');
+  }
 
   function loadQuotations(){
     gasRun('getAllQuotations',{},function(r){

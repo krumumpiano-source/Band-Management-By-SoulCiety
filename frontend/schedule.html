@@ -49,7 +49,7 @@
           <div class="form-group"><label data-i18n="date">วันที่ *</label><input type="date" id="dateInput" required></div>
           <div class="form-group">
             <label data-i18n="jobType">ประเภทงาน</label>
-            <select id="jobType">
+            <select id="jobType" onchange="onJobTypeChange()">
               <option value="งานแต่ง">งานแต่ง</option>
               <option value="งานเลี้ยง">งานเลี้ยง</option>
               <option value="คอนเสิร์ต">คอนเสิร์ต</option>
@@ -69,6 +69,7 @@
             <select id="jobStatus"><option value="confirmed">ยืนยัน</option><option value="tentative">รอการยืนยัน</option><option value="cancelled">ยกเลิก</option></select>
           </div>
         </div>
+        <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:-8px;margin-bottom:var(--spacing-sm)" id="pricingHint"></div>
         <div class="form-group"><label data-i18n="notes">หมายเหตุ</label><textarea id="jobNotes" rows="2"></textarea></div>
         <div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm)">
           <button type="button" class="btn btn-secondary" onclick="closeJobModal()" data-i18n="cancel">ยกเลิก</button>
@@ -121,11 +122,37 @@
   <script>
   var curYear = new Date().getFullYear(), curMonth = new Date().getMonth();
   var allJobs = [];
+  var pricingData = null;
 
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    loadPricingData();
     loadJobs();
   });
+
+  /* ─── Load pricing from localStorage/GAS ─── */
+  function loadPricingData(){
+    try { var c=localStorage.getItem('pricingData'); if(c) pricingData=JSON.parse(c); } catch(e){}
+    gasRun('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
+      if(r&&r.success&&r.data){ pricingData=r.data; localStorage.setItem('pricingData',JSON.stringify(pricingData)); }
+    });
+  }
+
+  function onJobTypeChange(){
+    if(!pricingData||!pricingData.jobTypes) return;
+    var type=document.getElementById('jobType').value;
+    var match=pricingData.jobTypes.find(function(jt){return jt.name===type;});
+    var hint=document.getElementById('pricingHint');
+    if(match && match.price>0){
+      var payInput=document.getElementById('payment');
+      if(!payInput.value || payInput.value==='0'){
+        payInput.value=match.price;
+      }
+      hint.textContent='💡 ราคามาตรฐาน: '+formatCurrency(match.price)+' (จากตารางราคา)';
+    } else {
+      hint.textContent='';
+    }
+  }
 
   function loadJobs() {
     var bandId = localStorage.getItem('bandId') || '';

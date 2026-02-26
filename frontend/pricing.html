@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตารางราคามาตรฐาน — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <?!= include('css_theme') ?>
+  <?!= include('css_nav') ?>
+  <?!= include('css_browser-compat') ?>
+  <style>
+    .pricing-section{margin-bottom:var(--spacing-xl)}
+    .pricing-row{display:grid;grid-template-columns:2fr 1fr 40px;gap:var(--spacing-sm);align-items:center;margin-bottom:var(--spacing-sm)}
+    .pricing-row.header{font-weight:700;font-size:var(--text-sm);color:var(--premium-text-muted);border-bottom:2px solid var(--premium-gold);padding-bottom:var(--spacing-sm);margin-bottom:var(--spacing-md)}
+    .pricing-row input,.pricing-row select{font-size:var(--text-sm);padding:8px 10px;border:1px solid #e2e8f0;border-radius:var(--radius-sm);font-family:inherit}
+    .pricing-row input:focus,.pricing-row select:focus{border-color:var(--premium-gold);outline:none;box-shadow:0 0 0 3px rgba(249,207,69,.2)}
+    .pricing-row .remove-btn{padding:6px 10px;background:#e53e3e;color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px}
+    .pricing-row .remove-btn:hover{background:#c53030}
+    .pricing-tabs{display:flex;gap:4px;margin-bottom:var(--spacing-lg);flex-wrap:wrap}
+    .pricing-tab{padding:10px 20px;border-radius:var(--radius-md) var(--radius-md) 0 0;border:2px solid var(--premium-light-gray);border-bottom:none;background:var(--premium-off-white);cursor:pointer;font-size:var(--text-sm);font-weight:600;font-family:inherit;transition:all .15s;color:var(--premium-text-muted)}
+    .pricing-tab.active{background:var(--premium-white);border-color:var(--premium-gold);color:var(--premium-gold)}
+    .pricing-tab:hover:not(.active){background:var(--premium-white)}
+    .pricing-panel{display:none;border:2px solid var(--premium-gold);border-radius:0 var(--radius-lg) var(--radius-lg) var(--radius-lg);padding:var(--spacing-xl);background:var(--premium-white)}
+    .pricing-panel.active{display:block}
+    .pricing-summary{background:linear-gradient(135deg,#2d3748,#4a5568);color:#fff;border-radius:var(--radius-xl);padding:var(--spacing-xl);margin-bottom:var(--spacing-xl);display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--spacing-lg);text-align:center}
+    .pricing-summary .val{font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
+    .pricing-summary .lbl{font-size:var(--text-xs);color:#cbd5e0;margin-top:4px}
+    .ext-pricing-row{display:grid;grid-template-columns:2fr 1fr 1fr 40px;gap:var(--spacing-sm);align-items:center;margin-bottom:var(--spacing-sm)}
+    .ext-pricing-row.header{font-weight:700;font-size:var(--text-sm);color:var(--premium-text-muted);border-bottom:2px solid var(--premium-gold);padding-bottom:var(--spacing-sm);margin-bottom:var(--spacing-md)}
+    .ext-pricing-row input,.ext-pricing-row select{font-size:var(--text-sm);padding:8px 10px;border:1px solid #e2e8f0;border-radius:var(--radius-sm);font-family:inherit}
+    .service-pricing-row{display:grid;grid-template-columns:3fr 1fr 1fr 40px;gap:var(--spacing-sm);align-items:center;margin-bottom:var(--spacing-sm)}
+    .service-pricing-row.header{font-weight:700;font-size:var(--text-sm);color:var(--premium-text-muted);border-bottom:2px solid var(--premium-gold);padding-bottom:var(--spacing-sm);margin-bottom:var(--spacing-md)}
+    .service-pricing-row input{font-size:var(--text-sm);padding:8px 10px;border:1px solid #e2e8f0;border-radius:var(--radius-sm);font-family:inherit}
+    .fund-settings{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+    @media(max-width:480px){.fund-settings{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <div id="confirmModal"></div>
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title" data-i18n="nav_pricing">💲 ตารางราคามาตรฐาน</h1>
+        <button class="btn btn-primary" onclick="saveAllPricing()" id="saveAllBtn" data-i18n="save">💾 บันทึกทั้งหมด</button>
+      </div>
+
+      <!-- Summary -->
+      <div class="pricing-summary">
+        <div><div class="val" id="sumJobTypes">0</div><div class="lbl">ประเภทงาน</div></div>
+        <div><div class="val" id="sumPositions">0</div><div class="lbl">ตำแหน่ง/อัตรา</div></div>
+        <div><div class="val" id="sumServices">0</div><div class="lbl">รายการบริการ</div></div>
+        <div><div class="val" id="sumExternal">0</div><div class="lbl">อัตราคนนอก</div></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="pricing-tabs">
+        <button class="pricing-tab active" onclick="switchTab('jobTypes')">📅 ประเภทงาน</button>
+        <button class="pricing-tab" onclick="switchTab('positions')">🎸 ตำแหน่ง/อัตรา</button>
+        <button class="pricing-tab" onclick="switchTab('services')">📋 รายการบริการ (ใบเสนอราคา)</button>
+        <button class="pricing-tab" onclick="switchTab('external')">👤 อัตราคนนอก</button>
+        <button class="pricing-tab" onclick="switchTab('fundSettings')">🏦 ตั้งค่ากองกลาง</button>
+      </div>
+
+      <!-- Panel 1: Job Type Pricing -->
+      <div class="pricing-panel active" id="panel-jobTypes">
+        <div class="card-header" style="margin-bottom:var(--spacing-md)">
+          <h3 class="card-title">📅 ราคามาตรฐานตามประเภทงาน</h3>
+          <button class="btn btn-secondary btn-sm" onclick="addJobType()">+ เพิ่มประเภท</button>
+        </div>
+        <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">กำหนดราคามาตรฐานสำหรับงานแต่ละประเภท — จะถูกเติมอัตโนมัติเมื่อเพิ่มงานใน "ตารางงาน" และ "คำนวณค่าตัว"</p>
+        <div class="pricing-row header"><span>ประเภทงาน</span><span>ราคามาตรฐาน (บาท)</span><span></span></div>
+        <div id="jobTypeList"></div>
+      </div>
+
+      <!-- Panel 2: Position Rates -->
+      <div class="pricing-panel" id="panel-positions">
+        <div class="card-header" style="margin-bottom:var(--spacing-md)">
+          <h3 class="card-title">🎸 อัตราค่าตัวตามตำแหน่ง</h3>
+          <button class="btn btn-secondary btn-sm" onclick="addPosition()">+ เพิ่มตำแหน่ง</button>
+        </div>
+        <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">ใช้แบ่งค่าตัวตามตำแหน่ง (แทนการหารเท่ากัน) ใน "เบิก-จ่ายค่าตัว"</p>
+        <div class="pricing-row header"><span>ตำแหน่ง</span><span>อัตราค่าตัว (บาท/งาน)</span><span></span></div>
+        <div id="positionList"></div>
+      </div>
+
+      <!-- Panel 3: Service Items (for Quotation) -->
+      <div class="pricing-panel" id="panel-services">
+        <div class="card-header" style="margin-bottom:var(--spacing-md)">
+          <h3 class="card-title">📋 รายการบริการสำเร็จรูป</h3>
+          <button class="btn btn-secondary btn-sm" onclick="addService()">+ เพิ่มรายการ</button>
+        </div>
+        <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">รายการบริการสำเร็จรูปสำหรับใช้สร้าง "ใบเสนอราคา" — กดเลือกแล้วเติมให้ทันที</p>
+        <div class="service-pricing-row header"><span>รายการบริการ</span><span>จำนวนเริ่มต้น</span><span>ราคา/หน่วย (บาท)</span><span></span></div>
+        <div id="serviceList"></div>
+      </div>
+
+      <!-- Panel 4: External Worker Rates -->
+      <div class="pricing-panel" id="panel-external">
+        <div class="card-header" style="margin-bottom:var(--spacing-md)">
+          <h3 class="card-title">👤 อัตรามาตรฐานสำหรับคนนอก</h3>
+          <button class="btn btn-secondary btn-sm" onclick="addExternal()">+ เพิ่มประเภท</button>
+        </div>
+        <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">อัตราค่าตัวมาตรฐานสำหรับ "จ่ายค่าตัวคนนอก" — เติมอัตโนมัติเมื่อเลือกประเภท</p>
+        <div class="ext-pricing-row header"><span>ประเภทคนนอก</span><span>ค่าตัวมาตรฐาน (บาท)</span><span>หมายเหตุ</span><span></span></div>
+        <div id="externalList"></div>
+      </div>
+
+      <!-- Panel 5: Fund Settings -->
+      <div class="pricing-panel" id="panel-fundSettings">
+        <div class="card-header" style="margin-bottom:var(--spacing-md)">
+          <h3 class="card-title">🏦 ตั้งค่ากองกลาง</h3>
+        </div>
+        <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">กำหนดเปอร์เซ็นต์กองกลางเริ่มต้น — ใช้ใน "คำนวณค่าตัว" และ "เบิก-จ่าย"</p>
+        <div class="fund-settings">
+          <div class="form-group">
+            <label>เปอร์เซ็นต์กองกลาง (%)</label>
+            <input type="number" id="fundPercent" value="10" min="0" max="100" step="0.5">
+          </div>
+          <div class="form-group">
+            <label>ค่าใช้จ่ายคงที่เริ่มต้น (บาท)</label>
+            <input type="number" id="defaultExpense" value="0" min="0">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <?!= include('js_i18n') ?>
+  <?!= include('js_app') ?>
+  <?!= include('js_nav') ?>
+  <script>
+  /* ─── Data ─── */
+  var pricingData = {
+    jobTypes: [],
+    positions: [],
+    services: [],
+    external: [],
+    fundPercent: 10,
+    defaultExpense: 0
+  };
+
+  /* ─── Init ─── */
+  document.addEventListener('DOMContentLoaded', function(){
+    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    loadPricing();
+  });
+
+  /* ─── Tab switching ─── */
+  function switchTab(tab){
+    document.querySelectorAll('.pricing-tab').forEach(function(t,i){ t.classList.remove('active'); });
+    document.querySelectorAll('.pricing-panel').forEach(function(p){ p.classList.remove('active'); });
+    document.getElementById('panel-'+tab).classList.add('active');
+    var tabs=['jobTypes','positions','services','external','fundSettings'];
+    document.querySelectorAll('.pricing-tab')[tabs.indexOf(tab)].classList.add('active');
+  }
+
+  /* ─── Load/Save ─── */
+  function loadPricing(){
+    // Try localStorage cache first
+    try {
+      var cached = localStorage.getItem('pricingData');
+      if(cached) { pricingData = JSON.parse(cached); renderAll(); }
+    } catch(e){}
+    // Then fetch from server
+    gasRun('getPricing', { bandId: localStorage.getItem('bandId')||'' }, function(r){
+      if(r && r.success && r.data){
+        pricingData = r.data;
+        localStorage.setItem('pricingData', JSON.stringify(pricingData));
+        renderAll();
+      } else if(!pricingData.jobTypes.length){
+        // Load defaults
+        pricingData = getDefaults();
+        renderAll();
+      }
+    });
+  }
+
+  function getDefaults(){
+    return {
+      jobTypes: [
+        { name:'งานแต่ง', price:25000 },
+        { name:'งานเลี้ยง', price:20000 },
+        { name:'คอนเสิร์ต', price:35000 },
+        { name:'ซ้อม', price:0 },
+        { name:'อื่นๆ', price:15000 }
+      ],
+      positions: [
+        { name:'นักร้อง', rate:3000 },
+        { name:'กีตาร์', rate:2500 },
+        { name:'เบส', rate:2500 },
+        { name:'กลอง', rate:2500 },
+        { name:'คีย์บอร์ด', rate:2500 }
+      ],
+      services: [
+        { desc:'วงดนตรีสด 5 ชิ้น', qty:1, price:20000 },
+        { desc:'นักร้อง (เพิ่ม)', qty:1, price:3000 },
+        { desc:'ระบบเสียง PA', qty:1, price:5000 },
+        { desc:'ไฟเวที', qty:1, price:3000 },
+        { desc:'ค่าเดินทาง', qty:1, price:2000 }
+      ],
+      external: [
+        { type:'นักดนตรีเกสต์', rate:2500, note:'' },
+        { type:'นักร้องเกสต์', rate:3000, note:'' },
+        { type:'เทคนิเชียน', rate:2000, note:'' },
+        { type:'อื่นๆ', rate:1500, note:'' }
+      ],
+      fundPercent: 10,
+      defaultExpense: 0
+    };
+  }
+
+  function saveAllPricing(){
+    collectData();
+    var btn = document.getElementById('saveAllBtn');
+    btn.disabled = true; btn.textContent = t('loading');
+    localStorage.setItem('pricingData', JSON.stringify(pricingData));
+    gasRun('savePricing', { bandId: localStorage.getItem('bandId')||'', data: pricingData }, function(r){
+      btn.disabled = false; btn.textContent = '💾 ' + t('save');
+      if(r && r.success){ showToast(t('msg_saveSuccess')||'บันทึกสำเร็จ','success'); }
+      else { showToast('บันทึกในเครื่องแล้ว (offline)','info'); }
+      updateSummary();
+    });
+  }
+
+  function collectData(){
+    pricingData.jobTypes = [];
+    document.querySelectorAll('#jobTypeList .pricing-row').forEach(function(row){
+      var inputs = row.querySelectorAll('input');
+      if(inputs[0] && inputs[0].value.trim()){
+        pricingData.jobTypes.push({ name: inputs[0].value.trim(), price: parseFloat(inputs[1].value)||0 });
+      }
+    });
+    pricingData.positions = [];
+    document.querySelectorAll('#positionList .pricing-row').forEach(function(row){
+      var inputs = row.querySelectorAll('input');
+      if(inputs[0] && inputs[0].value.trim()){
+        pricingData.positions.push({ name: inputs[0].value.trim(), rate: parseFloat(inputs[1].value)||0 });
+      }
+    });
+    pricingData.services = [];
+    document.querySelectorAll('#serviceList .service-pricing-row').forEach(function(row){
+      var inputs = row.querySelectorAll('input');
+      if(inputs[0] && inputs[0].value.trim()){
+        pricingData.services.push({ desc: inputs[0].value.trim(), qty: parseFloat(inputs[1].value)||1, price: parseFloat(inputs[2].value)||0 });
+      }
+    });
+    pricingData.external = [];
+    document.querySelectorAll('#externalList .ext-pricing-row').forEach(function(row){
+      var inputs = row.querySelectorAll('input');
+      if(inputs[0] && inputs[0].value.trim()){
+        pricingData.external.push({ type: inputs[0].value.trim(), rate: parseFloat(inputs[1].value)||0, note: inputs[2]?inputs[2].value:'' });
+      }
+    });
+    pricingData.fundPercent = parseFloat(document.getElementById('fundPercent').value)||0;
+    pricingData.defaultExpense = parseFloat(document.getElementById('defaultExpense').value)||0;
+  }
+
+  /* ─── Render All ─── */
+  function renderAll(){
+    renderJobTypes();
+    renderPositions();
+    renderServices();
+    renderExternal();
+    document.getElementById('fundPercent').value = pricingData.fundPercent||10;
+    document.getElementById('defaultExpense').value = pricingData.defaultExpense||0;
+    updateSummary();
+  }
+
+  function updateSummary(){
+    document.getElementById('sumJobTypes').textContent = pricingData.jobTypes.length;
+    document.getElementById('sumPositions').textContent = pricingData.positions.length;
+    document.getElementById('sumServices').textContent = pricingData.services.length;
+    document.getElementById('sumExternal').textContent = pricingData.external.length;
+  }
+
+  /* ─── Job Types ─── */
+  function renderJobTypes(){
+    var html = pricingData.jobTypes.map(function(jt, i){
+      return '<div class="pricing-row">'
+        +'<input type="text" value="'+escapeHtml(jt.name)+'" placeholder="ประเภทงาน">'
+        +'<input type="number" value="'+(jt.price||0)+'" min="0" placeholder="ราคา">'
+        +'<button class="remove-btn" onclick="removeJobType('+i+')">×</button>'
+        +'</div>';
+    }).join('');
+    document.getElementById('jobTypeList').innerHTML = html;
+  }
+  function addJobType(){ pricingData.jobTypes.push({name:'',price:0}); renderJobTypes(); }
+  function removeJobType(i){ collectData(); pricingData.jobTypes.splice(i,1); renderJobTypes(); updateSummary(); }
+
+  /* ─── Positions ─── */
+  function renderPositions(){
+    var html = pricingData.positions.map(function(p, i){
+      return '<div class="pricing-row">'
+        +'<input type="text" value="'+escapeHtml(p.name)+'" placeholder="ตำแหน่ง">'
+        +'<input type="number" value="'+(p.rate||0)+'" min="0" placeholder="อัตรา">'
+        +'<button class="remove-btn" onclick="removePosition('+i+')">×</button>'
+        +'</div>';
+    }).join('');
+    document.getElementById('positionList').innerHTML = html;
+  }
+  function addPosition(){ pricingData.positions.push({name:'',rate:0}); renderPositions(); }
+  function removePosition(i){ collectData(); pricingData.positions.splice(i,1); renderPositions(); updateSummary(); }
+
+  /* ─── Services ─── */
+  function renderServices(){
+    var html = pricingData.services.map(function(s, i){
+      return '<div class="service-pricing-row">'
+        +'<input type="text" value="'+escapeHtml(s.desc)+'" placeholder="รายละเอียดบริการ">'
+        +'<input type="number" value="'+(s.qty||1)+'" min="0" placeholder="จำนวน">'
+        +'<input type="number" value="'+(s.price||0)+'" min="0" placeholder="ราคา/หน่วย">'
+        +'<button class="remove-btn" onclick="removeService('+i+')">×</button>'
+        +'</div>';
+    }).join('');
+    document.getElementById('serviceList').innerHTML = html;
+  }
+  function addService(){ pricingData.services.push({desc:'',qty:1,price:0}); renderServices(); }
+  function removeService(i){ collectData(); pricingData.services.splice(i,1); renderServices(); updateSummary(); }
+
+  /* ─── External ─── */
+  function renderExternal(){
+    var html = pricingData.external.map(function(e, i){
+      return '<div class="ext-pricing-row">'
+        +'<input type="text" value="'+escapeHtml(e.type)+'" placeholder="ประเภท">'
+        +'<input type="number" value="'+(e.rate||0)+'" min="0" placeholder="ค่าตัว">'
+        +'<input type="text" value="'+escapeHtml(e.note||'')+'" placeholder="หมายเหตุ">'
+        +'<button class="remove-btn" onclick="removeExternal('+i+')">×</button>'
+        +'</div>';
+    }).join('');
+    document.getElementById('externalList').innerHTML = html;
+  }
+  function addExternal(){ pricingData.external.push({type:'',rate:0,note:''}); renderExternal(); }
+  function removeExternal(i){ collectData(); pricingData.external.splice(i,1); renderExternal(); updateSummary(); }
+  </script>
+</body>
+</html>
