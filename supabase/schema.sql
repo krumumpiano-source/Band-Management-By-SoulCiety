@@ -411,6 +411,58 @@ create policy "playlist_history: เห็นเฉพาะวงตัวเ�
   using (band_id = public.get_my_band_id());
 
 -- ============================================================
+-- 17. SETLISTS
+-- ============================================================
+create table if not exists public.setlists (
+  id          uuid primary key default uuid_generate_v4(),
+  band_id     text not null unique,
+  sets_data   jsonb default '{}'::jsonb,
+  created_at  timestamptz default now(),
+  updated_at  timestamptz default now()
+);
+alter table public.setlists enable row level security;
+create policy "setlists: เห็นเฉพาะวงตัวเอง"
+  on public.setlists for all
+  using (band_id = public.get_my_band_id());
+
+-- ============================================================
+-- 18. FUND_TRANSACTIONS
+-- ============================================================
+create table if not exists public.fund_transactions (
+  id          uuid primary key default uuid_generate_v4(),
+  band_id     text not null,
+  type        text not null default 'income',
+  amount      numeric default 0,
+  date        text not null,
+  category    text default '',
+  description text default '',
+  created_at  timestamptz default now()
+);
+alter table public.fund_transactions enable row level security;
+create policy "fund_tx: เห็นเฉพาะวงตัวเอง"
+  on public.fund_transactions for all
+  using (band_id = public.get_my_band_id());
+
+-- ============================================================
+-- 19. EXTERNAL_PAYOUTS
+-- ============================================================
+create table if not exists public.external_payouts (
+  id          uuid primary key default uuid_generate_v4(),
+  band_id     text not null,
+  payee_name  text default '',
+  payee_type  text default '',
+  amount      numeric default 0,
+  date        text default '',
+  job_id      text default '',
+  notes       text default '',
+  created_at  timestamptz default now()
+);
+alter table public.external_payouts enable row level security;
+create policy "ext_payouts: เห็นเฉพาะวงตัวเอง"
+  on public.external_payouts for all
+  using (band_id = public.get_my_band_id());
+
+-- ============================================================
 -- FUNCTIONS — custom RPC สำหรับ invite code
 -- ============================================================
 

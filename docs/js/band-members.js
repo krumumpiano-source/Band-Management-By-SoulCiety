@@ -2,7 +2,7 @@ var _allMembers = [];
 var _filteredMembers = [];
 
 function loadBandMembers() {
-  gasRun('getBandMembers', {}, function(r) {
+  gasRun('getAllBandMembers', {}, function(r) {
     _allMembers = (r && r.success && r.data) ? r.data : [];
     _filteredMembers = _allMembers;
     renderMemberCards(_allMembers);

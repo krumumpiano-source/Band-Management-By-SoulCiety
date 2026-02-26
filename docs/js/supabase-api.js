@@ -111,7 +111,9 @@
         case 'getBandCode':         return doGetBandCode(d);
 
         // ── Songs ──────────────────────────────────────────────────
-        case 'getAllSongs':         return doGetAllSongs(d);
+        case 'getAllSongs':
+        case 'getSongs':
+        case 'getAllBandSongs':    return doGetAllSongs(d);
         case 'getSong':            return doGetOne('band_songs', d.songId);
         case 'addSong':            return doInsert('band_songs', d.data || d);
         case 'updateSong':         return doUpdate('band_songs', d.songId, d.data || d);
@@ -120,7 +122,8 @@
         case 'getPlaylistHistory': return doSelect('playlist_history', { band_id: getBandId() }, '-created_at', 50);
 
         // ── Band Members ───────────────────────────────────────────
-        case 'getAllBandMembers':   return doGetBandMembers();
+        case 'getAllBandMembers':
+        case 'getBandMembers':     return doGetBandMembers();
         case 'addBandMember':      return doInsert('band_members', d.data || d);
         case 'updateBandMember':   return doUpdate('band_members', d.memberId, d.data || d);
         case 'deleteBandMember':   return doDelete('band_members', d.memberId);
@@ -144,6 +147,31 @@
         case 'rejectLeave':        return doUpdate('leave_requests', d.leaveId, { status: 'rejected' });
 
         case 'getDashboardSummary': return doGetDashboardSummary();
+
+        // ── Pending Members ────────────────────────────────────────
+        case 'getPendingMembers':  return doGetPendingMembers(d);
+        case 'approveMember':      return doApproveMember(d);
+        case 'rejectMember':       return doRejectMember(d);
+
+        // ── Setlist ────────────────────────────────────────────────
+        case 'getSetlist':         return doGetSetlist(d);
+        case 'saveSetlist':        return doSaveSetlist(d);
+
+        // ── Band Fund (กองกลาง) ────────────────────────────────────
+        case 'getFundTransactions':    return doGetFundTransactions(d);
+        case 'addFundTransaction':     return doAddFundTransaction(d);
+        case 'deleteFundTransaction':  return doDeleteFundTransaction(d);
+
+        // ── External Payout ────────────────────────────────────────
+        case 'addExternalPayout':      return doInsert('external_payouts', Object.assign({ band_id: getBandId() }, toSnakeObj(d)));
+        case 'getAllExternalPayouts':   return doSelect('external_payouts', { band_id: getBandId() }, '-date');
+        case 'deleteExternalPayout':   return doDelete('external_payouts', d.payoutId);
+
+        // ── Statistics ─────────────────────────────────────────────
+        case 'getStatistics':      return doGetStatistics(d);
+
+        // ── Quotation PDF ──────────────────────────────────────────
+        case 'generateQuotationPdf': return doGenerateQuotationPdf(d);
 
         // ── Band Settings ──────────────────────────────────────────
         case 'saveBandSettings':   return doSaveBandSettings(d);
@@ -183,6 +211,14 @@
         case 'updateUserRole':  return doUpdate('profiles', d.userId, { role: d.role });
         case 'deleteUser':      return doAdminDeleteUser(d.userId);
         case 'getSystemInfo':   return doGetSystemInfo();
+
+        // ── Legacy (GAS-only, ไม่รองรับใน Supabase) ────────────────
+        case 'createBackup':
+        case 'getSpreadsheetUrl':
+        case 'runSetupFromAdmin':
+        case 'clearAllData':
+        case 'resetUsers':
+          return { success: false, message: 'ฟีเจอร์นี้ไม่พร้อมใช้งานในเวอร์ชัน Supabase' };
 
         default:
           return { success: false, message: 'Unknown action: ' + action };
@@ -665,6 +701,169 @@
         songCount:     sg.count || 0,
         serverTime:    new Date().toISOString()
       }};
+    }
+
+    // ── Setlist ─────────────────────────────────────────────────
+    async function doGetSetlist(d) {
+      var bandId = d.bandId || getBandId();
+      var { data, error } = await sb.from('setlists')
+        .select('*').eq('band_id', bandId)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      return { success: true, data: (data && data.sets_data) || null };
+    }
+
+    async function doSaveSetlist(d) {
+      var bandId = d.bandId || getBandId();
+      // upsert: one active setlist per band
+      var { error } = await sb.from('setlists').upsert({
+        band_id:    bandId,
+        sets_data:  d.sets || {},
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'band_id' });
+      if (error) throw error;
+      return { success: true, message: 'บันทึก Setlist เรียบร้อย' };
+    }
+
+    // ── Band Fund (กองกลาง) ──────────────────────────────────────
+    async function doGetFundTransactions(d) {
+      var bandId = d.bandId || getBandId();
+      var { data, error } = await sb.from('fund_transactions')
+        .select('*').eq('band_id', bandId).order('date', { ascending: false });
+      if (error) throw error;
+      var rows = toCamelList(data || []);
+      var balance = 0;
+      (data || []).forEach(function(r) {
+        if (r.type === 'income') balance += (r.amount || 0);
+        else balance -= (r.amount || 0);
+      });
+      return { success: true, data: { transactions: rows, balance: balance } };
+    }
+
+    async function doAddFundTransaction(d) {
+      var bandId = d.bandId || getBandId();
+      var row = {
+        band_id:     bandId,
+        type:        d.type || 'income',
+        amount:      parseFloat(d.amount) || 0,
+        date:        d.date || new Date().toISOString().slice(0, 10),
+        category:    d.category || '',
+        description: d.description || ''
+      };
+      var { data, error } = await sb.from('fund_transactions').insert(row).select().single();
+      if (error) throw error;
+      return { success: true, data: toCamel(data) };
+    }
+
+    async function doDeleteFundTransaction(d) {
+      return doDelete('fund_transactions', d.txId);
+    }
+
+    // ── Statistics ────────────────────────────────────────────────
+    async function doGetStatistics(d) {
+      var bandId = d.bandId || getBandId();
+      var year   = d.year || new Date().getFullYear();
+      var startDate = year + '-01-01';
+      var endDate   = year + '-12-31';
+
+      // Fetch schedule + attendance + fund in parallel
+      var [jobsRes, attRes, fundRes, memberRes] = await Promise.all([
+        sb.from('schedule').select('*').eq('band_id', bandId).gte('date', startDate).lte('date', endDate),
+        sb.from('attendance_payroll').select('*').eq('band_id', bandId).gte('date', startDate).lte('date', endDate),
+        sb.from('fund_transactions').select('*').eq('band_id', bandId).gte('date', startDate).lte('date', endDate),
+        sb.from('band_members').select('id,name,position').eq('band_id', bandId)
+      ]);
+
+      var jobs = jobsRes.data || [];
+      var att  = attRes.data || [];
+      var fund = fundRes.data || [];
+
+      // Filter by month if specified
+      var filteredJobs = jobs;
+      var filteredAtt = att;
+      var filteredFund = fund;
+      if (d.month) {
+        var mStr = String(d.month).padStart(2, '0');
+        var prefix = year + '-' + mStr;
+        filteredJobs = jobs.filter(function(j) { return (j.date || '').startsWith(prefix); });
+        filteredAtt = att.filter(function(a) { return (a.date || '').startsWith(prefix); });
+        filteredFund = fund.filter(function(f) { return (f.date || '').startsWith(prefix); });
+      }
+
+      var totalIncome = 0, totalExpense = 0;
+      filteredFund.forEach(function(f) {
+        if (f.type === 'income') totalIncome += (f.amount || 0);
+        else totalExpense += (f.amount || 0);
+      });
+      // Also count payroll
+      filteredAtt.forEach(function(a) {
+        totalIncome += (a.total_amount || 0);
+      });
+
+      // By month breakdown (always full year)
+      var byMonth = [];
+      for (var m = 0; m < 12; m++) {
+        var mp = String(m + 1).padStart(2, '0');
+        var pf = year + '-' + mp;
+        var mi = 0;
+        fund.filter(function(f) { return (f.date||'').startsWith(pf) && f.type === 'income'; })
+          .forEach(function(f) { mi += (f.amount || 0); });
+        att.filter(function(a) { return (a.date||'').startsWith(pf); })
+          .forEach(function(a) { mi += (a.total_amount || 0); });
+        byMonth.push({ income: mi });
+      }
+
+      // By type
+      var typeCounts = {};
+      filteredJobs.forEach(function(j) {
+        var t = j.type || 'อื่นๆ';
+        typeCounts[t] = (typeCounts[t] || 0) + 1;
+      });
+      var byType = Object.keys(typeCounts).map(function(k) { return { type: k, count: typeCounts[k] }; });
+
+      // Top members
+      var memberEarnings = {};
+      filteredAtt.forEach(function(a) {
+        var name = a.member_name || 'ไม่ระบุ';
+        if (!memberEarnings[name]) memberEarnings[name] = { name: name, position: '', jobCount: 0, totalEarned: 0 };
+        memberEarnings[name].jobCount++;
+        memberEarnings[name].totalEarned += (a.total_amount || 0);
+      });
+      var topMembers = Object.values(memberEarnings).sort(function(a, b) { return b.totalEarned - a.totalEarned; }).slice(0, 10);
+
+      return {
+        success: true,
+        data: {
+          totalJobs:    filteredJobs.length,
+          totalIncome:  totalIncome,
+          totalExpense: totalExpense,
+          byMonth:      byMonth,
+          byType:       byType,
+          topMembers:   topMembers
+        }
+      };
+    }
+
+    // ── Quotation PDF (client-side) ──────────────────────────────
+    async function doGenerateQuotationPdf(d) {
+      // Fetch quotation data
+      var { data, error } = await sb.from('quotations').select('*').eq('id', d.quotationId).single();
+      if (error || !data) return { success: false, message: 'ไม่พบใบเสนอราคา' };
+      // Generate simple printable page
+      var q = toCamel(data);
+      var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ใบเสนอราคา</title>'
+        + '<style>body{font-family:Sarabun,sans-serif;padding:40px}table{width:100%;border-collapse:collapse;margin:20px 0}'
+        + 'th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f5f5f5}.total{font-size:1.3em;font-weight:bold;text-align:right;margin-top:20px}</style></head>'
+        + '<body><h1>ใบเสนอราคา</h1>'
+        + '<p><strong>ลูกค้า:</strong> ' + (q.clientName || '-') + '</p>'
+        + '<p><strong>วันที่:</strong> ' + (q.date || '-') + '</p>'
+        + '<p><strong>รายละเอียด:</strong> ' + (q.description || '-') + '</p>'
+        + '<p class="total">รวมทั้งสิ้น: ฿' + (q.totalAmount || q.amount || 0).toLocaleString() + '</p>'
+        + '<p style="margin-top:40px;text-align:center;color:#888">Band Management By SoulCiety</p>'
+        + '</body></html>';
+      var blob = new Blob([html], { type: 'text/html' });
+      var url = URL.createObjectURL(blob);
+      return { success: true, url: url };
     }
 
     // ── Restore session จาก Supabase ─────────────────────────────

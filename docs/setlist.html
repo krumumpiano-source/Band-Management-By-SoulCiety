@@ -73,7 +73,7 @@
 
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
-    gasRun('getAllBandSongs', {}, function(r) {
+    gasRun('getAllSongs', {}, function(r) {
       allSongs = (r && r.success && r.data) ? r.data : [];
       renderPool(allSongs);
     });

@@ -187,10 +187,10 @@
 
     // Fetch from GAS API
     if (bandId && typeof gasRun === 'function') {
-      gasRun('getSongs', {bandId: bandId}, function(result) {
-        if (result && result.success && result.songs) {
-          localStorage.setItem('bandSongs', JSON.stringify(result.songs));
-          loadInsights(result.songs);
+      gasRun('getAllSongs', {bandId: bandId}, function(result) {
+        if (result && result.success && result.data) {
+          localStorage.setItem('bandSongs', JSON.stringify(result.data));
+          loadInsights(result.data);
         } else if (!cached) {
           ['frequentSongsList','newSongsList','systemHitsList'].forEach(function(id) {
             var el = document.getElementById(id);

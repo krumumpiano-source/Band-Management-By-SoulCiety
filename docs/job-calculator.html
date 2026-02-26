@@ -63,7 +63,7 @@
   var members=[];
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
-    gasRun('getBandMembers',{},function(r){
+    gasRun('getAllBandMembers',{},function(r){
       members=(r&&r.data)||[];
       buildMemberRates();
       recalc();
