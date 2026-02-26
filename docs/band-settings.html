@@ -68,6 +68,30 @@
 
     #toast{display:none;position:fixed;bottom:24px;right:24px;background:var(--premium-gold);color:#fff;padding:12px 20px;border-radius:var(--radius-md);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.25)}
     #toast.show{display:block}
+
+    /* ── Weekly Timetable ──────────────────────────────── */
+    .wt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .wt-grid{display:flex;min-width:560px;gap:0;position:relative}
+    .wt-time-col{width:48px;flex-shrink:0;position:relative}
+    .wt-time-col .wt-header{height:36px}
+    .wt-time-tick{position:absolute;right:6px;font-size:10px;color:var(--premium-text-muted);transform:translateY(-50%);white-space:nowrap;user-select:none}
+    .wt-day-col{flex:1;min-width:72px;position:relative;border-left:1px solid #e2e8f0}
+    .wt-day-col:last-child{border-right:1px solid #e2e8f0}
+    .wt-header{height:36px;background:linear-gradient(135deg,#1a202c,#2d3748);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#f3f4f6;border-bottom:2px solid var(--premium-gold);position:sticky;top:0;z-index:2}
+    .wt-body{position:relative;border-bottom:1px solid #e2e8f0}
+    .wt-hour-line{position:absolute;left:0;right:0;border-top:1px dashed #e2e8f0;pointer-events:none}
+    .wt-hour-line.full{border-top-style:solid;border-top-color:#cbd5e0}
+    .wt-slot{position:absolute;left:2px;right:2px;border-radius:6px;padding:3px 5px;font-size:11px;font-weight:600;overflow:hidden;cursor:default;transition:filter .15s;box-shadow:0 1px 4px rgba(0,0,0,.18);z-index:1}
+    .wt-slot:hover{filter:brightness(1.1);z-index:3}
+    .wt-slot .wt-slot-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .wt-slot .wt-slot-time{font-size:9px;opacity:.85;white-space:nowrap}
+    .wt-slot.conflict{outline:2px solid #e53e3e;outline-offset:-2px;animation:conflictPulse 1.5s infinite}
+    @keyframes conflictPulse{0%,100%{box-shadow:0 0 0 0 rgba(229,62,62,.5)}50%{box-shadow:0 0 0 4px rgba(229,62,62,0)}}
+    .wt-conflict-badge{display:inline-block;background:#e53e3e;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;margin-left:8px;animation:conflictPulse 1.5s infinite}
+    .wt-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--spacing-md)}
+    .wt-legend-item{display:flex;align-items:center;gap:5px;font-size:12px}
+    .wt-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+    .wt-empty{text-align:center;padding:40px;color:var(--premium-text-muted);font-size:var(--text-sm)}
   </style>
 </head>
 <body>
@@ -136,6 +160,16 @@
         <div id="venuesList"></div>
       </div>
 
+      <!-- Weekly Timetable -->
+      <div class="card" id="weeklyTimetableCard" style="display:none">
+        <div class="card-header">
+          <h3 class="card-title">📆 ตารางภาพรวมสัปดาห์ <span id="wtConflictBadge" class="wt-conflict-badge" style="display:none">⚠️ ทับซ้อน</span></h3>
+        </div>
+        <div class="wt-wrap">
+          <div id="weeklyTimetable"></div>
+        </div>
+        <div id="wtLegend" class="wt-legend"></div>
+      </div>
 
     </div>
   </main>

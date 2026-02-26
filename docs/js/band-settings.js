@@ -279,6 +279,7 @@ function renderAll() {
   renderMembers();
   renderVenues();
   renderInviteCode();
+  renderWeeklyTimetable();
 }
 
 function updateBandInfo() {
@@ -543,6 +544,8 @@ function renderVenues() {
   list.querySelectorAll('.save-venue-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) { e.stopPropagation(); saveVenues(this); });
   });
+  // อัปเดตตารางภาพรวมทุกครั้งที่ render venues
+  if (typeof renderWeeklyTimetable === 'function') renderWeeklyTimetable();
 }
 
 function renderTimeSlotsForVenueDay(v, vi, day) {
@@ -679,6 +682,180 @@ function buildScheduleData() {
     });
   });
   return merged;
+}
+
+/* ══════════════════════════════════════════
+   WEEKLY TIMETABLE
+══════════════════════════════════════════ */
+var WT_COLORS = [
+  { bg: '#f6ad55', text: '#7b341e' }, // orange
+  { bg: '#63b3ed', text: '#1a365d' }, // blue
+  { bg: '#68d391', text: '#1c4532' }, // green
+  { bg: '#fc8181', text: '#742a2a' }, // red
+  { bg: '#b794f4', text: '#44337a' }, // purple
+  { bg: '#f687b3', text: '#702459' }, // pink
+  { bg: '#76e4f7', text: '#065666' }, // cyan
+  { bg: '#faf089', text: '#744210' }, // yellow
+];
+
+function wtTimeToMin(t) {
+  if (!t || typeof t !== 'string') return null;
+  var parts = t.split(':');
+  if (parts.length < 2) return null;
+  var h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+function wtMinToLabel(min) {
+  var h = Math.floor(min / 60) % 24;
+  var m = min % 60;
+  return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+}
+
+function renderWeeklyTimetable() {
+  var card   = getEl('weeklyTimetableCard');
+  var wrap   = getEl('weeklyTimetable');
+  var legend = getEl('wtLegend');
+  var badge  = getEl('wtConflictBadge');
+  if (!card || !wrap) return;
+
+  // Collect all slots: { venueIdx, venueName, day(0-6), startMin, endMin }
+  var allSlots = [];
+  venues.forEach(function(v, vi) {
+    if (!v.name || !v.name.trim()) return;
+    var sched = v.schedule || {};
+    Object.keys(sched).forEach(function(dayStr) {
+      var day = parseInt(dayStr, 10);
+      if (isNaN(day)) return;
+      var slots = sched[dayStr].timeSlots || [];
+      slots.forEach(function(slot) {
+        var s = wtTimeToMin(slot.startTime);
+        var e = wtTimeToMin(slot.endTime);
+        if (s === null || e === null) return;
+        // Handle overnight: e.g. 21:00 - 01:00 → endMin = 25*60
+        if (e <= s) e += 24 * 60;
+        allSlots.push({ vi: vi, name: v.name.trim(), day: day, startMin: s, endMin: e });
+      });
+    });
+  });
+
+  var namedVenues = venues.filter(function(v) { return v.name && v.name.trim(); });
+  if (namedVenues.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = '';
+
+  if (allSlots.length === 0) {
+    wrap.innerHTML = '<div class="wt-empty">ยังไม่มีช่วงเวลา — เพิ่มร้านและตารางเวลาก่อนครับ</div>';
+    if (legend) legend.innerHTML = '';
+    if (badge) badge.style.display = 'none';
+    return;
+  }
+
+  // Grid time range: round to hour
+  var minStart = Math.min.apply(null, allSlots.map(function(s) { return s.startMin; }));
+  var maxEnd   = Math.max.apply(null, allSlots.map(function(s) { return s.endMin; }));
+  var gridStart = Math.floor(minStart / 60) * 60;       // round down to hour
+  var gridEnd   = Math.ceil(maxEnd   / 60) * 60;        // round up to hour
+  if (gridEnd - gridStart < 60) gridEnd = gridStart + 60;
+  var totalMin  = gridEnd - gridStart;
+  var PX_PER_MIN = 2.2;                                  // pixel per minute
+  var gridHeight = Math.round(totalMin * PX_PER_MIN);
+
+  // Conflict detection: per day, check overlaps
+  var conflictSet = {};  // key "vi-day-startMin" for each slot involved in conflict
+  var hasConflict = false;
+  var days = [0,1,2,3,4,5,6];
+  days.forEach(function(day) {
+    var daySlots = allSlots.filter(function(s) { return s.day === day; });
+    for (var a = 0; a < daySlots.length; a++) {
+      for (var b = a + 1; b < daySlots.length; b++) {
+        var sa = daySlots[a], sb = daySlots[b];
+        if (sa.startMin < sb.endMin && sb.startMin < sa.endMin) {
+          conflictSet[sa.vi + '-' + sa.day + '-' + sa.startMin] = true;
+          conflictSet[sb.vi + '-' + sb.day + '-' + sb.startMin] = true;
+          hasConflict = true;
+        }
+      }
+    }
+  });
+
+  // Color map: venueIdx → color
+  var venueColorMap = {};
+  namedVenues.forEach(function(v, ci) {
+    var realIdx = venues.indexOf(v);
+    venueColorMap[realIdx] = WT_COLORS[ci % WT_COLORS.length];
+  });
+
+  // Build HTML
+  var DAY_SHORT = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  var html = '<div class="wt-grid">';
+
+  // Time column
+  html += '<div class="wt-time-col"><div class="wt-header"></div><div class="wt-body" style="height:' + gridHeight + 'px;position:relative;">';
+  for (var t = gridStart; t <= gridEnd; t += 60) {
+    var pct = ((t - gridStart) / totalMin) * gridHeight;
+    html += '<div class="wt-time-tick" style="top:' + Math.round(pct) + 'px">' + wtMinToLabel(t) + '</div>';
+  }
+  html += '</div></div>';
+
+  // Day columns
+  days.forEach(function(day) {
+    var daySlots = allSlots.filter(function(s) { return s.day === day; });
+    html += '<div class="wt-day-col"><div class="wt-header">' + DAY_SHORT[day] + '</div>';
+    html += '<div class="wt-body" style="height:' + gridHeight + 'px;position:relative;">';
+    // Hour lines
+    for (var hh = gridStart; hh <= gridEnd; hh += 60) {
+      var linePct = Math.round(((hh - gridStart) / totalMin) * gridHeight);
+      var isFullHour = (hh % 60 === 0);
+      html += '<div class="wt-hour-line' + (isFullHour ? ' full' : '') + '" style="top:' + linePct + 'px"></div>';
+    }
+    // Slots
+    daySlots.forEach(function(slot) {
+      var topPx   = Math.round(((slot.startMin - gridStart) / totalMin) * gridHeight);
+      var height  = Math.max(Math.round(((slot.endMin - slot.startMin) / totalMin) * gridHeight), 18);
+      var color   = venueColorMap[slot.vi] || WT_COLORS[0];
+      var cKey    = slot.vi + '-' + slot.day + '-' + slot.startMin;
+      var isConflict = conflictSet[cKey] ? ' conflict' : '';
+      // Stagger overlapping slots (simple: left/right halves)
+      var sameDayDups = daySlots.filter(function(x) { return x.startMin < slot.endMin && slot.startMin < x.endMin && x !== slot; });
+      var leftStyle = '', rightStyle = '';
+      if (sameDayDups.length > 0) {
+        var myIdx = daySlots.indexOf(slot);
+        var overlapGroup = daySlots.filter(function(x) { return x.startMin < slot.endMin && slot.startMin < x.endMin; });
+        var posInGroup = overlapGroup.indexOf(slot);
+        var groupSize = overlapGroup.length;
+        var widthPct = Math.floor(100 / groupSize);
+        leftStyle = 'left:' + (2 + posInGroup * widthPct) + '%;right:auto;width:calc(' + widthPct + '% - 4px);';
+      }
+      html += '<div class="wt-slot' + isConflict + '" title="' + esc(slot.name) + ' ' + wtMinToLabel(slot.startMin) + '-' + wtMinToLabel(slot.endMin % (24*60)) + '" style="top:' + topPx + 'px;height:' + height + 'px;background:' + color.bg + ';color:' + color.text + ';' + leftStyle + '">';
+      html += '<div class="wt-slot-name">' + esc(slot.name) + '</div>';
+      if (height >= 30) html += '<div class="wt-slot-time">' + wtMinToLabel(slot.startMin) + '–' + wtMinToLabel(slot.endMin % (24*60)) + '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  wrap.innerHTML = html;
+
+  // Legend
+  if (legend) {
+    var lgHtml = '';
+    namedVenues.forEach(function(v, ci) {
+      var realIdx = venues.indexOf(v);
+      var col = venueColorMap[realIdx] || WT_COLORS[0];
+      lgHtml += '<div class="wt-legend-item"><div class="wt-legend-dot" style="background:' + col.bg + '"></div>' + esc(v.name) + '</div>';
+    });
+    legend.innerHTML = lgHtml;
+  }
+
+  // Conflict badge
+  if (badge) badge.style.display = hasConflict ? '' : 'none';
+}
+
+// Called whenever a timeslot changes — re-render timetable live
+function refreshTimetable() {
+  autoSaveLocal();
+  renderWeeklyTimetable();
 }
 
 /* ══════════════════════════════════════════
