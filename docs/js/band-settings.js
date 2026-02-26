@@ -419,18 +419,7 @@ function renderPayrollSettings() {
    SCHEDULE GRID  (Horizontal)
    Rows = days, Columns = time axis →
 ══════════════════════════════════════════ */
-var DAY_LABEL_W = 72;   // px width of the day-name column
-var MIN_PX_PER_MIN = 1.5;
-var MAX_PX_PER_MIN = 7;
-
-function calcPxPerMin(totalMin) {
-  var outer = getEl('schedGridWrap');
-  var available = outer ? (outer.parentElement || outer).offsetWidth - DAY_LABEL_W - 2 : 600;
-  if (available < 120) available = 120;
-  var fit = available / totalMin;
-  // clamp: don't shrink below min (allows scroll), don't stretch above max
-  return Math.min(Math.max(fit, MIN_PX_PER_MIN), MAX_PX_PER_MIN);
-}
+var PX_PER_MIN = 3.5;         // pixels per minute
 
 function renderScheduleGrid() {
   var wrap = getEl('schedGridWrap'); if (!wrap) return;
@@ -446,20 +435,19 @@ function renderScheduleGrid() {
     });
   }
 
-  // Grid time range: fit exactly to actual data (±30 min padding), fallback 18-22
+  // Grid time range — only actual data range, no fixed default window
   var gStart, gEnd;
   if (allSlots.length > 0) {
     var minS = Math.min.apply(null, allSlots.map(function(a) { return a.startMin; }));
     var maxE = Math.max.apply(null, allSlots.map(function(a) { return a.endMin;   }));
-    gStart = Math.floor((minS - 30) / 60) * 60;
-    gEnd   = Math.ceil((maxE + 30) / 60) * 60;
-    if (gStart < 0) gStart = 0;
+    gStart = Math.floor(minS / 60) * 60;
+    gEnd   = Math.ceil(maxE  / 60) * 60;
+    if (gEnd - gStart < 60) gEnd = gStart + 60;
   } else {
-    gStart = 18 * 60; gEnd = 22 * 60; // default placeholder when no data
+    gStart = 18 * 60; gEnd = 22 * 60; // default empty view
   }
   var totalMin = gEnd - gStart;
-  var PX_PER_MIN = calcPxPerMin(totalMin);
-  var trackW = Math.round(totalMin * PX_PER_MIN);
+  var trackW   = Math.round(totalMin * PX_PER_MIN);
 
   // ── Header row (time ticks) ────────────────────────
   var ticksHtml = '<div class="sg-corner"></div>' +
@@ -501,22 +489,23 @@ function renderScheduleGrid() {
 
       var x = Math.round((a.startMin - gStart) * PX_PER_MIN);
       var w = Math.max(Math.round((a.endMin - a.startMin) * PX_PER_MIN), 26);
-      var col     = getVenueColor(a.slot.venueId);
-      var vname   = esc(getVenueName(a.slot.venueId));
-      var timeStr = minToTime(a.startMin) + '–' + minToTime(a.endMin % (24 * 60));
-      var mCount  = (a.slot.members || []).length;
-      var leftPct = groupSize > 1 ? (posInGroup / groupSize * 100) : 0;
-      var wPct    = groupSize > 1 ? (100 / groupSize) : 100;
+      var col      = getVenueColor(a.slot.venueId);
+      var vname    = esc(getVenueName(a.slot.venueId));
+      var timeStr  = minToTime(a.startMin) + '–' + minToTime(a.endMin % (24 * 60));
+      var mCount   = (a.slot.members || []).length;
+      var leaveCount = (a.slot.members || []).filter(function(m) { return m.onLeave; }).length;
+      var leftPct  = groupSize > 1 ? (posInGroup / groupSize * 100) : 0;
+      var wPct     = groupSize > 1 ? (100 / groupSize) : 100;
       var stylePos = groupSize > 1
         ? 'left:calc(' + x + 'px + ' + leftPct + '%);width:calc(' + wPct + '% - 4px);'
         : 'left:' + x + 'px;width:' + w + 'px;';
 
       slotsHtml += '<div class="sg-slot" data-day="' + dayIdx + '" data-sid="' + esc(a.slot.id) + '" ' +
-        'title="' + vname + ' ' + timeStr + (mCount ? ' | ' + mCount + ' คน' : '') + '" ' +
+        'title="' + vname + ' ' + timeStr + (mCount ? ' | ' + mCount + ' คน' : '') + (leaveCount ? ' | 🏖️ ลา ' + leaveCount + ' คน' : '') + '" ' +
         'style="' + stylePos + 'background:' + col.bg + ';color:' + col.text + ';">' +
-        '<div class="sg-slot-name">' + vname + '</div>' +
+        '<div class="sg-slot-name">' + vname + (leaveCount ? ' <span style="font-size:10px">🏖️' + leaveCount + '</span>' : '') + '</div>' +
         (w >= 70 ? '<div class="sg-slot-time">' + timeStr + '</div>' : '') +
-        (mCount > 0 && w >= 90 ? '<div class="sg-slot-members">👥 ' + mCount + ' คน</div>' : '') +
+        (mCount > 0 && w >= 90 ? '<div class="sg-slot-members">👥 ' + mCount + (leaveCount ? ' (ลา ' + leaveCount + ')' : '') + '</div>' : '') +
         '</div>';
     });
 
@@ -543,8 +532,7 @@ function renderScheduleGrid() {
       var day  = +this.dataset.day;
       var rect = this.getBoundingClientRect();
       var relX = e.clientX - rect.left;
-      var pxpm = calcPxPerMin(gEnd - gStart);
-      var approxMin = gStart + Math.round(relX / pxpm);
+      var approxMin = gStart + Math.round(relX / PX_PER_MIN);
       approxMin = Math.floor(approxMin / 30) * 30; // snap 30 min
       var approxEnd = Math.min(approxMin + 180, gEnd); // default 3h
       approxMin = Math.max(approxMin, gStart);
@@ -662,15 +650,34 @@ function renderSlotMembers(slot) {
       var mid = m.memberId || m.id || '';
       return '<option value="' + esc(mid) + '"' + (mr.memberId === mid ? ' selected' : '') + '>' + esc(m.name) + (m.position ? ' (' + m.position + ')' : '') + '</option>';
     }).join('');
-    return '<div class="sd-member-row" data-mi="' + mi + '">' +
-      '<select class="sd-m-sel" data-mi="' + mi + '"><option value="">เลือกสมาชิก</option>' + selOpts + '</select>' +
-      '<input type="number" class="sd-m-rate" data-mi="' + mi + '" value="' + (mr.rate || '') + '" placeholder="ค่าแรง" min="0">' +
-      '<select class="sd-m-rtype" data-mi="' + mi + '">' +
-        '<option value="shift"'   + (mr.rateType === 'shift'   || !mr.rateType ? ' selected' : '') + '>บาท/เบรค</option>' +
-        '<option value="hourly"'  + (mr.rateType === 'hourly'  ? ' selected' : '') + '>บาท/ชม</option>' +
-        '<option value="fixed"'   + (mr.rateType === 'fixed'   ? ' selected' : '') + '>คงที่</option>' +
-      '</select>' +
-      '<button type="button" class="sd-m-del" data-mi="' + mi + '">🗑️</button>' +
+    var replMemberOpts = '<option value="">— เลือกจากวง —</option>' + validBM.map(function(m) {
+      var mid = m.memberId || m.id || '';
+      return '<option value="' + esc(mid) + '"' + (mr.replacementId === mid ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+    }).join('');
+    var isLeave = !!mr.onLeave;
+    var leaveBtnCls = isLeave ? 'sd-m-leave-btn on-leave' : 'sd-m-leave-btn';
+    var leaveBtnTxt = isLeave ? '🏖️ ลาแล้ว' : '🏖️ ลา';
+    var dimStyle = isLeave ? 'opacity:.5;text-decoration:line-through;' : '';
+    var replRow = isLeave ?
+      '<div class="sd-repl-row">' +
+        '<label>คนแทน</label>' +
+        '<select class="sd-m-repl-sel" data-mi="' + mi + '">' + replMemberOpts + '</select>' +
+        '<span style="font-size:11px;color:var(--premium-text-muted);flex-shrink:0">หรือพิมพ์ชื่อ</span>' +
+        '<input type="text" class="sd-m-repl-name" data-mi="' + mi + '" placeholder="ชื่อคนนอก" value="' + esc(mr.replacementName || '') + '">' +
+      '</div>' : '';
+    return '<div class="sd-member-block" data-mi="' + mi + '">' +
+      '<div class="sd-member-row">' +
+        '<select class="sd-m-sel" data-mi="' + mi + '" style="' + dimStyle + '"><option value="">เลือกสมาชิก</option>' + selOpts + '</select>' +
+        '<input type="number" class="sd-m-rate" data-mi="' + mi + '" value="' + (mr.rate || '') + '" placeholder="ค่าแรง" min="0" style="' + dimStyle + '">' +
+        '<select class="sd-m-rtype" data-mi="' + mi + '" style="' + dimStyle + '">' +
+          '<option value="shift"'   + (mr.rateType === 'shift'   || !mr.rateType ? ' selected' : '') + '>บาท/เบรค</option>' +
+          '<option value="hourly"'  + (mr.rateType === 'hourly'  ? ' selected' : '') + '>บาท/ชม</option>' +
+          '<option value="fixed"'   + (mr.rateType === 'fixed'   ? ' selected' : '') + '>คงที่</option>' +
+        '</select>' +
+        '<button type="button" class="' + leaveBtnCls + '" data-mi="' + mi + '">' + leaveBtnTxt + '</button>' +
+        '<button type="button" class="sd-m-del" data-mi="' + mi + '">🗑️</button>' +
+      '</div>' +
+      replRow +
       '</div>';
   }).join('');
 
@@ -682,6 +689,29 @@ function renderSlotMembers(slot) {
   });
   list.querySelectorAll('.sd-m-rtype').forEach(function(sel) {
     sel.addEventListener('change', function() { var s = getEditingSlot(); if (s && s.members[+this.dataset.mi]) s.members[+this.dataset.mi].rateType = this.value; autoSaveLocal(); });
+  });
+  list.querySelectorAll('.sd-m-leave-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var s = getEditingSlot(); if (!s) return;
+      var mi = +this.dataset.mi;
+      s.members[mi].onLeave = !s.members[mi].onLeave;
+      if (!s.members[mi].onLeave) { s.members[mi].replacementId = ''; s.members[mi].replacementName = ''; }
+      autoSaveLocal(); renderSlotMembers(s); renderScheduleGrid();
+    });
+  });
+  list.querySelectorAll('.sd-m-repl-sel').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+      var s = getEditingSlot(); if (!s) return;
+      s.members[+this.dataset.mi].replacementId = this.value;
+      autoSaveLocal();
+    });
+  });
+  list.querySelectorAll('.sd-m-repl-name').forEach(function(inp) {
+    inp.addEventListener('input', function() {
+      var s = getEditingSlot(); if (!s) return;
+      s.members[+this.dataset.mi].replacementName = this.value;
+      autoSaveLocal();
+    });
   });
   list.querySelectorAll('.sd-m-del').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -695,7 +725,7 @@ function renderSlotMembers(slot) {
 function addMemberToSlot() {
   var slot = getEditingSlot(); if (!slot) return;
   if (!slot.members) slot.members = [];
-  slot.members.push({ memberId: '', rate: 0, rateType: 'shift' });
+  slot.members.push({ memberId: '', rate: 0, rateType: 'shift', onLeave: false, replacementId: '', replacementName: '' });
   autoSaveLocal(); renderSlotMembers(slot);
 }
 function applyBulkRate() {
@@ -724,11 +754,4 @@ document.addEventListener('DOMContentLoaded', function() {
   var es = getEl('saveBtn');        if (es) es.addEventListener('click', function(e) { e.preventDefault(); saveBandSettings(); });
   var pp = getEl('payrollPeriod');  if (pp) pp.addEventListener('change', function() { payroll.period = this.value; renderPayrollSettings(); });
   loadBandSettings();
-});
-
-// Re-render grid on resize so px/min recalculates for new window width
-var _resizeTimer = null;
-window.addEventListener('resize', function() {
-  clearTimeout(_resizeTimer);
-  _resizeTimer = setTimeout(renderScheduleGrid, 150);
 });
