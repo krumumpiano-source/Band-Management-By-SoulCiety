@@ -22,6 +22,17 @@ create table if not exists public.profiles (
 );
 alter table public.profiles enable row level security;
 
+-- ── Helper functions (security definer = bypass RLS เพื่อป้องกัน infinite recursion) ──
+create or replace function public.get_my_band_id()
+returns text language sql security definer stable set search_path = public as $$
+  select band_id from public.profiles where id = auth.uid()
+$$;
+
+create or replace function public.get_my_role()
+returns text language sql security definer stable set search_path = public as $$
+  select role from public.profiles where id = auth.uid()
+$$;
+
 create policy "profiles: ดูของตัวเอง"
   on public.profiles for select
   using (auth.uid() = id);
@@ -32,12 +43,7 @@ create policy "profiles: แก้ไขของตัวเอง"
 
 create policy "profiles: admin ดูทั้งหมด"
   on public.profiles for select
-  using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid() and p.role = 'admin'
-    )
-  );
+  using (public.get_my_role() = 'admin');   -- ใช้ function แทน recursive subquery
 
 -- trigger: สร้าง profile อัตโนมัติหลัง sign up
 create or replace function public.handle_new_user()
@@ -106,9 +112,7 @@ alter table public.band_members enable row level security;
 
 create policy "band_members: เห็นเฉพาะวงตัวเอง"
   on public.band_members for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 4. VENUES
@@ -130,9 +134,7 @@ alter table public.venues enable row level security;
 
 create policy "venues: เห็นเฉพาะวงตัวเอง"
   on public.venues for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 5. SCHEDULE
@@ -157,9 +159,7 @@ alter table public.schedule enable row level security;
 
 create policy "schedule: เห็นเฉพาะวงตัวเอง"
   on public.schedule for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 6. ATTENDANCE_PAYROLL
@@ -181,9 +181,7 @@ alter table public.attendance_payroll enable row level security;
 
 create policy "attendance: เห็นเฉพาะวงตัวเอง"
   on public.attendance_payroll for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 7. BAND_SONGS
@@ -211,9 +209,7 @@ create policy "songs: ดูได้ถ้า login"
 
 create policy "songs: แก้ไข/ลบเฉพาะวงตัวเอง"
   on public.band_songs for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 8. HOURLY_RATES
@@ -235,9 +231,7 @@ alter table public.hourly_rates enable row level security;
 
 create policy "hourly_rates: เห็นเฉพาะวงตัวเอง"
   on public.hourly_rates for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 9. EQUIPMENT
@@ -260,9 +254,7 @@ alter table public.equipment enable row level security;
 
 create policy "equipment: เห็นเฉพาะวงตัวเอง"
   on public.equipment for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 10. CLIENTS
@@ -287,9 +279,7 @@ alter table public.clients enable row level security;
 
 create policy "clients: เห็นเฉพาะวงตัวเอง"
   on public.clients for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 11. QUOTATIONS
@@ -318,9 +308,7 @@ alter table public.quotations enable row level security;
 
 create policy "quotations: เห็นเฉพาะวงตัวเอง"
   on public.quotations for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 12. INVITE_CODES
@@ -343,8 +331,8 @@ create policy "invite_codes: ดูได้ถ้า login"
 create policy "invite_codes: สร้าง/แก้ไขเฉพาะ manager"
   on public.invite_codes for all
   using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-    and (select role from public.profiles where id = auth.uid()) in ('manager','admin')
+    band_id = public.get_my_band_id()
+    and public.get_my_role() in ('manager','admin')
   );
 
 -- ============================================================
@@ -367,9 +355,7 @@ alter table public.leave_requests enable row level security;
 
 create policy "leave_requests: เห็นเฉพาะวงตัวเอง"
   on public.leave_requests for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 14. MEMBER_CHECK_INS
@@ -388,9 +374,7 @@ alter table public.member_check_ins enable row level security;
 
 create policy "check_ins: เห็นเฉพาะวงตัวเอง"
   on public.member_check_ins for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 15. BAND_SETTINGS
@@ -406,9 +390,7 @@ alter table public.band_settings enable row level security;
 
 create policy "band_settings: เห็นเฉพาะวงตัวเอง"
   on public.band_settings for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- 16. PLAYLIST_HISTORY
@@ -424,9 +406,7 @@ alter table public.playlist_history enable row level security;
 
 create policy "playlist_history: เห็นเฉพาะวงตัวเอง"
   on public.playlist_history for all
-  using (
-    band_id = (select band_id from public.profiles where id = auth.uid())
-  );
+  using (band_id = public.get_my_band_id());
 
 -- ============================================================
 -- FUNCTIONS — custom RPC สำหรับ invite code

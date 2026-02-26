@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Show role badge
   var roleBadge = ciGetEl('ciRoleBadge');
   if (roleBadge) {
-    var roleLabels = { admin: 'แอดมิน', manager: 'ผู้จัดการวง', member: 'สมาชิก' };
+    var roleLabels = { admin: 'แอดมิน · ผู้จัดการวง', manager: 'ผู้จัดการวง', member: 'สมาชิก' };
     roleBadge.textContent = roleLabels[ciUserRole] || ciUserRole;
     roleBadge.className = 'ci-role-badge ci-role-badge--' + ciUserRole;
   }
