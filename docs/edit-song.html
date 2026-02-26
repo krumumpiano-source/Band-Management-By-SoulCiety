@@ -11,9 +11,23 @@
   <style>
     .form-r{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
     @media(max-width:480px){.form-r{grid-template-columns:1fr}}
-    .singer-group{display:flex;gap:var(--spacing-md);flex-wrap:wrap}
-    .singer-option{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.95rem}
-    .singer-option input[type=radio]{accent-color:var(--premium-gold);width:16px;height:16px}
+    /* Singer pill buttons */
+    .singer-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+    .singer-pill{position:relative}
+    .singer-pill input[type=radio]{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+    .singer-pill label{
+      display:flex;align-items:center;gap:6px;padding:8px 18px;
+      border:2px solid #e2e8f0;border-radius:999px;cursor:pointer;
+      font-size:14px;font-weight:600;font-family:inherit;
+      background:var(--premium-off-white,#f9f9f9);color:var(--premium-text,#333);
+      transition:all .15s;user-select:none;line-height:1
+    }
+    .singer-pill label:hover{border-color:var(--premium-gold);color:var(--premium-gold)}
+    .singer-pill input[type=radio]:checked + label{
+      background:var(--premium-gold,#f9cf45);color:#1a202c;
+      border-color:var(--premium-gold,#f9cf45);
+      box-shadow:0 2px 8px rgba(249,207,69,.35)
+    }
   </style>
 </head>
 <body>
@@ -33,19 +47,21 @@
             <div class="form-group">
               <label>คีย์</label>
               <select id="key"><option value="">—</option><optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup><optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup></select>
+            </div>
             <div class="form-group"><label>ความเร็ว (BPM)</label><input type="number" id="bpm" min="0" max="300" placeholder="0"></div>
+          </div>
+          <div class="form-r">
             <div class="form-group"><label>ยุคของเพลง</label><select id="era"><option value="">— เลือกยุค —</option><option>2523-2532</option><option>2533-2542</option><option>2543-2553</option><option>2554-ปัจจุบัน</option><option>สากล</option><option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option></select></div>
+            <div class="form-group"><label>อารมณ์เพลง</label><select id="mood"><option value="">— เลือกอารมณ์ —</option><option>สุข / สนุก</option><option>เศร้า / เหงา</option><option>นิ่ง / ผ่อนคลาย</option><option>หวาน / อบอุ่น</option><option>มัน / ฮึกเหิม</option></select></div>
           </div>
           <div class="form-group">
             <label>นักร้อง</label>
-            <div class="singer-group">
-              <label class="singer-option"><input type="radio" name="singer" value="male"> 🎤 ชาย</label>
-              <label class="singer-option"><input type="radio" name="singer" value="female"> 🎤 หญิง</label>
-              <label class="singer-option"><input type="radio" name="singer" value="duet"> 🎤 คู่</label>
-              <label class="singer-option"><input type="radio" name="singer" value=""> — ไม่ระบุ</label>
+            <div class="singer-pills">
+              <div class="singer-pill"><input type="radio" name="singer" id="s-male" value="male"><label for="s-male">🎤 ชาย</label></div>
+              <div class="singer-pill"><input type="radio" name="singer" id="s-female" value="female"><label for="s-female">🎤 หญิง</label></div>
+              <div class="singer-pill"><input type="radio" name="singer" id="s-duet" value="duet"><label for="s-duet">🎤🎤 คู่</label></div>
             </div>
           </div>
-          <div class="form-group"><label>อารมณ์เพลง</label><select id="mood"><option value="">— เลือกอารมณ์ —</option><option>สุข / สนุก</option><option>เศร้า / เหงา</option><option>นิ่ง / ผ่อนคลาย</option><option>หวาน / อบอุ่น</option><option>มัน / ฮึกเหิม</option></select></div>
           <div style="display:flex;gap:var(--spacing-md);justify-content:flex-end;margin-top:var(--spacing-md)">
             <a href="songs.html" class="btn btn-secondary">ยกเลิก</a>
             <button type="submit" class="btn btn-primary" id="saveBtn">💾 บันทึก</button>
@@ -75,7 +91,6 @@
           var keyEl = document.getElementById('key');
           var keyOpts = Array.from(keyEl.options).map(function(o){ return o.value; });
           keyEl.value = (keyOpts.indexOf(s.key) >= 0) ? s.key : '';
-          document.getElementById('keyNote').value = s.keyNote || '';
           document.getElementById('bpm').value = (s.bpm > 0) ? s.bpm : '';
           document.getElementById('era').value = s.era || '';
           document.getElementById('mood').value = s.mood || '';
@@ -98,7 +113,6 @@
         songId: document.getElementById('songId').value,
         name: document.getElementById('songName').value.trim(),
         key: document.getElementById('key').value,
-        keyNote: document.getElementById('keyNote').value.trim(),
         bpm: parseInt(document.getElementById('bpm').value) || 0,
         era: document.getElementById('era').value.trim(),
         singer: singerRadio ? singerRadio.value : '',
