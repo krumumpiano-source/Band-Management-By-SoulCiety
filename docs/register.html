@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/compat.css">
   <style>
     body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:var(--spacing-md)}
-    .auth-wrap{width:100%;max-width:480px}
+    .auth-wrap{width:100%;max-width:520px}
     .auth-card{background:var(--premium-white);border-radius:var(--radius-xl);box-shadow:var(--shadow-2xl);padding:var(--spacing-2xl)}
     .auth-logo{text-align:center;margin-bottom:var(--spacing-xl)}
     .auth-logo h1{font-family:var(--font-family-display);font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
@@ -19,7 +19,9 @@
     .auth-footer{text-align:center;margin-top:var(--spacing-lg);font-size:var(--text-sm);color:var(--premium-text-light)}
     .auth-footer a{color:var(--premium-gold);font-weight:600;text-decoration:none}
     .form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
-    @media(max-width:480px){.form-row{grid-template-columns:1fr}}
+    .form-row-3{display:grid;grid-template-columns:auto 1fr 1fr;gap:var(--spacing-md)}
+    @media(max-width:480px){.form-row,.form-row-3{grid-template-columns:1fr}}
+    .form-section-label{font-size:var(--text-xs);font-weight:600;color:var(--premium-text-muted);text-transform:uppercase;letter-spacing:.05em;margin:var(--spacing-md) 0 var(--spacing-xs);border-bottom:1px solid var(--premium-light-gray);padding-bottom:4px}
   </style>
 </head>
 <body>
@@ -39,36 +41,94 @@
           <button type="button" class="btn btn-secondary btn-sm" data-mode="join" style="flex:1">🔑 เข้าร่วมวงด้วยรหัสเชิญ</button>
         </div>
 
-        <div class="form-group">
-          <label data-i18n="fullName">ชื่อ-นามสกุล</label>
-          <input type="text" id="name" data-i18n-placeholder="enterFullName" placeholder="กรุณากรอกชื่อ-นามสกุล" required>
-          <div class="err-msg" id="nameError"></div>
+        <!-- ── ข้อมูลส่วนตัว ── -->
+        <div class="form-section-label">👤 ข้อมูลส่วนตัว</div>
+
+        <!-- คำนำหน้า + ชื่อ + นามสกุล -->
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>คำนำหน้า</label>
+            <select id="title" style="padding:8px 6px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);font-size:var(--text-sm);width:100%">
+              <option value="นาย">นาย</option>
+              <option value="นาง">นาง</option>
+              <option value="นางสาว">นางสาว</option>
+              <option value="ด.ช.">ด.ช.</option>
+              <option value="ด.ญ.">ด.ญ.</option>
+              <option value="ไม่ระบุ">ไม่ระบุ</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>ชื่อ <span style="color:#c53030">*</span></label>
+            <input type="text" id="firstName" placeholder="ชื่อจริง" required>
+            <div class="err-msg" id="firstNameError"></div>
+          </div>
+          <div class="form-group">
+            <label>นามสกุล <span style="color:#c53030">*</span></label>
+            <input type="text" id="lastName" placeholder="นามสกุล" required>
+            <div class="err-msg" id="lastNameError"></div>
+          </div>
         </div>
+
+        <!-- ชื่อเล่น + ตำแหน่ง/เครื่องดนตรี -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>ชื่อเล่น <span style="color:#c53030">*</span></label>
+            <input type="text" id="nickname" placeholder="เช่น เอ, บอล, นุ่น" required>
+            <div class="err-msg" id="nicknameError"></div>
+          </div>
+          <div class="form-group">
+            <label>ตำแหน่ง / เครื่องดนตรี</label>
+            <select id="instrument" style="padding:8px 6px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);font-size:var(--text-sm);width:100%">
+              <option value="">-- เลือก --</option>
+              <option value="ร้องนำ">🎤 ร้องนำ</option>
+              <option value="ร้องประสาน">🎤 ร้องประสาน</option>
+              <option value="กีตาร์ไฟฟ้า">🎸 กีตาร์ไฟฟ้า</option>
+              <option value="กีตาร์โปร่ง">🎸 กีตาร์โปร่ง</option>
+              <option value="กีตาร์เบส">🎸 กีตาร์เบส</option>
+              <option value="คีย์บอร์ด">🎹 คีย์บอร์ด</option>
+              <option value="กลอง">🥁 กลอง</option>
+              <option value="เพอร์คัสชัน">🥁 เพอร์คัสชัน</option>
+              <option value="ทรัมเปต">🎺 ทรัมเปต</option>
+              <option value="แซกโซโฟน">🎷 แซกโซโฟน</option>
+              <option value="ไวโอลิน">🎻 ไวโอลิน</option>
+              <option value="ผู้จัดการวง">📋 ผู้จัดการวง</option>
+              <option value="อื่นๆ">อื่นๆ</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── บัญชีผู้ใช้ ── -->
+        <div class="form-section-label">🔐 บัญชีผู้ใช้</div>
+
         <div class="form-group">
-          <label data-i18n="email">อีเมล</label>
+          <label data-i18n="email">อีเมล <span style="color:#c53030">*</span></label>
           <input type="email" id="email" data-i18n-placeholder="enterEmail" placeholder="กรุณากรอกอีเมล" required>
           <div class="err-msg" id="emailError"></div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label data-i18n="password">รหัสผ่าน</label>
-            <input type="password" id="password" data-i18n-placeholder="enterPassword" placeholder="รหัสผ่าน (8+ ตัว)" required>
+            <label data-i18n="password">รหัสผ่าน <span style="color:#c53030">*</span></label>
+            <input type="password" id="password" placeholder="รหัสผ่าน (8+ ตัว)" required>
             <div class="err-msg" id="passwordError"></div>
           </div>
           <div class="form-group">
-            <label data-i18n="confirmPassword">ยืนยันรหัสผ่าน</label>
-            <input type="password" id="confirmPassword" data-i18n-placeholder="confirmPassword" placeholder="พิมพ์รหัสผ่านอีกครั้ง" required>
+            <label data-i18n="confirmPassword">ยืนยันรหัสผ่าน <span style="color:#c53030">*</span></label>
+            <input type="password" id="confirmPassword" placeholder="พิมพ์รหัสผ่านอีกครั้ง" required>
             <div class="err-msg" id="confirmError"></div>
           </div>
         </div>
 
+        <!-- ── วงดนตรี ── -->
+        <div class="form-section-label">🎵 วงดนตรี</div>
+
         <!-- Create band mode -->
         <div id="bandNameGroup" class="form-group">
-          <label data-i18n="bandName">ชื่อวง</label>
-          <input type="text" id="bandNameInput" data-i18n-placeholder="enterBandName" placeholder="กรุณากรอกชื่อวงดนตรี" required>
+          <label data-i18n="bandName">ชื่อวง <span style="color:#c53030">*</span></label>
+          <input type="text" id="bandNameInput" placeholder="กรุณากรอกชื่อวงดนตรี" required>
+          <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px">คุณจะเป็นผู้จัดการวง — สมาชิกอื่นเข้าร่วมด้วยรหัสเชิญที่คุณสร้างได้</div>
         </div>
 
-        <!-- Join with invite code mode (hidden by default) -->
+        <!-- Join with invite code mode -->
         <div id="inviteGroup" class="form-group" style="display:none">
           <label>🔑 รหัสเชิญจากผู้จัดการวง</label>
           <input type="text" id="inviteCode" placeholder="กรอกรหัส 6 หลัก เช่น AB3X7Q" maxlength="6" style="text-transform:uppercase;font-family:monospace;font-size:1.2rem;letter-spacing:.2em;text-align:center">
@@ -118,38 +178,59 @@
       });
     }
 
+    function $v(id) { return document.getElementById(id) ? document.getElementById(id).value.trim() : ''; }
+    function $err(id, msg) { var el = document.getElementById(id); if (el) el.textContent = msg || ''; }
+
     document.getElementById('registerForm').addEventListener('submit', function(e) {
       e.preventDefault();
-      ['nameError','emailError','passwordError','confirmError','generalError'].forEach(function(id){
-        document.getElementById(id).textContent = '';
-      });
-      var name = document.getElementById('name').value.trim();
-      var email = document.getElementById('email').value.trim();
-      var pw = document.getElementById('password').value;
-      var cpw = document.getElementById('confirmPassword').value;
-      var band = document.getElementById('bandNameInput').value.trim();
-      var invite = document.getElementById('inviteCode').value.trim().toUpperCase();
-      var joinMode = document.getElementById('inviteGroup').style.display !== 'none';
+      ['firstNameError','lastNameError','nicknameError','emailError','passwordError','confirmError','generalError'].forEach(function(id){ $err(id); });
+
+      var title      = $v('title');
+      var firstName  = $v('firstName');
+      var lastName   = $v('lastName');
+      var nickname   = $v('nickname');
+      var instrument = $v('instrument');
+      var email      = $v('email');
+      var pw         = document.getElementById('password').value;
+      var cpw        = document.getElementById('confirmPassword').value;
+      var band       = $v('bandNameInput');
+      var invite     = $v('inviteCode').toUpperCase();
+      var joinMode   = document.getElementById('inviteGroup').style.display !== 'none';
 
       var ok = true;
-      if (!name) { document.getElementById('nameError').textContent = 'กรุณากรอกชื่อ'; ok = false; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('emailError').textContent = t('errInvalidEmail'); ok = false; }
-      if (pw.length < 8) { document.getElementById('passwordError').textContent = 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'; ok = false; }
-      if (pw !== cpw) { document.getElementById('confirmError').textContent = 'รหัสผ่านไม่ตรงกัน'; ok = false; }
-      if (!joinMode && !band) { document.getElementById('generalError').textContent = 'กรุณากรอกชื่อวง'; ok = false; }
-      if (joinMode && !invite) { document.getElementById('generalError').textContent = 'กรุณากรอกรหัสเชิญ'; ok = false; }
+      if (!firstName)  { $err('firstNameError', 'กรุณากรอกชื่อ'); ok = false; }
+      if (!lastName)   { $err('lastNameError', 'กรุณากรอกนามสกุล'); ok = false; }
+      if (!nickname)   { $err('nicknameError', 'กรุณากรอกชื่อเล่น'); ok = false; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $err('emailError', 'อีเมลไม่ถูกต้อง'); ok = false; }
+      if (pw.length < 8) { $err('passwordError', 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); ok = false; }
+      if (pw !== cpw)  { $err('confirmError', 'รหัสผ่านไม่ตรงกัน'); ok = false; }
+      if (!joinMode && !band) { $err('generalError', 'กรุณากรอกชื่อวง'); ok = false; }
+      if (joinMode && !invite) { $err('generalError', 'กรุณากรอกรหัสเชิญ'); ok = false; }
       if (!ok) return;
 
       var btn = document.getElementById('regBtn');
-      btn.disabled = true; btn.textContent = t('loading');
+      btn.disabled = true; btn.textContent = 'กำลังสมัคร...';
 
-      gasRun('register', { name: name, email: email, password: pw, bandName: band, inviteCode: invite }, function(r) {
-        btn.disabled = false; btn.textContent = t('registerNew');
+      var fullName = (title && title !== 'ไม่ระบุ' ? title + ' ' : '') + firstName + ' ' + lastName;
+
+      gasRun('register', {
+        name:        fullName,
+        firstName:   firstName,
+        lastName:    lastName,
+        nickname:    nickname,
+        title:       title,
+        instrument:  instrument,
+        email:       email,
+        password:    pw,
+        bandName:    band,
+        inviteCode:  invite
+      }, function(r) {
+        btn.disabled = false; btn.textContent = 'สมัครสมาชิก';
         if (r && r.success) {
           if (typeof showToast === 'function') showToast((r.message || 'สมัครเรียบร้อย!') + ' กำลังไปหน้าล็อกอิน...', 'success');
           setTimeout(function() { window.location.href = 'index.html'; }, 1800);
         } else {
-          document.getElementById('generalError').textContent = (r && r.message) || t('msg_error');
+          $err('generalError', (r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
         }
       });
     });

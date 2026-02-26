@@ -9,10 +9,20 @@ function renderMainNav(containerId) {
   if (!container) return;
 
   var isGas = typeof google !== 'undefined' && google.script;
-  var bandName = localStorage.getItem('bandName') || (typeof t === 'function' ? t('yourBand') : 'วงของคุณ');
-  var userName = localStorage.getItem('userName') || (typeof t === 'function' ? t('user') : 'ผู้ใช้');
-  var userRole = localStorage.getItem('userRole') || 'member';
-  var isAdmin = userRole === 'admin';
+  var bandName   = localStorage.getItem('bandName') || (typeof t === 'function' ? t('yourBand') : 'วงของคุณ');
+  // ชื่อสั้นเพื่อแสดง topbar: ชื่อเล่น
+  var nickName   = localStorage.getItem('userNickname') || '';
+  var firstName  = localStorage.getItem('userFirstName') || '';
+  var lastName   = localStorage.getItem('userLastName')  || '';
+  var userTitle  = localStorage.getItem('userTitle')     || '';
+  var instrument = localStorage.getItem('userInstrument')|| '';
+  var rawName    = localStorage.getItem('userName')      || (typeof t === 'function' ? t('user') : 'ผู้ใช้');
+  // ชื่อเล่น > first_name > userName
+  var userName   = nickName || firstName || rawName;
+  // ชื่อเต็มสำหรับแสดงใน sidebar (คำนำหน้า ชื่อ นามสกุล)
+  var fullName   = [userTitle !== 'ไม่ระบุ' ? userTitle : '', firstName, lastName].filter(Boolean).join(' ') || userName;
+  var userRole  = localStorage.getItem('userRole') || 'member';
+  var isAdmin   = userRole === 'admin';
   var isManager = !!(localStorage.getItem('bandManager') || userRole === 'manager' || isAdmin);
   var _t = typeof t === 'function' ? t : function(k) { return k; };
 
@@ -40,7 +50,10 @@ function renderMainNav(containerId) {
   var roleLabel = isAdmin
     ? '🔧 Admin &nbsp;·&nbsp; 👔 ผู้จัดการวง'
     : isManager ? '👔 ผู้จัดการวง' : '🎸 สมาชิกวง';
-
+  // แสดงตำแหน่ง/เครื่องดนตรีใน sidebar
+  var instrumentBadge = instrument
+    ? '<div class="sidebar-user-instrument">' + _escHtml(instrument) + '</div>'
+    : '';
   // ── เมนูสมาชิกวง (ทุกบทบาท) ─────────────────────────
   var memberLinks =
     navSection('🎸 สมาชิกวง') +
@@ -56,6 +69,7 @@ function renderMainNav(containerId) {
     // navLink('equipment',       '🎸 ' + _t('nav_equipment')) +        // ปิดชั่วคราว
     // navLink('clients',         '🤝 ' + _t('nav_clients')) +          // ปิดชั่วคราว
     navLink('band-info',       '👥 ' + _t('nav_bandInfo')) +
+    navLink('my-profile',      '👤 ข้อมูลส่วนตัว') +
     navLink('user-manual',     '📖 ' + _t('nav_userManual'));
 
   // ── เมนูผู้จัดการวง ───────────────────────────────────
@@ -98,7 +112,9 @@ function renderMainNav(containerId) {
       '<div class="sidebar-user">' +
         '<div class="sidebar-avatar">🎤</div>' +
         '<div class="sidebar-user-info">' +
-          '<div class="sidebar-user-name">' + _escHtml(userName) + '</div>' +
+          '<div class="sidebar-user-name">' + _escHtml(fullName) + '</div>' +
+          (nickName && nickName !== fullName ? '<div style="font-size:var(--text-xs);color:var(--premium-text-muted);">(' + _escHtml(nickName) + ')</div>' : '') +
+          instrumentBadge +
           '<div class="sidebar-user-role">' + roleLabel + '</div>' +
         '</div>' +
       '</div>' +
@@ -200,7 +216,8 @@ function doLogout() {
       gasRun('logout', { _token: token }, function() {});
     }
   }
-  ['auth_token','bandId','bandName','bandManager','userRole','userName','bandSettings'].forEach(function(k) {
+  ['auth_token','bandId','bandName','bandManager','userRole','userName','bandSettings',
+   'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail'].forEach(function(k) {
     localStorage.removeItem(k);
     sessionStorage.removeItem(k);
   });

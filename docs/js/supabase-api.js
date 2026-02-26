@@ -38,15 +38,25 @@
     function getRole()     { return localStorage.getItem('userRole') || ''; }
 
     function saveSession(session, profile) {
-      localStorage.setItem('auth_token', session.access_token);
-      localStorage.setItem('userName',   profile.user_name  || '');
+      localStorage.setItem('auth_token',    session.access_token);
+      // ข้อมูลส่วนตัว
+      localStorage.setItem('userTitle',     profile.title      || '');
+      localStorage.setItem('userFirstName', profile.first_name || '');
+      localStorage.setItem('userLastName',  profile.last_name  || '');
+      localStorage.setItem('userNickname',  profile.nickname   || '');
+      localStorage.setItem('userInstrument',profile.instrument || '');
+      // ชื่อแสดง: ชื่อเล่น ถ้ามี ไม่มีใช้ first_name หรือ user_name
+      var displayName = profile.nickname || profile.first_name || profile.user_name || '';
+      localStorage.setItem('userName',   displayName);
+      localStorage.setItem('userEmail',  profile.email      || '');
       localStorage.setItem('bandId',     profile.band_id    || '');
       localStorage.setItem('bandName',   profile.band_name  || '');
       localStorage.setItem('userRole',   profile.role       || 'member');
     }
 
     function clearSession() {
-      ['auth_token','bandId','bandName','bandManager','userRole','userName'].forEach(function (k) {
+      ['auth_token','bandId','bandName','bandManager','userRole','userName',
+       'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail'].forEach(function (k) {
         localStorage.removeItem(k);
       });
     }
@@ -158,6 +168,10 @@
         case 'updateQuotation': return doUpdate('quotations', d.quotationId, d.data || d);
         case 'deleteQuotation': return doDelete('quotations', d.quotationId);
 
+        // ── Profile ────────────────────────────────────────────────
+        case 'getMyProfile':    return doGetMyProfile();
+        case 'updateMyProfile': return doUpdateMyProfile(d);
+
         // ── Admin ──────────────────────────────────────────────────
         case 'getAllUsers':     return doAdminGetAllUsers();
         case 'updateUserRole':  return doUpdate('profiles', d.userId, { role: d.role });
@@ -188,7 +202,10 @@
         contactPerson: 'contact_person', lineId: 'line_id',
         totalGigs: 'total_gigs', totalRevenue: 'total_revenue',
         effectiveFrom: 'effective_from', effectiveTo: 'effective_to',
-        hourlyRate: 'hourly_rate', startTime: 'start_time', endTime: 'end_time'
+        hourlyRate: 'hourly_rate', startTime: 'start_time', endTime: 'end_time',
+        // profile fields
+        firstName: 'first_name', lastName: 'last_name', userName: 'user_name',
+        userId: 'user_id'
       };
       Object.keys(obj).forEach(function (k) {
         if (k === '_token' || k === 'action') return;
@@ -256,21 +273,33 @@
       // ดึง profile
       var { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
       saveSession(data.session, profile || {});
+      var p = profile || {};
+      var displayName = p.nickname || p.first_name || p.user_name || d.email.split('@')[0];
       return {
-        success:  true,
-        token:    data.session.access_token,
-        userName: (profile || {}).user_name  || d.email.split('@')[0],
-        bandId:   (profile || {}).band_id    || '',
-        bandName: (profile || {}).band_name  || '',
-        role:     (profile || {}).role       || 'member'
+        success:    true,
+        token:      data.session.access_token,
+        userName:   displayName,
+        userTitle:  p.title      || '',
+        firstName:  p.first_name || '',
+        lastName:   p.last_name  || '',
+        nickname:   p.nickname   || '',
+        instrument: p.instrument || '',
+        bandId:     p.band_id    || '',
+        bandName:   p.band_name  || '',
+        role:       p.role       || 'member'
       };
     }
 
     async function doRegister(d) {
       var meta = {
-        user_name: d.name || d.email.split('@')[0],
-        band_name: d.bandName || '',
-        role:      d.inviteCode ? 'member' : 'manager'
+        user_name:  d.nickname || d.firstName || d.name || d.email.split('@')[0],
+        title:      d.title      || '',
+        first_name: d.firstName  || '',
+        last_name:  d.lastName   || '',
+        nickname:   d.nickname   || '',
+        instrument: d.instrument || '',
+        band_name:  d.bandName   || '',
+        role:       d.inviteCode ? 'member' : 'manager'
       };
 
       var { data, error } = await sb.auth.signUp({
@@ -444,6 +473,45 @@
       });
       if (error) throw error;
       return data;
+    }
+
+    // ── Profile ───────────────────────────────────────────────────
+    async function doGetMyProfile() {
+      var { data: user } = await sb.auth.getUser();
+      if (!user || !user.user) return { success: false, message: 'ไม่ได้ login' };
+      var { data, error } = await sb.from('profiles').select('*').eq('id', user.user.id).single();
+      if (error) throw error;
+      return { success: true, data: toCamel(data) };
+    }
+
+    async function doUpdateMyProfile(d) {
+      var { data: user } = await sb.auth.getUser();
+      if (!user || !user.user) return { success: false, message: 'ไม่ได้ login' };
+      var uid = user.user.id;
+
+      var row = {
+        title:      d.title      || '',
+        first_name: d.firstName  || '',
+        last_name:  d.lastName   || '',
+        nickname:   d.nickname   || '',
+        instrument: d.instrument || '',
+        updated_at: new Date().toISOString()
+      };
+      // อัปเดต user_name เป็นชื่อเล่น (ถ้ามี)
+      if (d.nickname) row.user_name = d.nickname;
+
+      var { data, error } = await sb.from('profiles').update(row).eq('id', uid).select().single();
+      if (error) throw error;
+
+      // อัปเดต localStorage ด้วย
+      localStorage.setItem('userTitle',      row.title);
+      localStorage.setItem('userFirstName',  row.first_name);
+      localStorage.setItem('userLastName',   row.last_name);
+      localStorage.setItem('userNickname',   row.nickname);
+      localStorage.setItem('userInstrument', row.instrument);
+      if (d.nickname) localStorage.setItem('userName', d.nickname);
+
+      return { success: true, data: toCamel(data), message: 'บันทึกข้อมูลส่วนตัวเรียบร้อย' };
     }
 
     // ── Admin ─────────────────────────────────────────────────────

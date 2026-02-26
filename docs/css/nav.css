@@ -129,6 +129,14 @@
   color: #6b7280;
   margin-top: 1px;
 }
+.sidebar-user-instrument {
+  font-size: 10px;
+  color: var(--premium-gold, #d4af37);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* ── Nav list (scrollable) ── */
 .sidebar-nav {
