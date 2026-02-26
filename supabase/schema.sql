@@ -366,6 +366,8 @@ create table if not exists public.member_check_ins (
   member_id   text not null,
   member_name text,
   date        text not null,
+  venue       text default '',
+  slots       jsonb default '[]'::jsonb,
   check_in_at timestamptz,
   status      text default 'present',
   created_at  timestamptz default now()

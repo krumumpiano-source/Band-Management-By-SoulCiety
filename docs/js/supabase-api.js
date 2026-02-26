@@ -404,30 +404,55 @@
 
     // ── Check-in ──────────────────────────────────────────────────
     async function doMemberCheckIn(d) {
-      var today = new Date().toISOString().slice(0, 10);
+      var { data: authUser } = await sb.auth.getUser();
+      var memberId = d.memberId || (authUser && authUser.user && authUser.user.id) || '';
+      if (!memberId) return { success: false, message: 'ไม่พบข้อมูลผู้ใช้ กรุณาล็อกอินใหม่' };
+      var dateStr = d.date || new Date().toISOString().slice(0, 10);
+      var bandId = d.bandId || getBandId();
+
       var { data: exist } = await sb.from('member_check_ins')
-        .select('id').eq('band_id', getBandId())
-        .eq('member_id', d.memberId).eq('date', today).limit(1);
-      if (exist && exist.length > 0) return { success: false, message: 'เช็คอินวันนี้ไปแล้ว' };
+        .select('id').eq('band_id', bandId)
+        .eq('member_id', memberId).eq('date', dateStr).limit(1);
+      if (exist && exist.length > 0) {
+        // อัปเดตแทน insert ถ้ามีอยู่แล้ว
+        var { error: upErr } = await sb.from('member_check_ins').update({
+          venue:       d.venue || '',
+          slots:       d.slots || [],
+          status:      'pending',
+          check_in_at: new Date().toISOString()
+        }).eq('id', exist[0].id);
+        if (upErr) throw upErr;
+        return { success: true, message: 'อัปเดตเวลาเรียบร้อย' };
+      }
 
       var { data, error } = await sb.from('member_check_ins').insert({
-        band_id:     getBandId(),
-        member_id:   d.memberId,
-        member_name: d.memberName || '',
-        date:        today,
+        band_id:     bandId,
+        member_id:   memberId,
+        member_name: d.memberName || localStorage.getItem('userName') || '',
+        date:        dateStr,
+        venue:       d.venue || '',
+        slots:       d.slots || [],
         check_in_at: new Date().toISOString(),
-        status:      'present'
+        status:      'pending'
       }).select().single();
       if (error) throw error;
       return { success: true, data: toCamel(data) };
     }
 
     async function doGetMyCheckIn(d) {
-      var today = new Date().toISOString().slice(0, 10);
+      var { data: authUser } = await sb.auth.getUser();
+      var memberId = d.memberId || (authUser && authUser.user && authUser.user.id) || '';
+      if (!memberId) return { success: false };
+      var dateStr = d.date || new Date().toISOString().slice(0, 10);
+      var bandId = d.bandId || getBandId();
       var { data } = await sb.from('member_check_ins')
-        .select('*').eq('band_id', getBandId())
-        .eq('member_id', d.memberId).eq('date', today).limit(1);
-      return { success: true, data: (data && data.length > 0) ? toCamel(data[0]) : null };
+        .select('*').eq('band_id', bandId)
+        .eq('member_id', memberId).eq('date', dateStr).limit(1);
+      if (data && data.length > 0) {
+        var row = toCamel(data[0]);
+        return { success: true, checkIn: { venue: row.venue || '', slots: row.slots || [], status: row.status || 'pending' } };
+      }
+      return { success: false };
     }
 
     // ── Schedule ──────────────────────────────────────────────────
