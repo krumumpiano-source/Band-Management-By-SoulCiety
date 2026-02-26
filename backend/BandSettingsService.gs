@@ -25,9 +25,9 @@ function saveBandSettings(data) {
       bandSheet.getRange(bandRow, 8).setValue(now);
     }
 
-    // Save venues
+    // Save venues (with scheduleJson for round-trip persistence)
     if (data.venues && data.venues.length > 0) {
-      var venueSheet = getOrCreateSheet(CONFIG.SHEETS.VENUES, ['venueId','bandId','venueName','address','phone','contactPerson','defaultPay','notes','status','createdAt','updatedAt']);
+      var venueSheet = getOrCreateSheet(CONFIG.SHEETS.VENUES, ['venueId','bandId','venueName','address','phone','contactPerson','defaultPay','notes','status','scheduleJson','createdAt','updatedAt']);
       var venueData = venueSheet.getDataRange().getValues();
       for (var i = venueData.length - 1; i >= 1; i--) {
         if (venueData[i][1] === data.bandId) venueSheet.deleteRow(i + 1);
@@ -35,7 +35,13 @@ function saveBandSettings(data) {
       data.venues.forEach(function(v) {
         if (v.name && v.name.trim()) {
           var vid = v.id || ('VENUE_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
-          venueSheet.appendRow([vid, data.bandId, v.name.trim(), v.address || '', v.phone || '', v.contactPerson || '', v.defaultPay || 0, v.notes || '', 'active', now, now]);
+          var schedJson = v.schedule ? JSON.stringify(v.schedule) : '{}';
+          appendRowByMap(venueSheet, {
+            venueId: vid, bandId: data.bandId, venueName: v.name.trim(),
+            address: v.address || '', phone: v.phone || '', contactPerson: v.contactPerson || '',
+            defaultPay: v.defaultPay || 0, notes: v.notes || '', status: 'active',
+            scheduleJson: schedJson, createdAt: now, updatedAt: now
+          });
         }
       });
     }
@@ -50,7 +56,11 @@ function saveBandSettings(data) {
       data.hourlyRates.forEach(function(r) {
         if (r.memberId && r.hourlyRate > 0) {
           var rid = r.id || ('RATE_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
-          rateSheet.appendRow([rid, data.bandId, r.memberId, r.venueId || '', r.startTime || '', r.endTime || '', r.hourlyRate, now, now]);
+          appendRowByMap(rateSheet, {
+            rateId: rid, bandId: data.bandId, memberId: r.memberId, venueId: r.venueId || '',
+            startTime: r.startTime || '', endTime: r.endTime || '', hourlyRate: r.hourlyRate,
+            createdAt: now, updatedAt: now
+          });
         }
       });
     }
@@ -71,12 +81,19 @@ function getBandSettings(bandId) {
       if (bandData[i][0] === bandId) { result.bandName = bandData[i][1] || ''; break; }
     }
 
-    var venueSheet = getOrCreateSheet(CONFIG.SHEETS.VENUES, ['venueId','bandId','venueName','address','phone','contactPerson','defaultPay','notes','status','createdAt','updatedAt']);
+    var venueSheet = getOrCreateSheet(CONFIG.SHEETS.VENUES, ['venueId','bandId','venueName','address','phone','contactPerson','defaultPay','notes','status','scheduleJson','createdAt','updatedAt']);
     var venueData = venueSheet.getDataRange().getValues();
     var venueHdrs = venueData[0];
     for (var i = 1; i < venueData.length; i++) {
       if (venueData[i][1] === bandId) {
         var v = {}; for (var j = 0; j < venueHdrs.length; j++) v[venueHdrs[j]] = venueData[i][j];
+        // Parse scheduleJson back into schedule object
+        try {
+          v.schedule = v.scheduleJson ? JSON.parse(v.scheduleJson) : {};
+        } catch(e) { v.schedule = {}; }
+        // Normalise field names for frontend
+        v.id = v.venueId || '';
+        v.name = v.venueName || '';
         result.venues.push(v);
       }
     }

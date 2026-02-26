@@ -32,6 +32,18 @@ function _buildFullPayload() {
   };
 }
 
+// Persist current in-memory state to localStorage immediately — no server call.
+// Called on every timeslot change so data survives navigation even without clicking Save.
+function autoSaveLocal() {
+  try {
+    var data = _buildFullPayload();
+    localStorage.setItem('bandSettings', JSON.stringify(data));
+    if (data.bandId)      localStorage.setItem('bandId',      data.bandId);
+    if (data.bandName)    localStorage.setItem('bandName',    data.bandName);
+    if (data.bandManager) localStorage.setItem('bandManager', data.bandManager);
+  } catch(e) {}
+}
+
 function _doSave(data, btn, origText, successMsg) {
   function onSuccess() {
     currentBandId = data.bandId;
@@ -104,6 +116,32 @@ var currentInviteExpires = null;
 var venueActiveDays = {};
 var expandedVenues  = {}; // accordion open state: { vi: true }
 
+// Save/restore the expand + active-day state so the UI looks the same after page reload
+function saveViewState() {
+  try { localStorage.setItem('bs_expandedVenues', JSON.stringify(expandedVenues)); } catch(e){}
+  try { localStorage.setItem('bs_venueActiveDays', JSON.stringify(venueActiveDays)); } catch(e){}
+}
+function restoreViewState() {
+  try { var s = localStorage.getItem('bs_expandedVenues'); if (s) expandedVenues = JSON.parse(s); } catch(e){}
+  try { var s2 = localStorage.getItem('bs_venueActiveDays'); if (s2) venueActiveDays = JSON.parse(s2); } catch(e){}
+}
+// After loading venues, auto-expand those with a name and auto-select first day with data
+function autoExpandVenues() {
+  venues.forEach(function(v, vi) {
+    if (!v.name && !v.name) return; // no name, skip
+    // Expand by default
+    if (expandedVenues[vi] === undefined) expandedVenues[vi] = true;
+    // Auto-select first day with timeslot data, if none already selected
+    if (venueActiveDays[vi] === undefined || venueActiveDays[vi] === -1) {
+      var sched = v.schedule || {};
+      var firstDay = Object.keys(sched).map(Number).sort().find(function(d) {
+        return sched[d] && (sched[d].timeSlots || []).length > 0;
+      });
+      venueActiveDays[vi] = firstDay !== undefined ? firstDay : -1;
+    }
+  });
+}
+
 var DAY_NAMES = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 var POSITIONS = [
   // เสียง
@@ -167,6 +205,9 @@ function loadBandSettings() {
   bandNameVal = localStorage.getItem('bandName') || '';
   currentBandManager = localStorage.getItem('bandManager') || localStorage.getItem('userName') || '';
 
+  // Restore previously saved view state (which venues were expanded, which day was selected)
+  restoreViewState();
+
   var stored = localStorage.getItem('bandSettings');
   if (stored) {
     try {
@@ -175,29 +216,56 @@ function loadBandSettings() {
       venues = (s.venues || []).map(normalizeVenue);
       bandMembersData = s.members || [];
       if (s.inviteCode) { currentInviteCode = s.inviteCode; currentInviteExpires = s.inviteExpires || null; }
-      // migrate old scheduleData into venues if venues have no schedule
-      if (s.scheduleData && venues.length > 0 && !venues[0].schedule) {
-        venues[0].schedule = s.scheduleData;
-      }
     } catch(e) {}
   }
 
+  // Auto-expand venues and select first day with data so schedule is visible immediately
+  autoExpandVenues();
+
+  // Render immediately from localStorage data — no waiting for server
+  renderAll();
+
   if (currentBandId && typeof gasRun === 'function') {
+    // Silent background refresh from server — merge without blocking UI
     gasRun('getBandSettings', { bandId: currentBandId }, function(r) {
       if (r && r.success && r.data) {
         var d = r.data;
         if (d.bandName) bandNameVal = d.bandName;
-        if (d.venues) venues = d.venues.map(normalizeVenue);
+        if (d.venues) {
+          // Snapshot current UI state so the server refresh doesn't collapse open panels
+          var prevExpanded = JSON.parse(JSON.stringify(expandedVenues));
+          var prevActiveDays = JSON.parse(JSON.stringify(venueActiveDays));
+          // Keep locally-cached schedule as fallback for venues that predate scheduleJson column
+          var cachedVenues = venues.slice();
+          venues = d.venues.map(function(sv, vi) {
+            if (!sv.id)   sv.id   = sv.venueId  || '';
+            if (!sv.name) sv.name = sv.venueName || '';
+            // Server schedule takes priority; fall back to local cache if server returned empty
+            if (!sv.schedule || Object.keys(sv.schedule).length === 0) {
+              // Try ID-based match first
+              var cv = cachedVenues.find(function(lv) {
+                return lv.id && (lv.id === sv.id || lv.id === sv.venueId);
+              });
+              // Fallback: match by position (same index)
+              if (!cv && cachedVenues[vi]) cv = cachedVenues[vi];
+              if (cv && cv.schedule && Object.keys(cv.schedule).length > 0) {
+                sv.schedule = cv.schedule;
+              }
+            }
+            return normalizeVenue(sv);
+          });
+          // Restore the UI state the user had before server refresh,
+          // then re-run autoExpandVenues to select correct days for any new data
+          expandedVenues = prevExpanded;
+          venueActiveDays = prevActiveDays;
+          autoExpandVenues();
+        }
         if (d.members) bandMembersData = d.members;
         if (d.inviteCode) { currentInviteCode = d.inviteCode; currentInviteExpires = d.inviteExpires || null; }
-        if (d.scheduleData && venues.length > 0 && !venues[0].schedule) {
-          venues[0].schedule = d.scheduleData;
-        }
+        // Re-render quietly after server data is merged
+        renderAll();
       }
-      renderAll();
     });
-  } else {
-    renderAll();
   }
 }
 
@@ -426,6 +494,7 @@ function renderVenues() {
       if (e.target.closest && e.target.closest('.venue-remove-btn')) return;
       var vi = +this.dataset.vi;
       expandedVenues[vi] = !expandedVenues[vi];
+      saveViewState();
       renderVenues();
     });
   });
@@ -456,6 +525,7 @@ function renderVenues() {
     btn.addEventListener('click', function() {
       var vi = +this.dataset.vi, day = +this.dataset.day;
       venueActiveDays[vi] = (venueActiveDays[vi] === day) ? -1 : day;
+      saveViewState();
       renderVenues();
     });
   });
@@ -465,6 +535,7 @@ function renderVenues() {
       if (!venues[vi].schedule) venues[vi].schedule = {};
       if (!venues[vi].schedule[day]) venues[vi].schedule[day] = { timeSlots: [] };
       venues[vi].schedule[day].timeSlots.push({ startTime: '', endTime: '', members: [] });
+      autoSaveLocal();
       renderVenues();
     });
   });
@@ -533,12 +604,13 @@ function attachTimeSlotListeners() {
       var slot = ensureSlot(+this.dataset.vi, +this.dataset.day, +this.dataset.si);
       if (this.classList.contains('ts-start')) slot.startTime = v;
       else slot.endTime = v;
+      autoSaveLocal();
       renderVenues();
     });
   });
   list.querySelectorAll('.ts-remove').forEach(function(btn) {
     btn.addEventListener('click', function() {
-      venues[+this.dataset.vi].schedule[+this.dataset.day].timeSlots.splice(+this.dataset.si,1); renderVenues();
+      venues[+this.dataset.vi].schedule[+this.dataset.day].timeSlots.splice(+this.dataset.si,1); autoSaveLocal(); renderVenues();
     });
   });
   list.querySelectorAll('.add-mr-btn').forEach(function(btn) {

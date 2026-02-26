@@ -1,14 +1,46 @@
 /**
  * Band Management By SoulCiety — Core App (GitHub Pages version)
- * ใช้ fetch() เรียก GAS API แทน google.script.run
+ * ใช้ Supabase SDK แทน GAS API
+ *
+ * Load order:
+ *   1. i18n.js
+ *   2. app.js  ← ไฟล์นี้ (inject config.js + Supabase SDK + supabase-api.js อัตโนมัติ)
+ *   3. nav.js
  */
+
+// ── Auto-inject Supabase SDK + config + supabase-api.js ─────────────
+(function () {
+  if (document.getElementById('_sb_sdk')) return;
+
+  // 1) Load config.js ก่อน
+  function loadScript(src, id, onload) {
+    var s = document.createElement('script');
+    if (id) s.id = id;
+    s.src = src;
+    if (onload) s.onload = onload;
+    document.head.appendChild(s);
+  }
+
+  loadScript('js/config.js', '_sb_cfg', function () {
+    // 2) Load Supabase SDK
+    loadScript(
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+      '_sb_sdk',
+      function () {
+        // 3) Load supabase-api.js
+        loadScript('js/supabase-api.js', '_sb_api', null);
+      }
+    );
+  });
+})();
+
 (function(global){
   'use strict';
 
-  // ======================================================
-  // GAS API URL — เปลี่ยนตรงนี้เมื่อ deploy ใหม่
-  // ======================================================
-  var GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxbJ15GWQIl9loFneJeooAhTPM5iYW460k04s2n1BGtN6RuKjnQUFWd3NNrqYmX64UI/exec';
+  // ──────────────────────────────────────────────────────────────────
+  // GAS_API_URL ไม่ได้ใช้แล้ว — Supabase แทนที่ทั้งหมดผ่าน supabase-api.js
+  // ──────────────────────────────────────────────────────────────────
+  var GAS_API_URL = ''; // ไม่ใช้แล้ว
 
   // ======================================================
   // Auth
@@ -32,28 +64,21 @@
   global.getAuthToken = getAuthToken;
 
   // ======================================================
-  // GAS API — fetch based
+  // gasRun — ถูก override โดย supabase-api.js โดยอัตโนมัติ
+  // ฟังก์ชันนี้เป็น placeholder จนกว่า supabase-api.js จะโหลดเสร็จ
   // ======================================================
   function gasRun(action, data, callback) {
-    var payload = JSON.stringify(
-      Object.assign({}, data || {}, {
-        action: action,
-        _token: localStorage.getItem('auth_token') || ''
-      })
-    );
-    fetch(GAS_API_URL, { method: 'POST', body: payload })
-      .then(function(r) { return r.json(); })
-      .then(function(result) {
-        if (result && result.authError) {
-          ['auth_token','bandId','bandName','bandManager','userRole','userName'].forEach(function(k){ localStorage.removeItem(k); });
-          window.location.replace('index.html');
-          return;
-        }
-        if (callback) callback(result);
-      })
-      .catch(function(e) {
-        if (callback) callback({ success: false, message: 'เชื่อมต่อไม่ได้: ' + e.message });
-      });
+    var tries = 0;
+    var wait = setInterval(function () {
+      tries++;
+      if (typeof window.sbRun === 'function') {
+        clearInterval(wait);
+        window.sbRun(action, data, callback);
+      } else if (tries > 100) {
+        clearInterval(wait);
+        if (callback) callback({ success: false, message: 'ไม่สามารถโหลด Supabase API ได้ กรุณารีเฟรชหน้า' });
+      }
+    }, 100);
   }
   global.gasRun = gasRun;
 

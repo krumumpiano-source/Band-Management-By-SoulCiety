@@ -94,8 +94,29 @@ function getOrCreateSheet(sheetName, headers) {
       headerRange.setFontColor('#f6ad55');
       sheet.setFrozenRows(1);
     }
+  } else if (headers && headers.length > 0) {
+    // Add any missing header columns to existing sheets (schema migrations)
+    var existingHdrs = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var existingSet = {};
+    existingHdrs.forEach(function(h) { if (h) existingSet[h] = true; });
+    headers.forEach(function(h) {
+      if (!existingSet[h]) {
+        var newCol = sheet.getLastColumn() + 1;
+        sheet.getRange(1, newCol).setValue(h).setFontWeight('bold').setBackground('#2d3748').setFontColor('#f6ad55');
+      }
+    });
   }
   return sheet;
+}
+
+/**
+ * Write a row to a sheet using a header→value map so column order doesn't matter.
+ * Reads the sheet's current header row and appends a row in the correct column order.
+ */
+function appendRowByMap(sheet, valueMap) {
+  var hdrs = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var row = hdrs.map(function(h) { return (h && valueMap[h] !== undefined) ? valueMap[h] : ''; });
+  sheet.appendRow(row);
 }
 
 /**
