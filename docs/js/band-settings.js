@@ -419,7 +419,18 @@ function renderPayrollSettings() {
    SCHEDULE GRID  (Horizontal)
    Rows = days, Columns = time axis →
 ══════════════════════════════════════════ */
-var PX_PER_MIN = 3.5;         // pixels per minute
+var DAY_LABEL_W = 72;   // px width of the day-name column
+var MIN_PX_PER_MIN = 1.5;
+var MAX_PX_PER_MIN = 7;
+
+function calcPxPerMin(totalMin) {
+  var outer = getEl('schedGridWrap');
+  var available = outer ? (outer.parentElement || outer).offsetWidth - DAY_LABEL_W - 2 : 600;
+  if (available < 120) available = 120;
+  var fit = available / totalMin;
+  // clamp: don't shrink below min (allows scroll), don't stretch above max
+  return Math.min(Math.max(fit, MIN_PX_PER_MIN), MAX_PX_PER_MIN);
+}
 
 function renderScheduleGrid() {
   var wrap = getEl('schedGridWrap'); if (!wrap) return;
@@ -447,7 +458,8 @@ function renderScheduleGrid() {
     gStart = 18 * 60; gEnd = 22 * 60; // default placeholder when no data
   }
   var totalMin = gEnd - gStart;
-  var trackW   = Math.round(totalMin * PX_PER_MIN);
+  var PX_PER_MIN = calcPxPerMin(totalMin);
+  var trackW = Math.round(totalMin * PX_PER_MIN);
 
   // ── Header row (time ticks) ────────────────────────
   var ticksHtml = '<div class="sg-corner"></div>' +
@@ -531,7 +543,8 @@ function renderScheduleGrid() {
       var day  = +this.dataset.day;
       var rect = this.getBoundingClientRect();
       var relX = e.clientX - rect.left;
-      var approxMin = gStart + Math.round(relX / PX_PER_MIN);
+      var pxpm = calcPxPerMin(gEnd - gStart);
+      var approxMin = gStart + Math.round(relX / pxpm);
       approxMin = Math.floor(approxMin / 30) * 30; // snap 30 min
       var approxEnd = Math.min(approxMin + 180, gEnd); // default 3h
       approxMin = Math.max(approxMin, gStart);
@@ -711,4 +724,11 @@ document.addEventListener('DOMContentLoaded', function() {
   var es = getEl('saveBtn');        if (es) es.addEventListener('click', function(e) { e.preventDefault(); saveBandSettings(); });
   var pp = getEl('payrollPeriod');  if (pp) pp.addEventListener('change', function() { payroll.period = this.value; renderPayrollSettings(); });
   loadBandSettings();
+});
+
+// Re-render grid on resize so px/min recalculates for new window width
+var _resizeTimer = null;
+window.addEventListener('resize', function() {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(renderScheduleGrid, 150);
 });
