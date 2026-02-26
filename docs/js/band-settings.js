@@ -419,8 +419,6 @@ function renderPayrollSettings() {
    SCHEDULE GRID  (Horizontal)
    Rows = days, Columns = time axis →
 ══════════════════════════════════════════ */
-var GRID_DEFAULT_START = 8;   // default earliest hour shown
-var GRID_DEFAULT_END   = 26;  // default latest hour (26 = 02:00 next day)
 var PX_PER_MIN = 3.5;         // pixels per minute
 
 function renderScheduleGrid() {
@@ -437,13 +435,16 @@ function renderScheduleGrid() {
     });
   }
 
-  // Grid time range
-  var gStart = GRID_DEFAULT_START * 60, gEnd = GRID_DEFAULT_END * 60;
+  // Grid time range: fit exactly to actual data (±30 min padding), fallback 18-22
+  var gStart, gEnd;
   if (allSlots.length > 0) {
     var minS = Math.min.apply(null, allSlots.map(function(a) { return a.startMin; }));
     var maxE = Math.max.apply(null, allSlots.map(function(a) { return a.endMin;   }));
-    gStart = Math.floor(Math.min(minS, gStart) / 60) * 60;
-    gEnd   = Math.ceil(Math.max(maxE, gEnd) / 60) * 60;
+    gStart = Math.floor((minS - 30) / 60) * 60;
+    gEnd   = Math.ceil((maxE + 30) / 60) * 60;
+    if (gStart < 0) gStart = 0;
+  } else {
+    gStart = 18 * 60; gEnd = 22 * 60; // default placeholder when no data
   }
   var totalMin = gEnd - gStart;
   var trackW   = Math.round(totalMin * PX_PER_MIN);
@@ -710,4 +711,4 @@ document.addEventListener('DOMContentLoaded', function() {
   var es = getEl('saveBtn');        if (es) es.addEventListener('click', function(e) { e.preventDefault(); saveBandSettings(); });
   var pp = getEl('payrollPeriod');  if (pp) pp.addEventListener('change', function() { payroll.period = this.value; renderPayrollSettings(); });
   loadBandSettings();
-});
+});
