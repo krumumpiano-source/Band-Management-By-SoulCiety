@@ -523,7 +523,7 @@
         p_province:  province
       });
       if (error) throw error;
-      return data;
+      return { success: true, data: data };
     }
 
     async function doLookupInviteCode(d) {
