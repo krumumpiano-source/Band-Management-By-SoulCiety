@@ -215,6 +215,8 @@
         // ── Profile ────────────────────────────────────────────────
         case 'getMyProfile':    return doGetMyProfile();
         case 'updateMyProfile': return doUpdateMyProfile(d);
+        case 'changeEmail':     return doChangeEmail(d);
+        case 'changePassword':  return doChangePassword(d);
 
         // ── Admin ──────────────────────────────────────────────────
         case 'getAllUsers':     return doAdminGetAllUsers();
@@ -840,21 +842,22 @@
       var uid = user.user.id;
 
       var row = {
-        title:      d.title      || '',
-        first_name: d.firstName  || '',
-        last_name:  d.lastName   || '',
-        nickname:   d.nickname   || '',
-        instrument: d.instrument || '',
-        phone:      d.phone      || '',
+        title:           d.title          || '',
+        first_name:      d.firstName      || '',
+        last_name:       d.lastName       || '',
+        nickname:        d.nickname        || '',
+        instrument:      d.instrument      || '',
+        phone:           d.phone           || '',
+        id_card_number:  d.idCardNumber    || '',
+        birth_date:      d.birthDate       || null,
+        id_card_address: d.idCardAddress   || '',
         updated_at: new Date().toISOString()
       };
-      // อัปเดต user_name เป็นชื่อเล่น (ถ้ามี)
       if (d.nickname) row.user_name = d.nickname;
 
       var { data, error } = await sb.from('profiles').update(row).eq('id', uid).select().single();
       if (error) throw error;
 
-      // อัปเดต localStorage ด้วย
       localStorage.setItem('userTitle',      row.title);
       localStorage.setItem('userFirstName',  row.first_name);
       localStorage.setItem('userLastName',   row.last_name);
@@ -863,6 +866,20 @@
       if (d.nickname) localStorage.setItem('userName', d.nickname);
 
       return { success: true, data: toCamel(data), message: 'บันทึกข้อมูลส่วนตัวเรียบร้อย' };
+    }
+
+    async function doChangeEmail(d) {
+      if (!d.email) return { success: false, message: 'กรุณาระบุอีเมลใหม่' };
+      var { data, error } = await sb.auth.updateUser({ email: d.email });
+      if (error) throw error;
+      return { success: true, message: 'ส่งลิงก์ยืนยันไปยังอีเมลใหม่แล้ว กรุณาตรวจสอบกล่องจดหมาย' };
+    }
+
+    async function doChangePassword(d) {
+      if (!d.password || d.password.length < 6) return { success: false, message: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' };
+      var { data, error } = await sb.auth.updateUser({ password: d.password });
+      if (error) throw error;
+      return { success: true, message: 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว' };
     }
 
     // ── Admin ─────────────────────────────────────────────────────
