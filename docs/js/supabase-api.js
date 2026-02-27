@@ -513,7 +513,8 @@
         slots:       slotsArr,
         check_in_at: new Date().toISOString(),
         status:      'leave',
-        notes:       row.reason + (row.substitute_name ? ' | คนแทน: ' + row.substitute_name : '')
+        notes:       row.reason + (row.substitute_name ? ' | คนแทน: ' + row.substitute_name : ''),
+        substitute:  row.substitute_name ? { name: row.substitute_name, contact: row.substitute_contact || '' } : null
       };
       var { data: existCI } = await sb.from('member_check_ins')
         .select('id').eq('band_id', ciRow.band_id)
@@ -587,7 +588,7 @@
         .eq('member_id', memberId).eq('date', dateStr).limit(1);
       if (data && data.length > 0) {
         var row = toCamel(data[0]);
-        return { success: true, checkIn: { id: row.id, venue: row.venue || '', slots: row.slots || [], status: row.status || 'pending', notes: row.notes || '', checkInAt: row.checkInAt || '' } };
+        return { success: true, checkIn: { id: row.id, venue: row.venue || '', slots: row.slots || [], status: row.status || 'pending', notes: row.notes || '', checkInAt: row.checkInAt || '', substitute: row.substitute || null } };
       }
       return { success: false };
     }

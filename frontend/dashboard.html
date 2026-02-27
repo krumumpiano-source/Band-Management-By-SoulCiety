@@ -2,26 +2,24 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Dashboard — Band Management By SoulCiety</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
-  <?!= include('css_theme') ?>
-  <?!= include('css_nav') ?>
-  <?!= include('css_browser-compat') ?>
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/compat.css">
   <style>
-    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--spacing-lg);margin-bottom:var(--spacing-xl)}
-    .stat-card{background:var(--premium-white);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);padding:var(--spacing-xl);display:flex;align-items:center;gap:var(--spacing-md)}
     .stat-icon{width:52px;height:52px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
     .stat-icon.gold{background:#fef3c7}.stat-icon.blue{background:#dbeafe}.stat-icon.green{background:#d1fae5}.stat-icon.purple{background:#ede9fe}
     .stat-body h3{font-size:var(--text-2xl);font-weight:700;color:var(--premium-text)}.stat-body p{font-size:var(--text-sm);color:var(--premium-text-light)}
     .dash-row{display:grid;grid-template-columns:2fr 1fr;gap:var(--spacing-xl)}
-    @media(max-width:768px){.dash-row{grid-template-columns:1fr}}
-    .quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-sm)}
-    .quick-btn{padding:var(--spacing-md);border-radius:var(--radius-md);background:var(--premium-light-gray);border:none;cursor:pointer;text-align:center;font-size:var(--text-sm);font-family:var(--font-family-body);color:var(--premium-text);transition:background .2s,transform .1s}
+    @media(max-width:900px){.dash-row{grid-template-columns:1fr}}
+    .quick-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--spacing-sm)}
+    .quick-btn{padding:var(--spacing-md) var(--spacing-sm);border-radius:var(--radius-md);background:var(--premium-light-gray);border:none;cursor:pointer;text-align:center;font-size:var(--text-sm);font-family:var(--font-family-body);color:var(--premium-text);transition:background .2s,transform .1s;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;line-height:1.3}
     .quick-btn:hover{background:var(--premium-gold);color:#fff;transform:translateY(-1px)}
     .job-item{display:flex;align-items:center;gap:var(--spacing-md);padding:var(--spacing-md) 0;border-bottom:1px solid var(--premium-light-gray)}
     .job-item:last-child{border-bottom:none}
-    .job-date-box{width:48px;text-align:center;background:var(--premium-off-white);border-radius:var(--radius-md);padding:6px}
+    .job-date-box{width:48px;text-align:center;background:var(--premium-off-white);border-radius:var(--radius-md);padding:6px;flex-shrink:0}
     .job-date-box .dd{font-size:var(--text-xl);font-weight:700;color:var(--premium-gold);line-height:1}
     .job-date-box .mm{font-size:10px;color:var(--premium-text-muted);text-transform:uppercase}
     .job-info h4{font-size:var(--text-sm);font-weight:600;margin:0}
@@ -31,10 +29,21 @@
     .finance-row .label{color:var(--premium-text-light)}
     .finance-row .val-pos{color:#276749;font-weight:600}
     .finance-row .val-neg{color:#c53030;font-weight:600}
-    .welcome-bar{background:linear-gradient(135deg,#2d3748,#4a5568);color:#fff;border-radius:var(--radius-xl);padding:var(--spacing-xl) var(--spacing-2xl);margin-bottom:var(--spacing-xl);display:flex;align-items:center;justify-content:space-between}
+    .welcome-bar{background:linear-gradient(135deg,#2d3748,#4a5568);color:#fff;border-radius:var(--radius-xl);padding:var(--spacing-lg) var(--spacing-xl);margin-bottom:var(--spacing-xl);display:flex;align-items:center;justify-content:space-between}
     .welcome-bar h2{font-size:var(--text-xl);font-weight:700;margin:0}
     .welcome-bar p{font-size:var(--text-sm);color:#cbd5e0;margin:4px 0 0}
-    @media(max-width:480px){.welcome-bar{flex-direction:column;align-items:flex-start;gap:var(--spacing-sm)}.quick-actions{grid-template-columns:1fr}}
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--spacing-lg);margin-bottom:var(--spacing-xl)}
+    .stat-card{background:var(--premium-white);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);padding:var(--spacing-xl);display:flex;align-items:center;gap:var(--spacing-md)}
+    @media(max-width:600px){
+      .welcome-bar{padding:var(--spacing-md);border-radius:var(--radius-lg)}
+      .welcome-bar>div:last-child{display:none}
+      .stat-grid{grid-template-columns:repeat(2,1fr)!important;gap:var(--spacing-sm)!important}
+      .stat-card{padding:var(--spacing-md);gap:var(--spacing-sm)}
+      .stat-icon{width:40px;height:40px;font-size:18px}
+      .stat-body h3{font-size:var(--text-xl)}
+      .quick-actions{grid-template-columns:repeat(3,1fr)}
+    }
+    @media(max-width:380px){.quick-actions{grid-template-columns:repeat(2,1fr)}}
     /* === Quick Check-In === */
     .qci-header{display:flex;align-items:center;gap:12px;margin-bottom:var(--spacing-md)}
     .qci-date-badge{background:linear-gradient(135deg,var(--premium-gold),#b7791f);color:#fff;border-radius:var(--radius-lg);padding:8px 18px;font-size:var(--text-sm);font-weight:600;white-space:nowrap}
@@ -55,9 +64,11 @@
     .qci-done strong{font-size:var(--text-md);color:#064e3b}
     .qci-no-schedule{color:var(--premium-text-muted);font-size:var(--text-sm);font-style:italic;padding:10px 0;display:block}
     .qci-no-work{background:#f7fafc;border:1px dashed var(--premium-border);border-radius:var(--radius-lg);padding:var(--spacing-md) var(--spacing-lg);text-align:center;color:var(--premium-text-muted);font-size:var(--text-sm)}
+
     /* Leave button */
     .qci-leave-btn{padding:10px 20px;font-size:var(--text-sm,0.875rem);font-weight:700;border-radius:var(--radius-md);border:2px solid #e53e3e;background:#fff;color:#e53e3e;cursor:pointer;transition:all .2s;font-family:var(--font-family-body);display:inline-flex;align-items:center;gap:6px}
     .qci-leave-btn:hover{background:#e53e3e;color:#fff}
+    /* Leave inline form */
     .qci-leave-form{display:none;background:linear-gradient(135deg,#fff5f5,#fed7d7);border:2px solid #feb2b2;border-radius:var(--radius-lg);padding:var(--spacing-lg);margin-top:var(--spacing-md);animation:qciLeaveIn .2s ease}
     .qci-leave-form.show{display:block}
     @keyframes qciLeaveIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
@@ -84,6 +95,29 @@
         <div style="font-size:32px">🥁</div>
       </div>
 
+      <!-- ===== Band Code Card (manager/admin) ===== -->
+      <div class="card" id="dashBandCodeCard" style="margin-bottom:var(--spacing-xl);display:none;border:2px solid var(--premium-gold);background:linear-gradient(135deg,#fffbeb,#fef9c3)">
+        <div style="padding:var(--spacing-lg) var(--spacing-xl);text-align:center">
+          <div style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:8px">🔑 รหัสประจำวง — แจกสมาชิกเพื่อสมัครเข้าร่วมวง</div>
+          <div id="dashBandCode" style="font-family:monospace;font-size:2rem;font-weight:700;letter-spacing:.3em;color:var(--premium-gold);user-select:all">------</div>
+          <button class="btn btn-ghost btn-sm" id="copyBandCodeBtn" style="margin-top:8px;font-size:var(--text-xs)">📋 คัดลอกรหัสวง</button>
+          <div style="font-size:11px;color:var(--premium-text-light);margin-top:6px">สมาชิกสามารถใช้รหัสนี้ที่หน้า "สมัครสมาชิก" เพื่อเข้าร่วมวง</div>
+        </div>
+      </div>
+
+      <!-- ===== Pending Band Approval (for manager who just created band) ===== -->
+      <div class="card" id="dashPendingBandCard" style="margin-bottom:var(--spacing-xl);display:none;border:2px solid #f59e0b;background:linear-gradient(135deg,#fffbeb,#fef3c7)">
+        <div style="padding:var(--spacing-lg) var(--spacing-xl);text-align:center">
+          <div style="font-size:36px;margin-bottom:8px">⏳</div>
+          <h3 style="color:#92400e;margin-bottom:8px">รอแอดมินอนุมัติการสร้างวง</h3>
+          <p style="font-size:var(--text-sm);color:#78350f;line-height:1.7">
+            คำขอสร้างวงของคุณถูกส่งไปยังแอดมินแล้ว<br>
+            กรุณารอการอนุมัติ (ปกติไม่เกิน 24 ชม.)<br>
+            เมื่ออนุมัติแล้ว รหัสวงจะปรากฏที่หน้านี้
+          </p>
+        </div>
+      </div>
+
       <!-- ===== Pending Members Approval ===== -->
       <div class="card" id="dashPendingCard" style="margin-bottom:var(--spacing-xl);display:none;border:2px solid var(--premium-gold)">
         <div class="card-header" style="background:linear-gradient(135deg,#fffbeb,#fef3c7)">
@@ -107,27 +141,45 @@
           <input type="date" id="qciDatePicker" style="border:1px solid var(--premium-border);border-radius:var(--radius-md);padding:6px 10px;font-size:var(--text-sm);font-family:var(--font-family-body)">
           <button class="btn btn-ghost btn-sm" id="qciTodayBtn" style="font-size:var(--text-xs)">📅 วันนี้</button>
         </div>
+
+        <!-- Already checked-in state -->
         <div class="qci-done" id="qciDone">
           <div class="done-icon">✅</div>
           <strong id="qciDoneSummary">ลงเวลาแล้ว</strong>
           <p id="qciDoneDetail"></p>
-          <button class="btn btn-ghost btn-sm" style="margin-top:8px" id="qciEditBtn">✏️ แก้ไขเวลา</button>
+          <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" id="qciEditBtn">✏️ แก้ไขเวลา</button>
+            <button class="btn btn-sm" id="qciCancelBtn" style="background:#e53e3e;color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:13px;cursor:pointer">❌ ยกเลิกลงเวลา</button>
+          </div>
         </div>
+
+        <!-- Check-in form -->
         <div id="qciForm">
+          <!-- Venue picker (hidden when single venue via JS) -->
           <div class="qci-step" id="qciVenueStep">
             <div class="qci-step-label">📍 สถานที่</div>
-            <div class="qci-btn-group" id="qciVenueBtns"><span class="qci-no-schedule">⏳ กำลังโหลด...</span></div>
+            <div class="qci-btn-group" id="qciVenueBtns">
+              <span class="qci-no-schedule">⏳ กำลังโหลด...</span>
+            </div>
           </div>
+
+          <!-- Time slots for today (auto-rendered from manager's schedule) -->
           <div class="qci-step" id="qciSlotStep">
             <div class="qci-step-label" id="qciSlotLabel">🕐 รอบวันนี้</div>
-            <div class="qci-btn-group" id="qciSlotBtns"><span class="qci-no-schedule">⏳ กำลังโหลด...</span></div>
+            <div class="qci-btn-group" id="qciSlotBtns">
+              <span class="qci-no-schedule">⏳ กำลังโหลด...</span>
+            </div>
           </div>
+
+          <!-- Summary -->
           <div class="qci-summary" id="qciSummary">
             <strong>📋 สรุปการลงเวลา</strong><br>
             📅 วันที่: <strong id="sumDate"></strong><br>
             📍 ร้าน: <strong id="sumVenue"></strong><br>
             ⏰ ช่วงเวลา: <strong id="sumSlots"></strong>
           </div>
+
+          <!-- Confirm -->
           <div id="qciConfirmRow" style="display:none;margin-top:var(--spacing-md)">
             <button class="btn btn-primary" id="qciConfirmBtn">✅ ยืนยันลงเวลา</button>
             <button class="btn btn-ghost" id="qciResetBtn" style="margin-left:8px">🔄 รีเซ็ต</button>
@@ -135,7 +187,7 @@
           <!-- Leave button (always visible) -->
           <div style="margin-top:var(--spacing-md);display:flex;align-items:center;gap:var(--spacing-md);flex-wrap:wrap">
             <button type="button" class="qci-leave-btn" id="qciLeaveBtn">🚫 ลา</button>
-            <a href="?page=leave" style="font-size:var(--text-xs);color:var(--premium-gold);font-weight:600;text-decoration:none">🔄 จัดการใบลาทั้งหมด</a>
+            <a href="leave.html" style="font-size:var(--text-xs);color:var(--premium-gold);font-weight:600;text-decoration:none">🔄 จัดการใบลาทั้งหมด</a>
           </div>
           <!-- Leave inline form -->
           <div class="qci-leave-form" id="qciLeaveForm">
@@ -149,6 +201,29 @@
               <button type="button" class="btn-leave-ok" id="qciLeaveSubmit">✅ ยืนยันลา</button>
               <button type="button" class="btn-leave-cancel" id="qciLeaveCancel">ยกเลิก</button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Weekly Earnings Summary ===== -->
+      <div class="card" id="weeklyEarningsCard" style="margin-bottom:var(--spacing-xl);display:none">
+        <div class="card-header" style="background:linear-gradient(135deg,#f0fff4,#c6f6d5)">
+          <h3 class="card-title" style="margin:0">💰 สรุปรายได้สัปดาห์นี้</h3>
+          <span id="weeklyPeriodBadge" style="font-size:var(--text-xs);color:var(--premium-text-muted)"></span>
+        </div>
+        <div style="padding:var(--spacing-lg)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md);margin-bottom:var(--spacing-md)">
+            <div style="background:var(--premium-off-white);border-radius:var(--radius-md);padding:var(--spacing-md);text-align:center">
+              <div style="font-size:var(--text-xs);color:var(--premium-text-muted)">⏰ ชั่วโมงทำงาน</div>
+              <div id="weeklyHours" style="font-size:var(--text-xl);font-weight:700;color:var(--premium-text)">—</div>
+            </div>
+            <div style="background:var(--premium-off-white);border-radius:var(--radius-md);padding:var(--spacing-md);text-align:center">
+              <div style="font-size:var(--text-xs);color:var(--premium-text-muted)">💰 ยอดรายได้</div>
+              <div id="weeklyEarnings" style="font-size:var(--text-xl);font-weight:700;color:#276749">—</div>
+            </div>
+          </div>
+          <div id="weeklyBreakdown" style="font-size:var(--text-sm);color:var(--premium-text-light);line-height:1.8"></div>
+          <div id="weeklySubInfo" style="display:none;margin-top:var(--spacing-md);background:linear-gradient(135deg,#faf5ff,#f3e8ff);border:1px solid #d6bcfa;border-radius:var(--radius-md);padding:var(--spacing-md)">
           </div>
         </div>
       </div>
@@ -212,179 +287,363 @@
     </div>
   </main>
 
-  <?!= include('js_i18n') ?>
-  <?!= include('js_app') ?>
-  <?!= include('js_nav') ?>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
   <script>
   function nav(page) {
     var isGas = typeof google !== 'undefined' && google.script;
     window.location.href = isGas ? '?page=' + page : page + '.html';
   }
+
+  /* ===== Quick Check-In ===== */
+  var qciBandId = '', qciBandSettings = { venues: [], scheduleData: {} };
+  var qciSelectedVenue = '', qciSelectedSlots = [], qciExistingCheckIn = null;
+  var qciSelectedDate = new Date();
+  var QCI_DAY_NAMES_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+
+  function qciEsc(s) { var d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+  function qciUpdateDateBadge() {
+    var dateBadge = document.getElementById('qciDateBadge');
+    if (dateBadge) dateBadge.textContent = qciSelectedDate.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    var dp = document.getElementById('qciDatePicker');
+    if (dp) dp.value = qciSelectedDate.toISOString().split('T')[0];
+  }
+  function qciNavDate(offset) {
+    qciSelectedDate = new Date(qciSelectedDate.getTime() + offset * 86400000);
+    qciOnDateChange();
+  }
+  function qciOnDateChange() {
+    qciUpdateDateBadge();
+    qciSelectedSlots = []; qciExistingCheckIn = null;
+    document.getElementById('qciDone').classList.remove('show');
+    document.getElementById('qciForm').style.display = 'block';
+    document.getElementById('qciSummary').classList.remove('show');
+    document.getElementById('qciConfirmRow').style.display = 'none';
+    qciRenderSlots();
+    qciCheckExisting();
+  }
+
+  function qciLoadSettings(cb) {
+    var stored = localStorage.getItem('bandSettings');
+    if (stored) { try { var s = JSON.parse(stored); qciBandSettings = { venues: s.venues||[], scheduleData: s.scheduleData||s.schedule||{} }; } catch(e){} }
+    if (qciBandSettings.venues.length > 0) { cb(); return; }
+    if (qciBandId && typeof gasRun === 'function') {
+      gasRun('getBandSettings', { bandId: qciBandId }, function(r) {
+        if (r && r.success && r.data) {
+          qciBandSettings = { venues: r.data.venues||[], scheduleData: r.data.scheduleData||r.data.schedule||{} };
+          try { localStorage.setItem('bandSettings', JSON.stringify(r.data)); } catch(e) {}
+        }
+        cb();
+      });
+    } else { cb(); }
+  }
+
+  /* Returns slots for selected date's day-of-week, filtered by selected venue */
+  function qciGetSlotsForDate() {
+    var dow = qciSelectedDate.getDay();
+    var dayData = qciBandSettings.scheduleData[dow] || qciBandSettings.scheduleData[String(dow)];
+    var slots = [];
+    if (Array.isArray(dayData)) {
+      slots = dayData;
+    } else if (dayData && dayData.timeSlots && dayData.timeSlots.length) {
+      slots = dayData.timeSlots;
+    }
+    // Filter by selected venue if slots have venueId
+    if (qciSelectedVenue && slots.length && slots[0] && slots[0].venueId !== undefined) {
+      var venueId = qciGetVenueId(qciSelectedVenue);
+      if (venueId) {
+        var filtered = slots.filter(function(s) { return s.venueId === venueId; });
+        if (filtered.length) slots = filtered;
+      }
+    }
+    return slots.map(function(s) {
+      return { key: s.startTime + '-' + s.endTime, label: s.startTime + ' \u2013 ' + s.endTime };
+    });
+  }
+
+  /* Lookup venue ID from venue name */
+  function qciGetVenueId(name) {
+    var venues = qciBandSettings.venues || [];
+    for (var i = 0; i < venues.length; i++) {
+      var v = venues[i];
+      var vName = v.name || v.venueName || String(v);
+      if (vName === name) return v.id || v.venueId || '';
+    }
+    return '';
+  }
+
+  /* Render venue buttons; auto-select + hide if only one venue */
+  function qciRenderVenues() {
+    var venueStep = document.getElementById('qciVenueStep');
+    var container = document.getElementById('qciVenueBtns');
+    if (!container) return;
+    var venues = (qciBandSettings.venues || []);
+    if (!venues.length) venues = [{ name: 'ร้านหลัก' }];
+
+    if (venues.length === 1) {
+      /* เดิมซ่อน venue step เลยถ้ามีร้านเดียว */
+      qciSelectedVenue = venues[0].name || venues[0].venueName || 'ร้านหลัก';
+      if (venueStep) venueStep.style.display = 'none';
+      qciRenderSlots();
+      return;
+    }
+
+    if (venueStep) venueStep.style.display = 'block';
+    container.innerHTML = venues.map(function(v) {
+      var name = v.name || v.venueName || String(v);
+      return '<button type="button" class="qci-venue-btn" data-venue="' + qciEsc(name) + '">📍 ' + qciEsc(name) + '</button>';
+    }).join('');
+    container.querySelectorAll('.qci-venue-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        container.querySelectorAll('.qci-venue-btn').forEach(function(b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        qciSelectedVenue = btn.dataset.venue;
+        qciSelectedSlots = [];
+        qciRenderSlots();
+      });
+    });
+    /* Auto-select first venue */
+    var first = container.querySelector('.qci-venue-btn');
+    if (first) first.click();
+    qciRenderSlots();
+  }
+
+  /* Render time slot buttons from manager's schedule for today */
+  function qciRenderSlots() {
+    var container = document.getElementById('qciSlotBtns');
+    var label = document.getElementById('qciSlotLabel');
+    if (!container) return;
+    var dow = qciSelectedDate.getDay();
+    var isToday = qciSelectedDate.toDateString() === new Date().toDateString();
+    if (label) label.textContent = '🕐 รอบวัน' + QCI_DAY_NAMES_TH[dow] + (isToday ? 'นี้' : '');
+    var slots = qciGetSlotsForDate();
+    if (!slots.length) {
+      container.innerHTML = '<div class="qci-no-work">🎵 ไม่มีรอบสำหรับวัน' + QCI_DAY_NAMES_TH[dow] + '<br><span style="font-size:11px;opacity:.7">ผู้จัดการยังไม่ได้กำหนดตารางวันนี้</span></div>';
+      document.getElementById('qciSummary').classList.remove('show');
+      document.getElementById('qciConfirmRow').style.display = 'none';
+      return;
+    }
+    var existingSlots = (qciExistingCheckIn && qciExistingCheckIn.slots) ? qciExistingCheckIn.slots : [];
+    container.innerHTML = slots.map(function(s) {
+      var pre = existingSlots.indexOf(s.key) !== -1 ? ' selected' : '';
+      return '<button type="button" class="qci-slot-btn' + pre + '" data-slot="' + qciEsc(s.key) + '">🕐 ' + qciEsc(s.label) + '</button>';
+    }).join('');
+    if (existingSlots.length) qciSelectedSlots = existingSlots.slice();
+    container.querySelectorAll('.qci-slot-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        btn.classList.toggle('selected');
+        var slot = btn.dataset.slot;
+        if (btn.classList.contains('selected')) {
+          if (qciSelectedSlots.indexOf(slot) === -1) qciSelectedSlots.push(slot);
+        } else {
+          qciSelectedSlots = qciSelectedSlots.filter(function(s) { return s !== slot; });
+        }
+        qciUpdateSummary();
+      });
+    });
+    qciUpdateSummary();
+  }
+
+  function qciUpdateSummary() {
+    var summary = document.getElementById('qciSummary');
+    var confirmRow = document.getElementById('qciConfirmRow');
+    if (!summary || !confirmRow) return;
+    if (qciSelectedVenue && qciSelectedSlots.length) {
+      var dateStr = qciSelectedDate.toLocaleDateString('th-TH', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      var slotStr = qciSelectedSlots.map(function(k) { var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
+      document.getElementById('sumDate').textContent = dateStr;
+      document.getElementById('sumVenue').textContent = qciSelectedVenue;
+      document.getElementById('sumSlots').textContent = slotStr;
+      summary.classList.add('show');
+      confirmRow.style.display = 'block';
+    } else {
+      summary.classList.remove('show');
+      confirmRow.style.display = 'none';
+    }
+  }
+
+  function qciShowDone(slots, venue, status, subName) {
+    var done = document.getElementById('qciDone');
+    var form = document.getElementById('qciForm');
+    var slotStr = (slots||[]).map(function(k){ var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
+    var isToday = qciSelectedDate.toDateString() === new Date().toDateString();
+    var dateLabel = isToday ? 'วันนี้' : qciSelectedDate.toLocaleDateString('th-TH', { day:'numeric', month:'short' });
+    var icon = done.querySelector('.done-icon');
+    if (status === 'leave') {
+      if (icon) icon.textContent = '🚫';
+      done.style.background = 'linear-gradient(135deg,#fff5f5,#fed7d7)';
+      document.getElementById('qciDoneSummary').innerHTML = '🚫 ลางาน' + dateLabel;
+      var detail = '';
+      if (venue) detail += '📍 ' + qciEsc(venue);
+      if (slotStr) detail += (detail ? ' · ' : '') + '⏰ ' + slotStr;
+      if (subName) detail += '<br><span style="color:#805ad5;font-weight:600">🔄 คนแทน: ' + qciEsc(subName) + '</span>';
+      else detail += '<br><span style="color:#e53e3e;font-size:13px">ไม่มีคนแทน</span>';
+      document.getElementById('qciDoneDetail').innerHTML = detail;
+    } else {
+      if (icon) icon.textContent = '✅';
+      done.style.background = '';
+      document.getElementById('qciDoneSummary').textContent = '✅ ลงเวลาแล้ว' + dateLabel;
+      document.getElementById('qciDoneDetail').textContent = '📍 '+venue+' · ⏰ '+slotStr;
+    }
+    done.classList.add('show');
+    form.style.display = 'none';
+  }
+
+  function qciCheckExisting() {
+    if (!qciBandId || typeof gasRun !== 'function') return;
+    var dateStr = qciSelectedDate.toISOString().split('T')[0];
+    gasRun('getMyCheckIn', { date: dateStr, venue: '', bandId: qciBandId }, function(r) {
+      if (r && r.success && r.checkIn) {
+        qciExistingCheckIn = r.checkIn;
+        var ci = r.checkIn;
+        if (ci.status === 'confirmed' || ci.status === 'pending' || ci.status === 'leave') {
+          var subName = '';
+          if (ci.status === 'leave') {
+            if (ci.substitute && ci.substitute.name) subName = ci.substitute.name;
+            else if (ci.notes) { var _m = ci.notes.match(/คนแทน:\s*(.+)/); if (_m) subName = _m[1].trim(); }
+          }
+          qciShowDone(ci.slots, ci.venue, ci.status, subName);
+        }
+      }
+    });
+  }
+
+  function qciConfirm() {
+    if (!qciSelectedVenue) { alert('กรุณาเลือกสถานที่ก่อน'); return; }
+    if (!qciSelectedSlots.length) { alert('กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง'); return; }
+    var btn = document.getElementById('qciConfirmBtn');
+    btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+    var dateStr = qciSelectedDate.toISOString().split('T')[0];
+    gasRun('memberCheckIn', { bandId: qciBandId, date: dateStr, venue: qciSelectedVenue, slots: qciSelectedSlots, notes: '' }, function(r) {
+      btn.disabled = false; btn.textContent = '✅ ยืนยันลงเวลา';
+      if (r && r.success) {
+        qciShowDone(qciSelectedSlots, qciSelectedVenue, 'pending');
+        showDashToast('ลงเวลาเรียบร้อย — รอผู้จัดการยืนยัน', 'success');
+      } else {
+        alert((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+      }
+    });
+  }
+
+  function qciReset() {
+    qciSelectedVenue = ''; qciSelectedSlots = []; qciExistingCheckIn = null;
+    document.getElementById('qciDone').classList.remove('show');
+    document.getElementById('qciForm').style.display = 'block';
+    document.getElementById('qciSummary').classList.remove('show');
+    document.getElementById('qciConfirmRow').style.display = 'none';
+    document.querySelectorAll('.qci-venue-btn').forEach(function(b) { b.classList.remove('selected'); });
+    qciSelectedSlots = [];
+    qciRenderVenues();
+  }
+
+  function showDashToast(msg, type) {
+    var t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.style.background = type === 'success' ? '#276749' : type === 'error' ? '#c53030' : 'var(--premium-gold)';
+    t.style.display = 'block'; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.style.display='none'; }, 300); }, 3500);
+  }
+
+  // ===== LEAVE BUTTON (simple: just enter substitute name) =====
+  function qciSubmitLeave() {
+    var noSub = document.getElementById('qciLeaveNoSub') && document.getElementById('qciLeaveNoSub').checked;
+    var subName = (document.getElementById('qciLeaveSubName') ? document.getElementById('qciLeaveSubName').value : '').trim();
+    if (!noSub && !subName) { showDashToast('กรุณากรอกชื่อคนแทน หรือเลือก "ไม่มีคนแทน"', 'error'); return; }
+    if (noSub) subName = '';
+
+    var dateStr = qciSelectedDate.toISOString().split('T')[0];
+    var venue = qciSelectedVenue || '';
+    // ไม่มีคนแทน = ไม่ต้องเลือกรอบเวลา แค่บันทึกว่าลาเฉยๆ
+    var slots = noSub ? [] : (qciSelectedSlots.length ? qciSelectedSlots : []);
+    var reason = noSub ? 'ลางาน (ไม่มีคนแทน)' : 'ลางาน';
+
+    var btn = document.getElementById('qciLeaveSubmit');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+
+    var payload = {
+      bandId: qciBandId,
+      memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '',
+      memberName: localStorage.getItem('userName') || '',
+      date: dateStr,
+      venue: venue,
+      slots: JSON.stringify(slots),
+      reason: reason,
+      substituteName: subName,
+      substituteContact: ''
+    };
+
+    if (typeof gasRun === 'function') {
+      gasRun('requestLeave', payload, function(r) {
+        if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
+        if (r && r.success) {
+          showDashToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
+          document.getElementById('qciLeaveForm').classList.remove('show');
+          document.getElementById('qciLeaveSubName').value = '';
+          qciShowDone(slots, venue, 'leave', subName);
+        } else {
+          showDashToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+        }
+      });
+    } else {
+      // Fallback: redirect to leave page
+      if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
+      var params = '?date=' + encodeURIComponent(dateStr) +
+        '&venue=' + encodeURIComponent(venue) +
+        '&sub=' + encodeURIComponent(subName);
+      window.location.href = 'leave.html' + params;
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
     renderMainNav('mainNav');
     applyTranslations();
 
     var name = localStorage.getItem('userName') || 'ผู้ใช้งาน';
-    var band = localStorage.getItem('bandName') || 'วงดนตรี';
+    var band = localStorage.getItem('bandName') || '';
+    if (!band) {
+      try { var bs = JSON.parse(localStorage.getItem('bandSettings') || '{}'); band = bs.bandName || ''; } catch(e) {}
+    }
+    if (!band) band = 'วงดนตรี';
     document.getElementById('welcomeName').textContent = 'สวัสดี, ' + name;
     document.getElementById('welcomeBand').textContent = '🎵 ' + band;
+    // Refresh band name from server (in case localStorage is stale/empty)
+    var _wbBandId = localStorage.getItem('bandId') || '';
+    if (_wbBandId) {
+      gasRun('getBandSettings', { bandId: _wbBandId }, function(r) {
+        if (r && r.success && r.data && r.data.bandName) {
+          localStorage.setItem('bandName', r.data.bandName);
+          document.getElementById('welcomeBand').textContent = '🎵 ' + r.data.bandName;
+        }
+      });
+    }
 
     // Quick Check-In init
-    var qciBandId = localStorage.getItem('bandId') || '';
-    var qciBandSettings = { venues: [], scheduleData: {} };
-    var qciSelectedVenue = '', qciSelectedSlots = [], qciExistingCheckIn = null;
-    var qciSelectedDate = new Date();
-    var QCI_DAY_NAMES_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
-    function qciEsc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
-
-    function qciUpdateDateBadge(){
-      var db=document.getElementById('qciDateBadge');
-      if(db)db.textContent=qciSelectedDate.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-      var dp=document.getElementById('qciDatePicker');
-      if(dp)dp.value=qciSelectedDate.toISOString().split('T')[0];
-    }
-    function qciNavDate(offset){
-      qciSelectedDate=new Date(qciSelectedDate.getTime()+offset*86400000);
-      qciOnDateChange();
-    }
-    function qciOnDateChange(){
-      qciUpdateDateBadge();
-      qciSelectedSlots=[];qciExistingCheckIn=null;
-      document.getElementById('qciDone').classList.remove('show');
-      document.getElementById('qciForm').style.display='block';
-      document.getElementById('qciSummary').classList.remove('show');
-      document.getElementById('qciConfirmRow').style.display='none';
-      qciRenderSlots();
-      qciCheckExisting();
-    }
+    qciBandId = localStorage.getItem('bandId') || '';
+    qciSelectedDate = new Date();
     qciUpdateDateBadge();
 
     // Date navigation
-    document.getElementById('qciPrevDay').addEventListener('click',function(){qciNavDate(-1);});
-    document.getElementById('qciNextDay').addEventListener('click',function(){qciNavDate(1);});
-    document.getElementById('qciTodayBtn').addEventListener('click',function(){qciSelectedDate=new Date();qciOnDateChange();});
-    var _dp=document.getElementById('qciDatePicker');
-    if(_dp)_dp.addEventListener('change',function(){var p=this.value.split('-');qciSelectedDate=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));qciOnDateChange();});
+    document.getElementById('qciPrevDay').addEventListener('click', function() { qciNavDate(-1); });
+    document.getElementById('qciNextDay').addEventListener('click', function() { qciNavDate(1); });
+    document.getElementById('qciTodayBtn').addEventListener('click', function() { qciSelectedDate = new Date(); qciOnDateChange(); });
+    var dp = document.getElementById('qciDatePicker');
+    if (dp) dp.addEventListener('change', function() {
+      var parts = this.value.split('-');
+      qciSelectedDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+      qciOnDateChange();
+    });
 
-    function qciGetSlotsForDate(){
-      var dow=qciSelectedDate.getDay();
-      var dd=qciBandSettings.scheduleData[dow]||qciBandSettings.scheduleData[String(dow)];
-      var slots=[];
-      if(Array.isArray(dd)){slots=dd;}else if(dd&&dd.timeSlots&&dd.timeSlots.length){slots=dd.timeSlots;}
-      // Filter by selected venue if slots have venueId
-      if(qciSelectedVenue&&slots.length&&slots[0]&&slots[0].venueId!==undefined){
-        var venueId=qciGetVenueId(qciSelectedVenue);
-        if(venueId){var filtered=slots.filter(function(s){return s.venueId===venueId;});if(filtered.length)slots=filtered;}
-      }
-      return slots.map(function(s){return{key:s.startTime+'-'+s.endTime,label:s.startTime+' \u2013 '+s.endTime};});
-    }
-    function qciGetVenueId(name){
-      var venues=qciBandSettings.venues||[];
-      for(var i=0;i<venues.length;i++){var v=venues[i];var vn=v.name||v.venueName||String(v);if(vn===name)return v.id||v.venueId||'';}
-      return '';
-    }
-    function qciUpdateSummary(){
-      var summary=document.getElementById('qciSummary'),confirmRow=document.getElementById('qciConfirmRow');
-      if(!summary||!confirmRow)return;
-      if(qciSelectedVenue&&qciSelectedSlots.length){
-        var ds=qciSelectedDate.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-        var ss=qciSelectedSlots.map(function(k){var p=k.split('-');return p[0]+' – '+p[1];}).join(' · ');
-        document.getElementById('sumDate').textContent=ds;
-        document.getElementById('sumVenue').textContent=qciSelectedVenue;
-        document.getElementById('sumSlots').textContent=ss;
-        summary.classList.add('show');confirmRow.style.display='block';
-      }else{summary.classList.remove('show');confirmRow.style.display='none';}
-    }
-    function qciRenderSlots(){
-      var container=document.getElementById('qciSlotBtns'),label=document.getElementById('qciSlotLabel');
-      if(!container)return;
-      var dow=qciSelectedDate.getDay();
-      var isToday=qciSelectedDate.toDateString()===new Date().toDateString();
-      if(label)label.textContent='🕐 รอบวัน'+QCI_DAY_NAMES_TH[dow]+(isToday?'นี้':'');
-      var slots=qciGetSlotsForDate();
-      if(!slots.length){
-        container.innerHTML='<div class="qci-no-work">🎵 ไม่มีรอบสำหรับวัน'+QCI_DAY_NAMES_TH[dow]+'<br><span style="font-size:11px;opacity:.7">ผู้จัดการยังไม่ได้กำหนดตารางวันนี้</span></div>';
-        document.getElementById('qciSummary').classList.remove('show');
-        document.getElementById('qciConfirmRow').style.display='none';return;
-      }
-      var existing=(qciExistingCheckIn&&qciExistingCheckIn.slots)?qciExistingCheckIn.slots:[];
-      container.innerHTML=slots.map(function(s){var pre=existing.indexOf(s.key)!==-1?' selected':'';return'<button type="button" class="qci-slot-btn'+pre+'" data-slot="'+qciEsc(s.key)+'">🕐 '+qciEsc(s.label)+'</button>';}).join('');
-      if(existing.length)qciSelectedSlots=existing.slice();
-      container.querySelectorAll('.qci-slot-btn').forEach(function(btn){
-        btn.addEventListener('click',function(){
-          btn.classList.toggle('selected');
-          var slot=btn.dataset.slot;
-          if(btn.classList.contains('selected')){if(qciSelectedSlots.indexOf(slot)===-1)qciSelectedSlots.push(slot);}else{qciSelectedSlots=qciSelectedSlots.filter(function(s){return s!==slot;});}
-          qciUpdateSummary();
-        });
-      });
-      qciUpdateSummary();
-    }
-    function qciRenderVenues(){
-      var venueStep=document.getElementById('qciVenueStep'),container=document.getElementById('qciVenueBtns');
-      if(!container)return;
-      var venues=(qciBandSettings.venues||[]);
-      if(!venues.length)venues=[{name:'ร้านหลัก'}];
-      if(venues.length===1){qciSelectedVenue=venues[0].name||venues[0].venueName||'ร้านหลัก';if(venueStep)venueStep.style.display='none';qciRenderSlots();return;}
-      if(venueStep)venueStep.style.display='block';
-      container.innerHTML=venues.map(function(v){var name=v.name||v.venueName||String(v);return'<button type="button" class="qci-venue-btn" data-venue="'+qciEsc(name)+'">📍 '+qciEsc(name)+'</button>';}).join('');
-      container.querySelectorAll('.qci-venue-btn').forEach(function(btn){
-        btn.addEventListener('click',function(){
-          container.querySelectorAll('.qci-venue-btn').forEach(function(b){b.classList.remove('selected');});
-          btn.classList.add('selected');qciSelectedVenue=btn.dataset.venue;
-          qciSelectedSlots=[];
-          qciRenderSlots();
-        });
-      });
-      var first=container.querySelector('.qci-venue-btn');if(first)first.click();
-      qciRenderSlots();
-    }
-    function qciShowDone(slots,venue){
-      var done=document.getElementById('qciDone'),form=document.getElementById('qciForm');
-      var ss=(slots||[]).map(function(k){var p=k.split('-');return p[0]+' – '+p[1];}).join(' · ');
-      var isToday=qciSelectedDate.toDateString()===new Date().toDateString();
-      var dateLabel=isToday?'วันนี้':qciSelectedDate.toLocaleDateString('th-TH',{day:'numeric',month:'short'});
-      document.getElementById('qciDoneSummary').textContent='✅ ลงเวลาแล้ว'+dateLabel;
-      document.getElementById('qciDoneDetail').textContent='📍 '+venue+' · ⏰ '+ss;
-      done.classList.add('show');form.style.display='none';
-    }
-    function qciCheckExisting(){
-      if(!qciBandId||typeof gasRun!=='function')return;
-      var dateStr=qciSelectedDate.toISOString().split('T')[0];
-      gasRun('getMyCheckIn',{date:dateStr,venue:'',bandId:qciBandId},function(r){
-          if(r&&r.success&&r.checkIn){qciExistingCheckIn=r.checkIn;var ci=r.checkIn;if(ci.status==='confirmed'||ci.status==='pending')qciShowDone(ci.slots,ci.venue);}
-        });
-    }
-    function qciLoadAndRender(){
-      var stored=localStorage.getItem('bandSettings');
-      if(stored){try{var s=JSON.parse(stored);qciBandSettings={venues:s.venues||[],scheduleData:s.scheduleData||s.schedule||{}};}catch(e){}}
-      qciRenderVenues();
+    qciLoadSettings(function() {
+      qciRenderVenues(); /* venues → auto-selects single venue → renders slots */
       qciCheckExisting();
-      if(qciBandId&&typeof gasRun==='function'){
-        if(!qciBandSettings.venues.length)gasRun('getBandSettings',{bandId:qciBandId},function(r){
-          if(r&&r.success&&r.data){qciBandSettings={venues:r.data.venues||[],scheduleData:r.data.scheduleData||r.data.schedule||{}};try{localStorage.setItem('bandSettings',JSON.stringify(r.data));}catch(e){}qciRenderVenues();}
-        });
-      }
-    }
-    document.getElementById('qciConfirmBtn').addEventListener('click',function(){
-      if(!qciSelectedVenue){alert('กรุณาเลือกสถานที่ก่อน');return;}
-      if(!qciSelectedSlots.length){alert('กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง');return;}
-      var btn=document.getElementById('qciConfirmBtn');btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';
-      var dateStr=qciSelectedDate.toISOString().split('T')[0];
-      gasRun('memberCheckIn',{bandId:qciBandId,date:dateStr,venue:qciSelectedVenue,slots:qciSelectedSlots,notes:''},function(r){
-        btn.disabled=false;btn.textContent='✅ ยืนยันลงเวลา';
-        if(r&&r.success){qciShowDone(qciSelectedSlots,qciSelectedVenue);}else{alert((r&&r.message)||'เกิดข้อผิดพลาด กรุณาลองใหม่');}
-      });
     });
-    document.getElementById('qciResetBtn').addEventListener('click',function(){
-      qciSelectedVenue='';qciSelectedSlots=[];qciExistingCheckIn=null;
-      document.getElementById('qciDone').classList.remove('show');
-      document.getElementById('qciForm').style.display='block';
-      document.getElementById('qciSummary').classList.remove('show');
-      document.getElementById('qciConfirmRow').style.display='none';
-      qciRenderVenues();
-    });
+
+    document.getElementById('qciConfirmBtn').addEventListener('click', qciConfirm);
+    document.getElementById('qciResetBtn').addEventListener('click', qciReset);
 
     // ===== Leave Button (simple inline form) =====
     var qciLeaveBtn = document.getElementById('qciLeaveBtn');
@@ -405,48 +664,93 @@
         var inp = document.getElementById('qciLeaveSubName');
         if (inp) { inp.disabled = this.checked; inp.style.opacity = this.checked ? '0.4' : '1'; if (this.checked) inp.value = ''; }
       });
-      document.getElementById('qciLeaveSubmit').addEventListener('click', qciSubmitLeaveSimple);
+      document.getElementById('qciLeaveSubmit').addEventListener('click', qciSubmitLeave);
+      // Enter key to submit
       var leaveInput = document.getElementById('qciLeaveSubName');
       if (leaveInput) leaveInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') qciSubmitLeaveSimple();
-      });
-    }
-    function qciSubmitLeaveSimple() {
-      var noSub = document.getElementById('qciLeaveNoSub') && document.getElementById('qciLeaveNoSub').checked;
-      var subName = (document.getElementById('qciLeaveSubName') ? document.getElementById('qciLeaveSubName').value : '').trim();
-      if (!noSub && !subName) { showToast('กรุณากรอกชื่อคนแทน หรือเลือก "ไม่มีคนแทน"', 'error'); return; }
-      if (noSub) subName = '';
-      var dateStr = qciSelectedDate.toISOString().split('T')[0];
-      var venue = qciSelectedVenue || '';
-      // ไม่มีคนแทน = ไม่ต้องเลือกรอบเวลา แค่บันทึกว่าลาเฉยๆ
-      var slots = noSub ? [] : (qciSelectedSlots.length ? qciSelectedSlots : []);
-      var reason = noSub ? 'ลางาน (ไม่มีคนแทน)' : 'ลางาน';
-      var btn = document.getElementById('qciLeaveSubmit');
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
-      gasRun('requestLeave', { bandId: qciBandId, memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '', memberName: localStorage.getItem('userName') || '', date: dateStr, venue: venue, slots: JSON.stringify(slots), reason: reason, substituteName: subName, substituteContact: '' }, function(r) {
-        if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
-        if (r && r.success) {
-          showToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
-          document.getElementById('qciLeaveForm').classList.remove('show');
-          document.getElementById('qciLeaveSubName').value = '';
-        } else { showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error'); }
+        if (e.key === 'Enter') qciSubmitLeave();
       });
     }
 
-    document.getElementById('qciEditBtn').addEventListener('click',function(){
+    document.getElementById('qciEditBtn').addEventListener('click', function() {
       document.getElementById('qciDone').classList.remove('show');
-      document.getElementById('qciForm').style.display='block';
-      if(qciExistingCheckIn&&qciExistingCheckIn.venue){qciSelectedVenue=qciExistingCheckIn.venue;var vb=document.querySelector('.qci-venue-btn[data-venue="'+qciSelectedVenue+'"]');if(vb)vb.classList.add('selected');qciRenderSlots();}
+      document.getElementById('qciForm').style.display = 'block';
+      if (qciExistingCheckIn && qciExistingCheckIn.venue) {
+        qciSelectedVenue = qciExistingCheckIn.venue;
+        var vBtn = document.querySelector('.qci-venue-btn[data-venue="'+qciSelectedVenue+'"]');
+        if (vBtn) vBtn.classList.add('selected');
+        qciRenderSlots();
+      }
     });
-    qciLoadAndRender();
+
+    document.getElementById('qciCancelBtn').addEventListener('click', function() {
+      if (!confirm('ต้องการยกเลิกการลงเวลาวันนี้ใช่หรือไม่?')) return;
+      var btn = document.getElementById('qciCancelBtn');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังยกเลิก...'; }
+      var dateStr = qciSelectedDate.toISOString().split('T')[0];
+      gasRun('cancelCheckIn', { bandId: qciBandId, date: dateStr }, function(r) {
+        if (btn) { btn.disabled = false; btn.textContent = '❌ ยกเลิกลงเวลา'; }
+        if (r && r.success) {
+          showDashToast('ยกเลิกการลงเวลาเรียบร้อย', 'success');
+          qciExistingCheckIn = null;
+          document.getElementById('qciDone').classList.remove('show');
+          document.getElementById('qciForm').style.display = 'block';
+          qciReset();
+        } else {
+          showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+        }
+      });
+    });
 
     loadDashboard();
+    loadWeeklyEarnings();
     // Load pending member requests (manager/admin only)
     var _role = localStorage.getItem('userRole') || '';
     if (_role === 'manager' || _role === 'admin') {
       loadDashPendingMembers();
+      loadDashBandCode();
+    }
+    // show pending band approval for managers without band_id
+    var _bandId = localStorage.getItem('bandId') || '';
+    if (_role === 'manager' && !_bandId) {
+      document.getElementById('dashPendingBandCard').style.display = '';
     }
   });
+
+  function loadDashBandCode() {
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId) return;
+    gasRun('getBandCode', { bandId: bandId }, function(r) {
+      if (r && r.success && r.code) {
+        var card = document.getElementById('dashBandCodeCard');
+        var codeEl = document.getElementById('dashBandCode');
+        if (card && codeEl) {
+          card.style.display = '';
+          codeEl.textContent = r.code;
+        }
+      }
+    });
+    // Copy button
+    var copyBtn = document.getElementById('copyBandCodeBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function() {
+        var code = document.getElementById('dashBandCode').textContent.trim();
+        if (!code || code === '------') return;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(code).then(function() {
+            showDashToast('คัดลอกรหัสวง ' + code + ' แล้ว', 'success');
+          });
+        } else {
+          // fallback
+          var ta = document.createElement('textarea');
+          ta.value = code; document.body.appendChild(ta);
+          ta.select(); document.execCommand('copy');
+          document.body.removeChild(ta);
+          showDashToast('คัดลอกรหัสวง ' + code + ' แล้ว', 'success');
+        }
+      });
+    }
+  }
 
   function loadDashPendingMembers() {
     var bandId = localStorage.getItem('bandId') || '';
@@ -477,15 +781,15 @@
   function dashApproveMember(userId) {
     if (!confirm('อนุมัติสมาชิกคนนี้เข้าร่วมวง?')) return;
     gasRun('approveMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
-      if (r && r.success) { showToast('อนุมัติเรียบร้อย', 'success'); loadDashPendingMembers(); }
-      else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      if (r && r.success) { showDashToast('อนุมัติเรียบร้อย', 'success'); loadDashPendingMembers(); }
+      else showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
     });
   }
   function dashRejectMember(userId) {
     if (!confirm('ปฏิเสธคำขอเข้าร่วมวงนี้?')) return;
     gasRun('rejectMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
-      if (r && r.success) { showToast('ปฏิเสธเรียบร้อย', 'success'); loadDashPendingMembers(); }
-      else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      if (r && r.success) { showDashToast('ปฏิเสธเรียบร้อย', 'success'); loadDashPendingMembers(); }
+      else showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
     });
   }
 

@@ -205,6 +205,29 @@
         </div>
       </div>
 
+      <!-- ===== Weekly Earnings Summary ===== -->
+      <div class="card" id="weeklyEarningsCard" style="margin-bottom:var(--spacing-xl);display:none">
+        <div class="card-header" style="background:linear-gradient(135deg,#f0fff4,#c6f6d5)">
+          <h3 class="card-title" style="margin:0">💰 สรุปรายได้สัปดาห์นี้</h3>
+          <span id="weeklyPeriodBadge" style="font-size:var(--text-xs);color:var(--premium-text-muted)"></span>
+        </div>
+        <div style="padding:var(--spacing-lg)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md);margin-bottom:var(--spacing-md)">
+            <div style="background:var(--premium-off-white);border-radius:var(--radius-md);padding:var(--spacing-md);text-align:center">
+              <div style="font-size:var(--text-xs);color:var(--premium-text-muted)">⏰ ชั่วโมงทำงาน</div>
+              <div id="weeklyHours" style="font-size:var(--text-xl);font-weight:700;color:var(--premium-text)">—</div>
+            </div>
+            <div style="background:var(--premium-off-white);border-radius:var(--radius-md);padding:var(--spacing-md);text-align:center">
+              <div style="font-size:var(--text-xs);color:var(--premium-text-muted)">💰 ยอดรายได้</div>
+              <div id="weeklyEarnings" style="font-size:var(--text-xl);font-weight:700;color:#276749">—</div>
+            </div>
+          </div>
+          <div id="weeklyBreakdown" style="font-size:var(--text-sm);color:var(--premium-text-light);line-height:1.8"></div>
+          <div id="weeklySubInfo" style="display:none;margin-top:var(--spacing-md);background:linear-gradient(135deg,#faf5ff,#f3e8ff);border:1px solid #d6bcfa;border-radius:var(--radius-md);padding:var(--spacing-md)">
+          </div>
+        </div>
+      </div>
+
       <!-- Stat Cards -->
       <div class="stat-grid">
         <div class="stat-card">
@@ -441,14 +464,29 @@
     }
   }
 
-  function qciShowDone(slots, venue) {
+  function qciShowDone(slots, venue, status, subName) {
     var done = document.getElementById('qciDone');
     var form = document.getElementById('qciForm');
     var slotStr = (slots||[]).map(function(k){ var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
     var isToday = qciSelectedDate.toDateString() === new Date().toDateString();
     var dateLabel = isToday ? 'วันนี้' : qciSelectedDate.toLocaleDateString('th-TH', { day:'numeric', month:'short' });
-    document.getElementById('qciDoneSummary').textContent = '✅ ลงเวลาแล้ว' + dateLabel;
-    document.getElementById('qciDoneDetail').textContent = '📍 '+venue+' · ⏰ '+slotStr;
+    var icon = done.querySelector('.done-icon');
+    if (status === 'leave') {
+      if (icon) icon.textContent = '🚫';
+      done.style.background = 'linear-gradient(135deg,#fff5f5,#fed7d7)';
+      document.getElementById('qciDoneSummary').innerHTML = '🚫 ลางาน' + dateLabel;
+      var detail = '';
+      if (venue) detail += '📍 ' + qciEsc(venue);
+      if (slotStr) detail += (detail ? ' · ' : '') + '⏰ ' + slotStr;
+      if (subName) detail += '<br><span style="color:#805ad5;font-weight:600">🔄 คนแทน: ' + qciEsc(subName) + '</span>';
+      else detail += '<br><span style="color:#e53e3e;font-size:13px">ไม่มีคนแทน</span>';
+      document.getElementById('qciDoneDetail').innerHTML = detail;
+    } else {
+      if (icon) icon.textContent = '✅';
+      done.style.background = '';
+      document.getElementById('qciDoneSummary').textContent = '✅ ลงเวลาแล้ว' + dateLabel;
+      document.getElementById('qciDoneDetail').textContent = '📍 '+venue+' · ⏰ '+slotStr;
+    }
     done.classList.add('show');
     form.style.display = 'none';
   }
@@ -461,7 +499,12 @@
         qciExistingCheckIn = r.checkIn;
         var ci = r.checkIn;
         if (ci.status === 'confirmed' || ci.status === 'pending' || ci.status === 'leave') {
-          qciShowDone(ci.slots, ci.venue, ci.status);
+          var subName = '';
+          if (ci.status === 'leave') {
+            if (ci.substitute && ci.substitute.name) subName = ci.substitute.name;
+            else if (ci.notes) { var _m = ci.notes.match(/คนแทน:\s*(.+)/); if (_m) subName = _m[1].trim(); }
+          }
+          qciShowDone(ci.slots, ci.venue, ci.status, subName);
         }
       }
     });
@@ -539,7 +582,7 @@
           showDashToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
           document.getElementById('qciLeaveForm').classList.remove('show');
           document.getElementById('qciLeaveSubName').value = '';
-          qciShowDone(slots, venue, 'leave');
+          qciShowDone(slots, venue, 'leave', subName);
         } else {
           showDashToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
         }
@@ -660,6 +703,7 @@
     });
 
     loadDashboard();
+    loadWeeklyEarnings();
     // Load pending member requests (manager/admin only)
     var _role = localStorage.getItem('userRole') || '';
     if (_role === 'manager' || _role === 'admin') {

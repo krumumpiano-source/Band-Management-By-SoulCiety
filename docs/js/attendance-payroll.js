@@ -210,6 +210,7 @@ var apCheckInStatus = {}; // apCheckInStatus[memberId][date] = 'pending'|'confir
 var apCheckInVenue  = {}; // apCheckInVenue[memberId][date] = venueName
 var apCheckInTime   = {}; // apCheckInTime[memberId][date] = checkInAt timestamp
 var apCheckInSub    = {}; // apCheckInSub[memberId][date] = {name, contact} or null
+var apLeaveData     = []; // leave_requests for the date range
 
 function apLoadCheckIns(cb) {
   apChecked = {};
@@ -217,9 +218,13 @@ function apLoadCheckIns(cb) {
   apCheckInVenue  = {};
   apCheckInTime   = {};
   apCheckInSub    = {};
+  apLeaveData     = [];
   if (!apBandId || typeof gasRun !== 'function' || !apDateRange.length) { if (cb) cb(); return; }
   var dates = apDateRange.slice(), total = dates.length, done = 0, all = [];
-  function finish() {
+  var leaveDone = false, ciDone = false;
+  function tryFinish() {
+    if (!ciDone || !leaveDone) return;
+    // Process check-ins
     all.forEach(function(ci) {
       var slots = ci.slots || []; if (!slots.length) return;
       var mem = null;
@@ -239,13 +244,34 @@ function apLoadCheckIns(cb) {
       if (!apCheckInSub[mem.id]) apCheckInSub[mem.id] = {};
       apCheckInSub[mem.id][ci.date] = ci.substitute || null;
     });
+    // Merge substitute info from leave_requests into apCheckInSub
+    apLeaveData.forEach(function(lv) {
+      if (!lv.substituteName) return;
+      var mem = null;
+      if (lv.memberId) mem = apMembers.find(function(m) { return m.id === lv.memberId; });
+      if (!mem && lv.memberName) mem = apMembers.find(function(m) { return m.name === lv.memberName; });
+      if (!mem) return;
+      if (!apCheckInSub[mem.id]) apCheckInSub[mem.id] = {};
+      if (!apCheckInSub[mem.id][lv.date]) {
+        apCheckInSub[mem.id][lv.date] = { name: lv.substituteName, contact: lv.substituteContact || '' };
+      }
+    });
     if (cb) cb();
   }
+  // Load check-ins
   dates.forEach(function(d) {
     gasRun('getCheckInsForDate', { bandId: apBandId, date: d }, function(r) {
       if (r && r.success && r.data) all = all.concat(r.data);
-      if (++done >= total) finish();
+      if (++done >= total) { ciDone = true; tryFinish(); }
     });
+  });
+  // Load leave requests for the date range
+  gasRun('getAllLeaveRequests', { bandId: apBandId }, function(r) {
+    if (r && r.success && r.data) {
+      var dSet = {}; dates.forEach(function(d) { dSet[d] = true; });
+      apLeaveData = r.data.filter(function(lv) { return dSet[lv.date]; });
+    }
+    leaveDone = true; tryFinish();
   });
 }
 
@@ -314,7 +340,13 @@ function apRenderAttendance() {
           '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '"' + (checked ? ' checked' : '') + '>';
         // Status badge
         var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][dateStr]) || null;
-        if (checked && ciSt) {
+        if (ciSt === 'leave') {
+          b += '<span class="ap-ci-badge" style="color:#e53e3e;font-size:9px;display:block" title="ลางาน">🚫 ลา</span>';
+          if (subInfo && subInfo.name) {
+            b += '<span class="ap-ci-badge" style="color:#805ad5;font-size:9px;display:block" title="คนแทน: ' + apEsc(subInfo.name) + '">🔄 ' + apEsc(subInfo.name) + '</span>';
+          }
+          b += '<span class="ap-ci-badge" style="color:#718096;font-size:8px;display:block">' + apEsc(m.name) + '</span>';
+        } else if (checked && ciSt) {
           var badgeTip = ciSt==='confirmed'?'ยืนยันแล้ว':'รอยืนยัน';
           if (subInfo && subInfo.name) badgeTip += ' (แทน: ' + subInfo.name + ')';
           if (ciSt==='confirmed') {
@@ -432,6 +464,82 @@ function apRenderPayout() {
   });
   b += '<td style="text-align:right;font-weight:700;color:var(--premium-gold)">' + (grand>0?grand.toLocaleString('th-TH')+' ฿':'-') + '</td></tr>';
   tbody.innerHTML = b;
+
+  // Render substitute summary section
+  apRenderSubstituteSummary();
+}
+
+/* ═══ SUBSTITUTE SUMMARY ════════════════════════════ */
+function apBuildSubSummary() {
+  // Build substitute info: who took leave, who was the sub, how many shifts, how much money
+  var subInfo = []; // {memberName, memberId, subName, shifts, amount, dates[]}
+  var RL = { shift:'บ/เบรค', hourly:'บ/ชม', fixed:'คงที่' };
+  apMembers.forEach(function(m) {
+    // Check if this member has leave with a substitute
+    var subDates = {};
+    apDateRange.forEach(function(ds) {
+      var sub = (apCheckInSub[m.id] && apCheckInSub[m.id][ds]) || null;
+      if (!sub || !sub.name) return;
+      var key = sub.name;
+      if (!subDates[key]) subDates[key] = { subName: sub.name, contact: sub.contact || '', dates: [], slots: 0, amount: 0 };
+      subDates[key].dates.push(ds);
+      // Count slots the original member was assigned to on that day
+      var dow = new Date(ds).getDay();
+      var slots = apSlotsForDay(dow);
+      slots.forEach(function(slot) {
+        var ri = apMemberRate(slot, m.id);
+        if (ri.assigned) {
+          subDates[key].slots++;
+          subDates[key].amount += apSlotPay(slot, m.id);
+        }
+      });
+    });
+    Object.keys(subDates).forEach(function(key) {
+      subInfo.push({
+        memberName: m.name, memberId: m.id,
+        subName: subDates[key].subName,
+        contact: subDates[key].contact,
+        shifts: subDates[key].slots,
+        amount: subDates[key].amount,
+        dates: subDates[key].dates
+      });
+    });
+  });
+  return subInfo;
+}
+
+function apRenderSubstituteSummary() {
+  var wrap = apEl('subSummarySection');
+  if (!wrap) return;
+  var subInfo = apBuildSubSummary();
+  if (!subInfo.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  var DN = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+  var html = '<h4 style="margin:0 0 8px;font-size:var(--text-md);font-weight:700">🔄 สรุปคนแทน</h4>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:var(--text-sm)">';
+  html += '<thead><tr style="background:var(--premium-off-white)">' +
+    '<th style="padding:8px;text-align:left;border-bottom:2px solid var(--premium-border)">สมาชิก (คนลา)</th>' +
+    '<th style="padding:8px;text-align:left;border-bottom:2px solid var(--premium-border)">คนแทน</th>' +
+    '<th style="padding:8px;text-align:left;border-bottom:2px solid var(--premium-border)">วันที่</th>' +
+    '<th style="padding:8px;text-align:center;border-bottom:2px solid var(--premium-border)">เบรค</th>' +
+    '<th style="padding:8px;text-align:right;border-bottom:2px solid var(--premium-border)">ยอดจ่ายคนแทน</th>' +
+    '</tr></thead><tbody>';
+  subInfo.forEach(function(s) {
+    var dateStr = s.dates.map(function(d) { var dt = new Date(d); return DN[dt.getDay()] + ' ' + apFmtDate(dt); }).join(', ');
+    html += '<tr>' +
+      '<td style="padding:8px;border-bottom:1px solid var(--premium-light-gray)">' + apEsc(s.memberName) + '</td>' +
+      '<td style="padding:8px;border-bottom:1px solid var(--premium-light-gray);color:#805ad5;font-weight:600">' + apEsc(s.subName) + '</td>' +
+      '<td style="padding:8px;border-bottom:1px solid var(--premium-light-gray);font-size:12px">' + dateStr + '</td>' +
+      '<td style="padding:8px;text-align:center;border-bottom:1px solid var(--premium-light-gray)">' + s.shifts + '</td>' +
+      '<td style="padding:8px;text-align:right;border-bottom:1px solid var(--premium-light-gray);font-weight:700;color:#e53e3e">' + (s.amount > 0 ? s.amount.toLocaleString('th-TH') + ' ฿' : '-') + '</td>' +
+      '</tr>';
+  });
+  var totalSub = subInfo.reduce(function(s, x) { return s + x.amount; }, 0);
+  html += '<tr style="background:#fff5f5"><td colspan="3" style="padding:8px;text-align:right;font-weight:700">รวมจ่ายคนแทน</td>' +
+    '<td style="padding:8px;text-align:center;font-weight:700">' + subInfo.reduce(function(s,x){return s+x.shifts;}, 0) + '</td>' +
+    '<td style="padding:8px;text-align:right;font-weight:700;color:#e53e3e">' + (totalSub > 0 ? totalSub.toLocaleString('th-TH') + ' ฿' : '-') + '</td></tr>';
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
 }
 
 /* ═══ SAVE ══════════════════════════════════════════ */
@@ -552,6 +660,29 @@ function apPrintVenueReceipt() {
     '<th style="text-align:right;padding:8px 6px;border:1px solid #ddd;font-size:12px;background:#f5f5f5">รวม</th></tr></thead>' +
     '<tbody>' + tableRows + totalRow + '</tbody></table>';
 
+  // Substitute summary for venue receipt
+  var subInfo = apBuildSubSummary();
+  if (subInfo.length) {
+    html += '<div style="margin-top:16px;border-top:2px solid #e2e8f0;padding-top:12px">';
+    html += '<h3 style="font-size:14px;color:#805ad5;margin:0 0 8px">🔄 สรุปคนแทน</h3>';
+    html += '<table style="width:100%;border-collapse:collapse">';
+    html += '<thead><tr><th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;background:#f5f5f5;text-align:left">สมาชิก (คนลา)</th>' +
+      '<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;background:#f5f5f5;text-align:left">คนแทน</th>' +
+      '<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;background:#f5f5f5;text-align:center">เบรค</th>' +
+      '<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;background:#f5f5f5;text-align:right">ยอดจ่ายคนแทน</th></tr></thead><tbody>';
+    subInfo.forEach(function(s) {
+      html += '<tr><td style="padding:6px 8px;border:1px solid #ddd;font-size:12px">' + apEsc(s.memberName) + '</td>' +
+        '<td style="padding:6px 8px;border:1px solid #ddd;font-size:12px;color:#805ad5;font-weight:600">' + apEsc(s.subName) + '</td>' +
+        '<td style="padding:6px 8px;border:1px solid #ddd;font-size:12px;text-align:center">' + s.shifts + '</td>' +
+        '<td style="padding:6px 8px;border:1px solid #ddd;font-size:12px;text-align:right;font-weight:700;color:#e53e3e">' + (s.amount > 0 ? s.amount.toLocaleString('th-TH') + ' ฿' : '-') + '</td></tr>';
+    });
+    var subTotal = subInfo.reduce(function(a,x){return a+x.amount;},0);
+    html += '<tr style="background:#fff5f5"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd;text-align:right;font-weight:700;font-size:12px">รวมจ่ายคนแทน</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;text-align:center;font-weight:700">' + subInfo.reduce(function(a,x){return a+x.shifts;},0) + '</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;text-align:right;font-weight:700;color:#e53e3e">' + (subTotal > 0 ? subTotal.toLocaleString('th-TH') + ' ฿' : '-') + '</td></tr>';
+    html += '</tbody></table></div>';
+  }
+
   var safeVn = vn.replace(/[^a-zA-Z0-9ก-๙]/g, '_');
   apSaveAsImage(html, 'เบิกร้าน_' + safeVn + '_' + (apDateRange[0]||'') + '.png');
 }
@@ -570,8 +701,15 @@ function apPrintMemberReceipt() {
     });
     grand += totalAmt;
     var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '-';
+    // Check if this member has a substitute
+    var subForMember = null;
+    apDateRange.forEach(function(ds) {
+      var sub = (apCheckInSub[m.id] && apCheckInSub[m.id][ds]) || null;
+      if (sub && sub.name) subForMember = sub;
+    });
+    var subNote = subForMember ? '<br><span style="font-size:11px;color:#805ad5">🔄 คนแทน: ' + apEsc(subForMember.name) + '</span>' : '';
     rows += '<tr>' +
-      '<td style="padding:8px;border:1px solid #ddd;font-size:13px">' + apEsc(m.name) + '</td>' +
+      '<td style="padding:8px;border:1px solid #ddd;font-size:13px">' + apEsc(m.name) + subNote + '</td>' +
       '<td style="padding:8px;border:1px solid #ddd;font-size:13px">' + apEsc(m.position||'-') + '</td>' +
       '<td style="text-align:center;padding:8px;border:1px solid #ddd;font-size:13px">' + totalSlots + '</td>' +
       '<td style="text-align:right;padding:8px;border:1px solid #ddd;font-size:13px">' + rateTxt + '</td>' +
@@ -592,6 +730,30 @@ function apPrintMemberReceipt() {
     '<tr style="background:#f9f7f0"><td colspan="4" style="text-align:right;padding:10px 8px;border:1px solid #ddd;font-weight:700;font-size:14px">รวมทั้งหมด</td>' +
     '<td style="text-align:right;padding:10px 8px;border:1px solid #ddd;font-weight:700;font-size:16px;color:#b08000">' + grand.toLocaleString('th-TH', {minimumFractionDigits: 2}) + ' ฿</td></tr>' +
     '</tbody></table>';
+
+  // Substitute summary for member receipt
+  var subInfo = apBuildSubSummary();
+  if (subInfo.length) {
+    html += '<div style="margin-top:16px;border-top:2px solid #e2e8f0;padding-top:12px">';
+    html += '<h3 style="font-size:14px;color:#805ad5;margin:0 0 8px">🔄 สรุปคนแทน — สมาชิกต้องจ่ายให้คนแทน</h3>';
+    html += '<table style="width:100%;border-collapse:collapse">';
+    html += '<thead><tr>' +
+      '<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;background:#f5f5f5;text-align:left">สมาชิก (คนลา)</th>' +
+      '<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;background:#f5f5f5;text-align:left">คนแทน</th>' +
+      '<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;background:#f5f5f5;text-align:center">เบรค</th>' +
+      '<th style="padding:6px 8px;border:1px solid #ddd;font-size:11px;background:#f5f5f5;text-align:right">ยอดจ่ายคนแทน</th></tr></thead><tbody>';
+    subInfo.forEach(function(s) {
+      html += '<tr><td style="padding:6px 8px;border:1px solid #ddd;font-size:12px">' + apEsc(s.memberName) + '</td>' +
+        '<td style="padding:6px 8px;border:1px solid #ddd;font-size:12px;color:#805ad5;font-weight:600">' + apEsc(s.subName) + '</td>' +
+        '<td style="padding:6px 8px;border:1px solid #ddd;font-size:12px;text-align:center">' + s.shifts + '</td>' +
+        '<td style="padding:6px 8px;border:1px solid #ddd;font-size:12px;text-align:right;font-weight:700;color:#e53e3e">' + (s.amount > 0 ? s.amount.toLocaleString('th-TH') + ' ฿' : '-') + '</td></tr>';
+    });
+    var subTotal = subInfo.reduce(function(a,x){return a+x.amount;},0);
+    html += '<tr style="background:#fff5f5"><td colspan="2" style="padding:6px 8px;border:1px solid #ddd;text-align:right;font-weight:700;font-size:12px">รวมจ่ายคนแทน</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;text-align:center;font-weight:700">' + subInfo.reduce(function(a,x){return a+x.shifts;},0) + '</td>' +
+      '<td style="padding:6px 8px;border:1px solid #ddd;text-align:right;font-weight:700;color:#e53e3e">' + (subTotal > 0 ? subTotal.toLocaleString('th-TH') + ' ฿' : '-') + '</td></tr>';
+    html += '</tbody></table></div>';
+  }
 
   apSaveAsImage(html, 'แจ้งจ่ายรายคน_' + (apDateRange[0]||'') + '.png');
 }
