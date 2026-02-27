@@ -262,7 +262,9 @@
         hourlyRate: 'hourly_rate', startTime: 'start_time', endTime: 'end_time',
         // profile fields
         firstName: 'first_name', lastName: 'last_name', userName: 'user_name',
-        userId: 'user_id'
+        userId: 'user_id',
+        createdAt: 'created_at', updatedAt: 'updated_at',
+        createdBy: 'created_by', sourceContractId: 'source_contract_id'
       };
       Object.keys(obj).forEach(function (k) {
         if (k === '_token' || k === 'action') return;
@@ -632,7 +634,13 @@
       // insert ใหม่
       if (items.length > 0) {
         var rows = items.map(function (item) {
-          return Object.assign({ band_id: bandId }, toSnakeObj(item));
+          var row = Object.assign({ band_id: bandId }, toSnakeObj(item));
+          // ลบ id ที่ frontend สร้างเอง (เช่น gig_xxx) — ให้ DB สร้าง uuid ใหม่
+          if (row.id && typeof row.id === 'string' && !/^[0-9a-f]{8}-/.test(row.id)) delete row.id;
+          // ลบ field ที่ DB สร้างเอง
+          delete row.created_at;
+          delete row.updated_at;
+          return row;
         });
         var { error } = await sb.from('schedule').insert(rows);
         if (error) throw error;

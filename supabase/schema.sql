@@ -11,20 +11,28 @@ create extension if not exists "uuid-ossp";
 --    เก็บ bandId, bandName, role, status
 -- ============================================================
 create table if not exists public.profiles (
-  id          uuid primary key references auth.users(id) on delete cascade,
-  email       text,
-  user_name   text,
-  band_id     text,
-  band_name   text,
-  role        text default 'manager',   -- manager | member | admin
-  status      text default 'active',    -- active | inactive
-  title       text default '',
-  first_name  text default '',
-  last_name   text default '',
-  nickname    text default '',
-  instrument  text default '',
-  phone       text default '',
-  created_at  timestamptz default now()
+  id              uuid primary key references auth.users(id) on delete cascade,
+  email           text,
+  user_name       text,
+  band_id         text,
+  band_name       text,
+  role            text default 'manager',   -- manager | member | admin | pending
+  status          text default 'active',    -- active | inactive | pending_band | rejected_band
+  title           text default '',
+  first_name      text default '',
+  last_name       text default '',
+  nickname        text default '',
+  instrument      text default '',
+  phone           text default '',
+  province        text default '',
+  id_card_number  text default '',
+  birth_date      date,
+  id_card_address jsonb default '{}'::jsonb,
+  current_address jsonb default '{}'::jsonb,
+  payment_method  text default '',
+  payment_account text default '',
+  created_at      timestamptz default now(),
+  updated_at      timestamptz default now()
 );
 alter table public.profiles enable row level security;
 
@@ -87,6 +95,7 @@ create or replace trigger on_auth_user_created
 create table if not exists public.bands (
   id            uuid primary key default uuid_generate_v4(),
   band_name     text not null,
+  province      text default '',
   manager_id    uuid,
   manager_email text,
   description   text,
@@ -119,6 +128,7 @@ create table if not exists public.band_members (
   default_hourly_rate numeric default 0,
   status              text default 'active',
   joined_at           text,
+  notes               text,
   created_at          timestamptz default now(),
   updated_at          timestamptz default now()
 );
@@ -159,12 +169,19 @@ create table if not exists public.schedule (
   type        text default 'external',   -- regular | external
   venue_name  text,
   venue_id    text,
+  venue       text default '',           -- display name from schedule page
   date        text,
   day_of_week integer,
   time_slots  jsonb default '[]',
+  start_time  text,                      -- external gig start
+  end_time    text,                      -- external gig end
+  price       numeric default 0,         -- external gig price
   description text,
   status      text default 'confirmed',
   total_pay   numeric default 0,
+  address     text default '',
+  contact     text default '',
+  members     jsonb default '[]'::jsonb, -- member UUIDs for external gigs
   notes       text,
   created_at  timestamptz default now(),
   updated_at  timestamptz default now()
@@ -332,9 +349,11 @@ create table if not exists public.invite_codes (
   code        text not null unique,
   band_id     text not null,
   band_name   text,
+  province    text default '',
   expires_at  timestamptz,
-  status      text default 'active',
+  status      text default 'active',    -- active | permanent | expired
   used_by     text,
+  created_by  uuid,
   created_at  timestamptz default now()
 );
 alter table public.invite_codes enable row level security;
@@ -387,6 +406,8 @@ create table if not exists public.member_check_ins (
   slots       jsonb default '[]'::jsonb,
   check_in_at timestamptz,
   status      text default 'present',
+  notes       text default '',
+  substitute  jsonb,
   created_at  timestamptz default now()
 );
 alter table public.member_check_ins enable row level security;
