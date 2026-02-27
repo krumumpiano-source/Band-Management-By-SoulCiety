@@ -336,18 +336,27 @@ function apRenderAttendance() {
       apMembers.forEach(function(m) {
         var ciSlots = (apChecked[m.id] && apChecked[m.id][dateStr]) || [];
         var checked = ciSlots.indexOf(sk) !== -1;
-        // Only mark checked if the member actually checked in — NO auto-assign from schedule
         var ri = apMemberRate(slot, m.id);
         var hasCheckIn = apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].length > 0;
         var ciSt = (apCheckInStatus[m.id] && apCheckInStatus[m.id][dateStr]) || '';
+        var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][dateStr]) || null;
+        // Leave with substitute = slot is covered → auto-check + count money
+        var subCovered = (ciSt === 'leave' && subInfo && subInfo.name && ri.assigned);
+        if (subCovered && !checked) {
+          // Auto-fill check for leave+sub so it counts in totals
+          if (!apChecked[m.id]) apChecked[m.id] = {};
+          if (!apChecked[m.id][dateStr]) apChecked[m.id][dateStr] = [];
+          if (apChecked[m.id][dateStr].indexOf(sk) === -1) apChecked[m.id][dateStr].push(sk);
+          checked = true;
+        }
         if (checked) rowAmt += apSlotPay(slot, m.id);
         var tdCls = 'text-align:center;position:relative';
-        if (!hasCheckIn && ri.assigned) tdCls += ';background:rgba(255,193,7,0.08)';  // assigned but no check-in → faint warning
+        if (subCovered) tdCls += ';background:rgba(128,90,213,0.08)';  // leave+sub → faint purple
+        else if (!hasCheckIn && ri.assigned) tdCls += ';background:rgba(255,193,7,0.08)';  // assigned but no check-in → faint warning
         b += '<td style="' + tdCls + '">';
         b += '<input type="checkbox" class="ap-cb" data-m="' + apEsc(m.id) +
           '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '"' + (checked ? ' checked' : '') + '>';
         // Status badge
-        var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][dateStr]) || null;
         if (ciSt === 'leave') {
           b += '<span class="ap-ci-badge" style="color:#e53e3e;font-size:9px;display:block" title="ลางาน">🚫 ลา</span>';
           if (subInfo && subInfo.name) {
