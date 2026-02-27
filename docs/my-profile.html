@@ -125,6 +125,31 @@
             </div>
           </div>
 
+          <!-- ช่องทางรับเงิน -->
+          <div class="form-section-label">💳 ช่องทางรับเงิน</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ช่องทาง</label>
+              <select id="paymentMethod" class="form-control">
+                <option value="">-- เลือก --</option>
+                <option value="promptpay">พร้อมเพย์</option>
+                <option value="truemoney">ทรูมันนี่</option>
+                <option value="bank_kbank">🟢 ธ.กสิกรไทย</option>
+                <option value="bank_scb">🟣 ธ.ไทยพาณิชย์</option>
+                <option value="bank_bbl">🔵 ธ.กรุงเทพ</option>
+                <option value="bank_ktb">🔵 ธ.กรุงไทย</option>
+                <option value="bank_bay">🟡 ธ.กรุงศรี</option>
+                <option value="bank_ttb">🟠 ธ.ทหารไทยธนชาต</option>
+                <option value="bank_gsb">🏦 ธ.ออมสิน</option>
+                <option value="bank_other">🏦 ธนาคารอื่นๆ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>เลขบัญชี / เบอร์โทร</label>
+              <input type="text" id="paymentAccount" class="form-control" placeholder="เลขบัญชี หรือ เบอร์พร้อมเพย์">
+            </div>
+          </div>
+
           <!-- ข้อมูลตามบัตรประชาชน -->
           <div class="form-section-label">🪪 ข้อมูลตามบัตรประชาชน</div>
           <div class="form-row">
@@ -351,6 +376,8 @@
         setVal('instrument',   p.instrument || '');
         setVal('phone',        p.phone      || '');
         setVal('birthDate',    p.birthDate  || p.birth_date || '');
+        setVal('paymentMethod',  p.paymentMethod  || p.payment_method || '');
+        setVal('paymentAccount', p.paymentAccount || p.payment_account || '');
         // ที่อยู่ตามบัตรประชาชน (JSON)
         var idAddr = p.idCardAddress || p.id_card_address || {};
         if (typeof idAddr === 'string') try { idAddr = JSON.parse(idAddr); } catch(e) { idAddr = {}; }
@@ -403,6 +430,8 @@
         instrument:    $el('instrument').value,
         phone:         ($el('phone') ? $el('phone').value.trim() : ''),
         birthDate:     $el('birthDate').value || '',
+        paymentMethod:  $el('paymentMethod')  ? $el('paymentMethod').value  : '',
+        paymentAccount: $el('paymentAccount') ? $el('paymentAccount').value.trim() : '',
         idCardAddress: getAddrObj('idAddr_'),
         currentAddress: getAddrObj('curAddr_')
       }, function(r) {

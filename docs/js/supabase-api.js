@@ -447,7 +447,7 @@
     async function doGetBandProfiles(d) {
       var bandId = d.bandId || getBandId();
       var { data, error } = await sb.from('profiles')
-        .select('id, email, user_name, nickname, first_name, last_name, instrument, phone, role, status, title, band_id, band_name, created_at')
+        .select('id, email, user_name, nickname, first_name, last_name, instrument, phone, role, status, title, band_id, band_name, payment_method, payment_account, created_at')
         .eq('band_id', bandId)
         .eq('status', 'active')
         .order('role')
@@ -851,6 +851,8 @@
         phone:           d.phone           || '',
         id_card_number:  d.idCardNumber    || '',
         birth_date:      d.birthDate       || null,
+        payment_method:  d.paymentMethod   || '',
+        payment_account: d.paymentAccount  || '',
         id_card_address: d.idCardAddress   || {},
         current_address: d.currentAddress  || {},
         updated_at: new Date().toISOString()

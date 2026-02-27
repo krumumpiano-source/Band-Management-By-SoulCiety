@@ -119,7 +119,7 @@ function apLoadData() {
     gasRun('getBandProfiles', { bandId: apBandId }, function(r) {
       if (r && r.success && r.data && r.data.length) {
         apMembers = r.data.map(function(p) {
-          return { id: p.id, name: p.nickname||p.first_name||p.user_name||p.email||'?', position: p.instrument||'', email: p.email||'' };
+          return { id: p.id, name: p.nickname||p.first_name||p.user_name||p.email||'?', position: p.instrument||'', email: p.email||'', paymentMethod: p.payment_method||'', paymentAccount: p.payment_account||'' };
         });
         try { var ls = JSON.parse(localStorage.getItem('bandSettings')||'{}'); ls.members = apMembers; localStorage.setItem('bandSettings', JSON.stringify(ls)); } catch(e){}
       }
@@ -156,7 +156,7 @@ function apHandleUrlParams() {
     var wd = apEl('workDate'); if (wd) wd.value = prm.get('date');
   }
   apUpdateDateRange();
-  apLoadCheckIns(function() { apRenderAttendance(); apRenderPayout(); });
+  apLoadCheckIns(function() { apRenderAttendance(); apRenderPayout(); apRenderPaymentInfo(); });
 }
 
 function apUpdateBandInfo() {
@@ -484,6 +484,46 @@ function apRenderPayout() {
   tbody.innerHTML = b;
 }
 
+/* ═══ PAYMENT INFO ══════════════════════════════════ */
+var _payMethodLabels = {
+  'promptpay': '💚 พร้อมเพย์',
+  'truemoney': '🧡 ทรูมันนี่',
+  'bank_kbank': '🟢 ธ.กสิกรไทย',
+  'bank_scb': '🟣 ธ.ไทยพาณิชย์',
+  'bank_bbl': '🔵 ธ.กรุงเทพ',
+  'bank_ktb': '🔵 ธ.กรุงไทย',
+  'bank_bay': '🟡 ธ.กรุงศรี',
+  'bank_ttb': '🟠 ธ.ทหารไทยธนชาต',
+  'bank_gsb': '🏦 ธ.ออมสิน',
+  'bank_other': '🏦 ธนาคารอื่นๆ'
+};
+
+function apRenderPaymentInfo() {
+  var container = document.getElementById('paymentInfoList');
+  if (!container) return;
+  if (!apMembers.length) { container.innerHTML = ''; return; }
+
+  var hasAny = apMembers.some(function(m) { return m.paymentMethod || m.paymentAccount; });
+  if (!hasAny) {
+    container.innerHTML = '<p style="color:var(--premium-text-muted);font-size:13px;text-align:center;padding:12px 0">สมาชิกยังไม่ได้กรอกช่องทางรับเงิน — แจ้งให้กรอกได้ที่หน้า "ข้อมูลส่วนตัว"</p>';
+    return;
+  }
+
+  var html = '';
+  apMembers.forEach(function(m) {
+    var method  = m.paymentMethod  || '';
+    var account = m.paymentAccount || '';
+    if (!method && !account) return;
+    var label = _payMethodLabels[method] || method || '—';
+    html += '<div class="pay-info-row">'
+      + '<span class="pay-info-name">' + apEsc(m.name) + '</span>'
+      + '<span class="pay-info-method">' + apEsc(label) + '</span>'
+      + '<span class="pay-info-account">' + apEsc(account || '—') + '</span>'
+      + '</div>';
+  });
+  container.innerHTML = html;
+}
+
 /* ═══ SUBSTITUTE SUMMARY ════════════════════════════ */
 function apBuildSubSummary() {
   // Build substitute info: who took leave, who was the sub, how many shifts, how much money
@@ -766,7 +806,7 @@ function apInitPage() {
   var lb = apEl('apLoadBtn'); if (lb) lb.addEventListener('click', function() {
     apVenueId = (apEl('venue')||{}).value||'';
     apUpdateDateRange();
-    apLoadCheckIns(function() { apRenderAttendance(); apRenderPayout(); });
+    apLoadCheckIns(function() { apRenderAttendance(); apRenderPayout(); apRenderPaymentInfo(); });
   });
   var sb = apEl('saveBtn'); if (sb) sb.addEventListener('click', apDoSave);
   var vr = apEl('generateVenueReceiptBtn'); if (vr) vr.addEventListener('click', apPrintVenueReceipt);

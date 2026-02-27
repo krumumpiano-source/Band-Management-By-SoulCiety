@@ -9,17 +9,29 @@
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
   <style>
-    .member-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--spacing-lg)}
-    .member-card{background:var(--premium-white);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--spacing-xl);text-align:center;transition:box-shadow .2s;position:relative}
+    .member-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--spacing-lg)}
+    .member-card{background:var(--premium-white);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--spacing-xl);transition:box-shadow .2s;position:relative}
     .member-card:hover{box-shadow:var(--shadow-md)}
-    .member-avatar{width:64px;height:64px;border-radius:var(--radius-full);background:var(--premium-gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto var(--spacing-md)}
-    .member-card h4{font-size:var(--text-base);font-weight:600;margin:0 0 4px}
-    .member-card .role-badge{font-size:11px;background:var(--premium-off-white);border-radius:var(--radius-full);padding:2px 10px;color:var(--premium-text-muted);display:inline-block;margin-bottom:var(--spacing-sm)}
-    .member-card .contact{font-size:var(--text-xs);color:var(--premium-text-muted)}
+    .member-top{display:flex;align-items:center;gap:var(--spacing-md);margin-bottom:var(--spacing-md)}
+    .member-avatar{width:52px;height:52px;border-radius:var(--radius-full);background:var(--premium-gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+    .member-info{flex:1;min-width:0}
+    .member-card h4{font-size:var(--text-base);font-weight:600;margin:0 0 2px}
+    .member-card .role-badge{font-size:11px;background:var(--premium-off-white);border-radius:var(--radius-full);padding:2px 10px;color:var(--premium-text-muted);display:inline-block}
+    .member-card .contact{font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:6px}
     .card-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .2s}
     .member-card:hover .card-actions{opacity:1}
     .status-dot{width:8px;height:8px;border-radius:var(--radius-full);display:inline-block;margin-right:4px}
     .status-dot.active{background:#276749}.status-dot.inactive{background:#a0aec0}
+    .member-schedule{margin-top:var(--spacing-sm);padding-top:var(--spacing-sm);border-top:1px solid var(--premium-border,#e2e8f0)}
+    .member-schedule .sched-title{font-size:11px;font-weight:600;color:var(--premium-text-muted);margin-bottom:4px}
+    .sched-pills{display:flex;flex-wrap:wrap;gap:4px}
+    .sched-pill{display:inline-flex;align-items:center;gap:3px;font-size:11px;background:rgba(249,207,69,.10);border:1px solid rgba(249,207,69,.30);color:var(--premium-gold-dark,#b8860b);border-radius:var(--radius-full,999px);padding:2px 10px;white-space:nowrap}
+    .sched-pill .pill-venue{color:var(--premium-text-muted);font-size:10px}
+    .no-sched{font-size:11px;color:var(--premium-text-muted);font-style:italic}
+    .band-stats{display:flex;gap:var(--spacing-xl);flex-wrap:wrap;margin-top:var(--spacing-md)}
+    .band-stat{text-align:center}
+    .band-stat .stat-val{font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
+    .band-stat .stat-lbl{font-size:var(--text-xs);color:var(--premium-text-muted)}
   </style>
 </head>
 <body>
@@ -77,9 +89,13 @@
             <div style="font-size:64px">🎵</div>
             <div>
               <h2 id="bName" style="margin:0;font-size:var(--text-2xl)">—</h2>
-              <p id="bGenre" style="color:var(--premium-text-muted);margin:4px 0"></p>
-              <p id="bFounded" style="color:var(--premium-text-muted);font-size:var(--text-sm)"></p>
+              <p id="bManager" style="color:var(--premium-text-muted);margin:4px 0"></p>
             </div>
+          </div>
+          <div class="band-stats">
+            <div class="band-stat"><div class="stat-val" id="bMemberCount">—</div><div class="stat-lbl">สมาชิก</div></div>
+            <div class="band-stat"><div class="stat-val" id="bVenueCount">—</div><div class="stat-lbl">ร้าน</div></div>
+            <div class="band-stat"><div class="stat-val" id="bSlotCount">—</div><div class="stat-lbl">รอบงาน/สัปดาห์</div></div>
           </div>
         </div>
       </div>
@@ -109,31 +125,108 @@
   <script src="js/nav.js"></script>
   <script src="js/band-members.js"></script>
   <script>
+  var _biSchedule = {};
+  var _biVenues = [];
+  var _biDayNames = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
     loadBandInfo(); loadBandMembers();
   });
+
   function loadBandInfo(){
     var bandId = localStorage.getItem('bandId') || '';
-    // Try localStorage first
     var bName = localStorage.getItem('bandName') || '';
     var bMgr  = localStorage.getItem('bandManager') || '';
-    if (bName) {
-      document.getElementById('bName').textContent = bName;
-      document.getElementById('bGenre').textContent = '';
-      document.getElementById('bFounded').textContent = bMgr ? '👤 ผู้จัดการ: ' + bMgr : '';
-    }
+    // Show immediately from localStorage
+    if (bName) document.getElementById('bName').textContent = bName;
+    if (bMgr) document.getElementById('bManager').textContent = '👤 ผู้จัดการ: ' + bMgr;
+
     // Refresh from server
     if (bandId && typeof gasRun === 'function') {
       gasRun('getBandSettings', { bandId: bandId }, function(r) {
         if (r && r.success && r.data) {
           var d = r.data;
           document.getElementById('bName').textContent = d.bandName || bName || '—';
-          document.getElementById('bGenre').textContent = '';
-          document.getElementById('bFounded').textContent = d.bandManager ? '👤 ผู้จัดการ: ' + d.bandManager : '';
+          document.getElementById('bManager').textContent = d.bandManager ? '👤 ผู้จัดการ: ' + d.bandManager : '';
+          // Store schedule + venues for member cards
+          _biSchedule = d.schedule || {};
+          _biVenues = d.venues || [];
+          // Stats
+          var venueCount = _biVenues.length;
+          var slotCount = 0;
+          Object.keys(_biSchedule).forEach(function(day) {
+            slotCount += (_biSchedule[day] || []).length;
+          });
+          document.getElementById('bVenueCount').textContent = venueCount;
+          document.getElementById('bSlotCount').textContent = slotCount;
+          // Re-render member cards with schedule info
+          if (_allMembers.length) renderMemberCards(_filteredMembers);
         }
       });
     }
+  }
+
+  // Override renderMemberCards to include schedule
+  var _origRenderCards = renderMemberCards;
+  renderMemberCards = function(members) {
+    var container = document.getElementById('memberCards');
+    if (!container) return;
+    // Update member count stat
+    var mc = document.getElementById('bMemberCount');
+    if (mc) mc.textContent = _allMembers.filter(function(m){return m.status==='active';}).length;
+
+    if (!members.length) {
+      container.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><p>' + t('noData') + '</p></div>'; return;
+    }
+    container.innerHTML = members.map(function(m) {
+      var schedHtml = buildMemberScheduleHtml(m.id);
+      return '<div class="member-card">'
+        + '<div class="card-actions">'
+        + '<button class="btn btn-ghost btn-sm" onclick="openMemberModal(\'' + escapeHtml(m.id||'') + '\')">✏️</button>'
+        + '</div>'
+        + '<div class="member-top">'
+        + '<div class="member-avatar">🎵</div>'
+        + '<div class="member-info">'
+        + '<h4>' + escapeHtml(m.name||'') + '</h4>'
+        + '<div class="role-badge">' + escapeHtml(m.position||m.role||'สมาชิก') + '</div>'
+        + '<div class="contact">'
+        + (m.phone ? '📞 ' + escapeHtml(m.phone) : '')
+        + (m.email && m.phone ? '&nbsp;&nbsp;' : '')
+        + (m.email ? '✉️ ' + escapeHtml(m.email) : '')
+        + '</div>'
+        + '</div>'
+        + '</div>'
+        + '<div style="font-size:var(--text-xs)">'
+        + '<span class="status-dot ' + (m.status==='active'?'active':'inactive') + '"></span>'
+        + (m.status === 'active' ? 'ใช้งาน' : 'ไม่ใช้งาน')
+        + '</div>'
+        + schedHtml
+        + '</div>';
+    }).join('');
+  };
+
+  function buildMemberScheduleHtml(memberId) {
+    if (!_biSchedule || !Object.keys(_biSchedule).length) return '';
+    var pills = [];
+    Object.keys(_biSchedule).sort().forEach(function(day) {
+      (_biSchedule[day] || []).forEach(function(slot) {
+        var assigned = (slot.members || []).some(function(mr) { return mr.memberId === memberId; });
+        if (!assigned) return;
+        var venueName = '';
+        if (slot.venueId) {
+          var v = _biVenues.find(function(vn) { return vn.id === slot.venueId; });
+          if (v) venueName = v.name;
+        }
+        var dayShort = _biDayNames[parseInt(day)] || '?';
+        var timeStr = (slot.startTime||'?') + '-' + (slot.endTime||'?');
+        pills.push('<span class="sched-pill">' + dayShort + ' ' + timeStr
+          + (venueName ? ' <span class="pill-venue">(' + escapeHtml(venueName) + ')</span>' : '')
+          + '</span>');
+      });
+    });
+    if (!pills.length) return '<div class="member-schedule"><div class="sched-title">📅 ตารางงาน</div><div class="no-sched">ยังไม่ได้จัดตาราง</div></div>';
+    return '<div class="member-schedule"><div class="sched-title">📅 ตารางงาน</div><div class="sched-pills">' + pills.join('') + '</div></div>';
   }
   </script>
 </body>

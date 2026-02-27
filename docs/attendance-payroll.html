@@ -38,6 +38,12 @@
     /* Legend */
     .ap-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--premium-text-muted);margin:8px 0 4px}
     .ap-legend span{display:inline-flex;align-items:center;gap:4px}
+    /* Payment info */
+    .pay-info-row{display:flex;align-items:center;gap:var(--spacing-md);padding:8px 12px;border-bottom:1px solid var(--premium-border,#e2e8f0);font-size:13px}
+    .pay-info-row:last-child{border-bottom:none}
+    .pay-info-name{font-weight:600;min-width:120px}
+    .pay-info-method{color:var(--premium-text-muted);min-width:140px}
+    .pay-info-account{font-family:monospace;font-size:14px;letter-spacing:.05em;color:var(--premium-gold-dark,#b8860b);font-weight:600}
   </style>
 </head>
 <body>
@@ -132,6 +138,14 @@
               <tr><td colspan="10" style="text-align:center;color:var(--premium-text-muted);padding:2rem">จะแสดงหลังโหลดตารางเข้างาน</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Payment Info -->
+      <div class="card" style="margin-bottom:var(--spacing-lg)">
+        <div class="card-header"><h3 class="card-title">💳 ช่องทางรับเงินสมาชิก</h3></div>
+        <div id="paymentInfoList">
+          <p style="color:var(--premium-text-muted);font-size:13px;text-align:center;padding:12px 0">โหลดตารางก่อนเพื่อแสดงข้อมูล</p>
         </div>
       </div>
 
