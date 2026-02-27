@@ -49,7 +49,15 @@ create policy "profiles: แก้ไขของตัวเอง"
 
 create policy "profiles: admin ดูทั้งหมด"
   on public.profiles for select
-  using (public.get_my_role() = 'admin');   -- ใช้ function แทน recursive subquery
+  using (public.get_my_role() = 'admin');
+
+create policy admin_update_all
+  on public.profiles for update
+  using (public.get_my_role() = 'admin');
+
+create policy admin_delete_all
+  on public.profiles for delete
+  using (public.get_my_role() = 'admin');
 
 -- trigger: สร้าง profile อัตโนมัติหลัง sign up
 create or replace function public.handle_new_user()
