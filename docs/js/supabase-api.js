@@ -850,7 +850,8 @@
         phone:           d.phone           || '',
         id_card_number:  d.idCardNumber    || '',
         birth_date:      d.birthDate       || null,
-        id_card_address: d.idCardAddress   || '',
+        id_card_address: d.idCardAddress   || {},
+        current_address: d.currentAddress  || {},
         updated_at: new Date().toISOString()
       };
       if (d.nickname) row.user_name = d.nickname;

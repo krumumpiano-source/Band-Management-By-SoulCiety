@@ -133,9 +133,94 @@
               <input type="date" id="birthDate" class="form-control">
             </div>
           </div>
-          <div class="form-group">
-            <label>ที่อยู่ตามบัตรประชาชน</label>
-            <textarea id="idCardAddress" class="form-control" rows="3" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"></textarea>
+
+          <div class="form-section-label">📍 ที่อยู่ตามบัตรประชาชน</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>เลขที่บ้าน</label>
+              <input type="text" id="idAddr_houseNo" class="form-control" placeholder="เช่น 123/45">
+            </div>
+            <div class="form-group">
+              <label>หมู่ที่</label>
+              <input type="text" id="idAddr_moo" class="form-control" placeholder="เช่น 5">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ซอย</label>
+              <input type="text" id="idAddr_soi" class="form-control" placeholder="ซอย">
+            </div>
+            <div class="form-group">
+              <label>ถนน</label>
+              <input type="text" id="idAddr_road" class="form-control" placeholder="ถนน">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ตำบล/แขวง</label>
+              <input type="text" id="idAddr_subDistrict" class="form-control" placeholder="ตำบล/แขวง">
+            </div>
+            <div class="form-group">
+              <label>อำเภอ/เขต</label>
+              <input type="text" id="idAddr_district" class="form-control" placeholder="อำเภอ/เขต">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>จังหวัด</label>
+              <input type="text" id="idAddr_province" class="form-control" placeholder="จังหวัด">
+            </div>
+            <div class="form-group">
+              <label>รหัสไปรษณีย์</label>
+              <input type="text" id="idAddr_postalCode" class="form-control" placeholder="เช่น 10110" maxlength="5">
+            </div>
+          </div>
+
+          <div class="form-section-label">🏠 ที่อยู่ปัจจุบัน</div>
+          <div style="margin-bottom:var(--spacing-md)">
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:var(--text-sm);cursor:pointer">
+              <input type="checkbox" id="sameAsIdAddr" onchange="copySameAddress()"> ใช้ที่อยู่เดียวกับบัตรประชาชน
+            </label>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>เลขที่บ้าน</label>
+              <input type="text" id="curAddr_houseNo" class="form-control" placeholder="เช่น 123/45">
+            </div>
+            <div class="form-group">
+              <label>หมู่ที่</label>
+              <input type="text" id="curAddr_moo" class="form-control" placeholder="เช่น 5">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ซอย</label>
+              <input type="text" id="curAddr_soi" class="form-control" placeholder="ซอย">
+            </div>
+            <div class="form-group">
+              <label>ถนน</label>
+              <input type="text" id="curAddr_road" class="form-control" placeholder="ถนน">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ตำบล/แขวง</label>
+              <input type="text" id="curAddr_subDistrict" class="form-control" placeholder="ตำบล/แขวง">
+            </div>
+            <div class="form-group">
+              <label>อำเภอ/เขต</label>
+              <input type="text" id="curAddr_district" class="form-control" placeholder="อำเภอ/เขต">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>จังหวัด</label>
+              <input type="text" id="curAddr_province" class="form-control" placeholder="จังหวัด">
+            </div>
+            <div class="form-group">
+              <label>รหัสไปรษณีย์</label>
+              <input type="text" id="curAddr_postalCode" class="form-control" placeholder="เช่น 10110" maxlength="5">
+            </div>
           </div>
 
           <!-- ข้อมูลบัญชี read-only -->
@@ -238,6 +323,18 @@
     $el('avatarIcon').textContent = instrumentIcons[inst] || '🎤';
   }
 
+  var addrFields = ['houseNo','moo','soi','road','subDistrict','district','province','postalCode'];
+  function getAddrObj(prefix) {
+    var obj = {};
+    addrFields.forEach(function(f) { obj[f] = ($el(prefix + f) ? $el(prefix + f).value.trim() : ''); });
+    return obj;
+  }
+  function copySameAddress() {
+    if ($el('sameAsIdAddr').checked) {
+      addrFields.forEach(function(f) { setVal('curAddr_' + f, $el('idAddr_' + f) ? $el('idAddr_' + f).value : ''); });
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof requireAuth === 'function') requireAuth();
     renderMainNav('mainNav');
@@ -254,7 +351,28 @@
         setVal('instrument',   p.instrument || '');
         setVal('phone',        p.phone      || '');
         setVal('birthDate',    p.birthDate  || p.birth_date || '');
-        setVal('idCardAddress', p.idCardAddress || p.id_card_address || '');
+        // ที่อยู่ตามบัตรประชาชน (JSON)
+        var idAddr = p.idCardAddress || p.id_card_address || {};
+        if (typeof idAddr === 'string') try { idAddr = JSON.parse(idAddr); } catch(e) { idAddr = {}; }
+        setVal('idAddr_houseNo',     idAddr.houseNo || '');
+        setVal('idAddr_moo',         idAddr.moo || '');
+        setVal('idAddr_soi',         idAddr.soi || '');
+        setVal('idAddr_road',        idAddr.road || '');
+        setVal('idAddr_subDistrict', idAddr.subDistrict || '');
+        setVal('idAddr_district',    idAddr.district || '');
+        setVal('idAddr_province',    idAddr.province || '');
+        setVal('idAddr_postalCode',  idAddr.postalCode || '');
+        // ที่อยู่ปัจจุบัน (JSON)
+        var curAddr = p.currentAddress || p.current_address || {};
+        if (typeof curAddr === 'string') try { curAddr = JSON.parse(curAddr); } catch(e) { curAddr = {}; }
+        setVal('curAddr_houseNo',     curAddr.houseNo || '');
+        setVal('curAddr_moo',         curAddr.moo || '');
+        setVal('curAddr_soi',         curAddr.soi || '');
+        setVal('curAddr_road',        curAddr.road || '');
+        setVal('curAddr_subDistrict', curAddr.subDistrict || '');
+        setVal('curAddr_district',    curAddr.district || '');
+        setVal('curAddr_province',    curAddr.province || '');
+        setVal('curAddr_postalCode',  curAddr.postalCode || '');
         setTxt('profileEmail',  p.email    || '—');
         setTxt('profileBand',   p.bandName || p.band_name || '—');
         setTxt('profileRole',   roleLabels[p.role] || p.role || '—');
@@ -285,7 +403,8 @@
         instrument:    $el('instrument').value,
         phone:         ($el('phone') ? $el('phone').value.trim() : ''),
         birthDate:     $el('birthDate').value || '',
-        idCardAddress: ($el('idCardAddress') ? $el('idCardAddress').value.trim() : '')
+        idCardAddress: getAddrObj('idAddr_'),
+        currentAddress: getAddrObj('curAddr_')
       }, function(r) {
         btn.disabled = false; btn.textContent = '💾 บันทึกข้อมูล';
         if (r && r.success) {
