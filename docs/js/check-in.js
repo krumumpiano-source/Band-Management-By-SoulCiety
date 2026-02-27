@@ -242,8 +242,10 @@ function ciSubmit() {
 
 /* ===== SIMPLE LEAVE (inline form) ===== */
 function ciSubmitLeaveSimple() {
+  var noSub = ciGetEl('ciLeaveNoSub') && ciGetEl('ciLeaveNoSub').checked;
   var subName = (ciGetEl('ciLeaveSubNameSimple') ? ciGetEl('ciLeaveSubNameSimple').value : '').trim();
-  if (!subName) { ciShowToast('กรุณากรอกชื่อคนมาทำงานแทน', 'error'); return; }
+  if (!noSub && !subName) { ciShowToast('กรุณากรอกชื่อคนแทน หรือเลือก "ไม่มีคนแทน"', 'error'); return; }
+  if (noSub) subName = '';
 
   var date = ciSelectedDate || '';
   var venue = ciSelectedVenue || '';
@@ -268,7 +270,7 @@ function ciSubmitLeaveSimple() {
     gasRun('requestLeave', payload, function(r) {
       if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
       if (r && r.success) {
-        ciShowToast('บันทึกลาเรียบร้อย — คนแทน: ' + subName, 'success');
+        ciShowToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
         var form = ciGetEl('ciLeaveForm');
         if (form) form.classList.remove('show');
         ciGetEl('ciLeaveSubNameSimple').value = '';
@@ -368,6 +370,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     var leaveSubmitBtn = ciGetEl('ciLeaveSubmitSimple');
     if (leaveSubmitBtn) leaveSubmitBtn.addEventListener('click', ciSubmitLeaveSimple);
+    var _ciNoSub = ciGetEl('ciLeaveNoSub');
+    if (_ciNoSub) _ciNoSub.addEventListener('change', function() {
+      var inp = ciGetEl('ciLeaveSubNameSimple');
+      if (inp) { inp.disabled = this.checked; inp.style.opacity = this.checked ? '0.4' : '1'; if (this.checked) inp.value = ''; }
+    });
   }
 
   // Select all / None shortcuts

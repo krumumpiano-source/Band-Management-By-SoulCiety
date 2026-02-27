@@ -155,7 +155,10 @@
           <!-- Leave inline form -->
           <div class="ci-leave-form" id="ciLeaveForm">
             <h4>🚫 ลางาน</h4>
-            <p>กรอกชื่อคนมาทำงานแทน</p>
+            <p>กรอกชื่อคนมาทำงานแทน หรือเลือก "ไม่มีคนแทน"</p>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px;font-size:var(--text-sm);font-weight:600;user-select:none">
+              <input type="checkbox" id="ciLeaveNoSub" style="accent-color:#e53e3e;width:18px;height:18px"> ไม่มีคนแทน
+            </label>
             <input type="text" id="ciLeaveSubNameSimple" placeholder="ชื่อคนแทน เช่น สมชาย, คุณแพท...">
             <div class="ci-leave-actions">
               <button type="button" class="btn-leave-ok" id="ciLeaveSubmitSimple">✅ ยืนยันลา</button>

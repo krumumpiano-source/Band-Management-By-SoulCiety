@@ -148,9 +148,10 @@
         case 'getCheckInsForDate': return doSelect('member_check_ins', { band_id: getBandId(), date: d.date });
 
         // ── Leave ──────────────────────────────────────────────────
-        case 'requestLeave':       return doInsert('leave_requests', d);
+        case 'requestLeave':       return doRequestLeave(d);
         case 'getMyLeaveRequests': return doSelect('leave_requests', { band_id: getBandId(), member_id: d.memberId }, '-date', 100);
         case 'getAllLeaveRequests': return doSelect('leave_requests', { band_id: getBandId() }, '-date', 200);
+        case 'updateLeaveStatus':  return doUpdate('leave_requests', d.leaveId, { status: d.status });
         case 'assignSubstitute':   return doUpdate('leave_requests', d.leaveId, { substitute_id: d.substituteId, substitute_name: d.substituteName, status: 'approved' });
         case 'rejectLeave':        return doUpdate('leave_requests', d.leaveId, { status: 'rejected' });
 
@@ -473,6 +474,32 @@
       if (error) throw error;
       var totalPages = Math.ceil((count || 0) / pageSize) || 1;
       return { success: true, data: toCamelList(data), total: count, page: page, pageSize: pageSize, totalPages: totalPages, year: year };
+    }
+
+    // ── Leave Request ─────────────────────────────────────────────
+    async function doRequestLeave(d) {
+      var { data: authUser } = await sb.auth.getUser();
+      var memberId = d.memberId || (authUser && authUser.user && authUser.user.id) || '';
+      var memberName = d.memberName || '';
+      if (!memberName && authUser && authUser.user) {
+        var meta = authUser.user.user_metadata || {};
+        memberName = meta.nickname || meta.first_name || authUser.user.email || '';
+      }
+      var row = {
+        band_id: d.bandId || getBandId(),
+        member_id: memberId,
+        member_name: memberName,
+        date: d.date || new Date().toISOString().slice(0, 10),
+        venue: d.venue || '',
+        slots: d.slots || '[]',
+        reason: d.reason || 'ลางาน',
+        substitute_name: d.substituteName || '',
+        substitute_contact: d.substituteContact || '',
+        status: 'pending'
+      };
+      var { data, error } = await sb.from('leave_requests').insert(row).select().single();
+      if (error) throw error;
+      return { success: true, data: toCamel(data) };
     }
 
     // ── Check-in ──────────────────────────────────────────────────

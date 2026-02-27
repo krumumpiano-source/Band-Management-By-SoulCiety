@@ -140,7 +140,10 @@
           <!-- Leave inline form -->
           <div class="qci-leave-form" id="qciLeaveForm">
             <h4>🚫 ลางาน</h4>
-            <p>กรอกชื่อคนมาทำงานแทน</p>
+            <p>กรอกชื่อคนมาทำงานแทน หรือเลือก "ไม่มีคนแทน"</p>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px;font-size:var(--text-sm);font-weight:600;user-select:none">
+              <input type="checkbox" id="qciLeaveNoSub" style="accent-color:#e53e3e;width:18px;height:18px"> ไม่มีคนแทน
+            </label>
             <input type="text" id="qciLeaveSubName" placeholder="ชื่อคนแทน เช่น สมชาย, คุณแพท...">
             <div class="qci-leave-actions">
               <button type="button" class="btn-leave-ok" id="qciLeaveSubmit">✅ ยืนยันลา</button>
@@ -397,6 +400,11 @@
       document.getElementById('qciLeaveCancel').addEventListener('click', function() {
         qciLeaveForm.classList.remove('show');
       });
+      var _noSubCb = document.getElementById('qciLeaveNoSub');
+      if (_noSubCb) _noSubCb.addEventListener('change', function() {
+        var inp = document.getElementById('qciLeaveSubName');
+        if (inp) { inp.disabled = this.checked; inp.style.opacity = this.checked ? '0.4' : '1'; if (this.checked) inp.value = ''; }
+      });
       document.getElementById('qciLeaveSubmit').addEventListener('click', qciSubmitLeaveSimple);
       var leaveInput = document.getElementById('qciLeaveSubName');
       if (leaveInput) leaveInput.addEventListener('keydown', function(e) {
@@ -404,8 +412,10 @@
       });
     }
     function qciSubmitLeaveSimple() {
+      var noSub = document.getElementById('qciLeaveNoSub') && document.getElementById('qciLeaveNoSub').checked;
       var subName = (document.getElementById('qciLeaveSubName') ? document.getElementById('qciLeaveSubName').value : '').trim();
-      if (!subName) { showToast('กรุณากรอกชื่อคนมาทำงานแทน', 'error'); return; }
+      if (!noSub && !subName) { showToast('กรุณากรอกชื่อคนแทน หรือเลือก "ไม่มีคนแทน"', 'error'); return; }
+      if (noSub) subName = '';
       var dateStr = qciSelectedDate.toISOString().split('T')[0];
       var venue = qciSelectedVenue || '';
       var slots = qciSelectedSlots.length ? qciSelectedSlots : [];
@@ -414,7 +424,7 @@
       gasRun('requestLeave', { bandId: qciBandId, memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '', memberName: localStorage.getItem('userName') || '', date: dateStr, venue: venue, slots: JSON.stringify(slots), reason: 'ลางาน', substituteName: subName, substituteContact: '' }, function(r) {
         if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
         if (r && r.success) {
-          showToast('บันทึกลาเรียบร้อย — คนแทน: ' + subName, 'success');
+          showToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
           document.getElementById('qciLeaveForm').classList.remove('show');
           document.getElementById('qciLeaveSubName').value = '';
         } else { showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error'); }
