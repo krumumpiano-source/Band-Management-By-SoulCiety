@@ -17,6 +17,8 @@ var apRecordType  = 'daily';
 var apVenueId     = '';
 var apChecked     = {};
 var _apInited     = false;
+var apWeekStart   = 1;  // default Monday (0=Sun..6=Sat)
+var apWeekEnd     = 0;  // default Sunday
 
 /* ── Helpers ────────────────────────────────────────── */
 function apEl(id) { return document.getElementById(id); }
@@ -94,6 +96,12 @@ function apLoadData() {
     if (s.members && s.members.length) apMembers = s.members;
     if (s.venues) apVenues = s.venues;
     apScheduleMap = s.schedule || s.scheduleData || {};
+    // Read payroll settings from manager's band-settings
+    if (s.payroll) {
+      if (s.payroll.period) apRecordType = s.payroll.period;
+      if (s.payroll.weekStart !== undefined) apWeekStart = parseInt(s.payroll.weekStart, 10);
+      if (s.payroll.weekEnd !== undefined) apWeekEnd = parseInt(s.payroll.weekEnd, 10);
+    }
   } catch(e) {}
   apUpdateBandInfo();
   apRenderVenues();
@@ -119,6 +127,16 @@ function apLoadData() {
       if (r && r.success && r.data) {
         if (r.data.venues) apVenues = r.data.venues;
         apScheduleMap = r.data.schedule || r.data.scheduleData || {};
+        // Sync payroll config from server
+        if (r.data.payroll) {
+          if (r.data.payroll.period) apRecordType = r.data.payroll.period;
+          if (r.data.payroll.weekStart !== undefined) apWeekStart = parseInt(r.data.payroll.weekStart, 10);
+          if (r.data.payroll.weekEnd !== undefined) apWeekEnd = parseInt(r.data.payroll.weekEnd, 10);
+          // Update UI to reflect manager's settings
+          var _rt = apEl('recordType'); if (_rt) _rt.value = apRecordType;
+          apShowDateGroups();
+          apApplyWeekRange();
+        }
       }
       ready.s = true; onReady();
     });
@@ -493,21 +511,37 @@ function apPrintMemberReceipt() {
 }
 
 /* ═══ INIT ══════════════════════════════════════════ */
+// Calculate weekly date range from apWeekStart/apWeekEnd
+function apApplyWeekRange() {
+  var sd = apEl('startDate'), ed = apEl('endDate');
+  if (!sd || !ed) return;
+  var today = new Date();
+  var dow = today.getDay();
+  // Find the most recent weekStart day
+  var diff = (dow - apWeekStart + 7) % 7;
+  var start = new Date(today); start.setDate(today.getDate() - diff);
+  // Find the weekEnd day from start
+  var span = (apWeekEnd - apWeekStart + 7) % 7; if (span === 0) span = 6;
+  var end = new Date(start); end.setDate(start.getDate() + span);
+  sd.value = start.toISOString().split('T')[0];
+  ed.value = end.toISOString().split('T')[0];
+}
+
 function apInitPage() {
   if (_apInited) return;
   _apInited = true;
   var today = new Date(), todayStr = today.toISOString().split('T')[0];
   var wd = apEl('workDate'); if (wd) wd.value = todayStr;
+  // Pre-select record type from manager's payroll settings
+  var rt = apEl('recordType'); if (rt) rt.value = apRecordType;
   var sd = apEl('startDate'), ed = apEl('endDate');
   if (sd && ed) {
-    var dow = today.getDay(), sun = new Date(today); sun.setDate(today.getDate()-dow);
-    var sat = new Date(sun); sat.setDate(sun.getDate()+6);
-    sd.value = sun.toISOString().split('T')[0]; ed.value = sat.toISOString().split('T')[0];
+    apApplyWeekRange();
   }
   var my = apEl('monthYear');
   if (my) my.value = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
   apShowDateGroups();
-  var rt = apEl('recordType'); if (rt) rt.addEventListener('change', apShowDateGroups);
+  rt = apEl('recordType'); if (rt) rt.addEventListener('change', apShowDateGroups);
   var vs = apEl('venue'); if (vs) vs.addEventListener('change', function() { apVenueId = this.value; });
   var lb = apEl('apLoadBtn'); if (lb) lb.addEventListener('click', function() {
     apVenueId = (apEl('venue')||{}).value||'';
