@@ -129,10 +129,6 @@
           <div class="form-section-label">🪪 ข้อมูลตามบัตรประชาชน</div>
           <div class="form-row">
             <div class="form-group">
-              <label>เลขบัตรประชาชน (13 หลัก)</label>
-              <input type="text" id="idCardNumber" class="form-control" placeholder="x-xxxx-xxxxx-xx-x" maxlength="17" autocomplete="off">
-            </div>
-            <div class="form-group">
               <label>วันเกิด</label>
               <input type="date" id="birthDate" class="form-control">
             </div>
@@ -241,29 +237,9 @@
     $el('avatarIcon').textContent = instrumentIcons[inst] || '🎤';
   }
 
-  // ── Format ID card: x-xxxx-xxxxx-xx-x ──
-  function formatIdCard(val) {
-    var d = (val || '').replace(/\D/g, '').substring(0, 13);
-    if (d.length <= 1) return d;
-    var parts = [d.substring(0,1), d.substring(1,5), d.substring(5,10), d.substring(10,12), d.substring(12,13)];
-    return parts.filter(Boolean).join('-');
-  }
-
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof requireAuth === 'function') requireAuth();
     renderMainNav('mainNav');
-
-    // Auto-format ID card input
-    var idInput = $el('idCardNumber');
-    if (idInput) {
-      idInput.addEventListener('input', function() {
-        var pos = this.selectionStart;
-        var oldLen = this.value.length;
-        this.value = formatIdCard(this.value);
-        var newLen = this.value.length;
-        this.setSelectionRange(pos + (newLen - oldLen), pos + (newLen - oldLen));
-      });
-    }
 
     // ── โหลดข้อมูล ──
     function loadProfile() {
@@ -276,7 +252,6 @@
         setVal('nickname',     p.nickname   || '');
         setVal('instrument',   p.instrument || '');
         setVal('phone',        p.phone      || '');
-        setVal('idCardNumber', formatIdCard(p.idCardNumber || p.id_card_number || ''));
         setVal('birthDate',    p.birthDate  || p.birth_date || '');
         setVal('idCardAddress', p.idCardAddress || p.id_card_address || '');
         setTxt('profileEmail',  p.email    || '—');
@@ -298,12 +273,6 @@
         if (typeof showToast === 'function') showToast('กรุณากรอกชื่อ นามสกุล และชื่อเล่น', 'error');
         return;
       }
-      var idRaw = ($el('idCardNumber').value || '').replace(/\D/g, '');
-      if (idRaw && idRaw.length !== 13) {
-        if (typeof showToast === 'function') showToast('เลขบัตรประชาชนต้องเป็น 13 หลัก', 'error');
-        return;
-      }
-
       var btn = $el('saveBtn');
       btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
 
@@ -314,7 +283,6 @@
         nickname:      nickname,
         instrument:    $el('instrument').value,
         phone:         ($el('phone') ? $el('phone').value.trim() : ''),
-        idCardNumber:  idRaw,
         birthDate:     $el('birthDate').value || '',
         idCardAddress: ($el('idCardAddress') ? $el('idCardAddress').value.trim() : '')
       }, function(r) {
