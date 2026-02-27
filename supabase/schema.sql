@@ -18,6 +18,12 @@ create table if not exists public.profiles (
   band_name   text,
   role        text default 'manager',   -- manager | member | admin
   status      text default 'active',    -- active | inactive
+  title       text default '',
+  first_name  text default '',
+  last_name   text default '',
+  nickname    text default '',
+  instrument  text default '',
+  phone       text default '',
   created_at  timestamptz default now()
 );
 alter table public.profiles enable row level security;

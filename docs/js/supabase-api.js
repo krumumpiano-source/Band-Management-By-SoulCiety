@@ -100,10 +100,9 @@
         case 'login':               return doLogin(d);
         case 'register':            return doRegister(d);
         case 'logout':              return doLogout();
-        case 'requestPasswordReset':
-        case 'verifyPasswordResetOtp':
-        case 'resetPassword':
-          return { success: false, message: 'ฟีเจอร์นี้ยังไม่เปิด กรุณาติดต่อ Admin' };
+        case 'requestPasswordReset': return doRequestPasswordReset(d);
+        case 'resetPassword':          return doResetPassword(d);
+        case 'lookupEmail':            return doLookupEmail(d);
 
         // ── Invite / Band Code ─────────────────────────────────────
         case 'generateInviteCode':  return doGenerateInviteCode(d);
@@ -634,6 +633,37 @@
       return data;
     }
 
+    // ── Password Reset ──────────────────────────────────────────
+    async function doRequestPasswordReset(d) {
+      var email = (d.email || '').trim();
+      if (!email) return { success: false, message: 'กรุณากรอกอีเมล' };
+      var siteUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+      var { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: siteUrl + 'index.html'
+      });
+      if (error) return { success: false, message: error.message };
+      return { success: true, message: 'ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว กรุณาตรวจสอบกล่องจดหมาย' };
+    }
+
+    async function doResetPassword(d) {
+      var newPassword = (d.newPassword || '').trim();
+      if (!newPassword || newPassword.length < 6) return { success: false, message: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' };
+      var { error } = await sb.auth.updateUser({ password: newPassword });
+      if (error) return { success: false, message: error.message };
+      return { success: true, message: 'เปลี่ยนรหัสผ่านเรียบร้อย' };
+    }
+
+    // ── Lookup Email (ลืมอีเมล) ──────────────────────────────────
+    async function doLookupEmail(d) {
+      var name  = (d.name  || '').trim().toLowerCase();
+      var phone = (d.phone || '').trim().replace(/[^0-9]/g, '');
+      if (!name && !phone) return { success: false, message: 'กรุณากรอกชื่อหรือเบอร์โทร' };
+      var { data, error } = await sb.rpc('lookup_email', { p_name: name, p_phone: phone });
+      if (error) return { success: false, message: error.message };
+      if (!data || data.length === 0) return { success: false, message: 'ไม่พบข้อมูลที่ตรงกัน กรุณาตรวจสอบอีกครั้ง' };
+      return { success: true, results: data };
+    }
+
     // ── Profile ───────────────────────────────────────────────────
     async function doGetMyProfile() {
       var { data: user } = await sb.auth.getUser();
@@ -654,6 +684,7 @@
         last_name:  d.lastName   || '',
         nickname:   d.nickname   || '',
         instrument: d.instrument || '',
+        phone:      d.phone      || '',
         updated_at: new Date().toISOString()
       };
       // อัปเดต user_name เป็นชื่อเล่น (ถ้ามี)

@@ -143,6 +143,14 @@
           </div>
 
           <!-- ข้อมูล read-only -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>เบอร์โทรศัพท์</label>
+              <input type="tel" id="phone" class="form-control" placeholder="0xx-xxx-xxxx">
+              <small style="color:var(--premium-text-muted)">ใช้สำหรับกู้คืนบัญชีกรณีลืมอีเมล</small>
+            </div>
+          </div>
+
           <div class="form-section-label">ข้อมูลบัญชี (ไม่สามารถแก้ไข)</div>
           <div class="form-row">
             <div class="form-group">
@@ -221,6 +229,7 @@
         setVal('lastName',   p.lastName   || p.last_name  || '');
         setVal('nickname',   p.nickname   || '');
         setVal('instrument', p.instrument || '');
+        setVal('phone',      p.phone      || '');
         setTxt('profileEmail',  p.email    || '—');
         setTxt('profileBand',   p.bandName || p.band_name || '—');
         setTxt('profileRole',   roleLabels[p.role] || p.role || '—');
@@ -248,7 +257,8 @@
         firstName:  firstName,
         lastName:   lastName,
         nickname:   nickname,
-        instrument: $el('instrument').value
+        instrument: $el('instrument').value,
+        phone:      ($el('phone') ? $el('phone').value.trim() : '')
       }, function(r) {
         btn.disabled = false; btn.textContent = '💾 บันทึกข้อมูล';
         if (r && r.success) {
