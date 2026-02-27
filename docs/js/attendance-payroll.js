@@ -246,16 +246,22 @@ function apLoadCheckIns(cb) {
       if (!apCheckInSub[mem.id]) apCheckInSub[mem.id] = {};
       apCheckInSub[mem.id][ci.date] = ci.substitute || null;
     });
-    // Merge substitute info from leave_requests into apCheckInSub
+    // Merge leave_requests into apCheckInSub AND apCheckInStatus
     apLeaveData.forEach(function(lv) {
-      if (!lv.substituteName) return;
+      if (lv.status === 'rejected') return;
       var mem = null;
       if (lv.memberId) mem = apMembers.find(function(m) { return m.id === lv.memberId; });
       if (!mem && lv.memberName) mem = apMembers.find(function(m) { return m.name === lv.memberName; });
       if (!mem) return;
-      if (!apCheckInSub[mem.id]) apCheckInSub[mem.id] = {};
-      if (!apCheckInSub[mem.id][lv.date]) {
-        apCheckInSub[mem.id][lv.date] = { name: lv.substituteName, contact: lv.substituteContact || '' };
+      // Always mark as leave status so all slots on this date show leave badge
+      if (!apCheckInStatus[mem.id]) apCheckInStatus[mem.id] = {};
+      if (!apCheckInStatus[mem.id][lv.date]) apCheckInStatus[mem.id][lv.date] = 'leave';
+      // Set substitute info
+      if (lv.substituteName) {
+        if (!apCheckInSub[mem.id]) apCheckInSub[mem.id] = {};
+        if (!apCheckInSub[mem.id][lv.date]) {
+          apCheckInSub[mem.id][lv.date] = { name: lv.substituteName, contact: lv.substituteContact || '' };
+        }
       }
     });
     if (cb) cb();
@@ -387,8 +393,8 @@ function apRenderAttendance() {
 }
 
 function apCalcTotals() {
-  var grand = 0, mTotals = {};
-  apMembers.forEach(function(m) { mTotals[m.id] = 0; });
+  var grand = 0, mTotals = {}, mHours = {};
+  apMembers.forEach(function(m) { mTotals[m.id] = 0; mHours[m.id] = 0; });
   var rows = document.querySelectorAll('#attendanceTableBody tr:not(.total-row)');
   rows.forEach(function(tr) {
     var cbs = tr.querySelectorAll('.ap-cb');
@@ -398,9 +404,15 @@ function apCalcTotals() {
     var slots = apSlotsForDay(dow);
     var slot = slots.find(function(s) { return (s.start+'-'+s.end)===sk; });
     if (!slot) return;
+    var slotHours = apCalcH(apParseMin(slot.start), apParseMin(slot.end));
     var rowAmt = 0;
     cbs.forEach(function(cb) {
-      if (cb.checked) { var pay = apSlotPay(slot, cb.dataset.m); mTotals[cb.dataset.m] = (mTotals[cb.dataset.m]||0)+pay; rowAmt += pay; }
+      if (cb.checked) {
+        var pay = apSlotPay(slot, cb.dataset.m);
+        mTotals[cb.dataset.m] = (mTotals[cb.dataset.m]||0) + pay;
+        mHours[cb.dataset.m] = (mHours[cb.dataset.m]||0) + slotHours;
+        rowAmt += pay;
+      }
     });
     grand += rowAmt;
     var rtCell = tr.querySelector('.ap-rt');
@@ -408,7 +420,7 @@ function apCalcTotals() {
   });
   apMembers.forEach(function(m) {
     var el = document.querySelector('.ap-mt[data-m="'+m.id+'"]');
-    if (el) el.textContent = mTotals[m.id] > 0 ? mTotals[m.id].toLocaleString('th-TH') : '-';
+    if (el) el.textContent = mHours[m.id] > 0 ? mHours[m.id] + ' ชม.' : '-';
   });
   var ge = document.querySelector('.ap-gt');
   if (ge) ge.textContent = grand > 0 ? grand.toLocaleString('th-TH') + ' ฿' : '-';
