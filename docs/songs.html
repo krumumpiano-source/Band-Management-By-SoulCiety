@@ -65,6 +65,73 @@ select:focus,input:focus{
   box-shadow:0 0 0 3px rgba(246,173,85,.15);
 }
 
+/* ── Song Search Box ── */
+.song-search-wrap{
+  position:relative;
+  margin-top:12px;
+}
+.song-search-icon{
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:18px;
+  pointer-events:none;
+  opacity:.55;
+  transition:opacity .2s;
+}
+.song-search-wrap:focus-within .song-search-icon{
+  opacity:1;
+}
+.song-search-input{
+  width:100%;
+  padding:13px 44px 13px 44px;
+  border-radius:var(--radius-xl);
+  border:2px solid var(--premium-border);
+  background:var(--premium-white);
+  color:var(--premium-text);
+  font-size:var(--text-base);
+  font-family:var(--font-family-body);
+  font-weight:500;
+  transition:var(--transition-fast);
+  box-shadow:var(--shadow-sm);
+}
+.song-search-input::placeholder{
+  color:var(--premium-text-muted);
+  font-weight:400;
+}
+.song-search-input:focus{
+  outline:none;
+  border-color:var(--premium-gold);
+  box-shadow:var(--shadow-gold), 0 0 0 4px rgba(246,173,85,.12);
+  background:#fffdf8;
+}
+.song-search-clear{
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  width:30px;
+  height:30px;
+  min-height:unset;
+  padding:0;
+  border-radius:var(--radius-full);
+  border:none;
+  background:var(--premium-border);
+  color:var(--premium-text-light);
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:var(--transition-fast);
+}
+.song-search-clear:hover{
+  background:var(--premium-gold);
+  color:#fff;
+}
+
 button{
   display:inline-flex;
   align-items:center;
@@ -408,7 +475,12 @@ html{scroll-behavior:smooth}
     </select>
   </div>
 
-  <input id="searchText" placeholder="🔍 ค้นหาเพลง" oninput="applyTextFilter()" style="margin-top:10px">
+  <!-- Search Box -->
+  <div class="song-search-wrap">
+    <span class="song-search-icon">🔍</span>
+    <input id="searchText" type="text" placeholder="ค้นหาเพลง ชื่อศิลปิน หรือคีย์..." oninput="applyTextFilter()" class="song-search-input">
+    <button type="button" id="searchClearBtn" class="song-search-clear" onclick="document.getElementById('searchText').value='';applyTextFilter();this.style.display='none'" style="display:none">✕</button>
+  </div>
 </div>
 
 <div class="panel">
@@ -573,6 +645,9 @@ function applyFiltersAndRender() {
 var applyFiltersAndRenderDebounced = debounce(applyFiltersAndRender, 150);
 
 function applyTextFilter() {
+  var btn = document.getElementById('searchClearBtn');
+  var val = document.getElementById('searchText').value;
+  if (btn) btn.style.display = val ? 'flex' : 'none';
   applyFiltersAndRenderDebounced();
 }
 
