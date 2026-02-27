@@ -224,6 +224,113 @@ function ciSubmit() {
 }
 
 /* ===== INIT ===== */
+
+/* ===== LEAVE MODAL HELPERS ===== */
+var ciLeaveSelectedSlots = [];
+
+function ciRenderLeaveVenues() {
+  var sel = ciGetEl('ciLeaveVenueModal');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- เลือกสถานที่ --</option>';
+  var venues = ciBandSettings.venues || [];
+  venues.forEach(function(v) {
+    var name = v.name || v.venueName || String(v);
+    var opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    if (name === ciSelectedVenue) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  if (!venues.length) {
+    var opt = document.createElement('option');
+    opt.value = 'ร้านหลัก'; opt.textContent = 'ร้านหลัก (ค่าเริ่มต้น)';
+    sel.appendChild(opt);
+  }
+}
+
+function ciRenderLeaveSlots() {
+  var container = ciGetEl('ciLeaveSlotsModal');
+  if (!container) return;
+  ciLeaveSelectedSlots = [];
+  var date = ciGetEl('ciLeaveDateModal') ? ciGetEl('ciLeaveDateModal').value : '';
+  if (!date) {
+    container.innerHTML = '<p style="color:var(--premium-text-muted);font-size:13px">เลือกวันที่ก่อน</p>';
+    return;
+  }
+  var slots = ciGetSlotsForDate(date);
+  container.innerHTML = slots.map(function(slot) {
+    return '<button type="button" class="slot-btn" data-slot="' + ciEscHtml(slot.key) + '" ' +
+      'style="padding:8px 16px;border-radius:999px;border:2px solid #ccc;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;transition:all .2s">' +
+      '🕐 ' + ciEscHtml(slot.label) + '</button>';
+  }).join('');
+  container.querySelectorAll('.slot-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var slot = btn.dataset.slot;
+      if (btn.style.background === 'rgb(229, 62, 62)') {
+        btn.style.background = '#fff'; btn.style.color = 'inherit'; btn.style.borderColor = '#ccc';
+        ciLeaveSelectedSlots = ciLeaveSelectedSlots.filter(function(s) { return s !== slot; });
+      } else {
+        btn.style.background = '#e53e3e'; btn.style.color = '#fff'; btn.style.borderColor = '#e53e3e';
+        ciLeaveSelectedSlots.push(slot);
+      }
+    });
+  });
+}
+
+function ciSubmitLeave() {
+  var date = ciGetEl('ciLeaveDateModal') ? ciGetEl('ciLeaveDateModal').value : '';
+  var venue = ciGetEl('ciLeaveVenueModal') ? ciGetEl('ciLeaveVenueModal').value : '';
+  var subName = (ciGetEl('ciLeaveSubName') ? ciGetEl('ciLeaveSubName').value : '').trim();
+  var subContact = (ciGetEl('ciLeaveSubContact') ? ciGetEl('ciLeaveSubContact').value : '').trim();
+  var reason = (ciGetEl('ciLeaveReason') ? ciGetEl('ciLeaveReason').value : '').trim();
+
+  if (!date) { ciShowToast('กรุณาเลือกวันที่ลา', 'error'); return; }
+  if (!venue) { ciShowToast('กรุณาเลือกสถานที่', 'error'); return; }
+  if (!ciLeaveSelectedSlots.length) { ciShowToast('กรุณาเลือกช่วงเวลาที่ลา', 'error'); return; }
+  if (!subName) { ciShowToast('กรุณาระบุชื่อคนมาทำงานแทน', 'error'); return; }
+
+  var btn = ciGetEl('ciLeaveSubmit');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...'; }
+
+  var payload = {
+    bandId: ciCurrentBandId,
+    date: date,
+    venue: venue,
+    slots: ciLeaveSelectedSlots,
+    reason: reason,
+    substituteName: subName,
+    substituteContact: subContact
+  };
+
+  if (typeof gasRun === 'function') {
+    gasRun('requestLeave', payload, function(r) {
+      if (btn) { btn.disabled = false; btn.textContent = '🚫 ส่งคำขอลา'; }
+      if (r && r.success) {
+        ciShowToast('ส่งคำขอลาเรียบร้อยแล้ว — คนแทน: ' + subName, 'success');
+        var modal = ciGetEl('ciLeaveModal');
+        if (modal) modal.classList.remove('active');
+        // Clear form
+        if (ciGetEl('ciLeaveSubName')) ciGetEl('ciLeaveSubName').value = '';
+        if (ciGetEl('ciLeaveSubContact')) ciGetEl('ciLeaveSubContact').value = '';
+        if (ciGetEl('ciLeaveReason')) ciGetEl('ciLeaveReason').value = '';
+        ciLeaveSelectedSlots = [];
+      } else {
+        ciShowToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+      }
+    });
+  } else {
+    // Fallback: redirect to leave page with pre-filled params
+    if (btn) { btn.disabled = false; btn.textContent = '🚫 ส่งคำขอลา'; }
+    var params = '?date=' + encodeURIComponent(date) +
+      '&venue=' + encodeURIComponent(venue) +
+      '&slots=' + encodeURIComponent(ciLeaveSelectedSlots.join(',')) +
+      '&sub=' + encodeURIComponent(subName) +
+      '&subContact=' + encodeURIComponent(subContact) +
+      '&reason=' + encodeURIComponent(reason);
+    window.location.href = 'leave.html' + params;
+  }
+}
+
+/* ===== INIT (continued) ===== */
 document.addEventListener('DOMContentLoaded', function() {
   ciCurrentBandId = localStorage.getItem('bandId') || '';
   ciMemberName = localStorage.getItem('userName') || 'คุณ';
@@ -293,6 +400,35 @@ document.addEventListener('DOMContentLoaded', function() {
   // Submit button
   var submitBtn = ciGetEl('ciSubmitBtn');
   if (submitBtn) submitBtn.addEventListener('click', ciSubmit);
+
+  // ===== LEAVE BUTTON & MODAL =====
+  var leaveBtn = ciGetEl('ciLeaveBtn');
+  var leaveModal = ciGetEl('ciLeaveModal');
+  if (leaveBtn && leaveModal) {
+    leaveBtn.addEventListener('click', function() {
+      // Pre-fill date & venue from check-in form
+      var leaveDateInput = ciGetEl('ciLeaveDateModal');
+      if (leaveDateInput) leaveDateInput.value = ciSelectedDate || today;
+      ciRenderLeaveVenues();
+      ciRenderLeaveSlots();
+      leaveModal.classList.add('active');
+    });
+    // Close modal
+    var cancelBtn = ciGetEl('ciLeaveCancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', function() {
+      leaveModal.classList.remove('active');
+    });
+    // Close on overlay click
+    leaveModal.addEventListener('click', function(e) {
+      if (e.target === leaveModal) leaveModal.classList.remove('active');
+    });
+    // Date change in modal -> update slots
+    var leaveDateInput = ciGetEl('ciLeaveDateModal');
+    if (leaveDateInput) leaveDateInput.addEventListener('change', ciRenderLeaveSlots);
+    // Submit leave
+    var leaveSubmitBtn = ciGetEl('ciLeaveSubmit');
+    if (leaveSubmitBtn) leaveSubmitBtn.addEventListener('click', ciSubmitLeave);
+  }
 
   // Select all / None shortcuts
   var selAll = ciGetEl('ciSelectAll');

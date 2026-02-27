@@ -64,6 +64,33 @@
     .qci-done strong{font-size:var(--text-md);color:#064e3b}
     .qci-no-schedule{color:var(--premium-text-muted);font-size:var(--text-sm);font-style:italic;padding:10px 0;display:block}
     .qci-no-work{background:#f7fafc;border:1px dashed var(--premium-border);border-radius:var(--radius-lg);padding:var(--spacing-md) var(--spacing-lg);text-align:center;color:var(--premium-text-muted);font-size:var(--text-sm)}
+
+    /* Leave button in check-in */
+    .qci-leave-btn{padding:10px 20px;font-size:var(--text-sm,0.875rem);font-weight:700;border-radius:var(--radius-md);border:2px solid #e53e3e;background:#fff;color:#e53e3e;cursor:pointer;transition:all .2s;font-family:var(--font-family-body);display:inline-flex;align-items:center;gap:6px}
+    .qci-leave-btn:hover{background:#e53e3e;color:#fff}
+    /* Leave Modal */
+    .qci-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;align-items:center;justify-content:center}
+    .qci-modal-overlay.active{display:flex}
+    .qci-modal{background:#fff;border-radius:var(--radius-xl,16px);padding:var(--spacing-2xl,32px);max-width:460px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:qciModalIn .25s ease}
+    @keyframes qciModalIn{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
+    .qci-modal-header{display:flex;align-items:center;gap:12px;margin-bottom:var(--spacing-lg)}
+    .qci-modal-header .icon{width:48px;height:48px;background:linear-gradient(135deg,#fed7d7,#feb2b2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+    .qci-modal-header h3{margin:0;font-size:var(--text-lg,1.1rem);font-weight:700}
+    .qci-modal-header p{margin:4px 0 0;font-size:var(--text-sm);color:var(--premium-text-muted)}
+    .qci-modal-body .form-group{margin-bottom:var(--spacing-md)}
+    .qci-modal-body .form-group label{font-weight:600;font-size:var(--text-sm);display:block;margin-bottom:4px}
+    .qci-modal-body .form-group input,.qci-modal-body .form-group select,.qci-modal-body .form-group textarea{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--premium-border,#ccc);border-radius:var(--radius-md);font-size:var(--text-sm);font-family:var(--font-family-body)}
+    .qci-modal-footer{display:flex;gap:var(--spacing-md);margin-top:var(--spacing-xl);justify-content:flex-end}
+    .qci-modal-footer .btn-cancel{padding:10px 24px;border:1px solid var(--premium-border,#ccc);background:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-family:var(--font-family-body);color:var(--premium-text)}
+    .qci-modal-footer .btn-cancel:hover{background:var(--premium-off-white)}
+    .qci-modal-footer .btn-leave-submit{padding:10px 24px;border:none;background:#e53e3e;color:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-weight:700;font-family:var(--font-family-body);transition:background .2s}
+    .qci-modal-footer .btn-leave-submit:hover{background:#c53030}
+    .qci-modal-info{background:#fffbeb;border:1px solid #f6e05e;border-radius:var(--radius-md);padding:var(--spacing-md);font-size:var(--text-sm);color:#744210;margin-bottom:var(--spacing-md);display:flex;align-items:flex-start;gap:8px}
+    .qci-leave-slot-btn{padding:8px 16px;border-radius:999px;border:2px solid #ccc;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;transition:all .2s}
+    .qci-leave-slot-btn.selected{border-color:#e53e3e;background:#e53e3e;color:#fff}
+    .qci-leave-link{margin-top:var(--spacing-sm);text-align:center;font-size:var(--text-xs)}
+    .qci-leave-link a{color:var(--premium-gold);font-weight:600;text-decoration:none}
+    .qci-leave-link a:hover{text-decoration:underline}
   </style>
 </head>
 <body>
@@ -164,6 +191,11 @@
           <div id="qciConfirmRow" style="display:none;margin-top:var(--spacing-md)">
             <button class="btn btn-primary" id="qciConfirmBtn">✅ ยืนยันลงเวลา</button>
             <button class="btn btn-ghost" id="qciResetBtn" style="margin-left:8px">🔄 รีเซ็ต</button>
+          </div>
+          <!-- Leave button (always visible) -->
+          <div style="margin-top:var(--spacing-md);display:flex;align-items:center;gap:var(--spacing-md);flex-wrap:wrap">
+            <button type="button" class="qci-leave-btn" id="qciLeaveBtn">🚫 ลา</button>
+            <a href="leave.html" style="font-size:var(--text-xs);color:var(--premium-gold);font-weight:600;text-decoration:none">🔄 จัดการใบลาทั้งหมด</a>
           </div>
         </div>
       </div>
@@ -447,6 +479,130 @@
     setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.style.display='none'; }, 300); }, 3500);
   }
 
+  // ===== LEAVE MODAL HELPERS =====
+  var qciLeaveSelectedSlots = [];
+
+  function qciRenderLeaveVenues() {
+    var sel = document.getElementById('qciLeaveVenueModal');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- เลือกสถานที่ --</option>';
+    var venues = qciBandSettings.venues || [];
+    venues.forEach(function(v) {
+      var name = v.name || v.venueName || String(v);
+      var opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      if (name === qciSelectedVenue) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    if (!venues.length) {
+      var opt = document.createElement('option');
+      opt.value = 'ร้านหลัก'; opt.textContent = 'ร้านหลัก (ค่าเริ่มต้น)';
+      sel.appendChild(opt);
+    }
+  }
+
+  function qciRenderLeaveSlots() {
+    var container = document.getElementById('qciLeaveSlotsModal');
+    if (!container) return;
+    qciLeaveSelectedSlots = [];
+    var dateInput = document.getElementById('qciLeaveDateModal');
+    var dateStr = dateInput ? dateInput.value : '';
+    if (!dateStr) {
+      container.innerHTML = '<p style="color:var(--premium-text-muted);font-size:13px">เลือกวันที่ก่อน</p>';
+      return;
+    }
+    var slots = qciGetSlotsForDate(dateStr);
+    container.innerHTML = slots.map(function(s) {
+      return '<button type="button" class="qci-leave-slot-btn" data-slot="' + qciEsc(s.key) + '">🕐 ' + qciEsc(s.label) + '</button>';
+    }).join('');
+    container.querySelectorAll('.qci-leave-slot-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var slot = btn.dataset.slot;
+        btn.classList.toggle('selected');
+        if (btn.classList.contains('selected')) {
+          qciLeaveSelectedSlots.push(slot);
+        } else {
+          qciLeaveSelectedSlots = qciLeaveSelectedSlots.filter(function(s) { return s !== slot; });
+        }
+      });
+    });
+  }
+
+  function qciGetSlotsForDate(dateStr) {
+    var date = new Date(dateStr);
+    var dow = date.getDay();
+    var dayData = qciBandSettings.scheduleData[dow] || qciBandSettings.scheduleData[String(dow)];
+    if (Array.isArray(dayData) && dayData.length > 0) {
+      return dayData.map(function(s) {
+        var st = s.startTime || '', et = s.endTime || '';
+        return { key: st + '-' + et, label: st + ' – ' + et };
+      });
+    }
+    if (dayData && dayData.timeSlots && dayData.timeSlots.length > 0) {
+      return dayData.timeSlots.map(function(s) {
+        return { key: s.startTime + '-' + s.endTime, label: s.startTime + ' – ' + s.endTime };
+      });
+    }
+    return [
+      { key: '19:30-20:30', label: '19:30 – 20:30' },
+      { key: '21:00-22:00', label: '21:00 – 22:00' },
+      { key: '22:30-23:30', label: '22:30 – 23:30' }
+    ];
+  }
+
+  function qciSubmitLeave() {
+    var date = document.getElementById('qciLeaveDateModal') ? document.getElementById('qciLeaveDateModal').value : '';
+    var venue = document.getElementById('qciLeaveVenueModal') ? document.getElementById('qciLeaveVenueModal').value : '';
+    var subName = (document.getElementById('qciLeaveSubName') ? document.getElementById('qciLeaveSubName').value : '').trim();
+    var subContact = (document.getElementById('qciLeaveSubContact') ? document.getElementById('qciLeaveSubContact').value : '').trim();
+    var reason = (document.getElementById('qciLeaveReason') ? document.getElementById('qciLeaveReason').value : '').trim();
+
+    if (!date) { showDashToast('กรุณาเลือกวันที่ลา', 'error'); return; }
+    if (!venue) { showDashToast('กรุณาเลือกสถานที่', 'error'); return; }
+    if (!qciLeaveSelectedSlots.length) { showDashToast('กรุณาเลือกช่วงเวลาที่ลา', 'error'); return; }
+    if (!subName) { showDashToast('กรุณาระบุชื่อคนมาทำงานแทน', 'error'); return; }
+
+    var btn = document.getElementById('qciLeaveSubmit');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...'; }
+
+    var payload = {
+      bandId: qciBandId,
+      date: date,
+      venue: venue,
+      slots: qciLeaveSelectedSlots,
+      reason: reason,
+      substituteName: subName,
+      substituteContact: subContact
+    };
+
+    if (typeof gasRun === 'function') {
+      gasRun('requestLeave', payload, function(r) {
+        if (btn) { btn.disabled = false; btn.textContent = '🚫 ส่งคำขอลา'; }
+        if (r && r.success) {
+          showDashToast('ส่งคำขอลาเรียบร้อยแล้ว — คนแทน: ' + subName, 'success');
+          document.getElementById('qciLeaveModal').classList.remove('active');
+          // Clear form
+          if (document.getElementById('qciLeaveSubName')) document.getElementById('qciLeaveSubName').value = '';
+          if (document.getElementById('qciLeaveSubContact')) document.getElementById('qciLeaveSubContact').value = '';
+          if (document.getElementById('qciLeaveReason')) document.getElementById('qciLeaveReason').value = '';
+          qciLeaveSelectedSlots = [];
+        } else {
+          showDashToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+        }
+      });
+    } else {
+      if (btn) { btn.disabled = false; btn.textContent = '🚫 ส่งคำขอลา'; }
+      // Fallback: redirect to leave page
+      var params = '?date=' + encodeURIComponent(date) +
+        '&venue=' + encodeURIComponent(venue) +
+        '&slots=' + encodeURIComponent(qciLeaveSelectedSlots.join(',')) +
+        '&sub=' + encodeURIComponent(subName) +
+        '&subContact=' + encodeURIComponent(subContact) +
+        '&reason=' + encodeURIComponent(reason);
+      window.location.href = 'leave.html' + params;
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
     renderMainNav('mainNav');
@@ -494,6 +650,34 @@
 
     document.getElementById('qciConfirmBtn').addEventListener('click', qciConfirm);
     document.getElementById('qciResetBtn').addEventListener('click', qciReset);
+
+    // ===== Leave Button & Modal =====
+    var qciLeaveBtn = document.getElementById('qciLeaveBtn');
+    var qciLeaveModal = document.getElementById('qciLeaveModal');
+    if (qciLeaveBtn && qciLeaveModal) {
+      // Also show leave btn always (even when confirmRow hidden)
+      qciLeaveBtn.addEventListener('click', function() {
+        // Pre-fill date from selected date
+        var leaveDateInput = document.getElementById('qciLeaveDateModal');
+        if (leaveDateInput) leaveDateInput.value = qciSelectedDate.toISOString().split('T')[0];
+        qciRenderLeaveVenues();
+        qciRenderLeaveSlots();
+        qciLeaveModal.classList.add('active');
+      });
+      // Close modal
+      document.getElementById('qciLeaveCancel').addEventListener('click', function() {
+        qciLeaveModal.classList.remove('active');
+      });
+      qciLeaveModal.addEventListener('click', function(e) {
+        if (e.target === qciLeaveModal) qciLeaveModal.classList.remove('active');
+      });
+      // Date change in modal
+      var qlDateInput = document.getElementById('qciLeaveDateModal');
+      if (qlDateInput) qlDateInput.addEventListener('change', qciRenderLeaveSlots);
+      // Submit leave
+      document.getElementById('qciLeaveSubmit').addEventListener('click', qciSubmitLeave);
+    }
+
     document.getElementById('qciEditBtn').addEventListener('click', function() {
       document.getElementById('qciDone').classList.remove('show');
       document.getElementById('qciForm').style.display = 'block';
