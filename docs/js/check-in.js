@@ -93,26 +93,41 @@ function ciGetSlotsForDate(dateStr) {
   var date = new Date(dateStr);
   var dow = date.getDay(); // 0=Sunday ... 6=Saturday
   var dayData = ciBandSettings.scheduleData[dow] || ciBandSettings.scheduleData[String(dow)];
+  var slots = [];
 
   // New format: array of slot objects [{id, venueId, startTime, endTime, members}]
   if (Array.isArray(dayData) && dayData.length > 0) {
-    return dayData.map(function(s) {
-      var st = s.startTime || '', et = s.endTime || '';
-      return { key: st + '-' + et, startTime: st, endTime: et, label: st + ' – ' + et };
-    });
+    slots = dayData;
   }
   // Old format: {timeSlots: [{startTime, endTime}]}
-  if (dayData && dayData.timeSlots && dayData.timeSlots.length > 0) {
-    return dayData.timeSlots.map(function(s) {
-      return { key: s.startTime + '-' + s.endTime, startTime: s.startTime, endTime: s.endTime, label: s.startTime + ' – ' + s.endTime };
-    });
+  else if (dayData && dayData.timeSlots && dayData.timeSlots.length > 0) {
+    slots = dayData.timeSlots;
   }
-  // Default slots if none configured
-  return [
-    { key: '19:30-20:30', startTime: '19:30', endTime: '20:30', label: '19:30 – 20:30' },
-    { key: '21:00-22:00', startTime: '21:00', endTime: '22:00', label: '21:00 – 22:00' },
-    { key: '22:30-23:30', startTime: '22:30', endTime: '23:30', label: '22:30 – 23:30' }
-  ];
+
+  // Filter by selected venue if slots have venueId
+  if (ciSelectedVenue && slots.length && slots[0] && slots[0].venueId !== undefined) {
+    var venueId = ciGetVenueId(ciSelectedVenue);
+    if (venueId) {
+      var filtered = slots.filter(function(s) { return s.venueId === venueId; });
+      if (filtered.length) slots = filtered;
+    }
+  }
+
+  return slots.map(function(s) {
+    var st = s.startTime || '', et = s.endTime || '';
+    return { key: st + '-' + et, startTime: st, endTime: et, label: st + ' – ' + et };
+  });
+}
+
+/* Lookup venue ID from venue name */
+function ciGetVenueId(name) {
+  var venues = ciBandSettings.venues || [];
+  for (var i = 0; i < venues.length; i++) {
+    var v = venues[i];
+    var vName = v.name || v.venueName || String(v);
+    if (vName === name) return v.id || v.venueId || '';
+  }
+  return '';
 }
 
 /* ===== RENDER SLOTS ===== */
@@ -225,108 +240,43 @@ function ciSubmit() {
 
 /* ===== INIT ===== */
 
-/* ===== LEAVE MODAL HELPERS ===== */
-var ciLeaveSelectedSlots = [];
+/* ===== SIMPLE LEAVE (inline form) ===== */
+function ciSubmitLeaveSimple() {
+  var subName = (ciGetEl('ciLeaveSubNameSimple') ? ciGetEl('ciLeaveSubNameSimple').value : '').trim();
+  if (!subName) { ciShowToast('กรุณากรอกชื่อคนมาทำงานแทน', 'error'); return; }
 
-function ciRenderLeaveVenues() {
-  var sel = ciGetEl('ciLeaveVenueModal');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">-- เลือกสถานที่ --</option>';
-  var venues = ciBandSettings.venues || [];
-  venues.forEach(function(v) {
-    var name = v.name || v.venueName || String(v);
-    var opt = document.createElement('option');
-    opt.value = name; opt.textContent = name;
-    if (name === ciSelectedVenue) opt.selected = true;
-    sel.appendChild(opt);
-  });
-  if (!venues.length) {
-    var opt = document.createElement('option');
-    opt.value = 'ร้านหลัก'; opt.textContent = 'ร้านหลัก (ค่าเริ่มต้น)';
-    sel.appendChild(opt);
-  }
-}
+  var date = ciSelectedDate || '';
+  var venue = ciSelectedVenue || '';
+  var checkedSlots = Array.from(document.querySelectorAll('input[name="ciSlot"]:checked')).map(function(cb) { return cb.value; });
 
-function ciRenderLeaveSlots() {
-  var container = ciGetEl('ciLeaveSlotsModal');
-  if (!container) return;
-  ciLeaveSelectedSlots = [];
-  var date = ciGetEl('ciLeaveDateModal') ? ciGetEl('ciLeaveDateModal').value : '';
-  if (!date) {
-    container.innerHTML = '<p style="color:var(--premium-text-muted);font-size:13px">เลือกวันที่ก่อน</p>';
-    return;
-  }
-  var slots = ciGetSlotsForDate(date);
-  container.innerHTML = slots.map(function(slot) {
-    return '<button type="button" class="slot-btn" data-slot="' + ciEscHtml(slot.key) + '" ' +
-      'style="padding:8px 16px;border-radius:999px;border:2px solid #ccc;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;transition:all .2s">' +
-      '🕐 ' + ciEscHtml(slot.label) + '</button>';
-  }).join('');
-  container.querySelectorAll('.slot-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var slot = btn.dataset.slot;
-      if (btn.style.background === 'rgb(229, 62, 62)') {
-        btn.style.background = '#fff'; btn.style.color = 'inherit'; btn.style.borderColor = '#ccc';
-        ciLeaveSelectedSlots = ciLeaveSelectedSlots.filter(function(s) { return s !== slot; });
-      } else {
-        btn.style.background = '#e53e3e'; btn.style.color = '#fff'; btn.style.borderColor = '#e53e3e';
-        ciLeaveSelectedSlots.push(slot);
-      }
-    });
-  });
-}
-
-function ciSubmitLeave() {
-  var date = ciGetEl('ciLeaveDateModal') ? ciGetEl('ciLeaveDateModal').value : '';
-  var venue = ciGetEl('ciLeaveVenueModal') ? ciGetEl('ciLeaveVenueModal').value : '';
-  var subName = (ciGetEl('ciLeaveSubName') ? ciGetEl('ciLeaveSubName').value : '').trim();
-  var subContact = (ciGetEl('ciLeaveSubContact') ? ciGetEl('ciLeaveSubContact').value : '').trim();
-  var reason = (ciGetEl('ciLeaveReason') ? ciGetEl('ciLeaveReason').value : '').trim();
-
-  if (!date) { ciShowToast('กรุณาเลือกวันที่ลา', 'error'); return; }
-  if (!venue) { ciShowToast('กรุณาเลือกสถานที่', 'error'); return; }
-  if (!ciLeaveSelectedSlots.length) { ciShowToast('กรุณาเลือกช่วงเวลาที่ลา', 'error'); return; }
-  if (!subName) { ciShowToast('กรุณาระบุชื่อคนมาทำงานแทน', 'error'); return; }
-
-  var btn = ciGetEl('ciLeaveSubmit');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...'; }
+  var btn = ciGetEl('ciLeaveSubmitSimple');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
 
   var payload = {
     bandId: ciCurrentBandId,
     date: date,
     venue: venue,
-    slots: ciLeaveSelectedSlots,
-    reason: reason,
+    slots: checkedSlots,
+    reason: 'ลางาน',
     substituteName: subName,
-    substituteContact: subContact
+    substituteContact: ''
   };
 
   if (typeof gasRun === 'function') {
     gasRun('requestLeave', payload, function(r) {
-      if (btn) { btn.disabled = false; btn.textContent = '🚫 ส่งคำขอลา'; }
+      if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
       if (r && r.success) {
-        ciShowToast('ส่งคำขอลาเรียบร้อยแล้ว — คนแทน: ' + subName, 'success');
-        var modal = ciGetEl('ciLeaveModal');
-        if (modal) modal.classList.remove('active');
-        // Clear form
-        if (ciGetEl('ciLeaveSubName')) ciGetEl('ciLeaveSubName').value = '';
-        if (ciGetEl('ciLeaveSubContact')) ciGetEl('ciLeaveSubContact').value = '';
-        if (ciGetEl('ciLeaveReason')) ciGetEl('ciLeaveReason').value = '';
-        ciLeaveSelectedSlots = [];
+        ciShowToast('บันทึกลาเรียบร้อย — คนแทน: ' + subName, 'success');
+        var form = ciGetEl('ciLeaveForm');
+        if (form) form.classList.remove('show');
+        ciGetEl('ciLeaveSubNameSimple').value = '';
       } else {
         ciShowToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
       }
     });
   } else {
-    // Fallback: redirect to leave page with pre-filled params
-    if (btn) { btn.disabled = false; btn.textContent = '🚫 ส่งคำขอลา'; }
-    var params = '?date=' + encodeURIComponent(date) +
-      '&venue=' + encodeURIComponent(venue) +
-      '&slots=' + encodeURIComponent(ciLeaveSelectedSlots.join(',')) +
-      '&sub=' + encodeURIComponent(subName) +
-      '&subContact=' + encodeURIComponent(subContact) +
-      '&reason=' + encodeURIComponent(reason);
-    window.location.href = 'leave.html' + params;
+    if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
+    window.location.href = 'leave.html?date=' + encodeURIComponent(date) + '&sub=' + encodeURIComponent(subName);
   }
 }
 
@@ -401,33 +351,21 @@ document.addEventListener('DOMContentLoaded', function() {
   var submitBtn = ciGetEl('ciSubmitBtn');
   if (submitBtn) submitBtn.addEventListener('click', ciSubmit);
 
-  // ===== LEAVE BUTTON & MODAL =====
+  // ===== SIMPLE LEAVE BUTTON =====
   var leaveBtn = ciGetEl('ciLeaveBtn');
-  var leaveModal = ciGetEl('ciLeaveModal');
-  if (leaveBtn && leaveModal) {
+  var leaveForm = ciGetEl('ciLeaveForm');
+  if (leaveBtn && leaveForm) {
     leaveBtn.addEventListener('click', function() {
-      // Pre-fill date & venue from check-in form
-      var leaveDateInput = ciGetEl('ciLeaveDateModal');
-      if (leaveDateInput) leaveDateInput.value = ciSelectedDate || today;
-      ciRenderLeaveVenues();
-      ciRenderLeaveSlots();
-      leaveModal.classList.add('active');
+      leaveForm.classList.toggle('show');
     });
-    // Close modal
-    var cancelBtn = ciGetEl('ciLeaveCancel');
-    if (cancelBtn) cancelBtn.addEventListener('click', function() {
-      leaveModal.classList.remove('active');
+    var leaveCancelBtn = ciGetEl('ciLeaveCancelSimple');
+    if (leaveCancelBtn) leaveCancelBtn.addEventListener('click', function() {
+      leaveForm.classList.remove('show');
+      var inp = ciGetEl('ciLeaveSubNameSimple');
+      if (inp) inp.value = '';
     });
-    // Close on overlay click
-    leaveModal.addEventListener('click', function(e) {
-      if (e.target === leaveModal) leaveModal.classList.remove('active');
-    });
-    // Date change in modal -> update slots
-    var leaveDateInput = ciGetEl('ciLeaveDateModal');
-    if (leaveDateInput) leaveDateInput.addEventListener('change', ciRenderLeaveSlots);
-    // Submit leave
-    var leaveSubmitBtn = ciGetEl('ciLeaveSubmit');
-    if (leaveSubmitBtn) leaveSubmitBtn.addEventListener('click', ciSubmitLeave);
+    var leaveSubmitBtn = ciGetEl('ciLeaveSubmitSimple');
+    if (leaveSubmitBtn) leaveSubmitBtn.addEventListener('click', ciSubmitLeaveSimple);
   }
 
   // Select all / None shortcuts

@@ -55,6 +55,20 @@
     .qci-done strong{font-size:var(--text-md);color:#064e3b}
     .qci-no-schedule{color:var(--premium-text-muted);font-size:var(--text-sm);font-style:italic;padding:10px 0;display:block}
     .qci-no-work{background:#f7fafc;border:1px dashed var(--premium-border);border-radius:var(--radius-lg);padding:var(--spacing-md) var(--spacing-lg);text-align:center;color:var(--premium-text-muted);font-size:var(--text-sm)}
+    /* Leave button */
+    .qci-leave-btn{padding:10px 20px;font-size:var(--text-sm,0.875rem);font-weight:700;border-radius:var(--radius-md);border:2px solid #e53e3e;background:#fff;color:#e53e3e;cursor:pointer;transition:all .2s;font-family:var(--font-family-body);display:inline-flex;align-items:center;gap:6px}
+    .qci-leave-btn:hover{background:#e53e3e;color:#fff}
+    .qci-leave-form{display:none;background:linear-gradient(135deg,#fff5f5,#fed7d7);border:2px solid #feb2b2;border-radius:var(--radius-lg);padding:var(--spacing-lg);margin-top:var(--spacing-md);animation:qciLeaveIn .2s ease}
+    .qci-leave-form.show{display:block}
+    @keyframes qciLeaveIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+    .qci-leave-form h4{margin:0 0 8px;font-size:var(--text-md);font-weight:700;color:#c53030}
+    .qci-leave-form p{margin:0 0 12px;font-size:var(--text-sm);color:var(--premium-text-muted)}
+    .qci-leave-form input{width:100%;box-sizing:border-box;padding:12px 14px;border:2px solid #feb2b2;border-radius:var(--radius-md);font-size:var(--text-base);font-family:var(--font-family-body);transition:border-color .2s}
+    .qci-leave-form input:focus{outline:none;border-color:#e53e3e}
+    .qci-leave-actions{display:flex;gap:8px;margin-top:12px}
+    .qci-leave-actions .btn-leave-ok{padding:10px 24px;border:none;background:#e53e3e;color:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-weight:700;font-family:var(--font-family-body);transition:background .2s}
+    .qci-leave-actions .btn-leave-ok:hover{background:#c53030}
+    .qci-leave-actions .btn-leave-cancel{padding:10px 24px;border:1px solid #ccc;background:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-family:var(--font-family-body)}
   </style>
 </head>
 <body>
@@ -117,6 +131,21 @@
           <div id="qciConfirmRow" style="display:none;margin-top:var(--spacing-md)">
             <button class="btn btn-primary" id="qciConfirmBtn">✅ ยืนยันลงเวลา</button>
             <button class="btn btn-ghost" id="qciResetBtn" style="margin-left:8px">🔄 รีเซ็ต</button>
+          </div>
+          <!-- Leave button (always visible) -->
+          <div style="margin-top:var(--spacing-md);display:flex;align-items:center;gap:var(--spacing-md);flex-wrap:wrap">
+            <button type="button" class="qci-leave-btn" id="qciLeaveBtn">🚫 ลา</button>
+            <a href="?page=leave" style="font-size:var(--text-xs);color:var(--premium-gold);font-weight:600;text-decoration:none">🔄 จัดการใบลาทั้งหมด</a>
+          </div>
+          <!-- Leave inline form -->
+          <div class="qci-leave-form" id="qciLeaveForm">
+            <h4>🚫 ลางาน</h4>
+            <p>กรอกชื่อคนมาทำงานแทน</p>
+            <input type="text" id="qciLeaveSubName" placeholder="ชื่อคนแทน เช่น สมชาย, คุณแพท...">
+            <div class="qci-leave-actions">
+              <button type="button" class="btn-leave-ok" id="qciLeaveSubmit">✅ ยืนยันลา</button>
+              <button type="button" class="btn-leave-cancel" id="qciLeaveCancel">ยกเลิก</button>
+            </div>
           </div>
         </div>
       </div>
@@ -240,7 +269,17 @@
       var dd=qciBandSettings.scheduleData[dow]||qciBandSettings.scheduleData[String(dow)];
       var slots=[];
       if(Array.isArray(dd)){slots=dd;}else if(dd&&dd.timeSlots&&dd.timeSlots.length){slots=dd.timeSlots;}
-      return slots.map(function(s){return{key:s.startTime+'-'+s.endTime,label:s.startTime+' – '+s.endTime};});
+      // Filter by selected venue if slots have venueId
+      if(qciSelectedVenue&&slots.length&&slots[0]&&slots[0].venueId!==undefined){
+        var venueId=qciGetVenueId(qciSelectedVenue);
+        if(venueId){var filtered=slots.filter(function(s){return s.venueId===venueId;});if(filtered.length)slots=filtered;}
+      }
+      return slots.map(function(s){return{key:s.startTime+'-'+s.endTime,label:s.startTime+' \u2013 '+s.endTime};});
+    }
+    function qciGetVenueId(name){
+      var venues=qciBandSettings.venues||[];
+      for(var i=0;i<venues.length;i++){var v=venues[i];var vn=v.name||v.venueName||String(v);if(vn===name)return v.id||v.venueId||'';}
+      return '';
     }
     function qciUpdateSummary(){
       var summary=document.getElementById('qciSummary'),confirmRow=document.getElementById('qciConfirmRow');
@@ -290,7 +329,9 @@
       container.querySelectorAll('.qci-venue-btn').forEach(function(btn){
         btn.addEventListener('click',function(){
           container.querySelectorAll('.qci-venue-btn').forEach(function(b){b.classList.remove('selected');});
-          btn.classList.add('selected');qciSelectedVenue=btn.dataset.venue;qciUpdateSummary();
+          btn.classList.add('selected');qciSelectedVenue=btn.dataset.venue;
+          qciSelectedSlots=[];
+          qciRenderSlots();
         });
       });
       var first=container.querySelector('.qci-venue-btn');if(first)first.click();
@@ -341,6 +382,45 @@
       document.getElementById('qciConfirmRow').style.display='none';
       qciRenderVenues();
     });
+
+    // ===== Leave Button (simple inline form) =====
+    var qciLeaveBtn = document.getElementById('qciLeaveBtn');
+    var qciLeaveForm = document.getElementById('qciLeaveForm');
+    if (qciLeaveBtn && qciLeaveForm) {
+      qciLeaveBtn.addEventListener('click', function() {
+        qciLeaveForm.classList.toggle('show');
+        if (qciLeaveForm.classList.contains('show')) {
+          var input = document.getElementById('qciLeaveSubName');
+          if (input) { input.value = ''; input.focus(); }
+        }
+      });
+      document.getElementById('qciLeaveCancel').addEventListener('click', function() {
+        qciLeaveForm.classList.remove('show');
+      });
+      document.getElementById('qciLeaveSubmit').addEventListener('click', qciSubmitLeaveSimple);
+      var leaveInput = document.getElementById('qciLeaveSubName');
+      if (leaveInput) leaveInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') qciSubmitLeaveSimple();
+      });
+    }
+    function qciSubmitLeaveSimple() {
+      var subName = (document.getElementById('qciLeaveSubName') ? document.getElementById('qciLeaveSubName').value : '').trim();
+      if (!subName) { showToast('กรุณากรอกชื่อคนมาทำงานแทน', 'error'); return; }
+      var dateStr = qciSelectedDate.toISOString().split('T')[0];
+      var venue = qciSelectedVenue || '';
+      var slots = qciSelectedSlots.length ? qciSelectedSlots : [];
+      var btn = document.getElementById('qciLeaveSubmit');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+      gasRun('requestLeave', { bandId: qciBandId, date: dateStr, venue: venue, slots: slots, reason: 'ลางาน', substituteName: subName, substituteContact: '' }, function(r) {
+        if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
+        if (r && r.success) {
+          showToast('บันทึกลาเรียบร้อย — คนแทน: ' + subName, 'success');
+          document.getElementById('qciLeaveForm').classList.remove('show');
+          document.getElementById('qciLeaveSubName').value = '';
+        } else { showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error'); }
+      });
+    }
+
     document.getElementById('qciEditBtn').addEventListener('click',function(){
       document.getElementById('qciDone').classList.remove('show');
       document.getElementById('qciForm').style.display='block';

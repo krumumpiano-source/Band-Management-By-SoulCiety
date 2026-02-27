@@ -59,25 +59,18 @@
     .ci-submit-btn{flex:1;margin-top:0}
     .ci-leave-btn{flex:0 0 auto;padding:14px 24px;font-size:var(--text-base,1rem);font-weight:700;border-radius:var(--radius-md);border:2px solid #e53e3e;background:#fff;color:#e53e3e;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;justify-content:center}
     .ci-leave-btn:hover{background:#e53e3e;color:#fff}
-
-    /* Leave Modal */
-    .ci-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;align-items:center;justify-content:center}
-    .ci-modal-overlay.active{display:flex}
-    .ci-modal{background:#fff;border-radius:var(--radius-xl,16px);padding:var(--spacing-2xl,32px);max-width:460px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:ciModalIn .25s ease}
-    @keyframes ciModalIn{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
-    .ci-modal-header{display:flex;align-items:center;gap:12px;margin-bottom:var(--spacing-lg)}
-    .ci-modal-header .icon{width:48px;height:48px;background:linear-gradient(135deg,#fed7d7,#feb2b2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
-    .ci-modal-header h3{margin:0;font-size:var(--text-lg,1.1rem);font-weight:700;color:var(--premium-text)}
-    .ci-modal-header p{margin:4px 0 0;font-size:var(--text-sm);color:var(--premium-text-muted)}
-    .ci-modal-body .form-group{margin-bottom:var(--spacing-md)}
-    .ci-modal-body .form-group label{font-weight:600;font-size:var(--text-sm);display:block;margin-bottom:4px}
-    .ci-modal-body .form-group input,.ci-modal-body .form-group textarea{width:100%;box-sizing:border-box}
-    .ci-modal-footer{display:flex;gap:var(--spacing-md);margin-top:var(--spacing-xl);justify-content:flex-end}
-    .ci-modal-footer .btn-cancel{padding:10px 24px;border:1px solid var(--premium-border,#ccc);background:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-family:var(--font-family-body);color:var(--premium-text)}
-    .ci-modal-footer .btn-cancel:hover{background:var(--premium-off-white)}
-    .ci-modal-footer .btn-leave-submit{padding:10px 24px;border:none;background:#e53e3e;color:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-weight:700;font-family:var(--font-family-body);transition:background .2s}
-    .ci-modal-footer .btn-leave-submit:hover{background:#c53030}
-    .ci-modal-info{background:#fffbeb;border:1px solid #f6e05e;border-radius:var(--radius-md);padding:var(--spacing-md);font-size:var(--text-sm);color:#744210;margin-bottom:var(--spacing-md);display:flex;align-items:flex-start;gap:8px}
+    /* Leave inline form */
+    .ci-leave-form{display:none;background:linear-gradient(135deg,#fff5f5,#fed7d7);border:2px solid #feb2b2;border-radius:var(--radius-lg);padding:var(--spacing-lg);margin-top:var(--spacing-md);animation:ciLeaveIn .2s ease}
+    .ci-leave-form.show{display:block}
+    @keyframes ciLeaveIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+    .ci-leave-form h4{margin:0 0 8px;font-size:var(--text-md);font-weight:700;color:#c53030}
+    .ci-leave-form p{margin:0 0 12px;font-size:var(--text-sm);color:var(--premium-text-muted)}
+    .ci-leave-form input{width:100%;box-sizing:border-box;padding:12px 14px;border:2px solid #feb2b2;border-radius:var(--radius-md);font-size:var(--text-base);font-family:var(--font-family-body);transition:border-color .2s}
+    .ci-leave-form input:focus{outline:none;border-color:#e53e3e}
+    .ci-leave-actions{display:flex;gap:8px;margin-top:12px}
+    .ci-leave-actions .btn-leave-ok{padding:10px 24px;border:none;background:#e53e3e;color:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-weight:700;font-family:var(--font-family-body);transition:background .2s}
+    .ci-leave-actions .btn-leave-ok:hover{background:#c53030}
+    .ci-leave-actions .btn-leave-cancel{padding:10px 24px;border:1px solid #ccc;background:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-family:var(--font-family-body)}
   </style>
 </head>
 <body>
@@ -158,6 +151,17 @@
             <button id="ciSubmitBtn" class="btn btn-primary ci-submit-btn">✅ บันทึกเวลาเข้างาน</button>
             <button type="button" id="ciLeaveBtn" class="ci-leave-btn">🚫 ลา</button>
           </div>
+
+          <!-- Leave inline form -->
+          <div class="ci-leave-form" id="ciLeaveForm">
+            <h4>🚫 ลางาน</h4>
+            <p>กรอกชื่อคนมาทำงานแทน</p>
+            <input type="text" id="ciLeaveSubNameSimple" placeholder="ชื่อคนแทน เช่น สมชาย, คุณแพท...">
+            <div class="ci-leave-actions">
+              <button type="button" class="btn-leave-ok" id="ciLeaveSubmitSimple">✅ ยืนยันลา</button>
+              <button type="button" class="btn-leave-cancel" id="ciLeaveCancelSimple">ยกเลิก</button>
+            </div>
+          </div>
         </div>
 
         <!-- Manager quick link (shown for manager/admin) -->
@@ -171,53 +175,6 @@
       </div>
     </div>
   </main>
-
-  <!-- Leave Modal -->
-  <div class="ci-modal-overlay" id="ciLeaveModal">
-    <div class="ci-modal">
-      <div class="ci-modal-header">
-        <div class="icon">🚫</div>
-        <div>
-          <h3>ขอลางาน</h3>
-          <p>กรอกข้อมูลคนมาทำงานแทน แล้วส่งคำขอลา</p>
-        </div>
-      </div>
-      <div class="ci-modal-body">
-        <div class="ci-modal-info">
-          <span>💡</span>
-          <span>ระบบจะบันทึกคำขอลา พร้อมชื่อคนแทน แล้วส่งให้ผู้จัดการอนุมัติ</span>
-        </div>
-        <div class="form-group">
-          <label>📅 วันที่ลา</label>
-          <input type="date" id="ciLeaveDateModal" class="form-control">
-        </div>
-        <div class="form-group">
-          <label>🏪 สถานที่</label>
-          <select id="ciLeaveVenueModal" class="form-control"></select>
-        </div>
-        <div class="form-group">
-          <label>🕐 ช่วงเวลาที่ลา</label>
-          <div id="ciLeaveSlotsModal" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
-        </div>
-        <div class="form-group">
-          <label>👤 ชื่อคนมาทำงานแทน <span style="color:#e53e3e">*</span></label>
-          <input type="text" id="ciLeaveSubName" class="form-control" placeholder="เช่น สมชาย, คุณแพท...">
-        </div>
-        <div class="form-group">
-          <label>📱 เบอร์โทรคนแทน (ไม่บังคับ)</label>
-          <input type="text" id="ciLeaveSubContact" class="form-control" placeholder="08x-xxx-xxxx">
-        </div>
-        <div class="form-group">
-          <label>📝 เหตุผลการลา (ไม่บังคับ)</label>
-          <textarea id="ciLeaveReason" class="form-control" rows="2" placeholder="เช่น ป่วย ธุระด่วน ฯลฯ"></textarea>
-        </div>
-      </div>
-      <div class="ci-modal-footer">
-        <button type="button" class="btn-cancel" id="ciLeaveCancel">ยกเลิก</button>
-        <button type="button" class="btn-leave-submit" id="ciLeaveSubmit">🚫 ส่งคำขอลา</button>
-      </div>
-    </div>
-  </div>
 
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
