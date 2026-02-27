@@ -924,24 +924,33 @@
         var ci = myCheckins[dateStr];
         var ciSlots = ci ? ci.slots : [];
         var isLeave = ci && ci.status === 'leave';
+        var hasSub = isLeave && myLeaves.some(function(lv) { return lv.date === dateStr && lv.substituteName; });
         var dayHours = 0, dayAmt = 0, daySlotCount = 0;
 
         daySlots.forEach(function(slot) {
           var sk = (slot.startTime || '') + '-' + (slot.endTime || '');
           var mr = getMemberRate(slot, myId);
           if (!mr.assigned) return;
-          if (ciSlots.indexOf(sk) !== -1 || isLeave) {
+          // ลามีคนแทน = ยังได้เงิน, ลาไม่มีคนแทน = ไม่ได้เงิน
+          if (ciSlots.indexOf(sk) !== -1 || (isLeave && hasSub)) {
             dayHours += calcH(parseMin(slot.startTime), parseMin(slot.endTime));
             dayAmt += slotPay(slot, myId);
             daySlotCount++;
           }
         });
 
-        if (daySlotCount > 0) {
+        if (daySlotCount > 0 || isLeave) {
           totalShifts += daySlotCount;
           var label = DN[dayDow] + ' ' + dtObj.toLocaleDateString('th-TH', {day:'numeric',month:'short'});
-          if (isLeave) label += ' 🚫ลา';
-          breakdown.push(label + ': ' + daySlotCount + ' เบรค = ' + dayAmt.toLocaleString('th-TH') + ' ฿');
+          if (isLeave && !hasSub) {
+            label += ' 🚫ลา (ไม่มีคนแทน)';
+            breakdown.push(label + ': 0 ฿');
+          } else if (isLeave && hasSub) {
+            label += ' 🚫ลา (มีคนแทน)';
+            breakdown.push(label + ': ' + daySlotCount + ' เบรค = ' + dayAmt.toLocaleString('th-TH') + ' ฿');
+          } else {
+            breakdown.push(label + ': ' + daySlotCount + ' เบรค = ' + dayAmt.toLocaleString('th-TH') + ' ฿');
+          }
           totalHours += dayHours;
           totalEarnings += dayAmt;
         }
