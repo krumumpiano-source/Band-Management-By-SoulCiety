@@ -995,17 +995,7 @@ window.addEventListener("load", () => {
 <script>
 
 function formatThaiDate(dateStr){
-  if(!dateStr) return "";
-
-  const d = new Date(dateStr);
-  if(isNaN(d.getTime())) return "";
-
-  const months = [
-    "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
-    "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"
-  ];
-
-  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+  return formatThaiDateFull(dateStr);
 }
 
 function copyPlaylist(){

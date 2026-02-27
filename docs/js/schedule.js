@@ -38,7 +38,8 @@ function showToast(message) {
 }
 
 function formatDateThai(date) {
-  return String(date.getDate()).padStart(2,'0') + '/' + String(date.getMonth()+1).padStart(2,'0') + '/' + date.getFullYear();
+  var MS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return date.getDate() + ' ' + MS[date.getMonth()] + ' ' + (date.getFullYear() + 543);
 }
 
 function getWeekNumber(date) {

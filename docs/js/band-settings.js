@@ -374,7 +374,7 @@ function loadPendingMembers() {
     list.innerHTML = r.data.map(function(m) {
       var name = (m.nickname || m.first_name || m.user_name || m.email || '?');
       var detail = (m.instrument ? m.instrument + ' · ' : '') + (m.email || '');
-      var created = m.created_at ? new Date(m.created_at).toLocaleDateString('th-TH') : '';
+      var created = m.created_at ? formatThaiDateFull(new Date(m.created_at)) : '';
       return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--premium-off-white);border-radius:var(--radius-sm);margin-bottom:6px;flex-wrap:wrap">' +
         '<div style="flex:1;min-width:120px">' +
           '<div style="font-weight:700;font-size:var(--text-sm)">' + esc(name) + '</div>' +

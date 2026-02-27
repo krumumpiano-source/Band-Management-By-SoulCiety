@@ -35,10 +35,12 @@ function apToast(msg, type) {
   setTimeout(function() { el.classList.remove('show'); setTimeout(function() { el.style.display = 'none'; }, 300); }, 3000);
 }
 function apFmtDate(d) {
-  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+  var MS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return d.getDate() + ' ' + MS[d.getMonth()] + ' ' + (d.getFullYear() + 543);
 }
 function apFmtMonth(d) {
-  return String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+  var ML = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  return ML[d.getMonth()] + ' ' + (d.getFullYear() + 543);
 }
 function apParseMin(t) {
   if (!t) return 0; var p = t.split(':').map(Number); return p[0]*60 + (p[1]||0);

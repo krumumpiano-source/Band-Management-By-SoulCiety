@@ -141,7 +141,7 @@
   var lvSelectedSlots = [];
 
   function lvEsc(s) { var d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
-  function lvFmt(s) { if (!s) return ''; return new Date(s).toLocaleDateString('th-TH', {day:'numeric',month:'long',year:'numeric'}); }
+  function lvFmt(s) { if (!s) return ''; return formatThaiDateFull(new Date(s)); }
 
   // ===== TABS =====
   document.querySelectorAll('.leave-tab').forEach(function(btn) {
@@ -280,7 +280,7 @@
           + (item.reason ? '<br>หมายเหตุ: <span>' + lvEsc(item.reason) + '</span>' : '')
           + (item.substitute ? '<br>คนแทน: <span>' + lvEsc(item.substitute) + '</span>' : '')
           + '</div>'
-          + '<div class="sub-info">ส่งเมื่อ: ' + lvEsc(item.createdAt ? new Date(item.createdAt).toLocaleDateString('th-TH') : '') + '</div>'
+          + '<div class="sub-info">ส่งเมื่อ: ' + lvEsc(item.createdAt ? formatThaiDateFull(new Date(item.createdAt)) : '') + '</div>'
           + '</div>';
       }).join('');
     });

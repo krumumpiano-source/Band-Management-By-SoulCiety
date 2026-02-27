@@ -184,12 +184,42 @@
   }
   global.formatCurrency = formatCurrency;
 
+  // ── Thai month names ──
+  var THAI_MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var THAI_MONTHS_LONG  = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  global.THAI_MONTHS_SHORT = THAI_MONTHS_SHORT;
+  global.THAI_MONTHS_LONG  = THAI_MONTHS_LONG;
+
+  /**
+   * formatThaiDateFull(date|string, opts)
+   *  opts.day    : boolean (default true)
+   *  opts.month  : 'short'|'long' (default 'long')
+   *  opts.year   : boolean (default true)
+   *  opts.time   : boolean (default false)
+   * Returns: "27 กุมภาพันธ์ 2569" or variants
+   */
+  function formatThaiDateFull(dateInput, opts) {
+    if (!dateInput) return '-';
+    opts = opts || {};
+    var d = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput);
+    var parts = [];
+    if (opts.day !== false) parts.push(d.getDate());
+    var monthArr = opts.month === 'short' ? THAI_MONTHS_SHORT : THAI_MONTHS_LONG;
+    parts.push(monthArr[d.getMonth()]);
+    if (opts.year !== false) parts.push(d.getFullYear() + 543);
+    var result = parts.join(' ');
+    if (opts.time) {
+      result += ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    }
+    return result;
+  }
+  global.formatThaiDateFull = formatThaiDateFull;
+
   function formatDate(dateStr) {
     if (!dateStr) return '-';
     try {
-      var d = new Date(dateStr);
-      var lang = typeof getLang === 'function' ? getLang() : 'th';
-      return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+      return formatThaiDateFull(dateStr, { month: 'short' });
     } catch(e) { return dateStr; }
   }
   global.formatDate = formatDate;
