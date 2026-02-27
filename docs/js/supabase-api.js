@@ -242,6 +242,7 @@
         venueName: 'venue_name', memberId: 'member_id', memberName: 'member_name',
         clientId: 'client_id', clientName: 'client_name', quotationId: 'quotation_id',
         leaveId: 'leave_id', substituteId: 'substitute_id', substituteName: 'substitute_name',
+        substituteContact: 'substitute_contact',
         scheduleId: 'schedule_id', equipmentId: 'equipment_id',
         timeSlots: 'time_slots', dayOfWeek: 'day_of_week', totalPay: 'total_pay',
         totalAmount: 'total_amount', priceAdjustments: 'price_adjustments',
