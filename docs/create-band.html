@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ขอสร้างวงใหม่ — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <style>
+    body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:var(--spacing-md)}
+    .auth-wrap{width:100%;max-width:520px}
+    .auth-card{background:var(--premium-white);border-radius:var(--radius-xl);box-shadow:var(--shadow-2xl);padding:var(--spacing-2xl)}
+    .auth-logo{text-align:center;margin-bottom:var(--spacing-xl)}
+    .auth-logo h1{font-family:var(--font-family-display);font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
+    .lang-top{position:fixed;top:16px;right:16px}
+    .btn-full{width:100%;justify-content:center;padding:12px;font-size:var(--text-base);margin-top:var(--spacing-sm)}
+    .err-msg{color:#c53030;font-size:var(--text-xs);margin-top:4px;min-height:16px}
+    .auth-footer{text-align:center;margin-top:var(--spacing-lg);font-size:var(--text-sm);color:var(--premium-text-light)}
+    .auth-footer a{color:var(--premium-gold);font-weight:600;text-decoration:none}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+    .form-row-3{display:grid;grid-template-columns:auto 1fr 1fr;gap:var(--spacing-md)}
+    @media(max-width:480px){.form-row,.form-row-3{grid-template-columns:1fr}}
+    .step-indicator{display:flex;gap:8px;margin-bottom:var(--spacing-lg);justify-content:center}
+    .step-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:700;background:var(--premium-light-gray);color:var(--premium-text-muted);transition:all .3s}
+    .step-dot.active{background:var(--premium-gold);color:#fff}
+    .step-dot.done{background:#22c55e;color:#fff}
+    .step-section{display:none}
+    .step-section.active{display:block}
+    .info-box{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd;border-radius:var(--radius-lg);padding:var(--spacing-md);margin-bottom:var(--spacing-md);font-size:var(--text-sm);color:#1e40af;line-height:1.7}
+    .info-box strong{color:#1e3a8a}
+    .info-box.warn{background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:#fbbf24;color:#92400e}
+    .info-box.warn strong{color:#78350f}
+
+    .flow-steps{display:flex;flex-direction:column;gap:8px;margin-top:var(--spacing-sm)}
+    .flow-step{display:flex;align-items:center;gap:10px;background:var(--premium-off-white);border-radius:var(--radius-md);padding:10px 14px;font-size:var(--text-sm)}
+    .flow-step .num{width:28px;height:28px;border-radius:50%;background:var(--premium-gold);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--text-xs);flex-shrink:0}
+  </style>
+</head>
+<body>
+  <div class="lang-top"><div id="langToggle"></div></div>
+  <div id="toast"></div>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <h1>🎵 ขอสร้างวงใหม่</h1>
+        <p>สำหรับผู้จัดการวงหรือตัวแทนวง</p>
+        <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:2px">Band Management By SoulCiety</p>
+      </div>
+
+      <!-- How it works -->
+      <div class="info-box warn" id="introBox">
+        <strong>📖 ขั้นตอนการสร้างวงใหม่</strong>
+        <div class="flow-steps">
+          <div class="flow-step"><div class="num">1</div><span>ผู้จัดการวงกรอกข้อมูลวง + สร้างบัญชี</span></div>
+          <div class="flow-step"><div class="num">2</div><span>รอแอดมินอนุมัติ (ปกติไม่เกิน 24 ชม.)</span></div>
+          <div class="flow-step"><div class="num">3</div><span>เมื่ออนุมัติแล้ว จะได้ <strong>"รหัสวง"</strong> ในหน้าแดชบอร์ด</span></div>
+          <div class="flow-step"><div class="num">4</div><span>นำรหัสวงไปแจกสมาชิก เพื่อสมัครเข้าร่วมวง</span></div>
+        </div>
+      </div>
+
+      <div class="step-indicator">
+        <div class="step-dot active" id="stepDot1">1</div>
+        <div class="step-dot" id="stepDot2">2</div>
+        <div class="step-dot" id="stepDot3">3</div>
+      </div>
+
+      <form id="createBandForm">
+
+        <!-- ════════ STEP 1: ข้อมูลวง ════════ -->
+        <div class="step-section active" id="step1">
+          <div class="info-box">🎵 <strong>ขั้นตอนที่ 1:</strong> กรอกข้อมูลวงดนตรี</div>
+
+          <div class="form-group">
+            <label>ชื่อวง <span style="color:#c53030">*</span></label>
+            <input type="text" id="bandName" placeholder="เช่น SoulCiety, The Band, วงดอกไม้" required>
+            <div class="err-msg" id="bandNameError"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>จังหวัด <span style="color:#c53030">*</span></label>
+              <input type="text" id="province" placeholder="พิมพ์ชื่อจังหวัด..." list="provinceList" autocomplete="off" required style="font-size:var(--text-sm)">
+              <datalist id="provinceList">
+                <option value="กรุงเทพมหานคร"></option><option value="กระบี่"></option>
+                <option value="กาญจนบุรี"></option><option value="กาฬสินธุ์"></option>
+                <option value="กำแพงเพชร"></option><option value="ขอนแก่น"></option>
+                <option value="จันทบุรี"></option><option value="ฉะเชิงเทรา"></option>
+                <option value="ชลบุรี"></option><option value="ชัยนาท"></option>
+                <option value="ชัยภูมิ"></option><option value="ชุมพร"></option>
+                <option value="เชียงราย"></option><option value="เชียงใหม่"></option>
+                <option value="ตรัง"></option><option value="ตราด"></option>
+                <option value="ตาก"></option><option value="นครนายก"></option>
+                <option value="นครปฐม"></option><option value="นครพนม"></option>
+                <option value="นครราชสีมา"></option><option value="นครศรีธรรมราช"></option>
+                <option value="นครสวรรค์"></option><option value="นนทบุรี"></option>
+                <option value="นราธิวาส"></option><option value="น่าน"></option>
+                <option value="บึงกาฬ"></option><option value="บุรีรัมย์"></option>
+                <option value="ปทุมธานี"></option><option value="ประจวบคีรีขันธ์"></option>
+                <option value="ปราจีนบุรี"></option><option value="ปัตตานี"></option>
+                <option value="พระนครศรีอยุธยา"></option><option value="พะเยา"></option>
+                <option value="พังงา"></option><option value="พัทลุง"></option>
+                <option value="พิจิตร"></option><option value="พิษณุโลก"></option>
+                <option value="เพชรบุรี"></option><option value="เพชรบูรณ์"></option>
+                <option value="แพร่"></option><option value="ภูเก็ต"></option>
+                <option value="มหาสารคาม"></option><option value="มุกดาหาร"></option>
+                <option value="แม่ฮ่องสอน"></option><option value="ยโสธร"></option>
+                <option value="ยะลา"></option><option value="ร้อยเอ็ด"></option>
+                <option value="ระนอง"></option><option value="ระยอง"></option>
+                <option value="ราชบุรี"></option><option value="ลพบุรี"></option>
+                <option value="ลำปาง"></option><option value="ลำพูน"></option>
+                <option value="เลย"></option><option value="ศรีสะเกษ"></option>
+                <option value="สกลนคร"></option><option value="สงขลา"></option>
+                <option value="สตูล"></option><option value="สมุทรปราการ"></option>
+                <option value="สมุทรสงคราม"></option><option value="สมุทรสาคร"></option>
+                <option value="สระแก้ว"></option><option value="สระบุรี"></option>
+                <option value="สิงห์บุรี"></option><option value="สุโขทัย"></option>
+                <option value="สุพรรณบุรี"></option><option value="สุราษฎร์ธานี"></option>
+                <option value="สุรินทร์"></option><option value="หนองคาย"></option>
+                <option value="หนองบัวลำภู"></option><option value="อ่างทอง"></option>
+                <option value="อำนาจเจริญ"></option><option value="อุดรธานี"></option>
+                <option value="อุตรดิตถ์"></option><option value="อุทัยธานี"></option>
+                <option value="อุบลราชธานี"></option>
+              </datalist>
+              <div class="err-msg" id="provinceError"></div>
+            </div>
+            <div class="form-group">
+              <label>จำนวนสมาชิก (โดยประมาณ) <span style="color:#c53030">*</span></label>
+              <input type="number" id="memberCount" placeholder="เช่น 5" min="1" max="100" value="5" required style="font-size:var(--text-sm)">
+              <div class="err-msg" id="memberCountError"></div>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-full" id="step1Next">ถัดไป →</button>
+        </div>
+
+        <!-- ════════ STEP 2: ข้อมูลส่วนตัว ════════ -->
+        <div class="step-section" id="step2">
+          <div class="info-box">👤 <strong>ขั้นตอนที่ 2:</strong> ข้อมูลผู้จัดการวง / ตัวแทนวง</div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label>คำนำหน้า</label>
+              <select id="title" style="padding:8px 6px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);font-size:var(--text-sm);width:100%">
+                <option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option>
+                <option value="ด.ช.">ด.ช.</option><option value="ด.ญ.">ด.ญ.</option><option value="ไม่ระบุ">ไม่ระบุ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ชื่อ <span style="color:#c53030">*</span></label>
+              <input type="text" id="firstName" placeholder="ชื่อจริง" required>
+              <div class="err-msg" id="firstNameError"></div>
+            </div>
+            <div class="form-group">
+              <label>นามสกุล <span style="color:#c53030">*</span></label>
+              <input type="text" id="lastName" placeholder="นามสกุล" required>
+              <div class="err-msg" id="lastNameError"></div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>ชื่อเล่น <span style="color:#c53030">*</span></label>
+              <input type="text" id="nickname" placeholder="เช่น เอ, บอล" required>
+              <div class="err-msg" id="nicknameError"></div>
+            </div>
+            <div class="form-group">
+              <label>ตำแหน่ง / เครื่องดนตรี</label>
+              <select id="instrument" style="padding:8px 6px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);font-size:var(--text-sm);width:100%">
+                <option value="ผู้จัดการวง" selected>📋 ผู้จัดการวง</option>
+                <option value="ร้องนำ">🎤 ร้องนำ</option><option value="ร้องประสาน">🎤 ร้องประสาน</option>
+                <option value="กีตาร์ไฟฟ้า">🎸 กีตาร์ไฟฟ้า</option><option value="กีตาร์โปร่ง">🎸 กีตาร์โปร่ง</option>
+                <option value="กีตาร์เบส">🎸 กีตาร์เบส</option><option value="คีย์บอร์ด">🎹 คีย์บอร์ด</option>
+                <option value="กลอง">🥁 กลอง</option><option value="เพอร์คัสชัน">🥁 เพอร์คัสชัน</option>
+                <option value="ทรัมเปต">🎺 ทรัมเปต</option><option value="แซกโซโฟน">🎷 แซกโซโฟน</option>
+                <option value="ไวโอลิน">🎻 ไวโอลิน</option><option value="อื่นๆ">อื่นๆ</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:var(--spacing-md)">
+            <button type="button" class="btn btn-secondary" id="step2Back" style="flex:1">← ย้อนกลับ</button>
+            <button type="button" class="btn btn-primary" id="step2Next" style="flex:1">ถัดไป →</button>
+          </div>
+        </div>
+
+        <!-- ════════ STEP 3: สร้างบัญชี ════════ -->
+        <div class="step-section" id="step3">
+          <div class="info-box">🔐 <strong>ขั้นตอนที่ 3:</strong> สร้างบัญชีผู้ใช้สำหรับเข้าสู่ระบบ</div>
+
+          <div class="form-group">
+            <label>อีเมล <span style="color:#c53030">*</span></label>
+            <input type="email" id="email" placeholder="กรุณากรอกอีเมล" required>
+            <div class="err-msg" id="emailError"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>รหัสผ่าน <span style="color:#c53030">*</span></label>
+              <input type="password" id="password" placeholder="รหัสผ่าน (8+ ตัว)" required>
+              <div class="err-msg" id="passwordError"></div>
+            </div>
+            <div class="form-group">
+              <label>ยืนยันรหัสผ่าน <span style="color:#c53030">*</span></label>
+              <input type="password" id="confirmPassword" placeholder="พิมพ์รหัสผ่านอีกครั้ง" required>
+              <div class="err-msg" id="confirmError"></div>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div style="background:var(--premium-off-white);border-radius:var(--radius-md);padding:var(--spacing-md);margin-top:var(--spacing-sm);font-size:var(--text-sm);line-height:1.8">
+            📋 <strong>สรุปคำขอสร้างวง:</strong><br>
+            🎵 ชื่อวง: <strong id="sumBandName">—</strong><br>
+            📍 จังหวัด: <strong id="sumProvince">—</strong><br>
+            👥 จำนวนสมาชิก: <strong id="sumMemberCount">—</strong><br>
+            👤 ผู้จัดการ: <strong id="sumManager">—</strong>
+          </div>
+
+          <div class="err-msg" id="generalError"></div>
+
+          <div style="display:flex;gap:8px;margin-top:var(--spacing-md)">
+            <button type="button" class="btn btn-secondary" id="step3Back" style="flex:1">← ย้อนกลับ</button>
+            <button type="submit" class="btn btn-primary" id="submitBtn" style="flex:2">📩 ส่งคำขอสร้างวง</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Success state -->
+      <div id="successState" style="display:none;text-align:center;padding:var(--spacing-xl) 0">
+        <div style="font-size:48px;margin-bottom:var(--spacing-md)">🎉</div>
+        <h2 style="color:var(--premium-gold);margin-bottom:var(--spacing-sm)">ส่งคำขอเรียบร้อย!</h2>
+        <p style="color:var(--premium-text-light);font-size:var(--text-sm);line-height:1.8;margin-bottom:var(--spacing-lg)">
+          คำขอสร้างวงของคุณถูกส่งไปยังแอดมินแล้ว<br>
+          กรุณารอการอนุมัติ (ปกติไม่เกิน 24 ชม.)<br><br>
+          <strong>หลังได้รับอนุมัติ:</strong><br>
+          เข้าสู่ระบบ → หน้าแดชบอร์ด → จะเห็น <strong>"รหัสวง"</strong><br>
+          นำรหัสวงไปให้สมาชิกสมัครเข้าร่วมวง
+        </p>
+        <a href="index.html" class="btn btn-primary btn-full">เข้าสู่ระบบ</a>
+      </div>
+
+      <div class="auth-footer">
+        <a href="register.html">สมัครเข้าร่วมวงด้วยรหัสวง</a>
+        &nbsp;|&nbsp;
+        <a href="index.html">เข้าสู่ระบบ</a>
+      </div>
+    </div>
+  </div>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof renderLangToggle === 'function') renderLangToggle('langToggle');
+    if (typeof applyTranslations === 'function') applyTranslations();
+
+    function showStep(n) {
+      for (var i = 1; i <= 3; i++) {
+        document.getElementById('step' + i).classList.toggle('active', i === n);
+        var dot = document.getElementById('stepDot' + i);
+        dot.classList.toggle('active', i === n);
+        dot.classList.toggle('done', i < n);
+        dot.textContent = i < n ? '✓' : String(i);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Step 1 → 2
+    document.getElementById('step1Next').addEventListener('click', function() {
+      clearErrs();
+      var ok = true;
+      if (!val('bandName'))    { err('bandNameError', 'กรุณากรอกชื่อวง'); ok = false; }
+      if (!val('province'))    { err('provinceError', 'กรุณาเลือกจังหวัด'); ok = false; }
+      if (!val('memberCount') || parseInt(val('memberCount')) < 1) { err('memberCountError', 'กรุณากรอกจำนวนสมาชิก'); ok = false; }
+      if (!ok) return;
+      // Hide intro box after step 1
+      document.getElementById('introBox').style.display = 'none';
+      showStep(2);
+    });
+
+    // Step 2 → 3
+    document.getElementById('step2Back').addEventListener('click', function() {
+      document.getElementById('introBox').style.display = '';
+      showStep(1);
+    });
+    document.getElementById('step2Next').addEventListener('click', function() {
+      clearErrs();
+      var ok = true;
+      if (!val('firstName')) { err('firstNameError', 'กรุณากรอกชื่อ'); ok = false; }
+      if (!val('lastName'))  { err('lastNameError', 'กรุณากรอกนามสกุล'); ok = false; }
+      if (!val('nickname'))  { err('nicknameError', 'กรุณากรอกชื่อเล่น'); ok = false; }
+      if (!ok) return;
+
+      var title = val('title');
+      document.getElementById('sumBandName').textContent = val('bandName');
+      document.getElementById('sumProvince').textContent = val('province');
+      document.getElementById('sumMemberCount').textContent = val('memberCount') + ' คน';
+      document.getElementById('sumManager').textContent = (title && title !== 'ไม่ระบุ' ? title + ' ' : '') + val('firstName') + ' ' + val('lastName') + ' (' + val('nickname') + ')';
+      showStep(3);
+    });
+
+    document.getElementById('step3Back').addEventListener('click', function() { showStep(2); });
+
+    // Submit
+    document.getElementById('createBandForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      clearErrs();
+      var email = val('email'), pw = document.getElementById('password').value, cpw = document.getElementById('confirmPassword').value;
+      var ok = true;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err('emailError', 'อีเมลไม่ถูกต้อง'); ok = false; }
+      if (pw.length < 8) { err('passwordError', 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); ok = false; }
+      if (pw !== cpw) { err('confirmError', 'รหัสผ่านไม่ตรงกัน'); ok = false; }
+      if (!ok) return;
+
+      var btn = document.getElementById('submitBtn');
+      btn.disabled = true; btn.textContent = '⏳ กำลังส่งคำขอ...';
+
+      gasRun('registerBandRequest', {
+        bandName:    val('bandName'),
+        province:    val('province'),
+        memberCount: val('memberCount'),
+        title:       val('title'),
+        firstName:   val('firstName'),
+        lastName:    val('lastName'),
+        nickname:    val('nickname'),
+        instrument:  val('instrument'),
+        email:       email,
+        password:    pw
+      }, function(r) {
+        btn.disabled = false; btn.textContent = '📩 ส่งคำขอสร้างวง';
+        if (r && r.success) {
+          // Show success state
+          document.getElementById('createBandForm').style.display = 'none';
+          document.querySelector('.step-indicator').style.display = 'none';
+          document.getElementById('introBox').style.display = 'none';
+          document.getElementById('successState').style.display = '';
+        } else {
+          err('generalError', (r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+        }
+      });
+    });
+
+    function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+    function err(id, msg) { var el = document.getElementById(id); if (el) el.textContent = msg || ''; }
+    function clearErrs() {
+      ['bandNameError','provinceError','memberCountError','firstNameError','lastNameError','nicknameError','emailError','passwordError','confirmError','generalError'].forEach(function(id){ err(id); });
+    }
+  });
+  </script>
+</body>
+</html>

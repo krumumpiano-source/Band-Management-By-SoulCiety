@@ -36,7 +36,8 @@
         <div>
           <div class="card">
             <div class="admin-nav">
-              <div class="a-nav-item active" onclick="showPanel('users',this)">👥 ผู้ใช้งาน</div>
+              <div class="a-nav-item active" onclick="showPanel('bandreqs',this)">🎵 คำขอสร้างวง</div>
+              <div class="a-nav-item" onclick="showPanel('users',this)">👥 ผู้ใช้งาน</div>
               <div class="a-nav-item" onclick="showPanel('sysinfo',this)">📊 ระบบ</div>
               <div class="a-nav-item" onclick="showPanel('backup',this)">💾 สำรองข้อมูล</div>
               <div class="a-nav-item" onclick="showPanel('danger',this)">⚠️ Danger Zone</div>
@@ -44,8 +45,18 @@
           </div>
         </div>
         <div>
+          <!-- Band Requests Panel -->
+          <div class="card a-panel active" id="panel-bandreqs">
+            <div class="card-header"><h3 class="card-title">🎵 คำขอสร้างวงใหม่</h3>
+              <button class="btn btn-primary btn-sm" onclick="loadBandRequests()">🔄 รีเฟรช</button>
+            </div>
+            <div id="bandReqList" style="padding:8px 0">
+              <div style="text-align:center;color:var(--premium-text-muted);padding:var(--spacing-xl)">กำลังโหลด...</div>
+            </div>
+          </div>
+
           <!-- Users Panel -->
-          <div class="card a-panel active" id="panel-users">
+          <div class="card a-panel" id="panel-users">
             <div class="card-header"><h3 class="card-title">จัดการผู้ใช้งาน</h3>
               <button class="btn btn-primary btn-sm" onclick="loadUsers()">🔄 รีเฟรช</button>
             </div>
@@ -113,8 +124,57 @@
     var role = localStorage.getItem('userRole') || '';
     if (role !== 'admin') { showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error'); setTimeout(function(){ window.location.href='dashboard.html'; },1500); return; }
     renderMainNav('mainNav'); applyTranslations();
-    loadUsers(); loadSysInfo();
+    loadBandRequests(); loadUsers(); loadSysInfo();
   });
+
+  // ── Band Requests ─────────────────────────────────────────
+  function loadBandRequests() {
+    gasRun('getPendingBandRequests', {}, function(r) {
+      var list = document.getElementById('bandReqList');
+      if (!r || !r.success || !r.data || !r.data.length) {
+        list.innerHTML = '<div style="text-align:center;color:var(--premium-text-muted);padding:var(--spacing-xl)">✅ ไม่มีคำขอที่รออนุมัติ</div>';
+        return;
+      }
+      list.innerHTML = r.data.map(function(req) {
+        var created = req.created_at ? new Date(req.created_at).toLocaleDateString('th-TH', { day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit' }) : '';
+        return '<div style="display:flex;align-items:flex-start;gap:12px;padding:14px;background:var(--premium-off-white);border-radius:var(--radius-md);margin-bottom:8px;flex-wrap:wrap;border-left:4px solid var(--premium-gold)">'
+          + '<div style="flex:1;min-width:180px">'
+          + '<div style="font-weight:700;font-size:var(--text-base)">🎵 ' + escapeHtml(req.band_name || '') + '</div>'
+          + '<div style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-top:2px">'
+          + '📍 ' + escapeHtml(req.province || '—') + ' · 👥 ' + (req.member_count || '?') + ' สมาชิก</div>'
+          + '<div style="font-size:var(--text-xs);color:var(--premium-text-light);margin-top:4px">'
+          + '👤 ' + escapeHtml(req.requester_name || '—') + ' (' + escapeHtml(req.requester_email || '') + ')</div>'
+          + '<div style="font-size:var(--text-xs);color:var(--premium-text-light)">📅 ' + created + '</div>'
+          + '</div>'
+          + '<div style="display:flex;gap:6px;flex-shrink:0">'
+          + '<button class="btn btn-sm btn-primary" style="padding:6px 16px" onclick="approveBandReq(\'' + req.id + '\',\'' + escapeHtml(req.band_name || '') + '\')">✅ อนุมัติ</button>'
+          + '<button class="btn btn-sm" style="padding:6px 16px;background:#e53e3e;color:#fff" onclick="rejectBandReq(\'' + req.id + '\')">❌ ปฏิเสธ</button>'
+          + '</div></div>';
+      }).join('');
+    });
+  }
+
+  function approveBandReq(reqId, bandName) {
+    if (!confirm('อนุมัติวง "' + bandName + '"? ระบบจะสร้างวงและรหัสวงให้อัตโนมัติ')) return;
+    gasRun('approveBandRequest', { requestId: reqId }, function(r) {
+      if (r && r.success) {
+        var msg = 'อนุมัติวง "' + bandName + '" เรียบร้อย';
+        if (r.band_code) msg += '\nรหัสวง: ' + r.band_code;
+        showToast(msg, 'success');
+        loadBandRequests();
+      } else {
+        showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      }
+    });
+  }
+
+  function rejectBandReq(reqId) {
+    if (!confirm('ปฏิเสธคำขอสร้างวงนี้?')) return;
+    gasRun('rejectBandRequest', { requestId: reqId }, function(r) {
+      if (r && r.success) { showToast('ปฏิเสธเรียบร้อย', 'success'); loadBandRequests(); }
+      else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    });
+  }
 
   function showPanel(id, el) {
     document.querySelectorAll('.a-panel').forEach(function(p){p.classList.remove('active');});

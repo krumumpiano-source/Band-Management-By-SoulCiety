@@ -79,6 +79,29 @@
         <div style="font-size:32px">🥁</div>
       </div>
 
+      <!-- ===== Band Code Card (manager/admin) ===== -->
+      <div class="card" id="dashBandCodeCard" style="margin-bottom:var(--spacing-xl);display:none;border:2px solid var(--premium-gold);background:linear-gradient(135deg,#fffbeb,#fef9c3)">
+        <div style="padding:var(--spacing-lg) var(--spacing-xl);text-align:center">
+          <div style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:8px">🔑 รหัสประจำวง — แจกสมาชิกเพื่อสมัครเข้าร่วมวง</div>
+          <div id="dashBandCode" style="font-family:monospace;font-size:2rem;font-weight:700;letter-spacing:.3em;color:var(--premium-gold);user-select:all">------</div>
+          <button class="btn btn-ghost btn-sm" id="copyBandCodeBtn" style="margin-top:8px;font-size:var(--text-xs)">📋 คัดลอกรหัสวง</button>
+          <div style="font-size:11px;color:var(--premium-text-light);margin-top:6px">สมาชิกสามารถใช้รหัสนี้ที่หน้า "สมัครสมาชิก" เพื่อเข้าร่วมวง</div>
+        </div>
+      </div>
+
+      <!-- ===== Pending Band Approval (for manager who just created band) ===== -->
+      <div class="card" id="dashPendingBandCard" style="margin-bottom:var(--spacing-xl);display:none;border:2px solid #f59e0b;background:linear-gradient(135deg,#fffbeb,#fef3c7)">
+        <div style="padding:var(--spacing-lg) var(--spacing-xl);text-align:center">
+          <div style="font-size:36px;margin-bottom:8px">⏳</div>
+          <h3 style="color:#92400e;margin-bottom:8px">รอแอดมินอนุมัติการสร้างวง</h3>
+          <p style="font-size:var(--text-sm);color:#78350f;line-height:1.7">
+            คำขอสร้างวงของคุณถูกส่งไปยังแอดมินแล้ว<br>
+            กรุณารอการอนุมัติ (ปกติไม่เกิน 24 ชม.)<br>
+            เมื่ออนุมัติแล้ว รหัสวงจะปรากฏที่หน้านี้
+          </p>
+        </div>
+      </div>
+
       <!-- ===== Pending Members Approval ===== -->
       <div class="card" id="dashPendingCard" style="margin-bottom:var(--spacing-xl);display:none;border:2px solid var(--premium-gold)">
         <div class="card-header" style="background:linear-gradient(135deg,#fffbeb,#fef3c7)">
@@ -487,8 +510,49 @@
     var _role = localStorage.getItem('userRole') || '';
     if (_role === 'manager' || _role === 'admin') {
       loadDashPendingMembers();
+      loadDashBandCode();
+    }
+    // show pending band approval for managers without band_id
+    var _bandId = localStorage.getItem('bandId') || '';
+    if (_role === 'manager' && !_bandId) {
+      document.getElementById('dashPendingBandCard').style.display = '';
     }
   });
+
+  function loadDashBandCode() {
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId) return;
+    gasRun('getBandCode', { bandId: bandId }, function(r) {
+      if (r && r.success && r.code) {
+        var card = document.getElementById('dashBandCodeCard');
+        var codeEl = document.getElementById('dashBandCode');
+        if (card && codeEl) {
+          card.style.display = '';
+          codeEl.textContent = r.code;
+        }
+      }
+    });
+    // Copy button
+    var copyBtn = document.getElementById('copyBandCodeBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function() {
+        var code = document.getElementById('dashBandCode').textContent.trim();
+        if (!code || code === '------') return;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(code).then(function() {
+            showDashToast('คัดลอกรหัสวง ' + code + ' แล้ว', 'success');
+          });
+        } else {
+          // fallback
+          var ta = document.createElement('textarea');
+          ta.value = code; document.body.appendChild(ta);
+          ta.select(); document.execCommand('copy');
+          document.body.removeChild(ta);
+          showDashToast('คัดลอกรหัสวง ' + code + ' แล้ว', 'success');
+        }
+      });
+    }
+  }
 
   function loadDashPendingMembers() {
     var bandId = localStorage.getItem('bandId') || '';

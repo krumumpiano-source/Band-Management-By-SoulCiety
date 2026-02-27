@@ -99,6 +99,7 @@
         // ── Auth ───────────────────────────────────────────────────
         case 'login':               return doLogin(d);
         case 'register':            return doRegister(d);
+        case 'registerBandRequest': return doRegisterBandRequest(d);
         case 'logout':              return doLogout();
         case 'requestPasswordReset': return doRequestPasswordReset(d);
         case 'resetPassword':          return doResetPassword(d);
@@ -108,6 +109,13 @@
         case 'generateInviteCode':  return doGenerateInviteCode(d);
         case 'lookupInviteCode':    return doLookupInviteCode(d);
         case 'getBandCode':         return doGetBandCode(d);
+
+        // ── Band Requests (ขอสร้างวงใหม่) ──────────────────────────
+        case 'submitBandRequest':       return doSubmitBandRequest(d);
+        case 'getPendingBandRequests':   return doGetPendingBandRequests();
+        case 'approveBandRequest':       return doApproveBandRequest(d);
+        case 'rejectBandRequest':        return doRejectBandRequest(d);
+        case 'getMyBandRequest':         return doGetMyBandRequest();
 
         // ── Songs ──────────────────────────────────────────────────
         case 'getAllSongs':
@@ -340,7 +348,7 @@
         nickname:   d.nickname   || '',
         instrument: d.instrument || '',
         band_name:  d.bandName   || '',
-        role:       d.inviteCode ? 'member' : 'manager'
+        role:       'member'
       };
 
       var { data, error } = await sb.auth.signUp({
@@ -349,7 +357,7 @@
       });
       if (error) return { success: false, message: error.message };
 
-      // ถ้ามี invite code → redeem
+      // ต้องมี invite code เสมอ (สมัครผ่านรหัสวง)
       if (d.inviteCode && d.inviteCode.trim() && data.user) {
         var { data: result, error: rErr } = await sb.rpc('redeem_invite_code', {
           p_code:    d.inviteCode.toUpperCase(),
@@ -364,26 +372,41 @@
         return { success: true, message: 'สมัครสำเร็จ! ส่งคำขอเข้าร่วมวง ' + result.band_name + provincePart + ' แล้ว รอผู้จัดการวงอนุมัติ' };
       }
 
-      // manager ใหม่ → สร้าง band แล้วอัปเดต profile
-      if (data.user) {
-        var { data: band } = await sb.from('bands').insert({
-          band_name:     meta.band_name || (meta.user_name + "'s Band"),
-          province:      d.province || '',
-          manager_id:    data.user.id,
-          manager_email: d.email,
-          status:        'active'
-        }).select().single();
+      return { success: false, message: 'กรุณากรอกรหัสวง' };
+    }
 
-        if (band) {
-          await sb.from('profiles').update({
-            band_id:   band.id,
-            band_name: band.band_name,
-            province:  band.province || '',
-            role:      'manager'
-          }).eq('id', data.user.id);
-        }
-      }
-      return { success: true, message: 'สมัครสมาชิกสำเร็จ กรุณายืนยันอีเมลก่อน login' };
+    // ── Register for band creation request (ขอสร้างวงใหม่) ─────────
+    async function doRegisterBandRequest(d) {
+      var meta = {
+        user_name:  d.nickname || d.firstName || d.name || d.email.split('@')[0],
+        title:      d.title      || '',
+        first_name: d.firstName  || '',
+        last_name:  d.lastName   || '',
+        nickname:   d.nickname   || '',
+        instrument: d.instrument || '',
+        band_name:  d.bandName   || '',
+        role:       'manager'
+      };
+
+      var { data, error } = await sb.auth.signUp({
+        email: d.email, password: d.password,
+        options: { data: meta }
+      });
+      if (error) return { success: false, message: error.message };
+      if (!data.user) return { success: false, message: 'ไม่สามารถสร้างบัญชีได้' };
+
+      // ส่งคำขอสร้างวง
+      var fullName = (d.title && d.title !== 'ไม่ระบุ' ? d.title + ' ' : '') + (d.firstName || '') + ' ' + (d.lastName || '');
+      var { data: result, error: rErr } = await sb.rpc('submit_band_request', {
+        p_user_id:      data.user.id,
+        p_band_name:    d.bandName || '',
+        p_province:     d.province || '',
+        p_member_count: parseInt(d.memberCount) || 1,
+        p_name:         fullName.trim(),
+        p_email:        d.email
+      });
+      if (rErr) return { success: false, message: rErr.message };
+      return result;
     }
 
     async function doLogout() {
@@ -609,6 +632,47 @@
       if (error) return { success: false, message: error.message };
       if (!data || !data.success) return { success: false, message: (data && data.message) || 'รหัสวงไม่ถูกต้อง' };
       return { success: true, band_name: data.band_name, province: data.province, member_count: data.member_count };
+    }
+
+    // ── Band Requests (ขอสร้างวงใหม่) ─────────────────────────
+    async function doSubmitBandRequest(d) {
+      return doRegisterBandRequest(d);
+    }
+
+    async function doGetPendingBandRequests() {
+      var { data, error } = await sb.rpc('get_pending_band_requests');
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    }
+
+    async function doApproveBandRequest(d) {
+      var { data, error } = await sb.rpc('approve_band_request', {
+        p_request_id: d.requestId
+      });
+      if (error) throw error;
+      return data;
+    }
+
+    async function doRejectBandRequest(d) {
+      var { data, error } = await sb.rpc('reject_band_request', {
+        p_request_id: d.requestId,
+        p_notes: d.notes || ''
+      });
+      if (error) throw error;
+      return data;
+    }
+
+    async function doGetMyBandRequest() {
+      var { data: authUser } = await sb.auth.getUser();
+      if (!authUser || !authUser.user) return { success: false };
+      var { data, error } = await sb.from('band_requests')
+        .select('*')
+        .eq('requester_id', authUser.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return { success: true, data: data ? toCamel(data) : null };
     }
 
     // ── Pending Members (อนุมัติสมาชิก) ──────────────────────────
