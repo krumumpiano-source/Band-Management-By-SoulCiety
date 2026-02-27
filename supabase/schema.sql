@@ -418,6 +418,10 @@ create table if not exists public.playlist_history (
   id          uuid primary key default uuid_generate_v4(),
   band_id     text not null,
   band_name   text,
+  date        text,
+  venue       text,
+  time_slot   text,
+  created_by  text,
   playlist    jsonb default '[]',
   created_at  timestamptz default now()
 );

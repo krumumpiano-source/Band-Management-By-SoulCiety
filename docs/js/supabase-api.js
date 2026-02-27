@@ -125,8 +125,9 @@
         case 'addSong':            return doInsert('band_songs', d.data || d);
         case 'updateSong':         return doUpdate('band_songs', d.songId, d.data || d);
         case 'deleteSong':         return doDelete('band_songs', d.songId);
-        case 'savePlaylistHistory':return doInsert('playlist_history', d.data || d);
-        case 'getPlaylistHistory': return doSelect('playlist_history', { band_id: getBandId() }, '-created_at', 50);
+        case 'savePlaylistHistory':return doSavePlaylistHistory(d);
+        case 'getPlaylistHistory': return doGetPlaylistHistory(d);
+        case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);
 
         // ── Band Members ───────────────────────────────────────────
         case 'getAllBandMembers':
@@ -933,6 +934,60 @@
       }, { onConflict: 'band_id' });
       if (error) throw error;
       return { success: true, message: 'บันทึก Setlist เรียบร้อย' };
+    }
+
+    // ── Playlist History ─────────────────────────────────────────
+    async function doSavePlaylistHistory(d) {
+      var bandId = d.bandId || getBandId();
+      var row = {
+        band_id:    bandId,
+        band_name:  d.bandName || '',
+        date:       d.date || '',
+        venue:      d.venue || '',
+        time_slot:  d.timeSlot || '',
+        playlist:   d.songs || [],
+        created_by: localStorage.getItem('userName') || ''
+      };
+      var { data, error } = await sb.from('playlist_history').insert(row).select().single();
+      if (error) throw error;
+      return { success: true, data: toCamel(data) };
+    }
+
+    async function doGetPlaylistHistory(d) {
+      var bandId = d.bandId || getBandId();
+      var { data, error } = await sb.from('playlist_history')
+        .select('*').eq('band_id', bandId)
+        .order('created_at', { ascending: false }).limit(100);
+      if (error) throw error;
+      // map playlist jsonb → songs for frontend compat
+      var rows = (data || []).map(function(r) {
+        return {
+          id: r.id, bandId: r.band_id, bandName: r.band_name,
+          date: r.date || '', venue: r.venue || '', timeSlot: r.time_slot || '',
+          songs: r.playlist || [], createdBy: r.created_by || '',
+          createdAt: r.created_at
+        };
+      });
+      return { success: true, data: rows };
+    }
+
+    async function doGetPlaylistHistoryByDate(d) {
+      var bandId = d.bandId || getBandId();
+      var date = d.date || '';
+      if (!date) return { success: true, data: [] };
+      var { data, error } = await sb.from('playlist_history')
+        .select('*').eq('band_id', bandId).eq('date', date)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      var rows = (data || []).map(function(r) {
+        return {
+          id: r.id, bandId: r.band_id, bandName: r.band_name,
+          date: r.date || '', venue: r.venue || '', timeSlot: r.time_slot || '',
+          songs: r.playlist || [], createdBy: r.created_by || '',
+          createdAt: r.created_at
+        };
+      });
+      return { success: true, data: rows };
     }
 
     // ── Band Fund (กองกลาง) ──────────────────────────────────────

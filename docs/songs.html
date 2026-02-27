@@ -437,9 +437,10 @@ html{scroll-behavior:smooth}
     </select>
   </div>
 
-  <div class="action-buttons" style="display:flex;gap:10px;margin:10px 0">
+  <div class="action-buttons" style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap">
     <button onclick="addBreak()">➕ เพิ่มพัก</button>
     <button onclick="copyPlaylist()">📋 คัดลอกลิส</button>
+    <button onclick="saveHistoryManual()" style="background:#2563eb">💾 บันทึกลิส</button>
     <button onclick="showHistory()" style="background:#4a5568">📗 ประวัติ</button>
     <button onclick="refreshPlaylist()" style="background:var(--danger)">🔄 รีเฟรชลิส</button>
   </div>
@@ -1086,6 +1087,21 @@ function copyPlaylist(){
 
 var _historyCache = [];
 
+function saveHistoryManual() {
+  if (playlistData.length === 0) { alert('ยังไม่มีเพลงในลิส'); return; }
+  saveHistory();
+  var toast = document.getElementById('toast');
+  if (toast) {
+    toast.textContent = '💾 บันทึกลิสเรียบร้อย!';
+    toast.style.display = 'block';
+    toast.classList.add('show');
+    setTimeout(function(){
+      toast.classList.remove('show');
+      setTimeout(function(){ toast.style.display='none'; toast.textContent='คัดลอกลิสสำเร็จ'; },300);
+    },2000);
+  }
+}
+
 function saveHistory() {
   if (playlistData.length === 0) return;
   var bandId   = localStorage.getItem('bandId')   || '';
@@ -1103,7 +1119,13 @@ function saveHistory() {
     venue:    venueEl   ? venueEl.value   : '',
     timeSlot: timeEl    ? timeEl.value    : '',
     songs:    songs
-  }, function(r){ console.log('[history] saved', r && r.success); });
+  }, function(r){
+    console.log('[history] saved', r && r.success);
+    // refresh cache if modal is open
+    if (document.getElementById('historyModal').style.display === 'block') {
+      showHistory();
+    }
+  });
 }
 
 function showHistory() {
@@ -1135,6 +1157,7 @@ function filterHistoryByDate(date) {
   el.innerHTML = matches.map(function(h, i) {
     var label = [h.venue, h.timeSlot].filter(Boolean).join(' · ') || 'ลิสที่ ' + (i+1);
     var ts = h.createdAt ? new Date(h.createdAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
+    var creator = h.createdBy ? '👤 ' + h.createdBy : '';
     var songs = (h.songs || []).map(function(s, n){
       return '<div style="padding:3px 0;font-size:13px;border-bottom:1px solid #f1f5f9;color:#374151">'+
         (n+1)+'. <strong>'+s.name+'</strong>'+
@@ -1146,7 +1169,7 @@ function filterHistoryByDate(date) {
     return '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:12px">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
         '<div><div style="font-weight:700;font-size:15px">'+label+'</div>'+
-        (ts ? '<div style="font-size:11px;color:#9ca3af;margin-top:2px">เวลาเพิ่ม: '+ts+'</div>' : '')+
+        (ts || creator ? '<div style="font-size:11px;color:#9ca3af;margin-top:2px">'+(creator ? creator : '')+(ts && creator ? ' · ' : '')+(ts ? 'เวลา: '+ts : '')+'</div>' : '')+
         '</div>'+
         '<button onclick="loadHistoryEntry('+idx+')" style="background:#2d3748;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;min-height:unset;white-space:nowrap">📥 โหลดลิสนี้</button>'+
       '</div>'+

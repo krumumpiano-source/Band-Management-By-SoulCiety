@@ -209,6 +209,17 @@
         </div>
       </div>
 
+      <!-- ===== Playlist of the Day ===== -->
+      <div class="card" id="dashPlaylistCard" style="margin-bottom:var(--spacing-xl);display:none">
+        <div class="card-header" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);flex-wrap:wrap;gap:8px">
+          <h3 class="card-title" style="margin:0">📋 ลิสเพลงวันนี้</h3>
+          <span id="dashPlaylistBadge" style="background:#3b82f6;color:#fff;font-size:var(--text-xs);padding:2px 10px;border-radius:999px;font-weight:600"></span>
+        </div>
+        <div class="card-body" id="dashPlaylistBody" style="padding:var(--spacing-md)">
+          <p style="text-align:center;color:var(--premium-text-muted);padding:12px 0">⏳ กำลังโหลด...</p>
+        </div>
+      </div>
+
       <!-- ===== My Earnings Summary ===== -->
       <div class="card" id="earningsSummaryCard" style="margin-bottom:var(--spacing-xl)">
         <div class="card-header" style="background:linear-gradient(135deg,#f0fff4,#c6f6d5);flex-wrap:wrap;gap:8px">
@@ -315,6 +326,7 @@
     document.getElementById('qciConfirmRow').style.display = 'none';
     qciRenderSlots();
     qciCheckExisting();
+    dashLoadPlaylistForDate();
   }
 
   function qciLoadSettings(cb) {
@@ -790,6 +802,50 @@
     gasRun('rejectMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
       if (r && r.success) { showDashToast('ปฏิเสธเรียบร้อย', 'success'); loadDashPendingMembers(); }
       else showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    });
+  }
+
+  /* ===== Playlist of the Day ===== */
+  function dashLoadPlaylistForDate() {
+    var card = document.getElementById('dashPlaylistCard');
+    var body = document.getElementById('dashPlaylistBody');
+    var badge = document.getElementById('dashPlaylistBadge');
+    if (!card || !body) return;
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId || typeof gasRun !== 'function') { card.style.display = 'none'; return; }
+    var dateStr = qciSelectedDate.toISOString().split('T')[0];
+    body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:12px 0">⏳ กำลังโหลด...</p>';
+    card.style.display = '';
+    gasRun('getPlaylistHistoryByDate', { bandId: bandId, date: dateStr }, function(r) {
+      var lists = (r && r.success && r.data) ? r.data : [];
+      if (lists.length === 0) {
+        card.style.display = 'none';
+        return;
+      }
+      card.style.display = '';
+      badge.textContent = lists.length + ' ลิส';
+      body.innerHTML = lists.map(function(h, li) {
+        var label = [h.venue, h.timeSlot].filter(Boolean).join(' · ') || 'ลิสที่ ' + (li + 1);
+        var ts = h.createdAt ? new Date(h.createdAt).toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' }) : '';
+        var creator = h.createdBy || '';
+        var meta = [creator ? '👤 ' + escapeHtml(creator) : '', ts ? '🕐 ' + ts : ''].filter(Boolean).join(' · ');
+        var songs = (h.songs || []).map(function(s, n) {
+          return '<div style="padding:4px 0;font-size:var(--text-sm);border-bottom:1px solid var(--premium-border);display:flex;align-items:center;gap:6px">' +
+            '<span style="color:var(--premium-text-muted);font-size:var(--text-xs);min-width:20px">' + (n + 1) + '.</span>' +
+            '<strong>' + escapeHtml(s.name || '') + '</strong>' +
+            (s.key ? ' <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:11px">' + escapeHtml(s.key) + '</span>' : '') +
+            (s.bpm ? ' <span style="color:var(--premium-text-muted);font-size:11px">▸ ' + s.bpm + '</span>' : '') +
+            '</div>';
+        }).join('');
+        return '<div style="border:1.5px solid var(--premium-border);border-radius:var(--radius-md);padding:14px;margin-bottom:10px;background:var(--premium-off-white)">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:4px">' +
+            '<div style="font-weight:700;font-size:var(--text-base)">🎵 ' + escapeHtml(label) + '</div>' +
+            (meta ? '<div style="font-size:var(--text-xs);color:var(--premium-text-muted)">' + meta + '</div>' : '') +
+          '</div>' +
+          '<div>' + songs + '</div>' +
+          '<div style="text-align:right;margin-top:8px;font-size:var(--text-xs);color:var(--premium-text-muted)">' + (h.songs ? h.songs.length : 0) + ' เพลง</div>' +
+        '</div>';
+      }).join('');
     });
   }
 
