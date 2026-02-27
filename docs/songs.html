@@ -497,10 +497,13 @@ html{scroll-behavior:smooth}
   <div class="panel">
   <h3>📋 ลิสเพลงที่เลือก</h3>
 
-  <div class="filters" style="margin-bottom:10px">
-    <input type="date" id="useDate">
+  <!-- Badge: existing playlists for selected date -->
+  <div id="plExistingBadge" style="display:none;margin-bottom:12px;padding:10px;border-radius:var(--radius-md);background:#f0fff4;border:1.5px solid #c6f6d5;display:none"></div>
 
-    <select id="venue">
+  <div class="filters" style="margin-bottom:10px">
+    <input type="date" id="useDate" onchange="onPlaylistDateChange()">
+
+    <select id="venue" onchange="onPlaylistVenueChange()">
       <option value="">เลือกร้าน</option>
     </select>
 
@@ -779,6 +782,9 @@ document.addEventListener("click", function (e) {
   }
 });
 
+var _plBandSettings = null;
+var _plExistingForDate = []; // existing playlists for selected date
+
 function loadBandSettings() {
   var bandId = localStorage.getItem('bandId') || '';
   var bandName = localStorage.getItem('bandName') || '';
@@ -786,35 +792,28 @@ function loadBandSettings() {
   var SKEY = 'band_settings_' + (bandId || bandName);
   var cached = null;
   try { cached = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); } catch(e) {}
+
   function applySettings(s) {
+    _plBandSettings = s;
     var venueEl = document.getElementById('venue');
-    var timeEl  = document.getElementById('timeSlot');
-    if (!venueEl || !timeEl) return;
+    if (!venueEl) return;
     // เติม venues
     var venues = (s && s.venues) || [];
     venueEl.innerHTML = '<option value="">เลือกร้าน</option>';
     venues.forEach(function(v) {
       var opt = document.createElement('option');
-      opt.value = v.venueName || '';
-      opt.textContent = v.venueName || '';
+      opt.value = v.venueName || v.name || '';
+      opt.textContent = v.venueName || v.name || '';
       venueEl.appendChild(opt);
     });
-    // เติม timeSlots จาก hourlyRates
-    var rates = (s && s.hourlyRates) || [];
-    var seen = {}; var slots = [];
-    rates.forEach(function(r) {
-      if (r.startTime && r.endTime) {
-        var key = r.startTime + '-' + r.endTime;
-        if (!seen[key]) { seen[key] = true; slots.push(key); }
-      }
-    });
-    timeEl.innerHTML = '<option value="">ช่วงเวลา</option>';
-    slots.sort().forEach(function(slot) {
-      var opt = document.createElement('option');
-      opt.value = slot; opt.textContent = slot;
-      timeEl.appendChild(opt);
-    });
+    // Auto-select if only 1 venue
+    if (venues.length === 1) {
+      venueEl.value = venues[0].venueName || venues[0].name || '';
+    }
+    // refresh time slots for current date
+    onPlaylistDateChange();
   }
+
   if (cached && cached.ts && (Date.now() - cached.ts) < 10*60*1000 && cached.data) {
     applySettings(cached.data); return;
   }
@@ -824,6 +823,150 @@ function loadBandSettings() {
       applySettings(r.data);
     }
   });
+}
+
+/* ── Get venueId from venue name ── */
+function plGetVenueId(name) {
+  var venues = (_plBandSettings && _plBandSettings.venues) || [];
+  for (var i = 0; i < venues.length; i++) {
+    var v = venues[i];
+    var vName = v.name || v.venueName || '';
+    if (vName === name) return v.id || v.venueId || '';
+  }
+  return '';
+}
+
+/* ── Get slots for a given date + venue from scheduleData ── */
+function plGetSlotsForDate() {
+  if (!_plBandSettings) return [];
+  var dateEl = document.getElementById('useDate');
+  if (!dateEl || !dateEl.value) return [];
+  var parts = dateEl.value.split('-');
+  var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  var dow = d.getDay();
+  var schedule = _plBandSettings.scheduleData || _plBandSettings.schedule || {};
+  var dayData = schedule[dow] || schedule[String(dow)];
+  var slots = [];
+  if (Array.isArray(dayData)) {
+    slots = dayData;
+  } else if (dayData && dayData.timeSlots && dayData.timeSlots.length) {
+    slots = dayData.timeSlots;
+  }
+  // Filter by selected venue
+  var venueEl = document.getElementById('venue');
+  var venueName = venueEl ? venueEl.value : '';
+  if (venueName && slots.length && slots[0] && slots[0].venueId !== undefined) {
+    var venueId = plGetVenueId(venueName);
+    if (venueId) {
+      var filtered = slots.filter(function(s) { return s.venueId === venueId; });
+      if (filtered.length) slots = filtered;
+    }
+  }
+  return slots;
+}
+
+/* ── When date changes → refresh time slots & check existing playlists ── */
+function onPlaylistDateChange() {
+  refreshTimeSlots();
+  checkExistingPlaylists();
+}
+
+/* ── When venue changes → refresh time slots (re-filter by venue) ── */
+function onPlaylistVenueChange() {
+  refreshTimeSlots();
+  checkExistingPlaylists();
+}
+
+/* ── Refresh timeSlot dropdown based on date + venue ── */
+function refreshTimeSlots() {
+  var timeEl = document.getElementById('timeSlot');
+  if (!timeEl) return;
+  var slots = plGetSlotsForDate();
+  timeEl.innerHTML = '<option value="">ช่วงเวลา</option>';
+  if (slots.length === 0) {
+    // Fallback: show all hourly rates
+    var rates = (_plBandSettings && _plBandSettings.hourlyRates) || [];
+    var seen = {}; var allSlots = [];
+    rates.forEach(function(r) {
+      if (r.startTime && r.endTime) {
+        var key = r.startTime + '-' + r.endTime;
+        if (!seen[key]) { seen[key] = true; allSlots.push(key); }
+      }
+    });
+    allSlots.sort().forEach(function(slot) {
+      var opt = document.createElement('option');
+      opt.value = slot; opt.textContent = slot;
+      timeEl.appendChild(opt);
+    });
+    return;
+  }
+  slots.forEach(function(s) {
+    var key = s.startTime + '-' + s.endTime;
+    var opt = document.createElement('option');
+    opt.value = key;
+    // Mark existing playlists in the dropdown
+    var exists = _plExistingForDate.some(function(e) { return e.timeSlot === key; });
+    opt.textContent = key + (exists ? ' ✅ มีลิสแล้ว' : '');
+    if (exists) opt.style.color = '#48bb78';
+    timeEl.appendChild(opt);
+  });
+}
+
+/* ── Check which slots already have playlists for selected date ── */
+function checkExistingPlaylists() {
+  var dateEl = document.getElementById('useDate');
+  var bandId = localStorage.getItem('bandId') || '';
+  if (!dateEl || !dateEl.value || !bandId) { _plExistingForDate = []; return; }
+  gasRun('getPlaylistHistoryByDate', { bandId: bandId, date: dateEl.value }, function(r) {
+    _plExistingForDate = (r && r.success && r.data) ? r.data : [];
+    // Re-render time slot labels with existing status
+    refreshTimeSlotsLabels();
+    // Show existing playlists summary
+    renderExistingPlaylistsBadge();
+  });
+}
+
+/* ── Update time slot option labels with ✅ for existing playlists ── */
+function refreshTimeSlotsLabels() {
+  var timeEl = document.getElementById('timeSlot');
+  if (!timeEl) return;
+  var opts = timeEl.querySelectorAll('option');
+  opts.forEach(function(opt) {
+    if (!opt.value) return;
+    var baseKey = opt.value;
+    var exists = _plExistingForDate.some(function(e) { return e.timeSlot === baseKey; });
+    // find creator
+    var creator = '';
+    if (exists) {
+      var match = _plExistingForDate.find(function(e) { return e.timeSlot === baseKey; });
+      creator = match && match.createdBy ? match.createdBy : '';
+    }
+    opt.textContent = baseKey + (exists ? ' ✅ มีลิสแล้ว' + (creator ? ' (' + creator + ')' : '') : '');
+    opt.style.color = exists ? '#276749' : '';
+  });
+}
+
+/* ── Show badge above playlist section about existing playlists for selected date ── */
+function renderExistingPlaylistsBadge() {
+  var badge = document.getElementById('plExistingBadge');
+  if (!badge) return;
+  if (_plExistingForDate.length === 0) {
+    badge.style.display = 'none';
+    return;
+  }
+  var html = _plExistingForDate.map(function(p) {
+    var slot = p.timeSlot || '?';
+    var venue = p.venue || '';
+    var creator = p.createdBy || '';
+    var count = (p.songs || []).length;
+    return '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#f0fff4;border-radius:var(--radius-sm);border:1px solid #c6f6d5">' +
+      '<span style="font-size:14px">✅</span>' +
+      '<span style="font-weight:600;font-size:var(--text-sm)">' + (venue ? venue + ' · ' : '') + slot + '</span>' +
+      '<span style="color:var(--premium-text-muted);font-size:var(--text-xs)">' + count + ' เพลง' + (creator ? ' · โดย ' + creator : '') + '</span>' +
+    '</div>';
+  }).join('');
+  badge.innerHTML = '<div style="margin-bottom:8px;font-size:var(--text-xs);font-weight:600;color:#276749">📋 ลิสที่ทำแล้ววันนี้:</div>' + html;
+  badge.style.display = 'block';
 }
 
 window.onload = function() {
