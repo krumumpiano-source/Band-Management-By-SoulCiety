@@ -653,18 +653,22 @@ function apPrintVenueReceipt() {
       var dayTotal = 0, cells = '';
       apMembers.forEach(function(m) {
         var checked = apChecked[m.id] && apChecked[m.id][ds] && apChecked[m.id][ds].indexOf(sk) !== -1;
-        var amt = checked ? apSlotPay(slot, m.id) : 0;
+        // Substitute info — always check, regardless of check-in status
+        var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][ds]) || null;
+        var hasSub = subInfo && subInfo.name;
+        var slotCovered = checked || hasSub; // slot worked by member OR substitute
+        var amt = slotCovered ? apSlotPay(slot, m.id) : 0;
         mGrand[m.id] += amt; dayTotal += amt;
-        if (checked) mBreaks[m.id]++;
-        // Substitute: show name in cell when member absent
-        var subInfo = (!checked && apCheckInSub[m.id] && apCheckInSub[m.id][ds]) || null;
+        if (slotCovered) mBreaks[m.id]++;
+        // Cell content: ✅ when covered + substitute name underneath
         var cellContent = '';
-        if (checked) {
+        if (slotCovered) {
           cellContent = '<span style="' + S.check + '">✅</span>';
-        } else if (subInfo && subInfo.name) {
-          cellContent = '<span style="' + S.subName + '">' + apEsc(subInfo.name) + '</span>';
+          if (hasSub) {
+            cellContent += '<span style="' + S.subName + '">' + apEsc(subInfo.name) + '</span>';
+          }
         }
-        var cellBg = checked ? 'background:#f0faf4;' : (subInfo && subInfo.name ? 'background:#f5f3ff;' : '');
+        var cellBg = hasSub ? 'background:#f5f3ff;' : (slotCovered ? 'background:#f0faf4;' : '');
         cells += '<td style="text-align:center;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';' + cellBg + '">' + cellContent + '</td>';
       });
       total += dayTotal;
