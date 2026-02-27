@@ -147,7 +147,10 @@
           <div class="done-icon">✅</div>
           <strong id="qciDoneSummary">ลงเวลาแล้ว</strong>
           <p id="qciDoneDetail"></p>
-          <button class="btn btn-ghost btn-sm" style="margin-top:8px" id="qciEditBtn">✏️ แก้ไขเวลา</button>
+          <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" id="qciEditBtn">✏️ แก้ไขเวลา</button>
+            <button class="btn btn-sm" id="qciCancelBtn" style="background:#e53e3e;color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:13px;cursor:pointer">❌ ยกเลิกลงเวลา</button>
+          </div>
         </div>
 
         <!-- Check-in form -->
@@ -457,8 +460,8 @@
       if (r && r.success && r.checkIn) {
         qciExistingCheckIn = r.checkIn;
         var ci = r.checkIn;
-        if (ci.status === 'confirmed' || ci.status === 'pending') {
-          qciShowDone(ci.slots, ci.venue);
+        if (ci.status === 'confirmed' || ci.status === 'pending' || ci.status === 'leave') {
+          qciShowDone(ci.slots, ci.venue, ci.status);
         }
       }
     });
@@ -473,7 +476,7 @@
     gasRun('memberCheckIn', { bandId: qciBandId, date: dateStr, venue: qciSelectedVenue, slots: qciSelectedSlots, notes: '' }, function(r) {
       btn.disabled = false; btn.textContent = '✅ ยืนยันลงเวลา';
       if (r && r.success) {
-        qciShowDone(qciSelectedSlots, qciSelectedVenue);
+        qciShowDone(qciSelectedSlots, qciSelectedVenue, 'pending');
         showDashToast('ลงเวลาเรียบร้อย — รอผู้จัดการยืนยัน', 'success');
       } else {
         alert((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
@@ -536,6 +539,7 @@
           showDashToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
           document.getElementById('qciLeaveForm').classList.remove('show');
           document.getElementById('qciLeaveSubName').value = '';
+          qciShowDone(slots, venue, 'leave');
         } else {
           showDashToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
         }
@@ -634,6 +638,25 @@
         if (vBtn) vBtn.classList.add('selected');
         qciRenderSlots();
       }
+    });
+
+    document.getElementById('qciCancelBtn').addEventListener('click', function() {
+      if (!confirm('ต้องการยกเลิกการลงเวลาวันนี้ใช่หรือไม่?')) return;
+      var btn = document.getElementById('qciCancelBtn');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังยกเลิก...'; }
+      var dateStr = qciSelectedDate.toISOString().split('T')[0];
+      gasRun('cancelCheckIn', { bandId: qciBandId, date: dateStr }, function(r) {
+        if (btn) { btn.disabled = false; btn.textContent = '❌ ยกเลิกลงเวลา'; }
+        if (r && r.success) {
+          showDashToast('ยกเลิกการลงเวลาเรียบร้อย', 'success');
+          qciExistingCheckIn = null;
+          document.getElementById('qciDone').classList.remove('show');
+          document.getElementById('qciForm').style.display = 'block';
+          qciReset();
+        } else {
+          showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+        }
+      });
     });
 
     loadDashboard();

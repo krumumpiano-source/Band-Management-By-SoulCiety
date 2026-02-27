@@ -109,6 +109,17 @@
           <!-- Status (existing check-in) -->
           <div id="ciStatus" class="ci-status"></div>
 
+          <!-- Already checked-in state -->
+          <div id="ciDone" class="ci-done-state" style="display:none;background:linear-gradient(135deg,#f0fff4,#c6f6d5);border-radius:14px;padding:20px;text-align:center;margin-bottom:16px">
+            <div style="font-size:2em">✅</div>
+            <strong id="ciDoneSummary" style="font-size:1.1em;color:#276749">ลงเวลาแล้ว</strong>
+            <p id="ciDoneDetail" style="font-size:0.9em;color:#2f855a;margin:6px 0 0"></p>
+            <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+              <button type="button" class="btn btn-ghost btn-sm" id="ciEditBtn">✏️ แก้ไขเวลา</button>
+              <button type="button" class="btn btn-sm" id="ciCancelBtn" style="background:#e53e3e;color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:13px;cursor:pointer">❌ ยกเลิกลงเวลา</button>
+            </div>
+          </div>
+
           <!-- Time Slots -->
           <div class="form-group" style="margin-top:var(--spacing-md)">
             <label>🕐 ช่วงเวลาที่ทำงาน</label>

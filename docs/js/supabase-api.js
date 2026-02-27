@@ -145,6 +145,7 @@
         // ── Check-in ───────────────────────────────────────────────
         case 'memberCheckIn':      return doMemberCheckIn(d);
         case 'getMyCheckIn':       return doGetMyCheckIn(d);
+        case 'cancelCheckIn':      return doCancelCheckIn(d);
         case 'getCheckInsForDate': return doSelect('member_check_ins', { band_id: getBandId(), date: d.date });
 
         // ── Leave ──────────────────────────────────────────────────
@@ -586,9 +587,26 @@
         .eq('member_id', memberId).eq('date', dateStr).limit(1);
       if (data && data.length > 0) {
         var row = toCamel(data[0]);
-        return { success: true, checkIn: { venue: row.venue || '', slots: row.slots || [], status: row.status || 'pending' } };
+        return { success: true, checkIn: { id: row.id, venue: row.venue || '', slots: row.slots || [], status: row.status || 'pending', notes: row.notes || '', checkInAt: row.checkInAt || '' } };
       }
       return { success: false };
+    }
+
+    async function doCancelCheckIn(d) {
+      var { data: authUser } = await sb.auth.getUser();
+      var memberId = d.memberId || (authUser && authUser.user && authUser.user.id) || '';
+      if (!memberId) return { success: false, message: 'ไม่พบข้อมูลผู้ใช้' };
+      var dateStr = d.date || new Date().toISOString().slice(0, 10);
+      var bandId = d.bandId || getBandId();
+      var { error } = await sb.from('member_check_ins')
+        .delete().eq('band_id', bandId)
+        .eq('member_id', memberId).eq('date', dateStr);
+      if (error) throw error;
+      // Also delete any leave_requests for same date
+      await sb.from('leave_requests')
+        .delete().eq('band_id', bandId)
+        .eq('member_id', memberId).eq('date', dateStr);
+      return { success: true, message: 'ยกเลิกการลงเวลาเรียบร้อย' };
     }
 
     // ── Schedule ──────────────────────────────────────────────────

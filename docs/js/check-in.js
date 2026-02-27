@@ -41,6 +41,53 @@ function ciSetStatus(msg, cls) {
   el.style.display = msg ? 'block' : 'none';
 }
 
+/* ===== DONE STATE (after check-in) ===== */
+function ciShowDone(slots, venue, status) {
+  var done = ciGetEl('ciDone');
+  var form = ciGetEl('ciSubmitBtn') ? ciGetEl('ciSubmitBtn').closest('.card') : null;
+  if (!done) return;
+  var slotStr = (slots||[]).map(function(k){ var p=k.split('-'); return p[0]+' \u2013 '+p[1]; }).join(' \u00b7 ');
+  var statusLabel = status === 'confirmed' ? '\u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19' : status === 'leave' ? '\u0e25\u0e32' : '\u0e23\u0e2d\u0e1c\u0e39\u0e49\u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19';
+  ciGetEl('ciDoneSummary').textContent = '\u2705 ' + (status === 'leave' ? '\u0e25\u0e32\u0e07\u0e32\u0e19\u0e41\u0e25\u0e49\u0e27' : '\u0e25\u0e07\u0e40\u0e27\u0e25\u0e32\u0e41\u0e25\u0e49\u0e27') + ' (' + statusLabel + ')';
+  ciGetEl('ciDoneDetail').textContent = (venue ? '\ud83d\udccd '+venue+' \u00b7 ' : '') + (slotStr ? '\u23f0 '+slotStr : '');
+  done.style.display = 'block';
+  // Hide form fields but keep done visible
+  ['ciSlotsContainer','ciSubToggle','ciSubFields','ciNotes','ciSubmitBtn','ciLeaveBtn','ciLeaveForm','ciSelectAll','ciSelectNone','ciNoSlots'].forEach(function(id){
+    var e = ciGetEl(id); if(e) e.style.display = 'none';
+  });
+  var shortcutRow = ciGetEl('ciSelectAll') ? ciGetEl('ciSelectAll').parentElement : null;
+  if (shortcutRow) shortcutRow.style.display = 'none';
+}
+
+function ciHideDone() {
+  var done = ciGetEl('ciDone');
+  if (done) done.style.display = 'none';
+  ['ciSlotsContainer','ciSubToggle','ciNotes','ciSubmitBtn','ciLeaveBtn','ciSelectAll','ciSelectNone'].forEach(function(id){
+    var e = ciGetEl(id); if(e) e.style.display = '';
+  });
+  var shortcutRow = ciGetEl('ciSelectAll') ? ciGetEl('ciSelectAll').parentElement : null;
+  if (shortcutRow) shortcutRow.style.display = '';
+}
+
+function ciCancelCheckIn() {
+  if (!confirm('\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\u0e01\u0e32\u0e23\u0e25\u0e07\u0e40\u0e27\u0e25\u0e32\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49\u0e43\u0e0a\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?')) return;
+  var dateStr = ciSelectedDate;
+  var btn = ciGetEl('ciCancelBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '\u23f3 \u0e01\u0e33\u0e25\u0e31\u0e07\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01...'; }
+  gasRun('cancelCheckIn', { bandId: ciCurrentBandId, date: dateStr }, function(r) {
+    if (btn) { btn.disabled = false; btn.textContent = '\u274c \u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\u0e25\u0e07\u0e40\u0e27\u0e25\u0e32'; }
+    if (r && r.success) {
+      ciShowToast('\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\u0e01\u0e32\u0e23\u0e25\u0e07\u0e40\u0e27\u0e25\u0e32\u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22', 'success');
+      ciExistingCheckIn = null;
+      ciHideDone();
+      ciSetStatus('', '');
+      ciRenderSlots();
+    } else {
+      ciShowToast((r && r.message) || '\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14', 'error');
+    }
+  });
+}
+
 /* ===== LOAD SETTINGS ===== */
 function ciLoadSettings(callback) {
   var stored = localStorage.getItem('bandSettings');
@@ -178,8 +225,10 @@ function ciLoadExistingCheckIn() {
   gasRun('getMyCheckIn', { date: date, venue: venue, bandId: ciCurrentBandId }, function(r) {
     if (r && r.success && r.checkIn) {
       ciExistingCheckIn = r.checkIn;
-      var statusEl = ciGetEl('ciStatus');
-      ciSetStatus('✅ คุณลงเวลาวันนี้แล้ว (สถานะ: ' + (r.checkIn.status === 'confirmed' ? 'ได้รับการยืนยัน' : 'รอการยืนยันจากผู้จัดการ') + ')', 'success');
+      // Show done state if already checked in
+      if (r.checkIn.status === 'confirmed' || r.checkIn.status === 'pending' || r.checkIn.status === 'leave') {
+        ciShowDone(r.checkIn.slots, r.checkIn.venue, r.checkIn.status);
+      }
     }
     ciRenderSlots();
   });
@@ -231,7 +280,8 @@ function ciSubmit() {
       var msg = isSubstitute ? 'ลงเวลาแทน ' + subName + ' เรียบร้อยแล้ว' : (r.message || 'ลงเวลาเรียบร้อยแล้ว');
       ciShowToast(msg, 'success');
       ciSetStatus('✅ ' + msg + ' — รอผู้จัดการยืนยัน', 'success');
-      ciExistingCheckIn = { slots: checkedSlots, status: 'pending' };
+      ciExistingCheckIn = { slots: checkedSlots, status: 'pending', venue: venue };
+      ciShowDone(checkedSlots, venue, 'pending');
     } else {
       ciShowToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
     }
@@ -276,6 +326,8 @@ function ciSubmitLeaveSimple() {
         var form = ciGetEl('ciLeaveForm');
         if (form) form.classList.remove('show');
         ciGetEl('ciLeaveSubNameSimple').value = '';
+        ciExistingCheckIn = { slots: checkedSlots, status: 'leave', venue: venue };
+        ciShowDone(checkedSlots, venue, 'leave');
       } else {
         ciShowToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
       }
@@ -321,6 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
     dateInput.addEventListener('change', function() {
       ciSelectedDate = this.value;
       ciExistingCheckIn = null;
+      ciHideDone();
       ciLoadExistingCheckIn();
     });
   }
@@ -356,6 +409,15 @@ document.addEventListener('DOMContentLoaded', function() {
   // Submit button
   var submitBtn = ciGetEl('ciSubmitBtn');
   if (submitBtn) submitBtn.addEventListener('click', ciSubmit);
+
+  // Edit & Cancel buttons in done state
+  var editBtn = ciGetEl('ciEditBtn');
+  if (editBtn) editBtn.addEventListener('click', function() {
+    ciHideDone();
+    ciRenderSlots();
+  });
+  var cancelBtn = ciGetEl('ciCancelBtn');
+  if (cancelBtn) cancelBtn.addEventListener('click', ciCancelCheckIn);
 
   // ===== SIMPLE LEAVE BUTTON =====
   var leaveBtn = ciGetEl('ciLeaveBtn');
