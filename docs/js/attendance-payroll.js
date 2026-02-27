@@ -744,10 +744,7 @@ function apPrintMemberReceipt() {
         var existing = mSubInfo.find(function(x){ return x.name === sub.name; });
         if (!existing) { existing = { name: sub.name, shifts: 0, amount: 0 }; mSubInfo.push(existing); }
         var dow = new Date(ds).getDay();
-        var daySlots = [];
-        var dayData = qciBandSettings ? null : null;
-        // Use global apSlotsForDay if available (in attendance-payroll context)
-        if (typeof apSlotsForDay === 'function') daySlots = apSlotsForDay(dow);
+        var daySlots = apSlotsForDay(dow);
         daySlots.forEach(function(slot) {
           var ri = apMemberRate(slot, m.id);
           if (ri.assigned) { existing.shifts++; existing.amount += apSlotPay(slot, m.id); }
