@@ -80,6 +80,10 @@
     .qci-leave-actions .btn-leave-ok{padding:10px 24px;border:none;background:#e53e3e;color:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-weight:700;font-family:var(--font-family-body);transition:background .2s}
     .qci-leave-actions .btn-leave-ok:hover{background:#c53030}
     .qci-leave-actions .btn-leave-cancel{padding:10px 24px;border:1px solid #ccc;background:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-family:var(--font-family-body)}
+    /* Earnings tabs */
+    .earn-tab{padding:6px 16px;border-radius:var(--radius-full);border:1px solid var(--premium-border);background:#fff;cursor:pointer;font-size:var(--text-xs);font-weight:600;font-family:var(--font-family-body);color:var(--premium-text-muted);transition:all .2s}
+    .earn-tab.active{background:#276749;color:#fff;border-color:#276749}
+    .earn-tab:hover:not(.active){background:var(--premium-off-white)}
   </style>
 </head>
 <body>
@@ -205,46 +209,34 @@
         </div>
       </div>
 
-      <!-- ===== Weekly Earnings Summary ===== -->
-      <div class="card" id="weeklyEarningsCard" style="margin-bottom:var(--spacing-xl);display:none">
-        <div class="card-header" style="background:linear-gradient(135deg,#f0fff4,#c6f6d5)">
-          <h3 class="card-title" style="margin:0">💰 สรุปรายได้สัปดาห์นี้</h3>
-          <span id="weeklyPeriodBadge" style="font-size:var(--text-xs);color:var(--premium-text-muted)"></span>
+      <!-- ===== My Earnings Summary ===== -->
+      <div class="card" id="earningsSummaryCard" style="margin-bottom:var(--spacing-xl)">
+        <div class="card-header" style="background:linear-gradient(135deg,#f0fff4,#c6f6d5);flex-wrap:wrap;gap:8px">
+          <h3 class="card-title" style="margin:0">📊 สรุปรายได้ของฉัน</h3>
+          <div id="earningsTabs" style="display:flex;gap:4px">
+            <button class="earn-tab active" data-period="week">สัปดาห์</button>
+            <button class="earn-tab" data-period="month">เดือน</button>
+            <button class="earn-tab" data-period="year">ปี</button>
+          </div>
         </div>
         <div style="padding:var(--spacing-lg)">
+          <div id="earningsPeriodLabel" style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-md);text-align:center"></div>
+          <!-- Hours + Earnings boxes -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md);margin-bottom:var(--spacing-md)">
             <div style="background:var(--premium-off-white);border-radius:var(--radius-md);padding:var(--spacing-md);text-align:center">
               <div style="font-size:var(--text-xs);color:var(--premium-text-muted)">⏰ ชั่วโมงทำงาน</div>
-              <div id="weeklyHours" style="font-size:var(--text-xl);font-weight:700;color:var(--premium-text)">—</div>
+              <div id="earnHours" style="font-size:var(--text-xl);font-weight:700;color:var(--premium-text)">—</div>
             </div>
             <div style="background:var(--premium-off-white);border-radius:var(--radius-md);padding:var(--spacing-md);text-align:center">
-              <div style="font-size:var(--text-xs);color:var(--premium-text-muted)">💰 ยอดรายได้</div>
-              <div id="weeklyEarnings" style="font-size:var(--text-xl);font-weight:700;color:#276749">—</div>
+              <div style="font-size:var(--text-xs);color:var(--premium-text-muted)">💰 รายได้</div>
+              <div id="earnAmount" style="font-size:var(--text-xl);font-weight:700;color:#276749">—</div>
             </div>
           </div>
-          <div id="weeklyBreakdown" style="font-size:var(--text-sm);color:var(--premium-text-light);line-height:1.8"></div>
-          <div id="weeklySubInfo" style="display:none;margin-top:var(--spacing-md);background:linear-gradient(135deg,#faf5ff,#f3e8ff);border:1px solid #d6bcfa;border-radius:var(--radius-md);padding:var(--spacing-md)">
+          <!-- Breakdown -->
+          <div id="earnBreakdown" style="font-size:var(--text-sm);color:var(--premium-text-light);line-height:1.8"></div>
+          <!-- Substitute deduction -->
+          <div id="earnSubInfo" style="display:none;margin-top:var(--spacing-md);background:linear-gradient(135deg,#faf5ff,#f3e8ff);border:1px solid #d6bcfa;border-radius:var(--radius-md);padding:var(--spacing-md)">
           </div>
-        </div>
-      </div>
-
-      <!-- Stat Cards -->
-      <div class="stat-grid">
-        <div class="stat-card">
-          <div class="stat-icon gold">🎸</div>
-          <div class="stat-body"><h3 id="statMembers">—</h3><p data-i18n="nav_members">สมาชิกวง</p></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon blue">📅</div>
-          <div class="stat-body"><h3 id="statJobs">—</h3><p data-i18n="upcomingJobs">งานที่กำลังจะมาถึง</p></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon green">💰</div>
-          <div class="stat-body"><h3 id="statRevenue">—</h3><p data-i18n="revenueMonth">รายรับเดือนนี้</p></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon purple">📄</div>
-          <div class="stat-body"><h3 id="statQuotations">—</h3><p data-i18n="nav_quotation">ใบเสนอราคา</p></div>
         </div>
       </div>
 
@@ -703,7 +695,15 @@
     });
 
     loadDashboard();
-    loadWeeklyEarnings();
+    loadEarningsSummary('week');
+    // Tab switching
+    document.querySelectorAll('.earn-tab').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.earn-tab').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        loadEarningsSummary(btn.dataset.period);
+      });
+    });
     // Load pending member requests (manager/admin only)
     var _role = localStorage.getItem('userRole') || '';
     if (_role === 'manager' || _role === 'admin') {
@@ -793,16 +793,17 @@
     });
   }
 
-  /* ===== Weekly Earnings Summary ===== */
-  function loadWeeklyEarnings() {
+  /* ===== Earnings Summary (week/month/year) ===== */
+  var _earnCache = {}; // cache loaded data per period
+
+  function loadEarningsSummary(period) {
     var bandId = localStorage.getItem('bandId') || '';
     if (!bandId || typeof gasRun !== 'function') return;
 
-    // Get band settings for schedule + payroll config
+    // Settings
     var settings = qciBandSettings || {};
     var scheduleData = settings.scheduleData || {};
-    var weekStart = 1, weekEnd = 0; // default Mon-Sun
-
+    var weekStart = 1, weekEnd = 0;
     try {
       var stored = JSON.parse(localStorage.getItem('bandSettings') || '{}');
       scheduleData = stored.scheduleData || stored.schedule || scheduleData;
@@ -812,39 +813,49 @@
       }
     } catch(e) {}
 
-    // Calculate current week date range
+    // Calculate date range based on period
     var today = new Date();
-    var dow = today.getDay();
-    var diff = (dow - weekStart + 7) % 7;
-    var weekStartDate = new Date(today); weekStartDate.setDate(today.getDate() - diff);
-    var span = (weekEnd - weekStart + 7) % 7; if (span === 0) span = 6;
-    var weekEndDate = new Date(weekStartDate); weekEndDate.setDate(weekStartDate.getDate() + span);
+    var startDate, endDate, periodLabel;
 
+    if (period === 'week') {
+      var dow = today.getDay();
+      var diff = (dow - weekStart + 7) % 7;
+      startDate = new Date(today); startDate.setDate(today.getDate() - diff);
+      var span = (weekEnd - weekStart + 7) % 7; if (span === 0) span = 6;
+      endDate = new Date(startDate); endDate.setDate(startDate.getDate() + span);
+      periodLabel = '📅 สัปดาห์: ' + startDate.toLocaleDateString('th-TH', {day:'numeric',month:'short'}) + ' – ' + endDate.toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'});
+    } else if (period === 'month') {
+      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      periodLabel = '📅 เดือน: ' + today.toLocaleDateString('th-TH', {month:'long',year:'numeric'});
+    } else {
+      startDate = new Date(today.getFullYear(), 0, 1);
+      endDate = new Date(today.getFullYear(), 11, 31);
+      periodLabel = '📅 ปี: ' + today.getFullYear();
+    }
+
+    document.getElementById('earningsPeriodLabel').textContent = periodLabel;
+    // Reset display
+    document.getElementById('earnHours').textContent = '⏳';
+    document.getElementById('earnAmount').textContent = '⏳';
+    document.getElementById('earnBreakdown').innerHTML = '<span style="color:var(--premium-text-muted)">กำลังโหลด...</span>';
+    document.getElementById('earnSubInfo').style.display = 'none';
+
+    // Build date list
     var dates = [];
-    for (var d = new Date(weekStartDate); d <= weekEndDate; d.setDate(d.getDate() + 1)) {
+    for (var d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       dates.push(new Date(d).toISOString().split('T')[0]);
     }
 
-    // Show period badge
-    var badge = document.getElementById('weeklyPeriodBadge');
-    if (badge) {
-      badge.textContent = weekStartDate.toLocaleDateString('th-TH', {day:'numeric',month:'short'}) +
-        ' – ' + weekEndDate.toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'});
-    }
-
-    // Helper: parse time "HH:MM" to minutes
+    // Helpers
     function parseMin(t) { if (!t) return 0; var p = t.split(':').map(Number); return p[0]*60 + (p[1]||0); }
     function calcH(s, e) { var d = e - s; if (d < 0) d += 1440; return d / 60; }
-
-    // Helper: get slots for a day-of-week
     function getSlotsForDow(dow) {
       var dayData = scheduleData[dow] || scheduleData[String(dow)];
       if (Array.isArray(dayData)) return dayData;
       if (dayData && dayData.timeSlots) return dayData.timeSlots;
       return [];
     }
-
-    // Helper: get this member's rate for a slot
     function getMemberRate(slot, mid) {
       var members = slot.members || [];
       for (var i = 0; i < members.length; i++) {
@@ -852,7 +863,6 @@
       }
       return { rate: 0, type: 'shift', assigned: false };
     }
-
     function slotPay(slot, mid) {
       var r = getMemberRate(slot, mid);
       if (r.rate <= 0) return 0;
@@ -867,17 +877,16 @@
       if (authStr) { var authData = JSON.parse(authStr); myId = (authData.user && authData.user.id) || ''; }
     } catch(e) {}
     if (!myId) myId = localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '';
-    if (!myId) return;
+    if (!myId) { document.getElementById('earnHours').textContent = '—'; document.getElementById('earnAmount').textContent = '—'; document.getElementById('earnBreakdown').innerHTML = ''; return; }
 
-    // Load check-ins and leave for the week
+    // Load all check-ins + leave for the date range
     var allCheckIns = [], loadedCount = 0;
     var leaveLoaded = false, ciLoaded = false;
     var myLeaves = [];
 
-    function renderWeekly() {
+    function renderEarnings() {
       if (!ciLoaded || !leaveLoaded) return;
 
-      // Filter check-ins for this member
       var myCheckins = {};
       allCheckIns.forEach(function(ci) {
         if (ci.memberId !== myId) return;
@@ -889,24 +898,22 @@
         if (ci.substitute) myCheckins[ci.date].substitute = ci.substitute;
       });
 
-      // Build sub info from leave data
-      var subDeductions = []; // {subName, shifts, amount, dates[]}
+      // Substitute deductions from leave
+      var subDeductions = [];
       myLeaves.forEach(function(lv) {
         if (!lv.substituteName) return;
         var existing = subDeductions.find(function(x) { return x.subName === lv.substituteName; });
         if (!existing) { existing = { subName: lv.substituteName, shifts: 0, amount: 0, dates: [] }; subDeductions.push(existing); }
         existing.dates.push(lv.date);
-        // Count assigned slots for that day
         var lvDow = new Date(lv.date).getDay();
-        var daySlots = getSlotsForDow(lvDow);
-        daySlots.forEach(function(slot) {
+        getSlotsForDow(lvDow).forEach(function(slot) {
           var mr = getMemberRate(slot, myId);
           if (mr.assigned) { existing.shifts++; existing.amount += slotPay(slot, myId); }
         });
       });
 
       // Calculate hours + earnings
-      var totalHours = 0, totalEarnings = 0;
+      var totalHours = 0, totalEarnings = 0, totalShifts = 0;
       var breakdown = [];
       var DN = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 
@@ -914,7 +921,6 @@
         var dtObj = new Date(dateStr), dayDow = dtObj.getDay();
         var daySlots = getSlotsForDow(dayDow);
         if (!daySlots.length) return;
-
         var ci = myCheckins[dateStr];
         var ciSlots = ci ? ci.slots : [];
         var isLeave = ci && ci.status === 'leave';
@@ -924,8 +930,6 @@
           var sk = (slot.startTime || '') + '-' + (slot.endTime || '');
           var mr = getMemberRate(slot, myId);
           if (!mr.assigned) return;
-
-          // If member checked in (or is on leave — leave still counts as worked for earnings)
           if (ciSlots.indexOf(sk) !== -1 || isLeave) {
             dayHours += calcH(parseMin(slot.startTime), parseMin(slot.endTime));
             dayAmt += slotPay(slot, myId);
@@ -934,6 +938,7 @@
         });
 
         if (daySlotCount > 0) {
+          totalShifts += daySlotCount;
           var label = DN[dayDow] + ' ' + dtObj.toLocaleDateString('th-TH', {day:'numeric',month:'short'});
           if (isLeave) label += ' 🚫ลา';
           breakdown.push(label + ': ' + daySlotCount + ' เบรค = ' + dayAmt.toLocaleString('th-TH') + ' ฿');
@@ -943,47 +948,48 @@
       });
 
       // Render
-      var card = document.getElementById('weeklyEarningsCard');
-      if (!card) return;
-      card.style.display = '';
+      document.getElementById('earnHours').textContent = totalHours > 0 ? totalHours.toFixed(1) + ' ชม.' : '0';
+      document.getElementById('earnAmount').textContent = totalEarnings > 0 ? totalEarnings.toLocaleString('th-TH') + ' ฿' : '0 ฿';
 
-      document.getElementById('weeklyHours').textContent = totalHours > 0 ? totalHours.toFixed(1) + ' ชม.' : '—';
-      document.getElementById('weeklyEarnings').textContent = totalEarnings > 0 ? totalEarnings.toLocaleString('th-TH') + ' ฿' : '—';
+      var bdEl = document.getElementById('earnBreakdown');
+      if (period === 'week') {
+        bdEl.innerHTML = breakdown.length ? breakdown.join('<br>') : '<span style="color:var(--premium-text-muted)">ยังไม่มีข้อมูลเข้างาน</span>';
+      } else {
+        // For month/year show summary instead of daily detail
+        bdEl.innerHTML = breakdown.length
+          ? '<span style="font-weight:600">รวม ' + totalShifts + ' เบรค / ' + breakdown.length + ' วัน</span>'
+          : '<span style="color:var(--premium-text-muted)">ยังไม่มีข้อมูลเข้างาน</span>';
+      }
 
-      var bdEl = document.getElementById('weeklyBreakdown');
-      if (bdEl) bdEl.innerHTML = breakdown.length ? breakdown.join('<br>') : '<span style="color:var(--premium-text-muted)">ยังไม่มีข้อมูลเข้างานในสัปดาห์นี้</span>';
-
-      // Substitute deduction info
-      var subEl = document.getElementById('weeklySubInfo');
-      if (subEl) {
-        if (subDeductions.length) {
-          subEl.style.display = 'block';
-          var subHtml = '<div style="font-weight:700;font-size:var(--text-sm);color:#553c9a;margin-bottom:6px">🔄 ต้องจ่ายคนแทน</div>';
-          var totalSubAmt = 0;
-          subDeductions.forEach(function(sd) {
-            totalSubAmt += sd.amount;
-            subHtml += '<div style="font-size:var(--text-sm);padding:4px 0;display:flex;justify-content:space-between;align-items:center">' +
-              '<span>🔄 ' + qciEsc(sd.subName) + ' (' + sd.shifts + ' เบรค)</span>' +
-              '<strong style="color:#e53e3e">' + sd.amount.toLocaleString('th-TH') + ' ฿</strong></div>';
-          });
-          if (totalSubAmt > 0) {
-            var net = totalEarnings - totalSubAmt;
-            subHtml += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #d6bcfa;display:flex;justify-content:space-between;font-weight:700;font-size:var(--text-sm)">' +
-              '<span>💰 คงเหลือหลังจ่ายคนแทน</span>' +
-              '<span style="color:' + (net >= 0 ? '#276749' : '#e53e3e') + '">' + net.toLocaleString('th-TH') + ' ฿</span></div>';
-          }
-          subEl.innerHTML = subHtml;
-        } else {
-          subEl.style.display = 'none';
+      // Substitute info
+      var subEl = document.getElementById('earnSubInfo');
+      if (subDeductions.length) {
+        subEl.style.display = 'block';
+        var subHtml = '<div style="font-weight:700;font-size:var(--text-sm);color:#553c9a;margin-bottom:6px">🔄 ต้องจ่ายคนแทน</div>';
+        var totalSubAmt = 0;
+        subDeductions.forEach(function(sd) {
+          totalSubAmt += sd.amount;
+          subHtml += '<div style="font-size:var(--text-sm);padding:4px 0;display:flex;justify-content:space-between;align-items:center">' +
+            '<span>🔄 ' + qciEsc(sd.subName) + ' (' + sd.shifts + ' เบรค)</span>' +
+            '<strong style="color:#e53e3e">' + sd.amount.toLocaleString('th-TH') + ' ฿</strong></div>';
+        });
+        if (totalSubAmt > 0) {
+          var net = totalEarnings - totalSubAmt;
+          subHtml += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #d6bcfa;display:flex;justify-content:space-between;font-weight:700;font-size:var(--text-sm)">' +
+            '<span>💰 คงเหลือหลังจ่ายคนแทน</span>' +
+            '<span style="color:' + (net >= 0 ? '#276749' : '#e53e3e') + '">' + net.toLocaleString('th-TH') + ' ฿</span></div>';
         }
+        subEl.innerHTML = subHtml;
+      } else {
+        subEl.style.display = 'none';
       }
     }
 
-    // Fetch check-ins for each date
+    // Fetch check-ins — batch by date
     dates.forEach(function(dateStr) {
       gasRun('getCheckInsForDate', { bandId: bandId, date: dateStr }, function(r) {
         if (r && r.success && r.data) allCheckIns = allCheckIns.concat(r.data);
-        if (++loadedCount >= dates.length) { ciLoaded = true; renderWeekly(); }
+        if (++loadedCount >= dates.length) { ciLoaded = true; renderEarnings(); }
       });
     });
 
@@ -993,7 +999,7 @@
         var dSet = {}; dates.forEach(function(d) { dSet[d] = true; });
         myLeaves = r.data.filter(function(lv) { return dSet[lv.date] && lv.memberId === myId; });
       }
-      leaveLoaded = true; renderWeekly();
+      leaveLoaded = true; renderEarnings();
     });
   }
 
@@ -1001,10 +1007,6 @@
     gasRun('getDashboardSummary', {}, function(r) {
       if (!r || !r.success) return;
       var d = r.data || {};
-      document.getElementById('statMembers').textContent = d.memberCount != null ? d.memberCount : '—';
-      document.getElementById('statJobs').textContent = d.upcomingJobs != null ? d.upcomingJobs : '—';
-      document.getElementById('statRevenue').textContent = d.revenueMonth != null ? formatCurrency(d.revenueMonth) : '—';
-      document.getElementById('statQuotations').textContent = d.quotationCount != null ? d.quotationCount : '—';
 
       // jobs
       var jl = document.getElementById('jobList');
