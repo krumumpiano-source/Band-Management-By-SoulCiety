@@ -128,6 +128,7 @@
         case 'savePlaylistHistory':return doSavePlaylistHistory(d);
         case 'getPlaylistHistory': return doGetPlaylistHistory(d);
         case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);
+        case 'getSongInsights':    return doGetSongInsights(d);
 
         // ── Band Members ───────────────────────────────────────────
         case 'getAllBandMembers':
@@ -988,6 +989,25 @@
         };
       });
       return { success: true, data: rows };
+    }
+
+    // ── Song Insights (สถิติเพลง) ────────────────────────────────
+    async function doGetSongInsights(d) {
+      var bandId = d.bandId || getBandId();
+      // Fetch playlist_history (all) + band_songs in parallel
+      var [histRes, songsRes] = await Promise.all([
+        sb.from('playlist_history').select('date, playlist, created_by')
+          .eq('band_id', bandId).order('date', { ascending: false }).limit(2000),
+        sb.from('band_songs').select('id, name, artist, key, created_at')
+          .eq('band_id', bandId).order('name')
+      ]);
+      if (histRes.error) throw histRes.error;
+      if (songsRes.error) throw songsRes.error;
+      var history = (histRes.data || []).map(function(r) {
+        return { date: r.date || '', songs: r.playlist || [], createdBy: r.created_by || '' };
+      });
+      var songs = toCamelList(songsRes.data || []);
+      return { success: true, data: { history: history, songs: songs } };
     }
 
     // ── Band Fund (กองกลาง) ──────────────────────────────────────

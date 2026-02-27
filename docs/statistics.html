@@ -98,7 +98,8 @@
   function loadStats() {
     var year = parseInt(document.getElementById('yearPicker').value);
     var month = document.getElementById('monthPicker').value;
-    gasRun('getStatistics', { year: year, month: month !== '' ? parseInt(month) : null }, function(r) {
+    var bandId = localStorage.getItem('bandId') || '';
+    gasRun('getStatistics', { year: year, month: month !== '' ? parseInt(month) : null, bandId: bandId }, function(r) {
       if (!r || !r.success) return;
       var d = r.data || {};
       document.getElementById('ovJobs').textContent = d.totalJobs || 0;
