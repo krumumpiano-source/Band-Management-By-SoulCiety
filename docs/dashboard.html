@@ -210,7 +210,7 @@
       </div>
 
       <!-- ===== Playlist of the Day ===== -->
-      <div class="card" id="dashPlaylistCard" style="margin-bottom:var(--spacing-xl);display:none">
+      <div class="card" id="dashPlaylistCard" style="margin-bottom:var(--spacing-xl)">
         <div class="card-header" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);flex-wrap:wrap;gap:8px">
           <h3 class="card-title" style="margin:0">📋 ลิสเพลงวันนี้</h3>
           <span id="dashPlaylistBadge" style="background:#3b82f6;color:#fff;font-size:var(--text-xs);padding:2px 10px;border-radius:999px;font-weight:600"></span>
@@ -644,6 +644,7 @@
     qciLoadSettings(function() {
       qciRenderVenues(); /* venues → auto-selects single venue → renders slots */
       qciCheckExisting();
+      dashLoadPlaylistForDate();
     });
 
     document.getElementById('qciConfirmBtn').addEventListener('click', qciConfirm);
@@ -812,17 +813,21 @@
     var badge = document.getElementById('dashPlaylistBadge');
     if (!card || !body) return;
     var bandId = localStorage.getItem('bandId') || '';
-    if (!bandId || typeof gasRun !== 'function') { card.style.display = 'none'; return; }
+    if (!bandId || typeof gasRun !== 'function') {
+      body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:12px 0">🎵 ยังไม่มีลิสเพลงของวันนี้</p>';
+      badge.textContent = '';
+      return;
+    }
     var dateStr = qciSelectedDate.toISOString().split('T')[0];
     body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:12px 0">⏳ กำลังโหลด...</p>';
-    card.style.display = '';
+    badge.textContent = '';
     gasRun('getPlaylistHistoryByDate', { bandId: bandId, date: dateStr }, function(r) {
       var lists = (r && r.success && r.data) ? r.data : [];
       if (lists.length === 0) {
-        card.style.display = 'none';
+        body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:16px 0">🎵 ยังไม่มีลิสเพลงของวันนี้<br><a href="songs.html" style="color:#3b82f6;font-size:var(--text-sm)">➕ ไปสร้างลิสเพลง</a></p>';
+        badge.textContent = '';
         return;
       }
-      card.style.display = '';
       badge.textContent = lists.length + ' ลิส';
       body.innerHTML = lists.map(function(h, li) {
         var label = [h.venue, h.timeSlot].filter(Boolean).join(' · ') || 'ลิสที่ ' + (li + 1);
