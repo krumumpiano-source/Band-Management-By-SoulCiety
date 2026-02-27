@@ -793,6 +793,210 @@
     });
   }
 
+  /* ===== Weekly Earnings Summary ===== */
+  function loadWeeklyEarnings() {
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId || typeof gasRun !== 'function') return;
+
+    // Get band settings for schedule + payroll config
+    var settings = qciBandSettings || {};
+    var scheduleData = settings.scheduleData || {};
+    var weekStart = 1, weekEnd = 0; // default Mon-Sun
+
+    try {
+      var stored = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+      scheduleData = stored.scheduleData || stored.schedule || scheduleData;
+      if (stored.payroll) {
+        if (stored.payroll.weekStart !== undefined) weekStart = parseInt(stored.payroll.weekStart, 10);
+        if (stored.payroll.weekEnd !== undefined) weekEnd = parseInt(stored.payroll.weekEnd, 10);
+      }
+    } catch(e) {}
+
+    // Calculate current week date range
+    var today = new Date();
+    var dow = today.getDay();
+    var diff = (dow - weekStart + 7) % 7;
+    var weekStartDate = new Date(today); weekStartDate.setDate(today.getDate() - diff);
+    var span = (weekEnd - weekStart + 7) % 7; if (span === 0) span = 6;
+    var weekEndDate = new Date(weekStartDate); weekEndDate.setDate(weekStartDate.getDate() + span);
+
+    var dates = [];
+    for (var d = new Date(weekStartDate); d <= weekEndDate; d.setDate(d.getDate() + 1)) {
+      dates.push(new Date(d).toISOString().split('T')[0]);
+    }
+
+    // Show period badge
+    var badge = document.getElementById('weeklyPeriodBadge');
+    if (badge) {
+      badge.textContent = weekStartDate.toLocaleDateString('th-TH', {day:'numeric',month:'short'}) +
+        ' – ' + weekEndDate.toLocaleDateString('th-TH', {day:'numeric',month:'short',year:'numeric'});
+    }
+
+    // Helper: parse time "HH:MM" to minutes
+    function parseMin(t) { if (!t) return 0; var p = t.split(':').map(Number); return p[0]*60 + (p[1]||0); }
+    function calcH(s, e) { var d = e - s; if (d < 0) d += 1440; return d / 60; }
+
+    // Helper: get slots for a day-of-week
+    function getSlotsForDow(dow) {
+      var dayData = scheduleData[dow] || scheduleData[String(dow)];
+      if (Array.isArray(dayData)) return dayData;
+      if (dayData && dayData.timeSlots) return dayData.timeSlots;
+      return [];
+    }
+
+    // Helper: get this member's rate for a slot
+    function getMemberRate(slot, mid) {
+      var members = slot.members || [];
+      for (var i = 0; i < members.length; i++) {
+        if (members[i].memberId === mid) return { rate: members[i].rate || 0, type: members[i].rateType || 'shift', assigned: true };
+      }
+      return { rate: 0, type: 'shift', assigned: false };
+    }
+
+    function slotPay(slot, mid) {
+      var r = getMemberRate(slot, mid);
+      if (r.rate <= 0) return 0;
+      if (r.type === 'hourly') return calcH(parseMin(slot.startTime), parseMin(slot.endTime)) * r.rate;
+      return r.rate;
+    }
+
+    // Get current user's member ID
+    var myId = '';
+    try {
+      var authStr = localStorage.getItem('sb-wsorngsyowgxikiepice-auth-token') || '';
+      if (authStr) { var authData = JSON.parse(authStr); myId = (authData.user && authData.user.id) || ''; }
+    } catch(e) {}
+    if (!myId) myId = localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '';
+    if (!myId) return;
+
+    // Load check-ins and leave for the week
+    var allCheckIns = [], loadedCount = 0;
+    var leaveLoaded = false, ciLoaded = false;
+    var myLeaves = [];
+
+    function renderWeekly() {
+      if (!ciLoaded || !leaveLoaded) return;
+
+      // Filter check-ins for this member
+      var myCheckins = {};
+      allCheckIns.forEach(function(ci) {
+        if (ci.memberId !== myId) return;
+        if (!myCheckins[ci.date]) myCheckins[ci.date] = { slots: [], status: ci.status, substitute: ci.substitute || null };
+        (ci.slots || []).forEach(function(s) {
+          if (myCheckins[ci.date].slots.indexOf(s) === -1) myCheckins[ci.date].slots.push(s);
+        });
+        if (ci.status) myCheckins[ci.date].status = ci.status;
+        if (ci.substitute) myCheckins[ci.date].substitute = ci.substitute;
+      });
+
+      // Build sub info from leave data
+      var subDeductions = []; // {subName, shifts, amount, dates[]}
+      myLeaves.forEach(function(lv) {
+        if (!lv.substituteName) return;
+        var existing = subDeductions.find(function(x) { return x.subName === lv.substituteName; });
+        if (!existing) { existing = { subName: lv.substituteName, shifts: 0, amount: 0, dates: [] }; subDeductions.push(existing); }
+        existing.dates.push(lv.date);
+        // Count assigned slots for that day
+        var lvDow = new Date(lv.date).getDay();
+        var daySlots = getSlotsForDow(lvDow);
+        daySlots.forEach(function(slot) {
+          var mr = getMemberRate(slot, myId);
+          if (mr.assigned) { existing.shifts++; existing.amount += slotPay(slot, myId); }
+        });
+      });
+
+      // Calculate hours + earnings
+      var totalHours = 0, totalEarnings = 0;
+      var breakdown = [];
+      var DN = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+
+      dates.forEach(function(dateStr) {
+        var dtObj = new Date(dateStr), dayDow = dtObj.getDay();
+        var daySlots = getSlotsForDow(dayDow);
+        if (!daySlots.length) return;
+
+        var ci = myCheckins[dateStr];
+        var ciSlots = ci ? ci.slots : [];
+        var isLeave = ci && ci.status === 'leave';
+        var dayHours = 0, dayAmt = 0, daySlotCount = 0;
+
+        daySlots.forEach(function(slot) {
+          var sk = (slot.startTime || '') + '-' + (slot.endTime || '');
+          var mr = getMemberRate(slot, myId);
+          if (!mr.assigned) return;
+
+          // If member checked in (or is on leave — leave still counts as worked for earnings)
+          if (ciSlots.indexOf(sk) !== -1 || isLeave) {
+            dayHours += calcH(parseMin(slot.startTime), parseMin(slot.endTime));
+            dayAmt += slotPay(slot, myId);
+            daySlotCount++;
+          }
+        });
+
+        if (daySlotCount > 0) {
+          var label = DN[dayDow] + ' ' + dtObj.toLocaleDateString('th-TH', {day:'numeric',month:'short'});
+          if (isLeave) label += ' 🚫ลา';
+          breakdown.push(label + ': ' + daySlotCount + ' เบรค = ' + dayAmt.toLocaleString('th-TH') + ' ฿');
+          totalHours += dayHours;
+          totalEarnings += dayAmt;
+        }
+      });
+
+      // Render
+      var card = document.getElementById('weeklyEarningsCard');
+      if (!card) return;
+      card.style.display = '';
+
+      document.getElementById('weeklyHours').textContent = totalHours > 0 ? totalHours.toFixed(1) + ' ชม.' : '—';
+      document.getElementById('weeklyEarnings').textContent = totalEarnings > 0 ? totalEarnings.toLocaleString('th-TH') + ' ฿' : '—';
+
+      var bdEl = document.getElementById('weeklyBreakdown');
+      if (bdEl) bdEl.innerHTML = breakdown.length ? breakdown.join('<br>') : '<span style="color:var(--premium-text-muted)">ยังไม่มีข้อมูลเข้างานในสัปดาห์นี้</span>';
+
+      // Substitute deduction info
+      var subEl = document.getElementById('weeklySubInfo');
+      if (subEl) {
+        if (subDeductions.length) {
+          subEl.style.display = 'block';
+          var subHtml = '<div style="font-weight:700;font-size:var(--text-sm);color:#553c9a;margin-bottom:6px">🔄 ต้องจ่ายคนแทน</div>';
+          var totalSubAmt = 0;
+          subDeductions.forEach(function(sd) {
+            totalSubAmt += sd.amount;
+            subHtml += '<div style="font-size:var(--text-sm);padding:4px 0;display:flex;justify-content:space-between;align-items:center">' +
+              '<span>🔄 ' + qciEsc(sd.subName) + ' (' + sd.shifts + ' เบรค)</span>' +
+              '<strong style="color:#e53e3e">' + sd.amount.toLocaleString('th-TH') + ' ฿</strong></div>';
+          });
+          if (totalSubAmt > 0) {
+            var net = totalEarnings - totalSubAmt;
+            subHtml += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #d6bcfa;display:flex;justify-content:space-between;font-weight:700;font-size:var(--text-sm)">' +
+              '<span>💰 คงเหลือหลังจ่ายคนแทน</span>' +
+              '<span style="color:' + (net >= 0 ? '#276749' : '#e53e3e') + '">' + net.toLocaleString('th-TH') + ' ฿</span></div>';
+          }
+          subEl.innerHTML = subHtml;
+        } else {
+          subEl.style.display = 'none';
+        }
+      }
+    }
+
+    // Fetch check-ins for each date
+    dates.forEach(function(dateStr) {
+      gasRun('getCheckInsForDate', { bandId: bandId, date: dateStr }, function(r) {
+        if (r && r.success && r.data) allCheckIns = allCheckIns.concat(r.data);
+        if (++loadedCount >= dates.length) { ciLoaded = true; renderWeekly(); }
+      });
+    });
+
+    // Fetch leave requests
+    gasRun('getAllLeaveRequests', { bandId: bandId }, function(r) {
+      if (r && r.success && r.data) {
+        var dSet = {}; dates.forEach(function(d) { dSet[d] = true; });
+        myLeaves = r.data.filter(function(lv) { return dSet[lv.date] && lv.memberId === myId; });
+      }
+      leaveLoaded = true; renderWeekly();
+    });
+  }
+
   function loadDashboard() {
     gasRun('getDashboardSummary', {}, function(r) {
       if (!r || !r.success) return;
