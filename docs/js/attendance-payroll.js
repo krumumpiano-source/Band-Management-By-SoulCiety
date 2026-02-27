@@ -317,8 +317,9 @@ function apRenderAttendance() {
         if (checked && ciSt) {
           var badgeTip = ciSt==='confirmed'?'ยืนยันแล้ว':'รอยืนยัน';
           if (subInfo && subInfo.name) badgeTip += ' (แทน: ' + subInfo.name + ')';
-          b += '<span class="ap-ci-badge ap-ci-' + apEsc(ciSt) + '" title="' + apEsc(badgeTip) + '">' +
-            (ciSt==='confirmed' ? '✅' : '⏳') + '</span>';
+          if (ciSt==='confirmed') {
+            b += '<span class="ap-ci-badge ap-ci-' + apEsc(ciSt) + '" title="' + apEsc(badgeTip) + '">✅</span>';
+          }
           if (subInfo && subInfo.name) b += '<span class="ap-ci-badge" style="color:#805ad5;font-size:9px" title="คนแทน: ' + apEsc(subInfo.name) + '">🔄 ' + apEsc(subInfo.name) + '</span>';
         } else if (!hasCheckIn && ri.assigned) {
           b += '<span class="ap-ci-badge ap-ci-absent" title="ยังไม่ลงเวลา">—</span>';
