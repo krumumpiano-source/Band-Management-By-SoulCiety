@@ -411,7 +411,7 @@
       var slots = qciSelectedSlots.length ? qciSelectedSlots : [];
       var btn = document.getElementById('qciLeaveSubmit');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
-      gasRun('requestLeave', { bandId: qciBandId, date: dateStr, venue: venue, slots: slots, reason: 'ลางาน', substituteName: subName, substituteContact: '' }, function(r) {
+      gasRun('requestLeave', { bandId: qciBandId, memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '', memberName: localStorage.getItem('userName') || '', date: dateStr, venue: venue, slots: JSON.stringify(slots), reason: 'ลางาน', substituteName: subName, substituteContact: '' }, function(r) {
         if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
         if (r && r.success) {
           showToast('บันทึกลาเรียบร้อย — คนแทน: ' + subName, 'success');

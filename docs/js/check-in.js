@@ -254,9 +254,11 @@ function ciSubmitLeaveSimple() {
 
   var payload = {
     bandId: ciCurrentBandId,
+    memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '',
+    memberName: ciMemberName,
     date: date,
     venue: venue,
-    slots: checkedSlots,
+    slots: JSON.stringify(checkedSlots),
     reason: 'ลางาน',
     substituteName: subName,
     substituteContact: ''

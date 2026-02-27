@@ -242,7 +242,7 @@
     if (!lvSelectedSlots.length) { showToast('กรุณาเลือกช่วงเวลาที่ต้องการลา', 'error'); return; }
     var btn = document.getElementById('leaveSubmitBtn');
     btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...';
-    gasRun('requestLeave', { bandId: lvBandId, date: date, venue: venue, slots: lvSelectedSlots, reason: reason }, function(r) {
+    gasRun('requestLeave', { bandId: lvBandId, memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '', memberName: localStorage.getItem('userName') || '', date: date, venue: venue, slots: JSON.stringify(lvSelectedSlots), reason: reason }, function(r) {
       btn.disabled = false; btn.textContent = '✅ ส่งคำขอลา';
       if (r && r.success) {
         showToast('ส่งคำขอลาเรียบร้อยแล้ว รอผู้จัดการดำเนินการ', 'success');

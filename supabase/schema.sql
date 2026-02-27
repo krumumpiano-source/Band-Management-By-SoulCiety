@@ -353,17 +353,20 @@ create policy "invite_codes: สร้าง/แก้ไขเฉพาะ mana
 -- 13. LEAVE_REQUESTS
 -- ============================================================
 create table if not exists public.leave_requests (
-  id                uuid primary key default uuid_generate_v4(),
-  band_id           text not null,
-  member_id         text not null,
-  member_name       text,
-  date              text not null,
-  reason            text,
-  status            text default 'pending',   -- pending | approved | rejected
-  substitute_id     text,
-  substitute_name   text,
-  created_at        timestamptz default now(),
-  updated_at        timestamptz default now()
+  id                  uuid primary key default uuid_generate_v4(),
+  band_id             text not null,
+  member_id           text not null,
+  member_name         text,
+  date                text not null,
+  venue               text,
+  slots               text,           -- JSON array e.g. '["19:30-20:30"]'
+  reason              text,
+  status              text default 'pending',   -- pending | approved | rejected
+  substitute_id       text,
+  substitute_name     text,
+  substitute_contact  text,
+  created_at          timestamptz default now(),
+  updated_at          timestamptz default now()
 );
 alter table public.leave_requests enable row level security;
 

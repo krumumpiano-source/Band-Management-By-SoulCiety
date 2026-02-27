@@ -512,9 +512,11 @@
 
     var payload = {
       bandId: qciBandId,
+      memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '',
+      memberName: localStorage.getItem('userName') || '',
       date: dateStr,
       venue: venue,
-      slots: slots,
+      slots: JSON.stringify(slots),
       reason: 'ลางาน',
       substituteName: subName,
       substituteContact: ''
