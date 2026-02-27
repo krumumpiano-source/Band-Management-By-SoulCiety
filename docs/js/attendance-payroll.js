@@ -188,8 +188,15 @@ function apUpdateDateRange() {
 }
 
 /* ═══ LOAD CHECK-INS ════════════════════════════════ */
+var apCheckInStatus = {}; // apCheckInStatus[memberId][date] = 'pending'|'confirmed'
+var apCheckInVenue  = {}; // apCheckInVenue[memberId][date] = venueName
+var apCheckInTime   = {}; // apCheckInTime[memberId][date] = checkInAt timestamp
+
 function apLoadCheckIns(cb) {
   apChecked = {};
+  apCheckInStatus = {};
+  apCheckInVenue  = {};
+  apCheckInTime   = {};
   if (!apBandId || typeof gasRun !== 'function' || !apDateRange.length) { if (cb) cb(); return; }
   var dates = apDateRange.slice(), total = dates.length, done = 0, all = [];
   function finish() {
@@ -202,6 +209,13 @@ function apLoadCheckIns(cb) {
       if (!apChecked[mem.id]) apChecked[mem.id] = {};
       if (!apChecked[mem.id][ci.date]) apChecked[mem.id][ci.date] = [];
       slots.forEach(function(s) { if (apChecked[mem.id][ci.date].indexOf(s) === -1) apChecked[mem.id][ci.date].push(s); });
+      // Store check-in metadata
+      if (!apCheckInStatus[mem.id]) apCheckInStatus[mem.id] = {};
+      apCheckInStatus[mem.id][ci.date] = ci.status || 'pending';
+      if (!apCheckInVenue[mem.id]) apCheckInVenue[mem.id] = {};
+      apCheckInVenue[mem.id][ci.date] = ci.venue || '';
+      if (!apCheckInTime[mem.id]) apCheckInTime[mem.id] = {};
+      apCheckInTime[mem.id][ci.date] = ci.checkInAt || '';
     });
     if (cb) cb();
   }
@@ -266,11 +280,24 @@ function apRenderAttendance() {
       apMembers.forEach(function(m) {
         var ciSlots = (apChecked[m.id] && apChecked[m.id][dateStr]) || [];
         var checked = ciSlots.indexOf(sk) !== -1;
+        // Only mark checked if the member actually checked in — NO auto-assign from schedule
         var ri = apMemberRate(slot, m.id);
-        if (ri.assigned && !checked && !(apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].length)) checked = true;
+        var hasCheckIn = apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].length > 0;
+        var ciSt = (apCheckInStatus[m.id] && apCheckInStatus[m.id][dateStr]) || '';
         if (checked) rowAmt += apSlotPay(slot, m.id);
-        b += '<td style="text-align:center"><input type="checkbox" class="ap-cb" data-m="' + apEsc(m.id) +
-          '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '"' + (checked ? ' checked' : '') + '></td>';
+        var tdCls = 'text-align:center;position:relative';
+        if (!hasCheckIn && ri.assigned) tdCls += ';background:rgba(255,193,7,0.08)';  // assigned but no check-in → faint warning
+        b += '<td style="' + tdCls + '">';
+        b += '<input type="checkbox" class="ap-cb" data-m="' + apEsc(m.id) +
+          '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '"' + (checked ? ' checked' : '') + '>';
+        // Status badge
+        if (checked && ciSt) {
+          b += '<span class="ap-ci-badge ap-ci-' + apEsc(ciSt) + '" title="' + (ciSt==='confirmed'?'ยืนยันแล้ว':'รอยืนยัน') + '">' +
+            (ciSt==='confirmed' ? '✅' : '⏳') + '</span>';
+        } else if (!hasCheckIn && ri.assigned) {
+          b += '<span class="ap-ci-badge ap-ci-absent" title="ยังไม่ลงเวลา">—</span>';
+        }
+        b += '</td>';
       });
       b += '<td style="text-align:right;font-weight:600;font-size:12px" class="ap-rt">' + (rowAmt > 0 ? rowAmt.toLocaleString('th-TH') : '-') + '</td>';
       b += '</tr>';

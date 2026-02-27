@@ -29,6 +29,14 @@
     input[type=number].payout-input{width:80px;text-align:right;border:1px solid var(--premium-border,#ccc);border-radius:4px;padding:2px 6px;font-size:13px}
     input[type=number].payout-input:focus{outline:2px solid var(--premium-gold)}
     .total-row td{font-weight:700;background:var(--premium-off-white);color:var(--premium-gold)}
+    /* Check-in status badges */
+    .ap-ci-badge{display:block;font-size:10px;line-height:1;margin-top:2px;pointer-events:none}
+    .ap-ci-pending{color:#d69e2e}
+    .ap-ci-confirmed{color:#38a169}
+    .ap-ci-absent{color:#a0aec0;font-size:11px}
+    /* Legend */
+    .ap-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--premium-text-muted);margin:8px 0 4px}
+    .ap-legend span{display:inline-flex;align-items:center;gap:4px}
   </style>
 </head>
 <body>
@@ -94,6 +102,12 @@
         <div class="card-header">
           <h3 class="card-title" id="attendanceTableTitle">📋 ตารางเข้างาน</h3>
         </div>
+        <div class="ap-legend">
+          <span>✅ ลงเวลาแล้ว (ยืนยัน)</span>
+          <span>⏳ รอยืนยัน</span>
+          <span style="color:#d69e2e">█ อยู่ในตารางแต่ยังไม่ลงเวลา</span>
+        </div>
+        <p style="font-size:12px;color:var(--premium-text-muted);margin:0 0 8px">ข้อมูลจากการลงเวลาจริงของสมาชิก — ผู้จัดการสามารถติ๊กเพิ่มเติมได้</p>
         <div class="table-responsive">
           <table class="table attendance-table" style="min-width:600px">
             <thead id="attendanceTableHead"></thead>
