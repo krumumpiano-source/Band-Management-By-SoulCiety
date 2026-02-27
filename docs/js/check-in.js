@@ -11,6 +11,7 @@ var ciBandSettings = { scheduleData: {}, venues: [] };
 var ciSelectedVenue = '';
 var ciSelectedDate = '';
 var ciExistingCheckIn = null;
+var ciIsSubstitute = false;
 
 function ciGetEl(id) { return document.getElementById(id); }
 
@@ -180,20 +181,41 @@ function ciSubmit() {
   if (!venue) { ciShowToast('กรุณาเลือกสถานที่', 'error'); return; }
   if (!checkedSlots.length) { ciShowToast('กรุณาเลือกช่วงเวลาที่ทำงานอย่างน้อย 1 ช่วง', 'error'); return; }
 
+  // Substitute validation
+  var subToggle = ciGetEl('ciSubToggle');
+  var isSubstitute = subToggle && subToggle.checked;
+  var subName = '';
+  var subContact = '';
+  if (isSubstitute) {
+    subName = (ciGetEl('ciSubName') ? ciGetEl('ciSubName').value : '').trim();
+    subContact = (ciGetEl('ciSubContact') ? ciGetEl('ciSubContact').value : '').trim();
+    if (!subName) { ciShowToast('กรุณาระบุชื่อคนแทน', 'error'); return; }
+  }
+
   var submitBtn = ciGetEl('ciSubmitBtn');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ กำลังบันทึก...'; }
 
-  gasRun('memberCheckIn', {
+  var payload = {
     bandId: ciCurrentBandId,
     date: date,
     venue: venue,
     slots: checkedSlots,
     notes: notes
-  }, function(r) {
+  };
+  // Add substitute info
+  if (isSubstitute && subName) {
+    payload.isSubstitute = true;
+    payload.substituteName = subName;
+    payload.substituteContact = subContact;
+    payload.notes = (notes ? notes + ' | ' : '') + 'คนแทน: ' + subName + (subContact ? ' (' + subContact + ')' : '');
+  }
+
+  gasRun('memberCheckIn', payload, function(r) {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✅ บันทึกเวลาเข้างาน'; }
     if (r && r.success) {
-      ciShowToast(r.message || 'ลงเวลาเรียบร้อยแล้ว', 'success');
-      ciSetStatus('✅ ลงเวลาเรียบร้อยแล้ว — รอผู้จัดการยืนยัน', 'success');
+      var msg = isSubstitute ? 'ลงเวลาแทน ' + subName + ' เรียบร้อยแล้ว' : (r.message || 'ลงเวลาเรียบร้อยแล้ว');
+      ciShowToast(msg, 'success');
+      ciSetStatus('✅ ' + msg + ' — รอผู้จัดการยืนยัน', 'success');
       ciExistingCheckIn = { slots: checkedSlots, status: 'pending' };
     } else {
       ciShowToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
@@ -247,6 +269,24 @@ document.addEventListener('DOMContentLoaded', function() {
       ciSelectedVenue = this.value;
       ciExistingCheckIn = null;
       ciLoadExistingCheckIn();
+    });
+  }
+
+  // Substitute toggle
+  var subToggle = ciGetEl('ciSubToggle');
+  if (subToggle) {
+    subToggle.addEventListener('change', function() {
+      var fields = ciGetEl('ciSubFields');
+      if (fields) {
+        fields.classList.toggle('active', this.checked);
+        if (!this.checked) {
+          var sn = ciGetEl('ciSubName'); if (sn) sn.value = '';
+          var sc = ciGetEl('ciSubContact'); if (sc) sc.value = '';
+        }
+      }
+      ciIsSubstitute = this.checked;
+      var btn = ciGetEl('ciSubmitBtn');
+      if (btn) btn.textContent = this.checked ? '🔄 บันทึกเวลา (คนแทน)' : '✅ บันทึกเวลาเข้างาน';
     });
   }
 

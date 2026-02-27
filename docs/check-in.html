@@ -42,6 +42,15 @@
     .ci-manager-link{margin-top:var(--spacing-lg);text-align:center;font-size:var(--text-sm)}
     .ci-manager-link a{color:var(--premium-gold);font-weight:600;text-decoration:none}
     .ci-manager-link a:hover{text-decoration:underline}
+    /* Substitute toggle */
+    .ci-sub-toggle{display:flex;align-items:center;gap:var(--spacing-sm);padding:var(--spacing-sm) 0;margin-bottom:var(--spacing-sm)}
+    .ci-sub-toggle input[type=checkbox]{accent-color:var(--premium-gold);width:18px;height:18px}
+    .ci-sub-toggle label{font-weight:600;font-size:var(--text-sm);cursor:pointer;user-select:none}
+    .ci-sub-fields{display:none;padding:var(--spacing-md);background:#fffbeb;border:1px dashed var(--premium-gold);border-radius:var(--radius-md);margin-bottom:var(--spacing-md)}
+    .ci-sub-fields.active{display:block}
+    .ci-sub-fields .form-group{margin-bottom:var(--spacing-sm)}
+    .ci-sub-fields .form-group:last-child{margin-bottom:0}
+    .ci-sub-name-chip{display:inline-flex;align-items:center;gap:4px;background:var(--premium-gold);color:#fff;padding:3px 10px;border-radius:var(--radius-full,999px);font-size:12px;font-weight:600;margin-top:4px}
     #toast{display:none;position:fixed;bottom:24px;right:24px;color:#fff;padding:12px 20px;border-radius:var(--radius-md);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.25);background:var(--premium-gold)}
     #toast.show{display:block}
   </style>
@@ -92,6 +101,25 @@
             </div>
             <div id="ciSlotsContainer"></div>
             <div id="ciNoSlots" class="ci-no-slots">เลือกวันที่และสถานที่ก่อนเพื่อดูช่วงเวลา</div>
+          </div>
+
+          <!-- Substitute Option -->
+          <div style="margin-top:var(--spacing-md)">
+            <div class="ci-sub-toggle">
+              <input type="checkbox" id="ciSubToggle">
+              <label for="ciSubToggle">🔄 ลงเวลาแทนคนอื่น (คนแทน)</label>
+            </div>
+            <div id="ciSubFields" class="ci-sub-fields">
+              <p style="font-size:12px;color:var(--premium-text-muted);margin:0 0 8px">ระบุชื่อคนที่มาทำงานแทน — ระบบจะบันทึกว่าเป็นการลงเวลาแทน</p>
+              <div class="form-group">
+                <label>👤 ชื่อคนแทน</label>
+                <input type="text" id="ciSubName" placeholder="เช่น สมชาย, คุณแม็ค...">
+              </div>
+              <div class="form-group">
+                <label>📱 เบอร์โทร / ติดต่อ (ไม่บังคับ)</label>
+                <input type="text" id="ciSubContact" placeholder="08x-xxx-xxxx">
+              </div>
+            </div>
           </div>
 
           <!-- Notes -->

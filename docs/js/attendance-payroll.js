@@ -191,12 +191,14 @@ function apUpdateDateRange() {
 var apCheckInStatus = {}; // apCheckInStatus[memberId][date] = 'pending'|'confirmed'
 var apCheckInVenue  = {}; // apCheckInVenue[memberId][date] = venueName
 var apCheckInTime   = {}; // apCheckInTime[memberId][date] = checkInAt timestamp
+var apCheckInSub    = {}; // apCheckInSub[memberId][date] = {name, contact} or null
 
 function apLoadCheckIns(cb) {
   apChecked = {};
   apCheckInStatus = {};
   apCheckInVenue  = {};
   apCheckInTime   = {};
+  apCheckInSub    = {};
   if (!apBandId || typeof gasRun !== 'function' || !apDateRange.length) { if (cb) cb(); return; }
   var dates = apDateRange.slice(), total = dates.length, done = 0, all = [];
   function finish() {
@@ -216,6 +218,8 @@ function apLoadCheckIns(cb) {
       apCheckInVenue[mem.id][ci.date] = ci.venue || '';
       if (!apCheckInTime[mem.id]) apCheckInTime[mem.id] = {};
       apCheckInTime[mem.id][ci.date] = ci.checkInAt || '';
+      if (!apCheckInSub[mem.id]) apCheckInSub[mem.id] = {};
+      apCheckInSub[mem.id][ci.date] = ci.substitute || null;
     });
     if (cb) cb();
   }
@@ -291,9 +295,13 @@ function apRenderAttendance() {
         b += '<input type="checkbox" class="ap-cb" data-m="' + apEsc(m.id) +
           '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '"' + (checked ? ' checked' : '') + '>';
         // Status badge
+        var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][dateStr]) || null;
         if (checked && ciSt) {
-          b += '<span class="ap-ci-badge ap-ci-' + apEsc(ciSt) + '" title="' + (ciSt==='confirmed'?'ยืนยันแล้ว':'รอยืนยัน') + '">' +
+          var badgeTip = ciSt==='confirmed'?'ยืนยันแล้ว':'รอยืนยัน';
+          if (subInfo && subInfo.name) badgeTip += ' (แทน: ' + subInfo.name + ')';
+          b += '<span class="ap-ci-badge ap-ci-' + apEsc(ciSt) + '" title="' + apEsc(badgeTip) + '">' +
             (ciSt==='confirmed' ? '✅' : '⏳') + '</span>';
+          if (subInfo && subInfo.name) b += '<span class="ap-ci-badge" style="color:#805ad5;font-size:9px" title="คนแทน: ' + apEsc(subInfo.name) + '">🔄 ' + apEsc(subInfo.name) + '</span>';
         } else if (!hasCheckIn && ri.assigned) {
           b += '<span class="ap-ci-badge ap-ci-absent" title="ยังไม่ลงเวลา">—</span>';
         }

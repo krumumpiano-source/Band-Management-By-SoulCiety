@@ -485,19 +485,28 @@
       var { data: exist } = await sb.from('member_check_ins')
         .select('id').eq('band_id', bandId)
         .eq('member_id', memberId).eq('date', dateStr).limit(1);
+      // Substitute info
+      var subInfo = null;
+      if (d.isSubstitute && d.substituteName) {
+        subInfo = { name: d.substituteName, contact: d.substituteContact || '' };
+      }
+
       if (exist && exist.length > 0) {
         // อัปเดตแทน insert ถ้ามีอยู่แล้ว
-        var { error: upErr } = await sb.from('member_check_ins').update({
+        var upPayload = {
           venue:       d.venue || '',
           slots:       d.slots || [],
           status:      'pending',
           check_in_at: new Date().toISOString()
-        }).eq('id', exist[0].id);
+        };
+        if (subInfo) upPayload.substitute = subInfo;
+        if (d.notes) upPayload.notes = d.notes;
+        var { error: upErr } = await sb.from('member_check_ins').update(upPayload).eq('id', exist[0].id);
         if (upErr) throw upErr;
-        return { success: true, message: 'อัปเดตเวลาเรียบร้อย' };
+        return { success: true, message: subInfo ? 'ลงเวลาแทน ' + subInfo.name + ' เรียบร้อย' : 'อัปเดตเวลาเรียบร้อย' };
       }
 
-      var { data, error } = await sb.from('member_check_ins').insert({
+      var insertPayload = {
         band_id:     bandId,
         member_id:   memberId,
         member_name: d.memberName || localStorage.getItem('userName') || '',
@@ -506,7 +515,10 @@
         slots:       d.slots || [],
         check_in_at: new Date().toISOString(),
         status:      'pending'
-      }).select().single();
+      };
+      if (subInfo) insertPayload.substitute = subInfo;
+      if (d.notes) insertPayload.notes = d.notes;
+      var { data, error } = await sb.from('member_check_ins').insert(insertPayload).select().single();
       if (error) throw error;
       return { success: true, data: toCamel(data) };
     }
