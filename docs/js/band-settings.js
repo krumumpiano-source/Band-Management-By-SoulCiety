@@ -854,7 +854,7 @@ function applyBulkRate() {
   showToast('ตั้งค่าแรง ' + rate.toLocaleString('th-TH') + ' ' + rtypeLabel + ' ให้ทุกคนแล้ว ✅', 'success');
 }
 function saveSlotDetail() {
-  autoSaveLocal(); showToast('บันทึกสมาชิกเรียบร้อย ✅', 'success');
+  _doSave(_buildFullPayload(), null, '', 'บันทึกค่าแรงเรียบร้อย ✅');
   closeSlotDetailModal(); renderScheduleGrid();
 }
 function editThisSlot() {
