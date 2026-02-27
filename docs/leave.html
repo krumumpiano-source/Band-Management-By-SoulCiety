@@ -73,7 +73,7 @@
       <div class="leave-tabs">
         <button class="leave-tab active" data-tab="myRequest">คำขอลาของฉัน</button>
         <button class="leave-tab" data-tab="requestLeave">ขอลางาน</button>
-        <div id="managerTabs" style="display:none;display:flex;gap:var(--spacing-sm)">
+        <div id="managerTabs" style="display:none;gap:var(--spacing-sm)">
           <button class="leave-tab" data-tab="allRequests">คำขอลาทั้งหมด</button>
         </div>
       </div>
@@ -397,7 +397,7 @@
 
     // Set min date = tomorrow for leave request
     var tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate());
+    tomorrow.setDate(tomorrow.getDate() + 1);
     document.getElementById('leaveDate').min = tomorrow.toISOString().split('T')[0];
 
     // Date change → render slots

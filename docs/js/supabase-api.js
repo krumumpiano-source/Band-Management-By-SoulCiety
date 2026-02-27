@@ -164,6 +164,8 @@
         case 'getPendingMembers':  return doGetPendingMembers(d);
         case 'approveMember':      return doApproveMember(d);
         case 'rejectMember':       return doRejectMember(d);
+        case 'updateMemberRole':   return doUpdateMemberRole(d);
+        case 'removeMember':       return doRemoveMember(d);
 
         // ── Setlist ────────────────────────────────────────────────
         case 'getSetlist':         return doGetSetlist(d);
@@ -803,6 +805,22 @@
       var { data, error } = await sb.rpc('reject_member', { p_user_id: d.userId, p_band_id: bandId });
       if (error) throw error;
       return data;
+    }
+
+    async function doUpdateMemberRole(d) {
+      if (!d.userId || !d.role) return { success: false, message: 'ข้อมูลไม่ครบ' };
+      var allowed = ['member', 'manager'];
+      if (allowed.indexOf(d.role) === -1) return { success: false, message: 'บทบาทไม่ถูกต้อง' };
+      var { data, error } = await sb.from('profiles').update({ role: d.role, updated_at: new Date().toISOString() }).eq('id', d.userId).select().single();
+      if (error) throw error;
+      return { success: true, data: toCamel(data), message: 'เปลี่ยนบทบาทเรียบร้อย' };
+    }
+
+    async function doRemoveMember(d) {
+      if (!d.userId) return { success: false, message: 'ไม่ระบุสมาชิก' };
+      var { data, error } = await sb.from('profiles').update({ band_id: null, band_name: null, role: 'member', status: 'inactive', updated_at: new Date().toISOString() }).eq('id', d.userId).select().single();
+      if (error) throw error;
+      return { success: true, data: toCamel(data), message: 'ลบสมาชิกออกจากวงเรียบร้อย' };
     }
 
     // ── Password Reset ──────────────────────────────────────────

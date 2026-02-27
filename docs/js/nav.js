@@ -61,16 +61,12 @@ function renderMainNav(containerId) {
     navLink('dashboard',       '📊 ' + _t('nav_dashboard')) +
     navLink('songs',           '🎵 ' + _t('nav_songs')) +
     navLink('song-insights',   '🎙️ ' + _t('nav_songInsights')) +
-    // navLink('leave',           '🔄 ' + _t('nav_leave')) +  // ปิดชั่วคราว
-    // navLink('external-payout', '💵 ' + _t('nav_externalPayout')) +  // ปิดชั่วคราว
+    navLink('leave',           '🔄 ' + _t('nav_leave')) +
     navLink('schedule',        '📅 ' + _t('nav_schedule')) +
-    // navLink('quotation',       '📄 ' + _t('nav_quotation')) +        // ปิดชั่วคราว
-    // navLink('contract',        '📜 ' + _t('nav_contract')) +         // ปิดชั่วคราว
     navLink('statistics',      '📈 ' + _t('nav_statistics')) +
-    // navLink('equipment',       '🎸 ' + _t('nav_equipment')) +        // ปิดชั่วคราว
-    // navLink('clients',         '🤝 ' + _t('nav_clients')) +          // ปิดชั่วคราว
+    navLink('equipment',       '🎸 ' + _t('nav_equipment')) +
     navLink('band-info',       '👥 ' + _t('nav_bandInfo')) +
-    navLink('my-profile',      '👤 ข้อมูลส่วนตัว') +
+    navLink('my-profile',      '👤 ' + _t('nav_myProfile')) +
     navLink('user-manual',     '📖 ' + _t('nav_userManual'));
 
   // ── เมนูผู้จัดการวง ───────────────────────────────────
@@ -79,6 +75,10 @@ function renderMainNav(containerId) {
     navLink('attendance-payroll', '📋 ' + _t('nav_attendance')) +
     navLink('job-calculator',     '🧮 ' + _t('nav_jobCalculator')) +
     navLink('band-fund',          '💰 ' + _t('nav_bandFund')) +
+    navLink('external-payout',    '💵 ' + _t('nav_externalPayout')) +
+    navLink('quotation',          '📄 ' + _t('nav_quotation')) +
+    navLink('contract',           '📜 ' + _t('nav_contract')) +
+    navLink('clients',            '🤝 ' + _t('nav_clients')) +
     navLink('band-settings',      '⚙️ ' + _t('nav_settings'))
   ) : '';
 

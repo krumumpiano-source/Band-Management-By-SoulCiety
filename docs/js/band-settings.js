@@ -444,26 +444,81 @@ function renderMembers() {
   if (noEl) noEl.style.display = 'none';
 
   if (members.length > 0) {
-    // Profile-based member list (read-only)
+    // Profile-based member list with role management
     var ROLE_LABELS = { admin: '👑 แอดมิน', manager: '🎯 ผู้จัดการวง', member: '🎵 สมาชิก' };
     var ROLE_COLORS = { admin: '#e53e3e', manager: '#3182ce', member: '#38a169' };
+    var currentEmail = (localStorage.getItem('userEmail') || '').toLowerCase();
     list.innerHTML = members.map(function(p) {
       var displayName = p.nickname || p.first_name || p.user_name || p.email || '?';
       var fullName = (p.first_name && p.last_name) ? p.first_name + ' ' + p.last_name : '';
-      var roleBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:' + (ROLE_COLORS[p.role] || '#666') + ';color:#fff">' + (ROLE_LABELS[p.role] || p.role) + '</span>';
+      var isSelf = (p.email || '').toLowerCase() === currentEmail;
+      var isAdminRole = p.role === 'admin';
+      // Role select (disabled for self and admin)
+      var roleHtml;
+      if (isAdminRole || isSelf) {
+        var roleBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:' + (ROLE_COLORS[p.role] || '#666') + ';color:#fff">' + (ROLE_LABELS[p.role] || p.role) + '</span>';
+        roleHtml = roleBadge;
+      } else {
+        roleHtml = '<select class="role-select" data-uid="' + esc(p.id) + '" style="padding:4px 8px;border-radius:8px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;cursor:pointer">' +
+          '<option value="member"' + (p.role === 'member' ? ' selected' : '') + '>🎵 สมาชิก</option>' +
+          '<option value="manager"' + (p.role === 'manager' ? ' selected' : '') + '>🎯 ผู้จัดการวง</option>' +
+        '</select>';
+      }
+      // Remove button (not for self or admin)
+      var removeBtn = (!isSelf && !isAdminRole)
+        ? '<button type="button" class="member-remove-btn" data-uid="' + esc(p.id) + '" data-name="' + esc(displayName) + '" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px;opacity:0.6;transition:opacity .15s" title="ลบออกจากวง" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6">🗑️</button>'
+        : '';
       return '<div class="member-item" style="align-items:center">' +
         '<div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--premium-gold),#b7791f);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;flex-shrink:0">' + esc(displayName.charAt(0).toUpperCase()) + '</div>' +
         '<div style="flex:1;min-width:120px">' +
-          '<div style="font-weight:700;font-size:var(--text-sm)">' + esc(displayName) + (fullName ? ' <span style="font-weight:400;color:var(--premium-text-muted);font-size:12px">(' + esc(fullName) + ')</span>' : '') + '</div>' +
+          '<div style="font-weight:700;font-size:var(--text-sm)">' + esc(displayName) + (fullName ? ' <span style="font-weight:400;color:var(--premium-text-muted);font-size:12px">(' + esc(fullName) + ')</span>' : '') + (isSelf ? ' <span style="font-size:11px;color:var(--premium-gold)">(คุณ)</span>' : '') + '</div>' +
           '<div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:2px">' +
             (p.instrument ? '🎸 ' + esc(p.instrument) + ' · ' : '') +
             (p.phone ? '📱 ' + esc(p.phone) + ' · ' : '') +
             esc(p.email || '') +
           '</div>' +
         '</div>' +
-        '<div>' + roleBadge + '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' + roleHtml + removeBtn + '</div>' +
       '</div>';
     }).join('');
+    // Role change handler
+    list.querySelectorAll('.role-select').forEach(function(sel) {
+      sel.addEventListener('change', function() {
+        var uid = sel.dataset.uid;
+        var newRole = sel.value;
+        var label = newRole === 'manager' ? 'ผู้จัดการวง' : 'สมาชิก';
+        if (!confirm('เปลี่ยนบทบาทเป็น "' + label + '" ?')) { loadProfileMembers(); return; }
+        sel.disabled = true;
+        gasRun('updateMemberRole', { userId: uid, role: newRole }, function(r) {
+          sel.disabled = false;
+          if (r && r.success) {
+            showToast('เปลี่ยนบทบาทเรียบร้อย', 'success');
+            loadProfileMembers();
+          } else {
+            showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+            loadProfileMembers();
+          }
+        });
+      });
+    });
+    // Remove member handler
+    list.querySelectorAll('.member-remove-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var uid = btn.dataset.uid;
+        var name = btn.dataset.name;
+        if (!confirm('ลบ "' + name + '" ออกจากวง?\nสมาชิกจะถูกนำออกจากวงทันที')) return;
+        btn.disabled = true;
+        gasRun('removeMember', { userId: uid }, function(r) {
+          btn.disabled = false;
+          if (r && r.success) {
+            showToast('ลบสมาชิกออกจากวงเรียบร้อย', 'success');
+            loadProfileMembers();
+          } else {
+            showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+          }
+        });
+      });
+    });
   } else {
     // Fallback: old bandMembersData manual list
     list.innerHTML = bandMembersData.map(function(m, i) {
