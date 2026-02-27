@@ -249,7 +249,9 @@ function ciSubmitLeaveSimple() {
 
   var date = ciSelectedDate || '';
   var venue = ciSelectedVenue || '';
-  var checkedSlots = Array.from(document.querySelectorAll('input[name="ciSlot"]:checked')).map(function(cb) { return cb.value; });
+  // ไม่มีคนแทน = ไม่ต้องเลือกรอบเวลา แค่บันทึกว่าลาเฉยๆ
+  var checkedSlots = noSub ? [] : Array.from(document.querySelectorAll('input[name="ciSlot"]:checked')).map(function(cb) { return cb.value; });
+  var reason = noSub ? 'ลางาน (ไม่มีคนแทน)' : 'ลางาน';
 
   var btn = ciGetEl('ciLeaveSubmitSimple');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
@@ -261,7 +263,7 @@ function ciSubmitLeaveSimple() {
     date: date,
     venue: venue,
     slots: JSON.stringify(checkedSlots),
-    reason: 'ลางาน',
+    reason: reason,
     substituteName: subName,
     substituteContact: ''
   };

@@ -418,10 +418,12 @@
       if (noSub) subName = '';
       var dateStr = qciSelectedDate.toISOString().split('T')[0];
       var venue = qciSelectedVenue || '';
-      var slots = qciSelectedSlots.length ? qciSelectedSlots : [];
+      // ไม่มีคนแทน = ไม่ต้องเลือกรอบเวลา แค่บันทึกว่าลาเฉยๆ
+      var slots = noSub ? [] : (qciSelectedSlots.length ? qciSelectedSlots : []);
+      var reason = noSub ? 'ลางาน (ไม่มีคนแทน)' : 'ลางาน';
       var btn = document.getElementById('qciLeaveSubmit');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
-      gasRun('requestLeave', { bandId: qciBandId, memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '', memberName: localStorage.getItem('userName') || '', date: dateStr, venue: venue, slots: JSON.stringify(slots), reason: 'ลางาน', substituteName: subName, substituteContact: '' }, function(r) {
+      gasRun('requestLeave', { bandId: qciBandId, memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '', memberName: localStorage.getItem('userName') || '', date: dateStr, venue: venue, slots: JSON.stringify(slots), reason: reason, substituteName: subName, substituteContact: '' }, function(r) {
         if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
         if (r && r.success) {
           showToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');

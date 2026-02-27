@@ -510,7 +510,9 @@
 
     var dateStr = qciSelectedDate.toISOString().split('T')[0];
     var venue = qciSelectedVenue || '';
-    var slots = qciSelectedSlots.length ? qciSelectedSlots : [];
+    // ไม่มีคนแทน = ไม่ต้องเลือกรอบเวลา แค่บันทึกว่าลาเฉยๆ
+    var slots = noSub ? [] : (qciSelectedSlots.length ? qciSelectedSlots : []);
+    var reason = noSub ? 'ลางาน (ไม่มีคนแทน)' : 'ลางาน';
 
     var btn = document.getElementById('qciLeaveSubmit');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
@@ -522,7 +524,7 @@
       date: dateStr,
       venue: venue,
       slots: JSON.stringify(slots),
-      reason: 'ลางาน',
+      reason: reason,
       substituteName: subName,
       substituteContact: ''
     };
