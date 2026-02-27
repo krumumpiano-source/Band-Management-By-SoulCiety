@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     .attendance-table th,.attendance-table td{padding:6px 10px;border:1px solid var(--premium-border,#e2e8f0);font-size:13px;white-space:nowrap}
     .attendance-table th{background:var(--premium-off-white,#f8f8f6);font-weight:600}
@@ -121,6 +122,9 @@
       <!-- Payout Table -->
       <div class="card" style="margin-bottom:var(--spacing-lg)">
         <div class="card-header"><h3 class="card-title">💰 ตารางจ่ายเงิน</h3></div>
+        <div class="ap-legend" style="font-size:12px;color:var(--premium-text-muted);margin-bottom:8px">
+          คำนวณจากตารางเข้างาน × อัตราค่าแรงในตั้งค่าวง — หากแสดง - แสดงว่ายังไม่ได้ตั้งอัตราค่าแรงในตั้งค่าวง
+        </div>
         <div class="table-responsive">
           <table class="table payout-table" style="min-width:500px">
             <thead id="payoutTableHead"></thead>
@@ -134,8 +138,8 @@
       <!-- Action Buttons -->
       <div class="action-btns">
         <button id="saveBtn" class="btn btn-primary">💾 บันทึกข้อมูล</button>
-        <button id="generateVenueReceiptBtn" class="btn btn-secondary">🧾 ใบรับ (สถานที่)</button>
-        <button id="generateMemberReceiptBtn" class="btn btn-secondary">🧾 ใบรับ (สมาชิก)</button>
+        <button id="generateVenueReceiptBtn" class="btn btn-secondary">🧾 เบิกร้าน</button>
+        <button id="generateMemberReceiptBtn" class="btn btn-secondary">🧾 แจ้งจ่ายรายคน</button>
       </div>
     </div>
   </main>

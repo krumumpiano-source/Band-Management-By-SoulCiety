@@ -386,9 +386,15 @@ function apRenderPayout() {
   if (!thead || !tbody) return;
   if (!apMembers.length) { thead.innerHTML=''; tbody.innerHTML=''; return; }
   var DN = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+  var RL = { shift:'บ/เบรค', hourly:'บ/ชม', fixed:'คงที่' };
 
+  // Header row with member names + rate info
   var h = '<tr><th>วัน</th><th>วันที่</th>';
-  apMembers.forEach(function(m) { h += '<th style="text-align:right">' + apEsc(m.name) + '</th>'; });
+  apMembers.forEach(function(m) {
+    var dr = apDefaultRate(m.id);
+    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '-';
+    h += '<th style="text-align:right;font-size:12px">' + apEsc(m.name) + '<br><span style="font-weight:400;color:#888;font-size:10px">' + rateTxt + '</span></th>';
+  });
   h += '<th style="text-align:right">รวม</th></tr>';
   thead.innerHTML = h;
 
@@ -410,6 +416,16 @@ function apRenderPayout() {
     b += '<td style="text-align:right;font-weight:600">' + (dayTotal>0?dayTotal.toLocaleString('th-TH'):'-') + '</td></tr>';
   });
 
+  // Rate summary row
+  b += '<tr style="background:#f7f7f5"><td colspan="2" style="text-align:right;font-size:12px;color:#888">อัตรา</td>';
+  apMembers.forEach(function(m) {
+    var dr = apDefaultRate(m.id);
+    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '-';
+    b += '<td style="text-align:right;font-size:11px;color:#888">' + rateTxt + '</td>';
+  });
+  b += '<td></td></tr>';
+
+  // Total row
   b += '<tr class="total-row"><td colspan="2" style="text-align:right">รวมสุทธิ</td>';
   apMembers.forEach(function(m) {
     b += '<td style="text-align:right;font-weight:700">' + (mGrand[m.id]>0?mGrand[m.id].toLocaleString('th-TH'):'-') + '</td>';
@@ -454,30 +470,90 @@ function apDoSave() {
   } else done(true);
 }
 
-/* ═══ RECEIPTS ══════════════════════════════════════ */
+/* ═══ RECEIPTS (save as image) ═══════════════════════ */
+/* Helper: render an off-screen HTML block, capture it as PNG, trigger download */
+function apSaveAsImage(htmlContent, fileName) {
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;background:#fff;padding:32px;font-family:Sarabun,Kanit,sans-serif;min-width:700px;max-width:900px';
+  wrap.innerHTML = htmlContent;
+  document.body.appendChild(wrap);
+  if (typeof html2canvas === 'undefined') { apToast('กรุณารอโหลด html2canvas', 'error'); document.body.removeChild(wrap); return; }
+  html2canvas(wrap, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(function(canvas) {
+    document.body.removeChild(wrap);
+    var link = document.createElement('a');
+    link.download = fileName;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    apToast('บันทึกรูปภาพสำเร็จ', 'success');
+  }).catch(function(err) {
+    document.body.removeChild(wrap);
+    apToast('เกิดข้อผิดพลาดในการบันทึก: ' + err, 'error');
+  });
+}
+
 function apPrintVenueReceipt() {
   var vs = apEl('venue'), vn = (vs && vs.selectedIndex>0) ? vs.options[vs.selectedIndex].text : '';
   if (!vn) { apToast('กรุณาเลือกร้าน', 'error'); return; }
   var dt = apDateRange.length ? apFmtDate(new Date(apDateRange[0])) + (apDateRange.length>1 ? ' – '+apFmtDate(new Date(apDateRange[apDateRange.length-1])) : '') : '';
+  var DN = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+  var RL = { shift:'บ/เบรค', hourly:'บ/ชม', fixed:'คงที่' };
+
+  // Build a full attendance-style table with wage amounts
   var total = 0;
-  apMembers.forEach(function(m) { apDateRange.forEach(function(ds) {
-    apSlotsForDay(new Date(ds).getDay()).forEach(function(slot) {
+  var mGrand = {}; apMembers.forEach(function(m) { mGrand[m.id] = 0; });
+
+  var tableRows = '';
+  apDateRange.forEach(function(ds) {
+    var dtObj = new Date(ds), dow = dtObj.getDay(), slots = apSlotsForDay(dow);
+    slots.forEach(function(slot) {
       var sk = slot.start+'-'+slot.end;
-      if (apChecked[m.id]&&apChecked[m.id][ds]&&apChecked[m.id][ds].indexOf(sk)!==-1) total += apSlotPay(slot,m.id);
+      var dayTotal = 0;
+      var cells = '';
+      apMembers.forEach(function(m) {
+        var checked = apChecked[m.id] && apChecked[m.id][ds] && apChecked[m.id][ds].indexOf(sk) !== -1;
+        var amt = checked ? apSlotPay(slot, m.id) : 0;
+        mGrand[m.id] += amt; dayTotal += amt;
+        cells += '<td style="text-align:center;padding:6px 8px;border:1px solid #ddd;font-size:13px">' + (checked ? '✅' : '') + '</td>';
+      });
+      total += dayTotal;
+      tableRows += '<tr><td style="padding:6px 8px;border:1px solid #ddd;font-size:13px">' + DN[dow] + '</td>' +
+        '<td style="padding:6px 8px;border:1px solid #ddd;font-size:13px">' + apFmtDate(dtObj) + '</td>' +
+        '<td style="padding:6px 8px;border:1px solid #ddd;font-size:13px">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
+        cells +
+        '<td style="text-align:right;padding:6px 8px;border:1px solid #ddd;font-size:13px;font-weight:600">' + (dayTotal > 0 ? dayTotal.toLocaleString('th-TH') : '-') + '</td></tr>';
     });
-  }); });
-  var html = '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>ใบเบิกร้าน</title>'+
-    '<style>body{font-family:Sarabun,sans-serif;padding:40px;max-width:600px;margin:0 auto}h1{text-align:center;font-size:20px}'+
-    '.info{margin:12px 0;font-size:14px}.total{font-size:2em;font-weight:bold;text-align:center;margin:30px 0}'+
-    'hr{border:none;border-top:1px solid #ccc;margin:20px 0}</style></head>'+
-    '<body><h1>ใบเบิกเงิน — '+apEsc(vn)+'</h1><hr>'+
-    '<div class="info"><b>วง:</b> '+apEsc(apBandName)+'</div>'+
-    '<div class="info"><b>ผู้จัดการ:</b> '+apEsc(apBandManager)+'</div>'+
-    '<div class="info"><b>วันที่:</b> '+dt+'</div>'+
-    '<div class="info"><b>สมาชิก:</b> '+apMembers.length+' คน</div>'+
-    '<hr><div class="total">'+total.toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท</div>'+
-    '<script>setTimeout(function(){window.print()},500)<\/script></body></html>';
-  var w = window.open('','_blank'); w.document.write(html); w.document.close();
+  });
+
+  // Member headers with rate
+  var memberHeaders = '';
+  apMembers.forEach(function(m) {
+    var dr = apDefaultRate(m.id);
+    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '';
+    memberHeaders += '<th style="text-align:center;padding:8px 6px;border:1px solid #ddd;font-size:12px;background:#f5f5f5">' +
+      apEsc(m.name) + (m.position ? '<br><span style="font-weight:400;color:#888;font-size:10px">' + apEsc(m.position) + '</span>' : '') +
+      (rateTxt ? '<br><span style="font-weight:400;color:#b08000;font-size:10px">' + rateTxt + '</span>' : '') + '</th>';
+  });
+
+  // Total row
+  var totalRow = '<tr style="background:#f9f7f0"><td colspan="3" style="text-align:right;padding:8px;border:1px solid #ddd;font-weight:700">รวมทั้งหมด</td>';
+  apMembers.forEach(function(m) {
+    totalRow += '<td style="text-align:center;padding:8px;border:1px solid #ddd;font-weight:700;font-size:13px">' + (mGrand[m.id] > 0 ? mGrand[m.id].toLocaleString('th-TH') : '-') + '</td>';
+  });
+  totalRow += '<td style="text-align:right;padding:8px;border:1px solid #ddd;font-weight:700;font-size:15px;color:#b08000">' + total.toLocaleString('th-TH', {minimumFractionDigits: 2}) + ' ฿</td></tr>';
+
+  var html = '<div style="text-align:center;margin-bottom:16px">' +
+    '<h2 style="margin:0;font-size:18px;color:#333">🧾 เบิกร้าน — ' + apEsc(vn) + '</h2>' +
+    '<p style="margin:4px 0;font-size:13px;color:#666">วง: ' + apEsc(apBandName) + ' | ผู้จัดการ: ' + apEsc(apBandManager) + ' | ' + dt + '</p></div>' +
+    '<table style="width:100%;border-collapse:collapse">' +
+    '<thead><tr><th style="padding:8px 6px;border:1px solid #ddd;font-size:12px;background:#f5f5f5">วัน</th>' +
+    '<th style="padding:8px 6px;border:1px solid #ddd;font-size:12px;background:#f5f5f5">วันที่</th>' +
+    '<th style="padding:8px 6px;border:1px solid #ddd;font-size:12px;background:#f5f5f5">ช่วงเวลา</th>' +
+    memberHeaders +
+    '<th style="text-align:right;padding:8px 6px;border:1px solid #ddd;font-size:12px;background:#f5f5f5">รวม</th></tr></thead>' +
+    '<tbody>' + tableRows + totalRow + '</tbody></table>';
+
+  var safeVn = vn.replace(/[^a-zA-Z0-9ก-๙]/g, '_');
+  apSaveAsImage(html, 'เบิกร้าน_' + safeVn + '_' + (apDateRange[0]||'') + '.png');
 }
 
 function apPrintMemberReceipt() {
@@ -492,23 +568,32 @@ function apPrintMemberReceipt() {
         if (apChecked[m.id]&&apChecked[m.id][ds]&&apChecked[m.id][ds].indexOf(sk)!==-1) { totalSlots++; totalAmt += apSlotPay(slot,m.id); }
       });
     });
-    if (totalSlots>0) { grand += totalAmt;
-      rows += '<tr><td>'+apEsc(m.name)+'</td><td>'+apEsc(m.position||'-')+'</td>'+
-        '<td style="text-align:center">'+totalSlots+'</td>'+
-        '<td style="text-align:right">'+(dr.rate>0?dr.rate.toLocaleString('th-TH')+' '+(RL[dr.type]||''):'-')+'</td>'+
-        '<td style="text-align:right;font-weight:bold">'+totalAmt.toLocaleString('th-TH',{minimumFractionDigits:2})+'</td></tr>';
-    }
+    grand += totalAmt;
+    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '-';
+    rows += '<tr>' +
+      '<td style="padding:8px;border:1px solid #ddd;font-size:13px">' + apEsc(m.name) + '</td>' +
+      '<td style="padding:8px;border:1px solid #ddd;font-size:13px">' + apEsc(m.position||'-') + '</td>' +
+      '<td style="text-align:center;padding:8px;border:1px solid #ddd;font-size:13px">' + totalSlots + '</td>' +
+      '<td style="text-align:right;padding:8px;border:1px solid #ddd;font-size:13px">' + rateTxt + '</td>' +
+      '<td style="text-align:right;padding:8px;border:1px solid #ddd;font-size:13px;font-weight:bold">' + (totalAmt > 0 ? totalAmt.toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-') + '</td></tr>';
   });
-  var html = '<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>ใบเบิกจ่ายรายคน</title>'+
-    '<style>body{font-family:Sarabun,sans-serif;padding:40px;max-width:700px;margin:0 auto}h1{text-align:center;font-size:20px}'+
-    'table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ccc;padding:8px;font-size:13px}th{background:#f5f5f5}'+
-    '.total{text-align:right;font-size:1.4em;font-weight:bold;margin-top:16px}</style></head>'+
-    '<body><h1>ใบเบิกจ่ายรายคน</h1>'+
-    '<p><b>วง:</b> '+apEsc(apBandName)+' &nbsp; <b>ผู้จัดการ:</b> '+apEsc(apBandManager)+' &nbsp; <b>วันที่:</b> '+dt+'</p>'+
-    '<table><thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th>เบรค</th><th>อัตรา</th><th>จำนวนเงิน</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-    '<div class="total">รวมทั้งหมด: '+grand.toLocaleString('th-TH',{minimumFractionDigits:2})+' บาท</div>'+
-    '<script>setTimeout(function(){window.print()},500)<\/script></body></html>';
-  var w = window.open('','_blank'); w.document.write(html); w.document.close();
+
+  var html = '<div style="text-align:center;margin-bottom:16px">' +
+    '<h2 style="margin:0;font-size:18px;color:#333">🧾 แจ้งจ่ายรายคน</h2>' +
+    '<p style="margin:4px 0;font-size:13px;color:#666">วง: ' + apEsc(apBandName) + ' | ผู้จัดการ: ' + apEsc(apBandManager) + ' | ' + dt + '</p></div>' +
+    '<table style="width:100%;border-collapse:collapse">' +
+    '<thead><tr>' +
+    '<th style="padding:8px;border:1px solid #ddd;font-size:12px;background:#f5f5f5;text-align:left">ชื่อ</th>' +
+    '<th style="padding:8px;border:1px solid #ddd;font-size:12px;background:#f5f5f5;text-align:left">ตำแหน่ง</th>' +
+    '<th style="padding:8px;border:1px solid #ddd;font-size:12px;background:#f5f5f5;text-align:center">เบรค</th>' +
+    '<th style="padding:8px;border:1px solid #ddd;font-size:12px;background:#f5f5f5;text-align:right">อัตรา</th>' +
+    '<th style="padding:8px;border:1px solid #ddd;font-size:12px;background:#f5f5f5;text-align:right">จำนวนเงิน</th>' +
+    '</tr></thead><tbody>' + rows +
+    '<tr style="background:#f9f7f0"><td colspan="4" style="text-align:right;padding:10px 8px;border:1px solid #ddd;font-weight:700;font-size:14px">รวมทั้งหมด</td>' +
+    '<td style="text-align:right;padding:10px 8px;border:1px solid #ddd;font-weight:700;font-size:16px;color:#b08000">' + grand.toLocaleString('th-TH', {minimumFractionDigits: 2}) + ' ฿</td></tr>' +
+    '</tbody></table>';
+
+  apSaveAsImage(html, 'แจ้งจ่ายรายคน_' + (apDateRange[0]||'') + '.png');
 }
 
 /* ═══ INIT ══════════════════════════════════════════ */
