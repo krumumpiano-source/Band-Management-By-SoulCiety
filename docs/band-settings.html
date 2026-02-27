@@ -132,12 +132,10 @@
       <div class="card">
         <div class="card-header" style="justify-content:space-between">
           <h3 class="card-title">👥 สมาชิกวง</h3>
-          <div style="display:flex;gap:8px">
-            <button id="addMemberBtn" class="btn btn-secondary btn-sm">➕ เพิ่มสมาชิก</button>
-            <button type="button" class="btn btn-primary btn-sm" onclick="saveMembers(this)">💾 บันทึก</button>
-          </div>
+          <span id="memberCountBadge" style="font-size:var(--text-sm);color:var(--premium-text-muted);font-weight:600"></span>
         </div>
-        <div id="noMembers" style="display:none"><p class="empty-state-small">ยังไม่มีสมาชิก กดปุ่ม ➕ เพื่อเพิ่ม</p></div>
+        <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-sm)">สมาชิกที่ลงทะเบียนผ่านรหัสประจำวงและได้รับการอนุมัติแล้ว — ข้อมูลนี้เชื่อมกับระบบลงเวลาและตารางงานโดยอัตโนมัติ</p>
+        <div id="noMembers" style="display:none"><p class="empty-state-small">ยังไม่มีสมาชิก</p></div>
         <div id="membersList"></div>
         <div class="invite-box">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">

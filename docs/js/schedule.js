@@ -59,7 +59,7 @@ function getWeekStartDate(year, week) {
 function loadBandData() {
   currentBandId = localStorage.getItem('bandId') || sessionStorage.getItem('bandId');
 
-  // Load members from localStorage bandSettings
+  // Load members from localStorage bandSettings (fallback)
   var stored = localStorage.getItem('bandSettings');
   if (stored) {
     try {
@@ -67,11 +67,23 @@ function loadBandData() {
       if (settings.members && settings.members.length > 0) bandMembersData = settings.members;
     } catch(e) {}
   }
-  if (bandMembersData.length === 0) {
-    bandMembersData = [
-      { id: 'member_demo_1', name: 'สมาชิก 1', position: '' },
-      { id: 'member_demo_2', name: 'สมาชิก 2', position: '' }
-    ];
+
+  // Load profile-based members from API (source of truth)
+  if (currentBandId && typeof gasRun === 'function') {
+    gasRun('getBandProfiles', { bandId: currentBandId }, function(r) {
+      if (r && r.success && r.data && r.data.length > 0) {
+        bandMembersData = r.data.map(function(p) {
+          var displayName = p.nickname || p.first_name || p.user_name || p.email || '?';
+          return { id: p.id, memberId: p.id, name: displayName, position: p.instrument || '' };
+        });
+        // Save to localStorage for offline use
+        var s = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+        s.members = bandMembersData;
+        localStorage.setItem('bandSettings', JSON.stringify(s));
+        renderMemberFilter();
+        renderMemberCheckboxes();
+      }
+    });
   }
 
   // Load schedule from API
@@ -428,7 +440,7 @@ function loadWeeklyTimetable() {
         return { id: v.id || v.venueId || '', name: v.name || v.venueName || '' };
       });
       weeklySchedule = s.schedule || {};
-      if (s.members && s.members.length > 0) bandMembersData = s.members;
+      // Use bandMembersData which is already profile-synced from loadBandData
     } catch(e) {}
   }
   renderWeeklyTimetable();
@@ -437,7 +449,6 @@ function loadWeeklyTimetable() {
       if (r && r.success && r.data) {
         if (r.data.venues) weeklyVenues = r.data.venues.map(function(v) { return { id: v.id || v.venueId || '', name: v.name || v.venueName || '' }; });
         if (r.data.schedule) weeklySchedule = r.data.schedule;
-        if (r.data.members) bandMembersData = r.data.members;
         renderWeeklyTimetable();
       }
     });

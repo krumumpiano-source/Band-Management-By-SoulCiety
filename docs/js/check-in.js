@@ -50,11 +50,7 @@ function ciLoadSettings(callback) {
     } catch(e) {}
   }
 
-  if (ciBandSettings.venues.length > 0) {
-    callback();
-    return;
-  }
-
+  // Always try fetching from API for fresh data if possible
   if (ciCurrentBandId && typeof gasRun === 'function') {
     gasRun('getBandSettings', { bandId: ciCurrentBandId }, function(r) {
       if (r && r.success && r.data) {
@@ -96,6 +92,15 @@ function ciGetSlotsForDate(dateStr) {
   var date = new Date(dateStr);
   var dow = date.getDay(); // 0=Sunday ... 6=Saturday
   var dayData = ciBandSettings.scheduleData[dow] || ciBandSettings.scheduleData[String(dow)];
+
+  // New format: array of slot objects [{id, venueId, startTime, endTime, members}]
+  if (Array.isArray(dayData) && dayData.length > 0) {
+    return dayData.map(function(s) {
+      var st = s.startTime || '', et = s.endTime || '';
+      return { key: st + '-' + et, startTime: st, endTime: et, label: st + ' – ' + et };
+    });
+  }
+  // Old format: {timeSlots: [{startTime, endTime}]}
   if (dayData && dayData.timeSlots && dayData.timeSlots.length > 0) {
     return dayData.timeSlots.map(function(s) {
       return { key: s.startTime + '-' + s.endTime, startTime: s.startTime, endTime: s.endTime, label: s.startTime + ' – ' + s.endTime };

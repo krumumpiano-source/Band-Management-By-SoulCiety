@@ -11,6 +11,7 @@ var venues = [];   // [{id, name}]
 var schedule = {}; // {dayOfWeek: [{id, venueId, startTime, endTime, members:[{memberId,rate,rateType}]}]}
 var payroll  = { period: 'daily', weekStart: 1, weekEnd: 0 };
 var bandMembersData = [];
+var profileMembers  = [];   // profiles with band_id + status=active
 var currentInviteCode   = null;
 var currentInviteExpires = null;
 
@@ -297,6 +298,7 @@ function renderAll() {
   }
   renderBandCode();
   loadPendingMembers();
+  loadProfileMembers();
   renderPayrollSettings();
 }
 function updateBandInfo() {
@@ -400,28 +402,83 @@ function rejectMember(userId) {
 }
 
 /* ══════════════════════════════════════════
-   MEMBERS
+   MEMBERS (from registered profiles — read only)
 ══════════════════════════════════════════ */
+function loadProfileMembers() {
+  if (typeof gasRun !== 'function' || !currentBandId) return;
+  gasRun('getBandProfiles', { bandId: currentBandId }, function(r) {
+    if (r && r.success && r.data) {
+      profileMembers = r.data;
+      // Sync into bandMembersData so schedule slot detail modal works
+      bandMembersData = profileMembers.map(function(p) {
+        var displayName = p.nickname || p.first_name || p.user_name || p.email || '?';
+        return {
+          id: p.id,
+          memberId: p.id,
+          name: displayName,
+          position: p.instrument || '',
+          profileData: p
+        };
+      });
+      // Save synced members to localStorage for schedule page
+      var s = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+      s.members = bandMembersData;
+      localStorage.setItem('bandSettings', JSON.stringify(s));
+      renderMembers();
+      renderScheduleGrid();
+    }
+  });
+}
+
 function renderMembers() {
   var list = getEl('membersList'), noEl = getEl('noMembers'); if (!list) return;
-  if (bandMembersData.length === 0) {
+  var countBadge = getEl('memberCountBadge');
+  // If profileMembers loaded, render profile-based list; otherwise show bandMembersData
+  var members = profileMembers.length > 0 ? profileMembers : [];
+  if (countBadge) countBadge.textContent = members.length > 0 ? members.length + ' คน' : '';
+  if (members.length === 0 && bandMembersData.length === 0) {
     list.innerHTML = '';
-    if (noEl) { noEl.style.display = 'block'; noEl.innerHTML = '<p class="empty-state-small">ยังไม่มีสมาชิก กดปุ่ม ➕ เพื่อเพิ่ม</p>'; }
+    if (noEl) { noEl.style.display = 'block'; noEl.innerHTML = '<p class="empty-state-small">ยังไม่มีสมาชิกในวง<br><small style="color:var(--premium-text-muted)">สมาชิกสมัครผ่านรหัสประจำวง → ผู้จัดการอนุมัติ → ปรากฏที่นี่</small></p>'; }
     return;
   }
   if (noEl) noEl.style.display = 'none';
-  list.innerHTML = bandMembersData.map(function(m, i) {
-    return '<div class="member-item" data-mi="' + i + '">' +
-      '<div class="form-group"><label>ชื่อสมาชิก</label><input type="text" class="mi-name" data-mi="' + i + '" value="' + esc(m.name||'') + '" placeholder="ชื่อ"></div>' +
-      '<div class="form-group"><label>ตำแหน่ง</label><select class="mi-pos" data-mi="' + i + '"><option value="">เลือกตำแหน่ง</option>' +
-        POSITIONS.map(function(p) { return '<option' + (m.position === p ? ' selected' : '') + '>' + p + '</option>'; }).join('') +
-      '</select></div><button type="button" class="member-remove" data-mi="' + i + '">🗑️</button></div>';
-  }).join('');
-  list.querySelectorAll('.mi-name').forEach(function(e) { e.addEventListener('input', function() { bandMembersData[+this.dataset.mi].name = this.value; }); });
-  list.querySelectorAll('.mi-pos').forEach(function(e) { e.addEventListener('change', function() { bandMembersData[+this.dataset.mi].position = this.value; }); });
-  list.querySelectorAll('.member-remove').forEach(function(btn) {
-    btn.addEventListener('click', function() { if (confirm('ลบสมาชิกคนนี้?')) { bandMembersData.splice(+this.dataset.mi, 1); renderMembers(); } });
-  });
+
+  if (members.length > 0) {
+    // Profile-based member list (read-only)
+    var ROLE_LABELS = { admin: '👑 แอดมิน', manager: '🎯 ผู้จัดการวง', member: '🎵 สมาชิก' };
+    var ROLE_COLORS = { admin: '#e53e3e', manager: '#3182ce', member: '#38a169' };
+    list.innerHTML = members.map(function(p) {
+      var displayName = p.nickname || p.first_name || p.user_name || p.email || '?';
+      var fullName = (p.first_name && p.last_name) ? p.first_name + ' ' + p.last_name : '';
+      var roleBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:' + (ROLE_COLORS[p.role] || '#666') + ';color:#fff">' + (ROLE_LABELS[p.role] || p.role) + '</span>';
+      return '<div class="member-item" style="align-items:center">' +
+        '<div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--premium-gold),#b7791f);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;flex-shrink:0">' + esc(displayName.charAt(0).toUpperCase()) + '</div>' +
+        '<div style="flex:1;min-width:120px">' +
+          '<div style="font-weight:700;font-size:var(--text-sm)">' + esc(displayName) + (fullName ? ' <span style="font-weight:400;color:var(--premium-text-muted);font-size:12px">(' + esc(fullName) + ')</span>' : '') + '</div>' +
+          '<div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:2px">' +
+            (p.instrument ? '🎸 ' + esc(p.instrument) + ' · ' : '') +
+            (p.phone ? '📱 ' + esc(p.phone) + ' · ' : '') +
+            esc(p.email || '') +
+          '</div>' +
+        '</div>' +
+        '<div>' + roleBadge + '</div>' +
+      '</div>';
+    }).join('');
+  } else {
+    // Fallback: old bandMembersData manual list
+    list.innerHTML = bandMembersData.map(function(m, i) {
+      return '<div class="member-item" data-mi="' + i + '">' +
+        '<div class="form-group"><label>ชื่อสมาชิก</label><input type="text" class="mi-name" data-mi="' + i + '" value="' + esc(m.name||'') + '" placeholder="ชื่อ"></div>' +
+        '<div class="form-group"><label>ตำแหน่ง</label><select class="mi-pos" data-mi="' + i + '"><option value="">เลือกตำแหน่ง</option>' +
+          POSITIONS.map(function(p) { return '<option' + (m.position === p ? ' selected' : '') + '>' + p + '</option>'; }).join('') +
+        '</select></div><button type="button" class="member-remove" data-mi="' + i + '">🗑️</button></div>';
+    }).join('');
+    list.querySelectorAll('.mi-name').forEach(function(e) { e.addEventListener('input', function() { bandMembersData[+this.dataset.mi].name = this.value; }); });
+    list.querySelectorAll('.mi-pos').forEach(function(e) { e.addEventListener('change', function() { bandMembersData[+this.dataset.mi].position = this.value; }); });
+    list.querySelectorAll('.member-remove').forEach(function(btn) {
+      btn.addEventListener('click', function() { if (confirm('ลบสมาชิกคนนี้?')) { bandMembersData.splice(+this.dataset.mi, 1); renderMembers(); } });
+    });
+  }
 }
 function addMember() {
   bandMembersData.push({ id: 'member_' + Date.now() + '_' + Math.random().toString(36).substr(2,5), name: '', position: '' });
@@ -808,7 +865,6 @@ function editThisSlot() {
    INIT
 ══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function() {
-  var em = getEl('addMemberBtn');   if (em) em.addEventListener('click', function(e) { e.preventDefault(); addMember(); });
   var ev = getEl('addVenueNameBtn');if (ev) ev.addEventListener('click', function(e) { e.preventDefault(); addVenue(); });
   var es = getEl('saveBtn');        if (es) es.addEventListener('click', function(e) { e.preventDefault(); saveBandSettings(); });
   var pp = getEl('payrollPeriod');  if (pp) pp.addEventListener('change', function() { payroll.period = this.value; renderPayrollSettings(); });

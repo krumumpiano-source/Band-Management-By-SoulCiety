@@ -131,6 +131,7 @@
         // ── Band Members ───────────────────────────────────────────
         case 'getAllBandMembers':
         case 'getBandMembers':     return doGetBandMembers();
+        case 'getBandProfiles':    return doGetBandProfiles(d);
         case 'addBandMember':      return doInsert('band_members', d.data || d);
         case 'updateBandMember':   return doUpdate('band_members', d.memberId, d.data || d);
         case 'deleteBandMember':   return doDelete('band_members', d.memberId);
@@ -434,6 +435,19 @@
         .order('name');
       if (error) throw error;
       return { success: true, data: toCamelList(data) };
+    }
+
+    // ── Band Profiles (registered members) ─────────────────────────
+    async function doGetBandProfiles(d) {
+      var bandId = d.bandId || getBandId();
+      var { data, error } = await sb.from('profiles')
+        .select('id, email, user_name, nickname, first_name, last_name, instrument, phone, role, status, title, band_id, band_name, created_at')
+        .eq('band_id', bandId)
+        .eq('status', 'active')
+        .order('role')
+        .order('nickname');
+      if (error) throw error;
+      return { success: true, data: data || [] };
     }
 
     // ── Attendance ────────────────────────────────────────────────
