@@ -42,6 +42,7 @@ END;
 $$;
 
 -- 3. redeem_invite_code — คัดลอก province ไปยัง profile ด้วย
+--    รองรับ status = 'permanent' (รหัสประจำวง) และ 'active' (รหัสเชิญชั่วคราว)
 CREATE OR REPLACE FUNCTION public.redeem_invite_code(p_code text, p_user_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -50,27 +51,30 @@ DECLARE
 BEGIN
   SELECT * INTO v_invite
   FROM public.invite_codes
-  WHERE upper(code) = upper(p_code) AND status = 'active'
+  WHERE upper(code) = upper(p_code) AND status IN ('active', 'permanent')
   LIMIT 1;
 
   IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'message', 'ไม่พบรหัสเชิญหรือหมดอายุแล้ว');
+    RETURN jsonb_build_object('success', false, 'message', 'ไม่พบรหัสวง หรือรหัสไม่ถูกต้อง');
   END IF;
 
-  IF v_invite.expires_at < now() THEN
+  -- ตรวจวันหมดอายุ (เฉพาะ active — permanent ไม่มี expires_at)
+  IF v_invite.status = 'active' AND v_invite.expires_at IS NOT NULL AND v_invite.expires_at < now() THEN
     UPDATE public.invite_codes SET status = 'expired' WHERE id = v_invite.id;
     RETURN jsonb_build_object('success', false, 'message', 'รหัสเชิญหมดอายุแล้ว');
   END IF;
 
+  -- อัปเดต profile → role = 'pending' (รออนุมัติ)
   UPDATE public.profiles
   SET band_id   = v_invite.band_id,
       band_name = v_invite.band_name,
       province  = v_invite.province,
-      role      = 'member'
+      role      = 'pending'
   WHERE id = p_user_id;
 
+  -- บันทึกการใช้ code
   v_used := coalesce(v_invite.used_by, '') ||
-            CASE WHEN v_invite.used_by IS NOT NULL THEN ',' ELSE '' END ||
+            CASE WHEN v_invite.used_by IS NOT NULL AND v_invite.used_by != '' THEN ',' ELSE '' END ||
             p_user_id::text;
   UPDATE public.invite_codes SET used_by = v_used WHERE id = v_invite.id;
 
@@ -79,12 +83,13 @@ BEGIN
     'band_id',   v_invite.band_id,
     'band_name', v_invite.band_name,
     'province',  v_invite.province,
-    'message',   'เข้าร่วมวงสำเร็จ!'
+    'message',   'ส่งคำขอเข้าร่วมวงแล้ว รอผู้จัดการวงอนุมัติ'
   );
 END;
 $$;
 
 -- 4. lookup_invite_code — preview ข้อมูลวงก่อน redeem (ไม่เปลี่ยน state)
+--    รองรับ status = 'permanent' (รหัสประจำวง) และ 'active' (รหัสเชิญชั่วคราว)
 CREATE OR REPLACE FUNCTION public.lookup_invite_code(p_code text)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -93,28 +98,27 @@ DECLARE
 BEGIN
   SELECT * INTO v_invite
   FROM public.invite_codes
-  WHERE upper(code) = upper(p_code) AND status = 'active'
+  WHERE upper(code) = upper(p_code) AND status IN ('active', 'permanent')
   LIMIT 1;
 
   IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'message', 'ไม่พบรหัสเชิญ หรือรหัสหมดอายุแล้ว');
+    RETURN jsonb_build_object('success', false, 'message', 'ไม่พบรหัสวง หรือรหัสไม่ถูกต้อง');
   END IF;
 
-  IF v_invite.expires_at < now() THEN
+  IF v_invite.status = 'active' AND v_invite.expires_at IS NOT NULL AND v_invite.expires_at < now() THEN
     RETURN jsonb_build_object('success', false, 'message', 'รหัสเชิญหมดอายุแล้ว');
   END IF;
 
   SELECT count(*) INTO v_member_count
   FROM public.profiles
-  WHERE band_id = v_invite.band_id AND status = 'active';
+  WHERE band_id = v_invite.band_id AND role IN ('member', 'manager', 'admin');
 
   RETURN jsonb_build_object(
     'success',      true,
     'band_id',      v_invite.band_id,
     'band_name',    v_invite.band_name,
     'province',     v_invite.province,
-    'member_count', v_member_count,
-    'expires_at',   v_invite.expires_at
+    'member_count', v_member_count
   );
 END;
 $$;
