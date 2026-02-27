@@ -225,3 +225,72 @@
   global.formatDate = formatDate;
 
 })(window);
+
+/* ══════════════════════════════════════════════════════
+   Thai Date Picker Overlay
+   แปลง <input type="date"> / <input type="month">
+   ให้แสดงวันที่ไทย เช่น "23 ก.พ. 2569" แทน "02/23/2026"
+   ═══════════════════════════════════════════════════ */
+(function() {
+  var MS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var ML = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  function fmtThaiDate(iso) {
+    if (!iso) return '';
+    var p = iso.split('-');
+    if (p.length < 3) return '';
+    return parseInt(p[2],10) + ' ' + MS[parseInt(p[1],10)-1] + ' ' + (parseInt(p[0],10)+543);
+  }
+  function fmtThaiMonth(iso) {
+    if (!iso) return '';
+    var p = iso.split('-');
+    if (p.length < 2) return '';
+    return ML[parseInt(p[1],10)-1] + ' ' + (parseInt(p[0],10)+543);
+  }
+
+  function updateOverlay(input) {
+    var ov = input._thaiOverlay; if (!ov) return;
+    var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    var v = desc.get.call(input);
+    ov.textContent = (input.getAttribute('type') === 'month') ? fmtThaiMonth(v) : fmtThaiDate(v);
+  }
+
+  function wrapInput(input) {
+    if (input._thaiWrapped) return;
+    input._thaiWrapped = true;
+    // Wrap in container
+    var wrap = document.createElement('div');
+    wrap.className = 'thai-date-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    // Overlay span
+    var ov = document.createElement('span');
+    ov.className = 'thai-date-overlay';
+    wrap.appendChild(ov);
+    input._thaiOverlay = ov;
+    // Listen for user interaction
+    input.addEventListener('change', function() { updateOverlay(input); });
+    input.addEventListener('input',  function() { updateOverlay(input); });
+    // Intercept programmatic .value = xxx
+    var desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    Object.defineProperty(input, 'value', {
+      get: function() { return desc.get.call(this); },
+      set: function(v) { desc.set.call(this, v); updateOverlay(this); },
+      configurable: true
+    });
+    updateOverlay(input);
+  }
+
+  function initThaiDates() {
+    var inputs = document.querySelectorAll('input[type="date"], input[type="month"]');
+    for (var i = 0; i < inputs.length; i++) wrapInput(inputs[i]);
+  }
+  window.initThaiDates = initThaiDates;
+
+  // Run after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initThaiDates);
+  } else {
+    initThaiDates();
+  }
+})();

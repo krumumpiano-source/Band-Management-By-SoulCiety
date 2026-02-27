@@ -132,6 +132,17 @@ main{padding-bottom:calc(var(--spacing-2xl) + env(safe-area-inset-bottom))}
 }
 .form-group textarea,.form-control[rows]{min-height:auto;height:auto}
 
+/* Thai Date Overlay — show พ.ศ. format on date/month pickers */
+.thai-date-wrap{position:relative;width:100%}
+.thai-date-wrap input[type="date"],
+.thai-date-wrap input[type="month"]{color:transparent!important}
+.thai-date-wrap input[type="date"]::-webkit-datetime-edit,
+.thai-date-wrap input[type="month"]::-webkit-datetime-edit{color:transparent}
+.thai-date-wrap input[type="date"]::-webkit-calendar-picker-indicator,
+.thai-date-wrap input[type="month"]::-webkit-calendar-picker-indicator{position:relative;z-index:2;opacity:1}
+.thai-date-overlay{position:absolute;left:var(--spacing-md,12px);top:0;bottom:0;right:36px;display:flex;align-items:center;pointer-events:none;font-size:var(--text-base,1rem);color:var(--premium-text,#333);z-index:1;white-space:nowrap;overflow:hidden}
+.thai-date-overlay:empty::after{content:'เลือกวันที่';color:var(--premium-text-muted,#a0aec0)}
+
 /* Table */
 .table-responsive{overflow-x:auto;border-radius:var(--radius-md)}
 table{width:100%;border-collapse:collapse}
