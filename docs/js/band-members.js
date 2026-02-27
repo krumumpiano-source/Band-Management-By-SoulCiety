@@ -28,7 +28,7 @@ function renderMemberCards(members) {
   container.innerHTML = members.map(function(m) {
     return '<div class="member-card">'
       + '<div class="card-actions">'
-      + '<button class="btn btn-ghost btn-sm" onclick="openMemberModal(\'' + escapeHtml(m.memberId||'') + '\')">✏️</button>'
+      + '<button class="btn btn-ghost btn-sm" onclick="openMemberModal(\'' + escapeHtml(m.id||'') + '\')">✏️</button>'
       + '</div>'
       + '<div class="member-avatar">🎵</div>'
       + '<h4>' + escapeHtml(m.name||'') + '</h4>'
@@ -54,9 +54,9 @@ function openMemberModal(id) {
   document.getElementById('deleteMemberBtn').style.display = 'none';
   document.getElementById('memberModalTitle').textContent = id ? 'แก้ไขสมาชิก' : 'เพิ่มสมาชิก';
   if (id) {
-    var m = _allMembers.find(function(x) { return x.memberId === id; });
+    var m = _allMembers.find(function(x) { return x.id === id; });
     if (m) {
-      document.getElementById('memberId').value = m.memberId || '';
+      document.getElementById('memberId').value = m.id || '';
       document.getElementById('mName').value = m.name || '';
       document.getElementById('mPosition').value = m.position || '';
       document.getElementById('mPhone').value = m.phone || '';

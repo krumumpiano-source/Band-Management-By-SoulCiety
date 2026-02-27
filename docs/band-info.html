@@ -70,7 +70,7 @@
       <!-- Band Info Summary -->
       <div class="card" style="margin-bottom:var(--spacing-xl)">
         <div class="card-header"><h3 class="card-title" data-i18n="bandDetails">รายละเอียดวง</h3>
-          <a href="?page=band-settings" class="btn btn-ghost btn-sm" data-i18n="settings">ตั้งค่า</a>
+          <a href="band-settings.html" class="btn btn-ghost btn-sm" data-i18n="settings">⚙️ ตั้งค่า</a>
         </div>
         <div id="bandInfoBox">
           <div style="display:flex;gap:var(--spacing-xl);flex-wrap:wrap;align-items:center">
@@ -114,14 +114,26 @@
     loadBandInfo(); loadBandMembers();
   });
   function loadBandInfo(){
-    gasRun('getBandSettings',{},function(r){
-      if(r&&r.data&&r.data.bands&&r.data.bands[0]){
-        var b=r.data.bands[0];
-        document.getElementById('bName').textContent=b.name||'—';
-        document.getElementById('bGenre').textContent=b.genre||'';
-        document.getElementById('bFounded').textContent=b.founded?'ก่อตั้ง: '+b.founded:'';
-      }
-    });
+    var bandId = localStorage.getItem('bandId') || '';
+    // Try localStorage first
+    var bName = localStorage.getItem('bandName') || '';
+    var bMgr  = localStorage.getItem('bandManager') || '';
+    if (bName) {
+      document.getElementById('bName').textContent = bName;
+      document.getElementById('bGenre').textContent = '';
+      document.getElementById('bFounded').textContent = bMgr ? '👤 ผู้จัดการ: ' + bMgr : '';
+    }
+    // Refresh from server
+    if (bandId && typeof gasRun === 'function') {
+      gasRun('getBandSettings', { bandId: bandId }, function(r) {
+        if (r && r.success && r.data) {
+          var d = r.data;
+          document.getElementById('bName').textContent = d.bandName || bName || '—';
+          document.getElementById('bGenre').textContent = '';
+          document.getElementById('bFounded').textContent = d.bandManager ? '👤 ผู้จัดการ: ' + d.bandManager : '';
+        }
+      });
+    }
   }
   </script>
 </body>

@@ -438,7 +438,6 @@
       var { data, error } = await sb.from('band_members')
         .select('*')
         .eq('band_id', getBandId())
-        .neq('status', 'inactive')
         .order('name');
       if (error) throw error;
       return { success: true, data: toCamelList(data) };
