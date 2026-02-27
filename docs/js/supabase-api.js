@@ -499,6 +499,30 @@
       };
       var { data, error } = await sb.from('leave_requests').insert(row).select().single();
       if (error) throw error;
+
+      // ── Auto check-in as "leave" so no separate check-in needed ──
+      var slotsArr = [];
+      try { slotsArr = typeof row.slots === 'string' ? JSON.parse(row.slots || '[]') : (row.slots || []); } catch(e){}
+      var ciRow = {
+        band_id:     row.band_id,
+        member_id:   row.member_id,
+        member_name: row.member_name,
+        date:        row.date,
+        venue:       row.venue || '',
+        slots:       slotsArr,
+        check_in_at: new Date().toISOString(),
+        status:      'leave',
+        notes:       row.reason + (row.substitute_name ? ' | คนแทน: ' + row.substitute_name : '')
+      };
+      var { data: existCI } = await sb.from('member_check_ins')
+        .select('id').eq('band_id', ciRow.band_id)
+        .eq('member_id', ciRow.member_id).eq('date', ciRow.date).limit(1);
+      if (existCI && existCI.length > 0) {
+        await sb.from('member_check_ins').update(ciRow).eq('id', existCI[0].id);
+      } else {
+        await sb.from('member_check_ins').insert(ciRow);
+      }
+
       return { success: true, data: toCamel(data) };
     }
 
