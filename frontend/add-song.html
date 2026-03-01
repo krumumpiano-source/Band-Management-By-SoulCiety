@@ -38,9 +38,9 @@
           <div class="form-group">
             <label>นักร้อง</label>
             <div class="singer-group">
-              <label class="singer-option"><input type="radio" name="singer" value="male"> 🎤 ชาย</label>
-              <label class="singer-option"><input type="radio" name="singer" value="female"> 🎤 หญิง</label>
-              <label class="singer-option"><input type="radio" name="singer" value="duet"> 🎤 คู่</label>
+              <label class="singer-option"><input type="radio" name="singer" value="ชาย"> 🎤 ชาย</label>
+              <label class="singer-option"><input type="radio" name="singer" value="หญิง"> 🎤 หญิง</label>
+              <label class="singer-option"><input type="radio" name="singer" value="ชาย/หญิง"> 🎤 คู่</label>
               <label class="singer-option"><input type="radio" name="singer" value="" checked> — ไม่ระบุ</label>
             </div>
           </div>
@@ -66,7 +66,7 @@
       var singerRadio = document.querySelector('input[name="singer"]:checked');
       var bandId   = localStorage.getItem('bandId')   || '';
       var bandName = localStorage.getItem('bandName') || '';
-      gasRun('addSong', {
+      apiCall('addSong', {
         name:    document.getElementById('songName').value.trim(),
         key:     document.getElementById('key').value,
         keyNote: document.getElementById('keyNote').value.trim(),

@@ -57,9 +57,9 @@
           <div class="form-group">
             <label>นักร้อง</label>
             <div class="singer-pills">
-              <div class="singer-pill"><input type="radio" name="singer" id="s-male" value="male"><label for="s-male">🎤 ชาย</label></div>
-              <div class="singer-pill"><input type="radio" name="singer" id="s-female" value="female"><label for="s-female">🎤 หญิง</label></div>
-              <div class="singer-pill"><input type="radio" name="singer" id="s-duet" value="duet"><label for="s-duet">🎤🎤 คู่</label></div>
+              <div class="singer-pill"><input type="radio" name="singer" id="s-male" value="ชาย"><label for="s-male">🎤 ชาย</label></div>
+              <div class="singer-pill"><input type="radio" name="singer" id="s-female" value="หญิง"><label for="s-female">🎤 หญิง</label></div>
+              <div class="singer-pill"><input type="radio" name="singer" id="s-duet" value="ชาย/หญิง"><label for="s-duet">🎤🎤 คู่</label></div>
             </div>
           </div>
           <div style="display:flex;gap:var(--spacing-md);justify-content:flex-end;margin-top:var(--spacing-md)">
@@ -92,11 +92,19 @@
           var keyOpts = Array.from(keyEl.options).map(function(o){ return o.value; });
           keyEl.value = (keyOpts.indexOf(s.key) >= 0) ? s.key : '';
           document.getElementById('bpm').value = (s.bpm > 0) ? s.bpm : '';
-          document.getElementById('era').value = s.era || '';
-          document.getElementById('mood').value = s.mood || '';
+          // era/mood: DB อาจมี suffix เช่น "2523-2532 ('80s)" → ใช้ indexOf จับคู่
+          var eraEl = document.getElementById('era');
+          eraEl.value = '';
+          if (s.era) Array.from(eraEl.options).forEach(function(o){ if (o.value && s.era.indexOf(o.value) >= 0) eraEl.value = o.value; });
+          var moodEl = document.getElementById('mood');
+          moodEl.value = '';
+          if (s.mood) Array.from(moodEl.options).forEach(function(o){ if (o.value && s.mood.indexOf(o.value) >= 0) moodEl.value = o.value; });
+          // singer: รองรับทั้ง TH และ EN จาก DB
           var singerVal = s.singer || '';
+          var singerMap = { 'male': 'ชาย', 'female': 'หญิง', 'duet': 'ชาย/หญิง' };
+          var mappedSinger = singerMap[singerVal] || singerVal;
           var radios = document.querySelectorAll('input[name="singer"]');
-          radios.forEach(function(rd){ rd.checked = (rd.value === singerVal); });
+          radios.forEach(function(rd){ rd.checked = (rd.value === mappedSinger); });
         } else {
           showToast((r&&r.message)||'ไม่พบเพลง','error');
           console.error('[edit-song] getSong failed:', r);

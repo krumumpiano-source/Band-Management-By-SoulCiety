@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -39,9 +39,9 @@
           <div class="form-group">
             <label>นักร้อง</label>
             <div class="singer-group">
-              <label class="singer-option"><input type="radio" name="singer" value="male"> 🎤 ชาย</label>
-              <label class="singer-option"><input type="radio" name="singer" value="female"> 🎤 หญิง</label>
-              <label class="singer-option"><input type="radio" name="singer" value="duet"> 🎤 คู่</label>
+              <label class="singer-option"><input type="radio" name="singer" value="ชาย"> 🎤 ชาย</label>
+              <label class="singer-option"><input type="radio" name="singer" value="หญิง"> 🎤 หญิง</label>
+              <label class="singer-option"><input type="radio" name="singer" value="ชาย/หญิง"> 🎤 คู่</label>
               <label class="singer-option"><input type="radio" name="singer" value=""> — ไม่ระบุ</label>
             </div>
           </div>
@@ -66,7 +66,7 @@
     console.log('[edit-song] songId =', songId);
     if (songId) {
       var bandName = localStorage.getItem('bandName') || '';
-      gasRun('getSong', { songId: songId, bandName: bandName }, function(r) {
+      apiCall('getSong', { songId: songId, bandName: bandName }, function(r) {
         console.log('[edit-song] getSong response =', r);
         if (r && r.success && r.data) {
           var s = r.data;
@@ -77,11 +77,19 @@
           keyEl.value = (keyOpts.indexOf(s.key) >= 0) ? s.key : '';
           document.getElementById('keyNote').value = s.keyNote || '';
           document.getElementById('bpm').value = (s.bpm > 0) ? s.bpm : '';
-          document.getElementById('era').value = s.era || '';
-          document.getElementById('mood').value = s.mood || '';
+          // era/mood: DB อาจมี suffix เช่น "2523-2532 ('80s)" → ใช้ indexOf จับคู่
+          var eraEl = document.getElementById('era');
+          eraEl.value = '';
+          if (s.era) Array.from(eraEl.options).forEach(function(o){ if (o.value && s.era.indexOf(o.value) >= 0) eraEl.value = o.value; });
+          var moodEl = document.getElementById('mood');
+          moodEl.value = '';
+          if (s.mood) Array.from(moodEl.options).forEach(function(o){ if (o.value && s.mood.indexOf(o.value) >= 0) moodEl.value = o.value; });
+          // singer: รองรับทั้ง TH และ EN จาก DB
           var singerVal = s.singer || '';
+          var singerMap = { 'male': 'ชาย', 'female': 'หญิง', 'duet': 'ชาย/หญิง' };
+          var mappedSinger = singerMap[singerVal] || singerVal;
           var radios = document.querySelectorAll('input[name="singer"]');
-          radios.forEach(function(rd){ rd.checked = (rd.value === singerVal); });
+          radios.forEach(function(rd){ rd.checked = (rd.value === mappedSinger); });
         } else {
           showToast((r&&r.message)||'ไม่พบเพลง','error');
           console.error('[edit-song] getSong failed:', r);
@@ -94,7 +102,7 @@
       e.preventDefault();
       var btn = document.getElementById('saveBtn'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
       var singerRadio = document.querySelector('input[name="singer"]:checked');
-      gasRun('updateSong', {
+      apiCall('updateSong', {
         songId: document.getElementById('songId').value,
         name: document.getElementById('songName').value.trim(),
         key: document.getElementById('key').value,

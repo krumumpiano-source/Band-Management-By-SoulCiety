@@ -618,17 +618,27 @@ function getFilterValues() {
 function getDropdownFiltered() {
   var f = getFilterValues();
   return allResults.filter(function (s) {
-    if (f.singer === "ชาย" && s.singer !== 'male') return false;
-    if (f.singer === "หญิง" && s.singer !== 'female') return false;
-    if (f.singer === "คู่" && s.singer !== 'duet') return false;
-    if (f.era && s.era.indexOf(f.era) < 0) return false;
-    if (f.speed && s.bpm > 0) {
-      var bpm = s.bpm;
-      if (f.speed === "ช้า" && bpm > 75) return false;
-      if (f.speed === "กลาง" && (bpm <= 75 || bpm > 115)) return false;
-      if (f.speed === "เร็ว" && bpm <= 115) return false;
+    // Singer — รองรับทั้ง TH (ชาย/หญิง/ชาย·หญิง) และ EN (male/female/duet) ใน DB
+    if (f.singer) {
+      var sv = s.singer || '';
+      var ok = false;
+      if (f.singer === 'ชาย')  ok = (sv === 'ชาย'  || sv === 'male');
+      if (f.singer === 'หญิง') ok = (sv === 'หญิง' || sv === 'female');
+      if (f.singer === 'คู่')  ok = (sv === 'คู่'   || sv === 'duet' || sv === 'ชาย/หญิง');
+      if (!ok) return false;
     }
-    if (f.mood && s.mood && s.mood.indexOf(f.mood) < 0) return false;
+    // Era — indexOf สำหรับ partial match เช่น "2523-2532" ตรงกับ "2523-2532 ('80s)"
+    if (f.era && (!s.era || s.era.indexOf(f.era) < 0)) return false;
+    // Speed — ถ้าเลือกความเร็วแต่เพลงไม่มี BPM ให้ซ่อน
+    if (f.speed) {
+      var bpm = Number(s.bpm) || 0;
+      if (bpm <= 0) return false;
+      if (f.speed === 'ช้า'  && bpm > 75) return false;
+      if (f.speed === 'กลาง' && (bpm <= 75 || bpm > 115)) return false;
+      if (f.speed === 'เร็ว' && bpm <= 115) return false;
+    }
+    // Mood — indexOf สำหรับ partial match เช่น "สุข / สนุก" ตรงกับ "สุข / สนุก (Happy)"
+    if (f.mood && (!s.mood || s.mood.indexOf(f.mood) < 0)) return false;
     return true;
   });
 }
@@ -639,7 +649,11 @@ function applyFiltersAndRender() {
   var searchEl = getEl("searchText");
   if (searchEl && searchEl.value) q = searchEl.value.trim().toLowerCase();
   filteredResults = q
-    ? byDropdown.filter(function (s) { return s.name.toLowerCase().indexOf(q) >= 0; })
+    ? byDropdown.filter(function (s) {
+        return s.name.toLowerCase().indexOf(q) >= 0
+          || (s.artist && s.artist.toLowerCase().indexOf(q) >= 0)
+          || (s.key && s.key.toLowerCase().indexOf(q) >= 0);
+      })
     : byDropdown;
   currentPage = 1;
   renderPage();

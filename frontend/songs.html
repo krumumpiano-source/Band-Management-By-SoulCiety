@@ -380,17 +380,27 @@ function getFilterValues() {
 function getDropdownFiltered() {
   var f = getFilterValues();
   return allResults.filter(function (s) {
-    if (f.singer === "ชาย" && s.singer !== 'male') return false;
-    if (f.singer === "หญิง" && s.singer !== 'female') return false;
-    if (f.singer === "คู่" && s.singer !== 'duet') return false;
-    if (f.era && s.era.indexOf(f.era) < 0) return false;
-    if (f.speed && s.bpm > 0) {
-      var bpm = s.bpm;
-      if (f.speed === "ช้า" && bpm > 75) return false;
-      if (f.speed === "กลาง" && (bpm <= 75 || bpm > 115)) return false;
-      if (f.speed === "เร็ว" && bpm <= 115) return false;
+    // Singer — รองรับทั้ง TH (ชาย/หญิง/ชาย·หญิง) และ EN (male/female/duet) ใน DB
+    if (f.singer) {
+      var sv = s.singer || '';
+      var ok = false;
+      if (f.singer === 'ชาย')  ok = (sv === 'ชาย'  || sv === 'male');
+      if (f.singer === 'หญิง') ok = (sv === 'หญิง' || sv === 'female');
+      if (f.singer === 'คู่')  ok = (sv === 'คู่'   || sv === 'duet' || sv === 'ชาย/หญิง');
+      if (!ok) return false;
     }
-    if (f.mood && s.mood && s.mood.indexOf(f.mood) < 0) return false;
+    // Era — indexOf สำหรับ partial match เช่น "2523-2532" ตรงกับ "2523-2532 ('80s)"
+    if (f.era && (!s.era || s.era.indexOf(f.era) < 0)) return false;
+    // Speed — ถ้าเลือกความเร็วแต่เพลงไม่มี BPM ให้ซ่อน
+    if (f.speed) {
+      var bpm = Number(s.bpm) || 0;
+      if (bpm <= 0) return false;
+      if (f.speed === 'ช้า'  && bpm > 75) return false;
+      if (f.speed === 'กลาง' && (bpm <= 75 || bpm > 115)) return false;
+      if (f.speed === 'เร็ว' && bpm <= 115) return false;
+    }
+    // Mood — indexOf สำหรับ partial match เช่น "สุข / สนุก" ตรงกับ "สุข / สนุก (Happy)"
+    if (f.mood && (!s.mood || s.mood.indexOf(f.mood) < 0)) return false;
     return true;
   });
 }
@@ -401,7 +411,11 @@ function applyFiltersAndRender() {
   var searchEl = getEl("searchText");
   if (searchEl && searchEl.value) q = searchEl.value.trim().toLowerCase();
   filteredResults = q
-    ? byDropdown.filter(function (s) { return s.name.toLowerCase().indexOf(q) >= 0; })
+    ? byDropdown.filter(function (s) {
+        return s.name.toLowerCase().indexOf(q) >= 0
+          || (s.artist && s.artist.toLowerCase().indexOf(q) >= 0)
+          || (s.key && s.key.toLowerCase().indexOf(q) >= 0);
+      })
     : byDropdown;
   currentPage = 1;
   renderPage();
@@ -439,25 +453,18 @@ function loadInitial(forceRefresh) {
     } catch(e) {}
   }
 
-  google.script.run
-    .withSuccessHandler(function (result) {
-      if (result && result.success && result.data) {
-        allResults = result.data;
-        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: allResults })); } catch(e) {}
-      } else {
-        allResults = [];
-        var resultEl = getEl("result");
-        if (resultEl) resultEl.innerHTML = '<div class="result-loading result-error">โหลดข้อมูลไม่ได้: ' + ((result && result.message) || 'error') + '</div>';
-      }
-      setLoading(false);
-      applyFiltersAndRender();
-    })
-    .withFailureHandler(function (err) {
-      setLoading(false);
+  apiCall('getAllSongs', { scope: 'global', bandId: bandId, bandName: bandName }, function (result) {
+    if (result && result.success && result.data) {
+      allResults = result.data;
+      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: allResults })); } catch(e) {}
+    } else {
+      allResults = [];
       var resultEl = getEl("result");
-      if (resultEl) resultEl.innerHTML = '<div class="result-loading result-error">โหลดข้อมูลไม่ได้: ' + (err.message || "error") + '</div>';
-    })
-    .getAllSongs('global', bandId, bandName);
+      if (resultEl) resultEl.innerHTML = '<div class="result-loading result-error">โหลดข้อมูลไม่ได้: ' + ((result && result.message) || 'error') + '</div>';
+    }
+    setLoading(false);
+    applyFiltersAndRender();
+  });
 }
 
 function escapeHtml(text) {
@@ -584,15 +591,12 @@ function loadBandSettings() {
   if (cached && cached.ts && (Date.now() - cached.ts) < 10*60*1000 && cached.data) {
     applySettings(cached.data); return;
   }
-  google.script.run
-    .withSuccessHandler(function(r) {
-      if (r && r.success && r.data) {
-        try { sessionStorage.setItem(SKEY, JSON.stringify({ ts: Date.now(), data: r.data })); } catch(e) {}
-        applySettings(r.data);
-      }
-    })
-    .withFailureHandler(function() {})
-    .getBandSettings(bandId);
+  apiCall('getBandSettings', { bandId: bandId }, function(r) {
+    if (r && r.success && r.data) {
+      try { sessionStorage.setItem(SKEY, JSON.stringify({ ts: Date.now(), data: r.data })); } catch(e) {}
+      applySettings(r.data);
+    }
+  });
 }
 
 window.onload = function() {
@@ -957,10 +961,7 @@ function saveHistory() {
     timeSlot: timeEl    ? timeEl.value    : '',
     songs:    songs
   };
-  google.script.run
-    .withSuccessHandler(function(r){ console.log('[history] saved', r && r.success); })
-    .withFailureHandler(function(){})
-    .savePlaylistHistory(payload);
+  apiCall('savePlaylistHistory', payload, function(r){ console.log('[history] saved', r && r.success); });
 }
 
 function showHistory() {
@@ -968,19 +969,16 @@ function showHistory() {
   document.getElementById('historyList').innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">กำลังโหลด...</p>';
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
-  google.script.run
-    .withSuccessHandler(function(r) {
-      _historyCache = (r && r.success && r.data) ? r.data : [];
-      if (_historyCache.length === 0) {
-        document.getElementById('historyList').innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">ยังไม่มีประวัติ</p>'; return;
-      }
-      var latestDate = _historyCache[0].date || '';
-      var picker = document.getElementById('historyDatePicker');
-      if (picker && latestDate) picker.value = latestDate;
-      filterHistoryByDate(latestDate);
-    })
-    .withFailureHandler(function(){})
-    .getPlaylistHistory(bandId, bandName);
+  apiCall('getPlaylistHistory', { bandId: bandId, bandName: bandName }, function(r) {
+    _historyCache = (r && r.success && r.data) ? r.data : [];
+    if (_historyCache.length === 0) {
+      document.getElementById('historyList').innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">ยังไม่มีประวัติ</p>'; return;
+    }
+    var latestDate = _historyCache[0].date || '';
+    var picker = document.getElementById('historyDatePicker');
+    if (picker && latestDate) picker.value = latestDate;
+    filterHistoryByDate(latestDate);
+  });
 }
 
 function filterHistoryByDate(date) {
