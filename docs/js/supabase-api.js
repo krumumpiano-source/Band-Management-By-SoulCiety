@@ -265,6 +265,7 @@
         // profile fields
         firstName: 'first_name', lastName: 'last_name', userName: 'user_name',
         userId: 'user_id',
+        songId: 'song_id', keyNote: 'key_note',
         createdAt: 'created_at', updatedAt: 'updated_at',
         createdBy: 'created_by', sourceContractId: 'source_contract_id'
       };
@@ -312,9 +313,8 @@
       var row = toSnakeObj(payload);
       delete row.action; delete row._token;
       // Remove ID-like keys that are used for matching, not for updating columns
-      Object.keys(row).forEach(function(k) {
-        if (k === 'id' || /Id$/.test(k)) delete row[k];
-      });
+      delete row.id; delete row.song_id; delete row.songId;
+      delete row.band_name; delete row.bandName;
       row.updated_at = new Date().toISOString();
       var { data, error } = await sb.from(table).update(row).eq('id', id).select().single();
       if (error) throw error;
