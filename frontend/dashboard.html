@@ -317,9 +317,10 @@
   }
 
   function qciLoadSettings(cb) {
+    // Use localStorage as immediate cache so UI renders fast
     var stored = localStorage.getItem('bandSettings');
     if (stored) { try { var s = JSON.parse(stored); qciBandSettings = { venues: s.venues||[], scheduleData: s.scheduleData||s.schedule||{} }; } catch(e){} }
-    if (qciBandSettings.venues.length > 0) { cb(); return; }
+    // Always fetch fresh settings from API (schedule/members may have changed)
     if (qciBandId && typeof apiCall === 'function') {
       apiCall('getBandSettings', { bandId: qciBandId }, function(r) {
         if (r && r.success && r.data) {
