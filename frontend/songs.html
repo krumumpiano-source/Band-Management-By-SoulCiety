@@ -499,6 +499,14 @@ function renderPage() {
       var meta = [];
       if (s.key) meta.push('🎵 ' + escapeHtml(s.key));
       if (s.bpm > 0) meta.push('⏱ ' + s.bpm + ' BPM');
+      if (s.singer) {
+        var singerLabel = s.singer;
+        var singerColor = '#666';
+        if (s.singer === 'ชาย' || s.singer === 'male')   { singerLabel = 'ชาย'; singerColor = '#1e3a8a'; }
+        if (s.singer === 'หญิง' || s.singer === 'female') { singerLabel = 'หญิง'; singerColor = '#9d174d'; }
+        if (s.singer === 'ชาย/หญิง' || s.singer === 'duet' || s.singer === 'คู่') { singerLabel = 'คู่'; singerColor = '#065f46'; }
+        meta.push('<span style="color:' + singerColor + '">🎤 ' + singerLabel + '</span>');
+      }
       var metaHtml = meta.length ? '<div class="song-meta">' + meta.join(' &nbsp;·&nbsp; ') + '</div>' : '';
       buf.push(
         '<div class="result-item" data-index="' + idx + '">' +
