@@ -213,6 +213,7 @@ var apCheckInVenue  = {}; // apCheckInVenue[memberId][date] = venueName
 var apCheckInTime   = {}; // apCheckInTime[memberId][date] = checkInAt timestamp
 var apCheckInSub    = {}; // apCheckInSub[memberId][date] = {name, contact} or null
 var apLeaveData     = []; // leave_requests for the date range
+var apLeaveSlots    = {}; // apLeaveSlots[memberId][date] = ['21:00-22:00']
 
 function apLoadCheckIns(cb) {
   apChecked = {};
@@ -221,6 +222,7 @@ function apLoadCheckIns(cb) {
   apCheckInTime   = {};
   apCheckInSub    = {};
   apLeaveData     = [];
+  apLeaveSlots    = {};
   if (!apBandId || typeof apiCall !== 'function' || !apDateRange.length) { if (cb) cb(); return; }
   var dates = apDateRange.slice(), total = dates.length, done = 0, all = [];
   var leaveDone = false, ciDone = false;
@@ -246,14 +248,22 @@ function apLoadCheckIns(cb) {
       if (!apCheckInSub[mem.id]) apCheckInSub[mem.id] = {};
       apCheckInSub[mem.id][ci.date] = ci.substitute || null;
     });
-    // Merge leave_requests into apCheckInSub AND apCheckInStatus
+    // Merge leave_requests into apCheckInSub, apCheckInStatus AND apLeaveSlots
     apLeaveData.forEach(function(lv) {
       if (lv.status === 'rejected') return;
       var mem = null;
       if (lv.memberId) mem = apMembers.find(function(m) { return m.id === lv.memberId; });
       if (!mem && lv.memberName) mem = apMembers.find(function(m) { return m.name === lv.memberName; });
       if (!mem) return;
-      // Always mark as leave status so all slots on this date show leave badge
+      // Store which specific slots have leave (slot-aware)
+      var lvSlots = lv.slots || [];
+      if (typeof lvSlots === 'string') { try { lvSlots = JSON.parse(lvSlots); } catch(e) { lvSlots = []; } }
+      if (!apLeaveSlots[mem.id]) apLeaveSlots[mem.id] = {};
+      if (!apLeaveSlots[mem.id][lv.date]) apLeaveSlots[mem.id][lv.date] = [];
+      lvSlots.forEach(function(s) {
+        if (apLeaveSlots[mem.id][lv.date].indexOf(s) === -1) apLeaveSlots[mem.id][lv.date].push(s);
+      });
+      // Mark leave status for the date (used as fallback)
       if (!apCheckInStatus[mem.id]) apCheckInStatus[mem.id] = {};
       if (!apCheckInStatus[mem.id][lv.date]) apCheckInStatus[mem.id][lv.date] = 'leave';
       // Set substitute info
@@ -340,8 +350,11 @@ function apRenderAttendance() {
         var hasCheckIn = apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].length > 0;
         var ciSt = (apCheckInStatus[m.id] && apCheckInStatus[m.id][dateStr]) || '';
         var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][dateStr]) || null;
+        // Check if THIS specific slot has leave (slot-aware)
+        var leaveSlots = (apLeaveSlots[m.id] && apLeaveSlots[m.id][dateStr]) || [];
+        var isLeaveSlot = leaveSlots.length > 0 ? leaveSlots.indexOf(sk) !== -1 : (ciSt === 'leave');
         // Leave with substitute = slot is covered → auto-check + count money
-        var subCovered = (ciSt === 'leave' && subInfo && subInfo.name && ri.assigned);
+        var subCovered = (isLeaveSlot && subInfo && subInfo.name && ri.assigned);
         if (subCovered && !checked) {
           // Auto-fill check for leave+sub so it counts in totals
           if (!apChecked[m.id]) apChecked[m.id] = {};
@@ -356,8 +369,8 @@ function apRenderAttendance() {
         b += '<td style="' + tdCls + '">';
         b += '<input type="checkbox" class="ap-cb" data-m="' + apEsc(m.id) +
           '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '"' + (checked ? ' checked' : '') + '>';
-        // Status badge
-        if (ciSt === 'leave') {
+        // Status badge — only show leave badge for slots actually on leave
+        if (isLeaveSlot) {
           b += '<span class="ap-ci-badge" style="color:#e53e3e;font-size:9px;display:block" title="ลางาน">🚫 ลา</span>';
           if (subInfo && subInfo.name) {
             b += '<span class="ap-ci-badge" style="color:#805ad5;font-size:9px;display:block" title="คนแทน: ' + apEsc(subInfo.name) + '">🔄 ' + apEsc(subInfo.name) + '</span>';
@@ -559,12 +572,14 @@ function apBuildSubSummary() {
       var key = sub.name;
       if (!subDates[key]) subDates[key] = { subName: sub.name, contact: sub.contact || '', dates: [], slots: 0, amount: 0 };
       subDates[key].dates.push(ds);
-      // Count slots the original member was assigned to on that day
+      // Count only slots that are in the leave request (slot-aware)
+      var leaveSlots = (apLeaveSlots[m.id] && apLeaveSlots[m.id][ds]) || [];
       var dow = new Date(ds).getDay();
       var slots = apSlotsForDay(dow);
       slots.forEach(function(slot) {
+        var sk = slot.start+'-'+slot.end;
         var ri = apMemberRate(slot, m.id);
-        if (ri.assigned) {
+        if (ri.assigned && (leaveSlots.length === 0 || leaveSlots.indexOf(sk) !== -1)) {
           subDates[key].slots++;
           subDates[key].amount += apSlotPay(slot, m.id);
         }
