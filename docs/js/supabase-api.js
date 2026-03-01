@@ -509,7 +509,18 @@
         substitute_contact: d.substituteContact || '',
         status: 'pending'
       };
-      var { data, error } = await sb.from('leave_requests').insert(row).select().single();
+      // Upsert: ถ้ามี leave_request เดิมของ member+date → update แทน insert (ป้องกันซ้ำ)
+      var { data: existLR } = await sb.from('leave_requests')
+        .select('id').eq('band_id', row.band_id)
+        .eq('member_id', row.member_id).eq('date', row.date).limit(1);
+      var data, error;
+      if (existLR && existLR.length > 0) {
+        var res = await sb.from('leave_requests').update(row).eq('id', existLR[0].id).select().single();
+        data = res.data; error = res.error;
+      } else {
+        var res = await sb.from('leave_requests').insert(row).select().single();
+        data = res.data; error = res.error;
+      }
       if (error) throw error;
 
       // ── Auto check-in as "leave" so no separate check-in needed ──

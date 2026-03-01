@@ -897,10 +897,14 @@
         if (ci.substitute) myCheckins[ci.date].substitute = ci.substitute;
       });
 
-      // Substitute deductions from leave
+      // Substitute deductions from leave (deduplicate by date)
       var subDeductions = [];
+      var _subDateDone = {};
       myLeaves.forEach(function(lv) {
         if (!lv.substituteName) return;
+        var dk = lv.date + '|' + lv.substituteName;
+        if (_subDateDone[dk]) return;   // ป้องกันนับซ้ำจาก leave_request ที่ซ้ำกัน
+        _subDateDone[dk] = true;
         var existing = subDeductions.find(function(x) { return x.subName === lv.substituteName; });
         if (!existing) { existing = { subName: lv.substituteName, shifts: 0, amount: 0, dates: [] }; subDeductions.push(existing); }
         existing.dates.push(lv.date);
