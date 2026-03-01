@@ -311,6 +311,10 @@
       if (!id) return { success: false, message: 'ไม่พบ id' };
       var row = toSnakeObj(payload);
       delete row.action; delete row._token;
+      // Remove ID-like keys that are used for matching, not for updating columns
+      Object.keys(row).forEach(function(k) {
+        if (k === 'id' || /Id$/.test(k)) delete row[k];
+      });
       row.updated_at = new Date().toISOString();
       var { data, error } = await sb.from(table).update(row).eq('id', id).select().single();
       if (error) throw error;
