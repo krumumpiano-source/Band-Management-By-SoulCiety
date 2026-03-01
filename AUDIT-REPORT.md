@@ -3,7 +3,7 @@
 **Date:** 2025  
 **Scope:** All HTML pages in `docs/` folder (25 pages)  
 **Platform:** Supabase backend (migrated from Google Apps Script), pure HTML/CSS/JS frontend  
-**Architecture:** `gasRun()` shim → `sbRun()` via `supabase-api.js`, localStorage-based auth, i18n via `data-i18n` attributes
+**Architecture:** `apiCall()` → `sbRun()` via `supabase-api.js`, localStorage-based auth, i18n via `data-i18n` attributes
 
 ---
 
@@ -25,7 +25,7 @@
 | S1 | **Client-side-only auth check** — `requireAuth()` only checks `localStorage.getItem('auth_token')`. Any user can set this manually. Server-side RLS is the real gate, but pages render full UI before any API call fails. | HIGH | All authenticated pages |
 | S2 | **Admin role check is client-side only** — `admin.html` checks `localStorage.getItem('userRole')` to show admin controls. Malicious user can set `userRole=admin`. | HIGH | admin.html |
 | S3 | **XSS risk via innerHTML** — Several pages build HTML with string concatenation. While `escapeHtml()` is used in most places, some `onclick` handlers embed escaped values inside single-quoted strings, which can break on values containing backslashes or encoded chars. | MEDIUM | setlist.html, dashboard.html, band-settings.html, leave.html |
-| S4 | **No CSRF protection** — All `gasRun()` calls carry no CSRF token. Supabase JWT handles auth but no additional CSRF layer. | LOW | All |
+| S4 | **No CSRF protection** — All `apiCall()` calls carry no CSRF token. Supabase JWT handles auth but no additional CSRF layer. | LOW | All |
 
 ### Architecture / Code Quality
 | # | Issue | Severity |
@@ -33,7 +33,7 @@
 | A1 | **Massive inline `<script>` blocks** — songs.html (1425 lines), dashboard.html (1110 lines), band-settings.html contain hundreds of lines of inline JS/CSS. Should be extracted to dedicated `.js`/`.css` files. | MEDIUM |
 | A2 | **Duplicate `escapeHtml()` definition** — Defined in `app.js`, redefined inline in `songs.html` and `dashboard.html`. | LOW |
 | A3 | **Duplicate leave functionality** — Leave request flow exists in `dashboard.html` (quick leave), `check-in.html` (inline leave), and `leave.html` (full page). Three separate implementations of the same feature. | MEDIUM |
-| A4 | **`gasRun` naming misleading** — The function is named after Google Apps Script but actually delegates to Supabase (`sbRun`). Should be renamed to `apiCall` or similar. | LOW |
+| A4 | ~~**`gasRun` naming misleading**~~ — ✅ RESOLVED: Renamed to `apiCall` throughout codebase. | ~~LOW~~ DONE |
 | A5 | **No service worker / offline support** — All data depends on live API calls. No caching strategy beyond `sessionStorage` for songs. | LOW |
 | A6 | **No global error boundary** — Failed API calls show individual `alert()` or `showToast()` but no unified error handling for network failures. | MEDIUM |
 | A7 | **Thai Date Picker overlay in app.js** — A complex date input overlay (lines 235-297 of app.js) wraps every `<input type="date">` with a Thai date display. This is a nice feature but performs DOM mutation on every date input site-wide. | INFO |
@@ -65,7 +65,7 @@
 **Purpose:** Authentication page with email/password login.
 
 **Features:**
-- Email/password login via `gasRun('login', ...)`
+- Email/password login via `apiCall('login', ...)`
 - Password visibility toggle (👁 button)
 - Biometric/Face ID login via Credential Management API (`navigator.credentials.get()`)
 - Auto-detects iOS vs Android for biometric labels
@@ -89,7 +89,7 @@
 **Purpose:** 3-step registration flow via band invite code.
 
 **Features:**
-- Step 1: Invite code validation via `gasRun('lookupInviteCode')`
+- Step 1: Invite code validation via `apiCall('lookupInviteCode')`
 - Step 2: Personal info (title, first name, last name, nickname, instrument)
 - Step 3: Email/password creation with summary review
 - Links to create-band.html, terms.html, index.html
@@ -109,7 +109,7 @@
 
 **Features:**
 - Simple email input + submit button
-- Calls `gasRun('requestPasswordReset')`
+- Calls `apiCall('requestPasswordReset')`
 - Success/error message display
 - Links back to login
 
@@ -175,7 +175,7 @@
 | # | Issue | Severity |
 |---|-------|----------|
 | 1 | **1110 lines of inline code** — CSS + JS all inlined. Major maintainability issue. | MEDIUM |
-| 2 | **N+1 API calls for earnings** — `loadEarningsSummary()` calls `gasRun('getCheckInsForDate')` once per date in the range. For a month view (30 days), that's 30 API calls. Should use a batch/range endpoint. | HIGH |
+| 2 | **N+1 API calls for earnings** — `loadEarningsSummary()` calls `apiCall('getCheckInsForDate')` once per date in the range. For a month view (30 days), that's 30 API calls. Should use a batch/range endpoint. | HIGH |
 | 3 | **Member ID lookup is fragile** — Tries multiple localStorage keys: `sb-wsorngsyowgxikiepice-auth-token` → parse JSON → `user.id`, then fallback to `odooMemberId`, then `memberId`. Hard-coded Supabase project ref in the key name. | MEDIUM |
 | 4 | **`THAI_MONTHS_SHORT` referenced but defined in app.js** — Works because app.js loads first, but implicit dependency. | LOW |
 | 5 | **Pending band approval card** shown for managers without `bandId` but no action button provided. | LOW |
@@ -267,7 +267,7 @@
 
 **Features:**
 - Form fields: name, key (select), BPM, era, mood, singer (radio pills)
-- Saves via `gasRun('addSong')`
+- Saves via `apiCall('addSong')`
 - Clears session cache after save
 - Redirects back to songs.html
 
@@ -284,7 +284,7 @@
 **Purpose:** Edit an existing song's metadata.
 
 **Features:**
-- Pre-fills form from `gasRun('getSong')`
+- Pre-fills form from `apiCall('getSong')`
 - Same fields as add-song
 - Delete song button with confirmation
 - Redirects to songs.html after save/delete
@@ -445,14 +445,14 @@
 - Quotation CRUD with line items
 - Auto-calculate subtotal/VAT/total
 - Status badges (draft/sent/approved/cancelled)
-- PDF generation via server-side GAS
+- PDF generation via server-side API
 - Print CSS hides action buttons
 
 **Bugs / Issues:**
 | # | Issue | Severity |
 |---|-------|----------|
 | 1 | **No status change UI** — Status is shown in table but there's no button to change status (e.g., mark as sent/approved). | MEDIUM |
-| 2 | **PDF depends on server** — `gasRun('generateQuotationPDF')` — may not work if Supabase migration doesn't implement this endpoint. | HIGH |
+| 2 | **PDF depends on server** — `apiCall('generateQuotationPDF')` — may not work if Supabase migration doesn't implement this endpoint. | HIGH |
 | 3 | **Commented out in nav** — Hidden from navigation. | INFO |
 
 ---
@@ -512,7 +512,7 @@
 | # | Issue | Severity |
 |---|-------|----------|
 | 1 | **No edit for existing payouts** — Can only add or delete. | MEDIUM |
-| 2 | **Back button uses GAS-style URL** — `onclick="window.location='?page=dashboard'"` — doesn't work on static HTML hosting. Should be `dashboard.html`. | **BUG** |
+| 2 | ~~**Back button uses GAS-style URL**~~ — ✅ RESOLVED: Updated to use `dashboard.html`. | ~~**BUG**~~ DONE |
 | 3 | **Commented out in nav** — Hidden from navigation. | INFO |
 
 ---
@@ -617,7 +617,7 @@
 |---|-------|----------|
 | 1 | **Client-side role gate only** — Page checks `localStorage.getItem('userRole') !== 'admin'` and redirects. Trivially bypassed. Backend RLS must enforce this. | HIGH |
 | 2 | **"Clear all data" / "Reset users" are catastrophic** — Buttons exist with only a `confirm()` dialog. Should have double confirmation or typed confirmation (e.g., "type DELETE to confirm"). | HIGH |
-| 3 | **Backup to Drive** — References `gasRun('backupToGoogleDrive')`. Unclear if this works after Supabase migration. | MEDIUM |
+| 3 | **Backup to Drive** — References `apiCall('backupToGoogleDrive')`. Unclear if this works after Supabase migration. | MEDIUM |
 
 ---
 
@@ -703,9 +703,9 @@ The sidebar navigation (`nav.js`) defines these menu items:
 | clients | "ปิดชั่วคราว" | Feature still accessible via direct URL |
 
 ### URL Pattern Issues:
-- `external-payout.html` back button uses `?page=dashboard` (GAS pattern) instead of `dashboard.html`
-- `nav.js` correctly handles both GAS (`?page=`) and static (`.html`) patterns via `isGas` check
-- All other pages use `.html` pattern correctly
+- ~~`external-payout.html` back button uses `?page=dashboard` (GAS pattern) instead of `dashboard.html`~~ ✅ FIXED
+- `nav.js` uses static `.html` patterns (GAS `?page=` and `isGas` check removed)
+- All pages use `.html` pattern correctly
 
 ---
 
@@ -720,7 +720,7 @@ The sidebar navigation (`nav.js`) defines these menu items:
 4. **admin.html catastrophic actions** — Add typed confirmation for "clear all data" and "reset users".
 5. **my-profile.html** — Require current password before allowing password change.
 6. **dashboard.html N+1 API calls** — Implement batch check-in endpoint to avoid 30 API calls for monthly earnings.
-7. **external-payout.html GAS URL** — Fix back button to use `dashboard.html`.
+7. ~~**external-payout.html GAS URL** — Fix back button to use `dashboard.html`.~~ ✅ DONE
 8. **terms.html** — Update data storage description from "Google Sheets" to "Supabase".
 9. **quotation.html PDF generation** — Verify `generateQuotationPDF` exists in Supabase API layer.
 10. **contract.html** — Implement save-to-server functionality or clearly label as "preview only".
@@ -734,7 +734,7 @@ The sidebar navigation (`nav.js`) defines these menu items:
 16. Add edit functionality to band-fund.html transactions and external-payout.html records.
 
 ### Low Priority
-17. Rename `gasRun` to `apiCall` throughout codebase.
+17. ~~Rename `gasRun` to `apiCall` throughout codebase.~~ ✅ DONE
 18. Remove duplicate `escapeHtml()` definitions.
 19. Add PWA manifest + service worker for offline capability.
 20. Implement search in user-manual.html.

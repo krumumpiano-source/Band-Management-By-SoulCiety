@@ -128,26 +128,15 @@
       var btn = document.getElementById('regBtn');
       btn.disabled = true; btn.textContent = 'à¸à¸³à¸¥à¸±à¸‡à¸ªà¸¡à¸±à¸„à¸£...';
 
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function(r) {
-            btn.disabled = false; btn.textContent = 'à¸ªà¸¡à¸±à¸„à¸£à¸ªà¸¡à¸²à¸Šà¸´à¸';
-            if (r && r.success) {
-              if (typeof showToast === 'function') showToast((r.message || 'à¸ªà¸¡à¸±à¸„à¸£à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢!') + ' à¸à¸³à¸¥à¸±à¸‡à¹„à¸›à¸«à¸™à¹‰à¸²à¸¥à¹‡à¸­à¸à¸­à¸´à¸™...', 'success');
-              setTimeout(function() { window.location.href = '?page=index'; }, 1800);
-            } else {
-              document.getElementById('generalError').textContent = (r && r.message) || 'à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”';
-            }
-          })
-          .withFailureHandler(function(err) {
-            btn.disabled = false; btn.textContent = 'à¸ªà¸¡à¸±à¸„à¸£à¸ªà¸¡à¸²à¸Šà¸´à¸';
-            document.getElementById('generalError').textContent = err.message || 'à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”';
-          })
-          .doPostFromClient({ action: 'register', name: name, email: email, password: pw, bandName: band, inviteCode: invite });
-      } else {
-        btn.disabled = false;
-        if (typeof showToast === 'function') showToast('Demo mode â€” Deploy GAS à¸à¹ˆà¸­à¸™à¸ªà¸¡à¸±à¸„à¸£à¸ªà¸¡à¸²à¸Šà¸´à¸à¸ˆà¸£à¸´à¸‡', 'info');
-      }
+      apiCall('register', { name: name, email: email, password: pw, bandName: band, inviteCode: invite }, function(r) {
+        btn.disabled = false; btn.textContent = 'à¸ªà¸¡à¸±à¸„à¸£à¸ªà¸¡à¸²à¸Šà¸´à¸';
+        if (r && r.success) {
+          if (typeof showToast === 'function') showToast((r.message || 'function') + ' à¸ªà¸¡à¸±à¸„à¸£à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢!', 'success');
+          setTimeout(function() { window.location.href = 'index.html'; }, 1800);
+        } else {
+          document.getElementById('generalError').textContent = (r && r.message) || 'generalError';
+        }
+      });
     });
   });
   </script>

@@ -109,31 +109,20 @@
       var btn = document.getElementById('loginBtn');
       btn.disabled = true; btn.textContent = t('loading');
 
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function(r) {
-            btn.disabled = false; btn.textContent = t('login');
-            if (r && r.success) {
-              localStorage.setItem('auth_token', r.token);
-              localStorage.setItem('userName', r.userName || '');
-              localStorage.setItem('bandName', r.bandName || '');
-              localStorage.setItem('bandId', r.bandId || '');
-              localStorage.setItem('userRole', r.role || 'member');
-              if (r.role === 'manager' || r.role === 'admin') localStorage.setItem('bandManager', '1');
-              window.location.href = '?page=dashboard';
-            } else {
-              document.getElementById('emailError').textContent = (r && r.message) || t('msg_error');
-            }
-          })
-          .withFailureHandler(function(err) {
-            btn.disabled = false; btn.textContent = t('login');
-            document.getElementById('emailError').textContent = err.message || t('msg_error');
-          })
-          .doPostFromClient({ action: 'login', email: email, password: password });
-      } else {
+      apiCall('login', { email: email, password: password }, function(r) {
         btn.disabled = false; btn.textContent = t('login');
-        document.getElementById('emailError').textContent = t('msg_error');
-      }
+        if (r && r.success) {
+          localStorage.setItem('auth_token', r.token);
+          localStorage.setItem('userName', r.userName || '');
+          localStorage.setItem('bandName', r.bandName || '');
+          localStorage.setItem('bandId', r.bandId || '');
+          localStorage.setItem('userRole', r.role || 'member');
+          if (r.role === 'manager' || r.role === 'admin') localStorage.setItem('bandManager', '1');
+          window.location.href = 'dashboard.html';
+        } else {
+          document.getElementById('emailError').textContent = (r && r.message) || t('msg_error');
+        }
+      });
     });
 
   });

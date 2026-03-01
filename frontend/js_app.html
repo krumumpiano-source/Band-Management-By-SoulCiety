@@ -1,7 +1,7 @@
-<script>
+﻿<script>
 /**
- * Band Management By SoulCiety — Core App
- * Auth guard, GAS integration, Toast, Confirm Dialog, Lang toggle
+ * Band Management By SoulCiety — Core App (GitHub Pages + Supabase)
+ * Auth guard, API integration, Toast, Confirm Dialog, Lang toggle
  * หมายเหตุ: renderMainNav อยู่ใน js_nav.html เท่านั้น (ไม่ซ้ำที่นี่)
  */
 (function(global){
@@ -18,11 +18,7 @@
 
   function requireAuth() {
     if (window.location.protocol === 'file:') { ensureDemoSession(); return; }
-    if (typeof google !== 'undefined' && google.script) {
-      if (!localStorage.getItem('auth_token')) window.location.replace('?page=index');
-    } else {
-      if (!localStorage.getItem('auth_token')) window.location.replace('index.html');
-    }
+    if (!localStorage.getItem('auth_token')) window.location.replace('index.html');
   }
   global.requireAuth = requireAuth;
 
@@ -43,20 +39,15 @@
   }
   global.applyTranslations = applyTranslations;
 
-  // ——— GAS Integration ———
-  function gasRun() {
-    var args = Array.prototype.slice.call(arguments);
-    var functionName = args.shift();
-    return new Promise(function(resolve, reject) {
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        var runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
-        runner[functionName].apply(runner, args);
-      } else {
-        resolve({ success: false, message: 'GAS not available (offline/demo mode)', offline: true });
-      }
-    });
+  // ——— API Integration (Supabase via sbRun) ———
+  function apiCall(action, data, callback) {
+    if (typeof window.sbRun === 'function') {
+      window.sbRun(action, data, callback);
+    } else if (callback) {
+      callback({ success: false, message: 'API not available' });
+    }
   }
-  global.gasRun = gasRun;
+  global.apiCall = apiCall;
 
   // ——— Auth token helper ———
   function getAuthToken() { return localStorage.getItem('auth_token') || ''; }

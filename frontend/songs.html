@@ -951,9 +951,12 @@ function copyPlaylist(){
 }
 
 var _historyCache = [];
+var _savingHistory = false;
 
 function saveHistory() {
   if (playlistData.length === 0) return;
+  if (_savingHistory) return; // ป้องกัน double-save
+  _savingHistory = true;
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
   var useDateEl = document.getElementById('useDate');
@@ -969,7 +972,7 @@ function saveHistory() {
     timeSlot: timeEl    ? timeEl.value    : '',
     songs:    songs
   };
-  apiCall('savePlaylistHistory', payload, function(r){ console.log('[history] saved', r && r.success); });
+  apiCall('savePlaylistHistory', payload, function(r){ _savingHistory = false; console.log('[history] saved', r && r.success); });
 }
 
 function showHistory() {

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -135,8 +135,8 @@
       } catch(e) {}
     }
     if (ciBandSettings.venues.length > 0) { callback(); return; }
-    if (ciCurrentBandId && typeof gasRun === 'function') {
-      gasRun('getBandSettings', { bandId: ciCurrentBandId }, function(r) {
+    if (ciCurrentBandId && typeof apiCall === 'function') {
+      apiCall('getBandSettings', { bandId: ciCurrentBandId }, function(r) {
         if (r && r.success && r.data) {
           ciBandSettings = { scheduleData: r.data.scheduleData || {}, venues: r.data.venues || [] };
           try { localStorage.setItem('bandSettings', JSON.stringify(r.data)); } catch(e) {}
@@ -208,8 +208,8 @@
 
   function ciLoadExistingCheckIn() {
     ciExistingCheckIn = null; ciSetStatus('', '');
-    if (!ciSelectedDate || typeof gasRun !== 'function') { ciRenderSlots(); return; }
-    gasRun('getMyCheckIn', { date: ciSelectedDate, venue: ciSelectedVenue, bandId: ciCurrentBandId }, function(r) {
+    if (!ciSelectedDate || typeof apiCall !== 'function') { ciRenderSlots(); return; }
+    apiCall('getMyCheckIn', { date: ciSelectedDate, venue: ciSelectedVenue, bandId: ciCurrentBandId }, function(r) {
       if (r && r.success && r.checkIn) {
         ciExistingCheckIn = r.checkIn;
         ciSetStatus('✅ คุณลงเวลาแล้ว (สถานะ: ' + (r.checkIn.status === 'confirmed' ? 'ได้รับการยืนยัน' : 'รอการยืนยัน') + ')', 'success');
@@ -229,7 +229,7 @@
     if (!checked.length) { ciShowToast('กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง', 'error'); return; }
     var btn = ciGetEl('ciSubmitBtn');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
-    gasRun('memberCheckIn', { bandId: ciCurrentBandId, date: date, venue: venue, slots: checked, notes: notes }, function(r) {
+    apiCall('memberCheckIn', { bandId: ciCurrentBandId, date: date, venue: venue, slots: checked, notes: notes }, function(r) {
       if (btn) { btn.disabled = false; btn.textContent = '✅ บันทึกเวลาเข้างาน'; }
       if (r && r.success) {
         ciShowToast(r.message || 'ลงเวลาเรียบร้อยแล้ว', 'success');

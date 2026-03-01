@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -89,8 +89,8 @@
     var bandId = localStorage.getItem('bandId') || '';
     var year = new Date().getFullYear();
     Promise.all([
-      new Promise(function(res){ gasRun('getSchedule',{ bandId: bandId, year: year },function(r){ jobs=(r&&r.data)||[]; res(); }); }),
-      new Promise(function(res){ gasRun('getAllBandMembers',{ bandId: bandId },function(r){ members=(r&&r.data)||[]; res(); }); })
+      new Promise(function(res){ apiCall('getSchedule',{ bandId: bandId, year: year },function(r){ jobs=(r&&r.data)||[]; res(); }); }),
+      new Promise(function(res){ apiCall('getAllBandMembers',{ bandId: bandId },function(r){ members=(r&&r.data)||[]; res(); }); })
     ]).then(function(){
       var sel=document.getElementById('jobPicker');
       jobs.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
@@ -104,7 +104,7 @@
 
   function loadPayrollPricing(){
     try { var c=localStorage.getItem('pricingData'); if(c) pricingData=JSON.parse(c); } catch(e){}
-    gasRun('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
+    apiCall('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
       if(r&&r.success&&r.data){ pricingData=r.data; localStorage.setItem('pricingData',JSON.stringify(pricingData)); }
     });
   }
@@ -186,7 +186,7 @@
   function saveAttendance(){
     if(!currentJobId){ showToast('กรุณาเลือกงานก่อน','info'); return; }
     var job=jobs.find(function(j){return j.scheduleId===currentJobId;});
-    gasRun('addAttendancePayroll',{ scheduleId:currentJobId, bandId:localStorage.getItem('bandId')||'', venue:job?(job.venueName||job.venue||''):currentJobId, date:job?job.date:'', attendance:attendance, totalAmount:job?(job.totalPay||job.payment||0):0 },function(r){
+    apiCall('addAttendancePayroll',{ scheduleId:currentJobId, bandId:localStorage.getItem('bandId')||'', venue:job?(job.venueName||job.venue||''):currentJobId, date:job?job.date:'', attendance:attendance, totalAmount:job?(job.totalPay||job.payment||0):0 },function(r){
       if(r&&r.success){ showToast(t('msg_saved'),'success'); loadHistory(); }
       else showToast((r&&r.message)||t('msg_error'),'error');
     });
@@ -194,7 +194,7 @@
 
   function loadHistory(){
     var bandId = localStorage.getItem('bandId') || '';
-    gasRun('getAllAttendancePayroll',{ bandId: bandId },function(r){
+    apiCall('getAllAttendancePayroll',{ bandId: bandId },function(r){
       var rows=(r&&r.data)||[];
       var tbody=document.getElementById('historyBody');
       if(!rows.length){ tbody.innerHTML='<tr><td colspan="6" class="text-center">'+t('noData')+'</td></tr>'; return; }
@@ -210,7 +210,7 @@
   function deleteAttRecord(id){
     showConfirm(t('confirmDeleteTitle'),t('confirmDeleteMsg')).then(function(ok){
       if(!ok) return;
-      gasRun('deleteAttendancePayroll',{recordId:id},function(r){
+      apiCall('deleteAttendancePayroll',{recordId:id},function(r){
         if(r&&r.success){ showToast(t('msg_deleted'),'success'); loadHistory(); }
         else showToast((r&&r.message)||t('msg_error'),'error');
       });

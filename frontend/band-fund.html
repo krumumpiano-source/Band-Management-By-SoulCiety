@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -97,7 +97,7 @@
   });
 
   function loadFund() {
-    gasRun('getFundTransactions', {}, function(r) {
+    apiCall('getFundTransactions', {}, function(r) {
       allTx = (r && r.data && r.data.transactions) || [];
       var balance = (r && r.data && r.data.balance) || 0;
       document.getElementById('fundBalance').textContent = formatCurrency(balance);
@@ -129,7 +129,7 @@
   document.getElementById('fundForm').addEventListener('submit', function(e) {
     e.preventDefault();
     var btn = document.getElementById('saveTxBtn'); btn.disabled = true; btn.textContent = t('loading');
-    gasRun('addFundTransaction', {
+    apiCall('addFundTransaction', {
       type: document.getElementById('txType').value,
       amount: document.getElementById('txAmount').value,
       date: document.getElementById('txDate').value,
@@ -145,7 +145,7 @@
   function deleteTx(id) {
     showConfirm(t('confirmDeleteTitle'), t('confirmDeleteMsg')).then(function(ok) {
       if (!ok) return;
-      gasRun('deleteFundTransaction', { txId: id }, function(r) {
+      apiCall('deleteFundTransaction', { txId: id }, function(r) {
         if (r && r.success) { showToast(t('msg_deleted'), 'success'); loadFund(); }
         else showToast((r && r.message) || t('msg_error'), 'error');
       });

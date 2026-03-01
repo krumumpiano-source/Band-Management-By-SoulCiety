@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -72,7 +72,7 @@
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
     loadCalcPricing();
-    gasRun('getBandMembers',{},function(r){
+    apiCall('getBandMembers',{},function(r){
       members=(r&&r.data)||[];
       buildMemberRates();
       recalc();
@@ -88,7 +88,7 @@
 
   function loadCalcPricing(){
     try { var c=localStorage.getItem('pricingData'); if(c) pricingData=JSON.parse(c); } catch(e){}
-    gasRun('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
+    apiCall('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
       if(r&&r.success&&r.data){ pricingData=r.data; localStorage.setItem('pricingData',JSON.stringify(pricingData)); }
       populateCalcJobTypes();
       applyPricingDefaults();

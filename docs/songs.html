@@ -1326,6 +1326,7 @@ function copyPlaylist(){
 }
 
 var _historyCache = [];
+var _savingHistory = false;
 
 function saveHistoryManual() {
   if (playlistData.length === 0) { alert('ยังไม่มีเพลงในลิส'); return; }
@@ -1344,6 +1345,8 @@ function saveHistoryManual() {
 
 function saveHistory() {
   if (playlistData.length === 0) return;
+  if (_savingHistory) return; // ป้องกัน double-save
+  _savingHistory = true;
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
   var useDateEl = document.getElementById('useDate');
@@ -1360,6 +1363,7 @@ function saveHistory() {
     timeSlot: timeEl    ? timeEl.value    : '',
     songs:    songs
   }, function(r){
+    _savingHistory = false;
     console.log('[history] saved', r && r.success);
     // refresh cache if modal is open
     if (document.getElementById('historyModal').style.display === 'block') {

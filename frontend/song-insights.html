@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -70,7 +70,7 @@
   <script>
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
-    gasRun('getAllBandSongs', {}, function(r) {
+    apiCall('getAllBandSongs', {}, function(r) {
       var songs = (r && r.success && r.data) ? r.data : [];
       document.getElementById('songCount').textContent = songs.length + ' เพลง';
       // Key distribution

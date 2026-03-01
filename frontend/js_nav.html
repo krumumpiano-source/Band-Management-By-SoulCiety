@@ -9,7 +9,6 @@ function renderMainNav(containerId) {
   var container = document.getElementById(containerId || 'mainNav');
   if (!container) return;
 
-  var isGas = typeof google !== 'undefined' && google.script;
   var bandName = localStorage.getItem('bandName') || (typeof t === 'function' ? t('yourBand') : 'à¸§à¸‡à¸‚à¸­à¸‡à¸„à¸¸à¸“');
   var userName = localStorage.getItem('userName') || (typeof t === 'function' ? t('user') : 'à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰');
   var userRole = localStorage.getItem('userRole') || 'member';
@@ -17,19 +16,14 @@ function renderMainNav(containerId) {
   var isManager = !!(localStorage.getItem('bandManager') || userRole === 'manager' || isAdmin);
   var _t = typeof t === 'function' ? t : function(k) { return k; };
 
-  function dashHref() { return isGas ? '?page=dashboard' : 'dashboard.html'; }
-  function indexHref() { return isGas ? '?page=index' : 'index.html'; }
+  function dashHref() { return 'dashboard.html'; }
+  function indexHref() { return 'index.html'; }
 
-  var currentPage = '';
-  if (isGas) {
-    currentPage = new URLSearchParams(window.location.search).get('page') || 'dashboard';
-  } else {
-    currentPage = (window.location.pathname.split('/').pop() || 'dashboard.html').replace('.html', '');
-  }
+  var currentPage = (window.location.pathname.split('/').pop() || 'dashboard.html').replace('.html', '');
 
   function navLink(page, label) {
     var isActive = currentPage === page ? ' active' : '';
-    var href = isGas ? '?page=' + page : page + '.html';
+    var href = page + '.html';
     return '<li><a href="' + href + '" class="nav-link' + isActive + '">' + label + '</a></li>';
   }
   function navSection(label) {
@@ -168,8 +162,8 @@ function renderLangSwitcher(containerId) { _renderNavLang(containerId); }
 
 function doLogout() {
   var token = typeof getAuthToken === 'function' ? getAuthToken() : (localStorage.getItem('auth_token') || '');
-  if (token && token.indexOf('demo_') !== 0 && typeof google !== 'undefined' && google.script && google.script.run) {
-    google.script.run.doPostFromClient({ action: 'logout', _token: token });
+  if (token && token.indexOf('demo_') !== 0 && typeof apiCall === 'function') {
+    apiCall('logout', { _token: token }, function() {});
   }
   ['auth_token','bandId','bandName','bandManager','userRole','userName','bandSettings'].forEach(function(k) {
     localStorage.removeItem(k);

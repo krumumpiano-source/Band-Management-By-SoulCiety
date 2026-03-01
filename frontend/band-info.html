@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -114,7 +114,7 @@
     loadBandInfo(); loadBandMembers();
   });
   function loadBandInfo(){
-    gasRun('getBandSettings',{},function(r){
+    apiCall('getBandSettings',{},function(r){
       if(r&&r.data&&r.data.bands&&r.data.bands[0]){
         var b=r.data.bands[0];
         document.getElementById('bName').textContent=b.name||'—';

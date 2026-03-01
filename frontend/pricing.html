@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -165,7 +165,7 @@
       if(cached) { pricingData = JSON.parse(cached); renderAll(); }
     } catch(e){}
     // Then fetch from server
-    gasRun('getPricing', { bandId: localStorage.getItem('bandId')||'' }, function(r){
+    apiCall('getPricing', { bandId: localStorage.getItem('bandId')||'' }, function(r){
       if(r && r.success && r.data){
         pricingData = r.data;
         localStorage.setItem('pricingData', JSON.stringify(pricingData));
@@ -217,7 +217,7 @@
     var btn = document.getElementById('saveAllBtn');
     btn.disabled = true; btn.textContent = t('loading');
     localStorage.setItem('pricingData', JSON.stringify(pricingData));
-    gasRun('savePricing', { bandId: localStorage.getItem('bandId')||'', data: pricingData }, function(r){
+    apiCall('savePricing', { bandId: localStorage.getItem('bandId')||'', data: pricingData }, function(r){
       btn.disabled = false; btn.textContent = '💾 ' + t('save');
       if(r && r.success){ showToast(t('msg_saveSuccess')||'บันทึกสำเร็จ','success'); }
       else { showToast('บันทึกในเครื่องแล้ว (offline)','info'); }

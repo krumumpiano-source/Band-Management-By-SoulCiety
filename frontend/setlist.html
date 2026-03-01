@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -73,11 +73,11 @@
 
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
-    gasRun('getAllBandSongs', {}, function(r) {
+    apiCall('getAllBandSongs', {}, function(r) {
       allSongs = (r && r.success && r.data) ? r.data : [];
       renderPool(allSongs);
     });
-    gasRun('getSetlist', {}, function(r) {
+    apiCall('getSetlist', {}, function(r) {
       if (r && r.success && r.data) { sets = r.data; renderSlots(); }
     });
   });
@@ -123,7 +123,7 @@
   function changeSet(v) { currentSet = parseInt(v); renderSlots(); }
 
   function saveSetlist() {
-    gasRun('saveSetlist', { sets: sets }, function(r) {
+    apiCall('saveSetlist', { sets: sets }, function(r) {
       if (r && r.success) showToast(t('msg_saved'),'success');
       else showToast((r&&r.message)||t('msg_error'),'error');
     });

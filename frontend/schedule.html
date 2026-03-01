@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -169,8 +169,8 @@
       } catch(e) {}
     }
     renderWeeklyTimetable();
-    if (bandId && typeof gasRun === 'function') {
-      gasRun('getBandSettings', { bandId: bandId }, function(r) {
+    if (bandId && typeof apiCall === 'function') {
+      apiCall('getBandSettings', { bandId: bandId }, function(r) {
         if (r && r.success && r.data) {
           if (r.data.venues) weeklyVenues = r.data.venues.map(function(v) { return { id: v.id || v.venueId || '', name: v.name || v.venueName || '' }; });
           if (r.data.schedule) weeklySchedule = r.data.schedule;
@@ -228,7 +228,7 @@
   /* ─── Load pricing from localStorage/GAS ─── */
   function loadPricingData(){
     try { var c=localStorage.getItem('pricingData'); if(c) pricingData=JSON.parse(c); } catch(e){}
-    gasRun('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
+    apiCall('getPricing',{bandId:localStorage.getItem('bandId')||''},function(r){
       if(r&&r.success&&r.data){ pricingData=r.data; localStorage.setItem('pricingData',JSON.stringify(pricingData)); }
     });
   }
@@ -252,7 +252,7 @@
   function loadJobs() {
     var bandId = localStorage.getItem('bandId') || '';
     var year = curYear;
-    gasRun('getSchedule', { bandId: bandId, year: year }, function(r) {
+    apiCall('getSchedule', { bandId: bandId, year: year }, function(r) {
       allJobs = (r && r.success && r.data) ? r.data : [];
       renderCalendar(); renderTable();
     });
@@ -348,7 +348,7 @@
       notes:document.getElementById('jobNotes').value
     };
     var action=id?'updateJob':'addJob';
-    gasRun(action, data, function(r){
+    apiCall(action, data, function(r){
       btn.disabled=false; btn.textContent=t('save');
       if(r&&r.success){ showToast(t('msg_saved'),'success'); closeJobModal(); loadJobs(); }
       else showToast((r&&r.message)||t('msg_error'),'error');
@@ -359,7 +359,7 @@
     var id=document.getElementById('jobId').value;
     showConfirm(t('confirmDeleteTitle'),t('confirmDeleteMsg')).then(function(ok){
       if(!ok) return;
-      gasRun('deleteJob',{scheduleId:id},function(r){
+      apiCall('deleteJob',{scheduleId:id},function(r){
         if(r&&r.success){ showToast(t('msg_deleted'),'success'); closeJobModal(); loadJobs(); }
         else showToast((r&&r.message)||t('msg_error'),'error');
       });
