@@ -974,11 +974,15 @@
         var lvSlots = lv.slots || [];
         if (typeof lvSlots === 'string') { try { lvSlots = JSON.parse(lvSlots); } catch(e) { lvSlots = []; } }
         var lvDow = new Date(lv.date).getDay();
+        // Fallback: if leave has no specific slots, use check-in slots for that date
+        var ciForDate = myCheckins[lv.date];
+        var ciSlotsForDate = ciForDate ? ciForDate.slots : [];
         getSlotsForDow(lvDow).forEach(function(slot) {
           var sk = (slot.startTime || '') + '-' + (slot.endTime || '');
           var mr = getMemberRate(slot, myId);
-          // If leave has specific slots, only count those; if no slots field, count all (legacy)
-          if (mr.assigned && (lvSlots.length === 0 || lvSlots.indexOf(sk) !== -1)) {
+          // If leave has specific slots, only count those; fallback to check-in slots; last resort count all
+          var slotMatch = lvSlots.length > 0 ? lvSlots.indexOf(sk) !== -1 : (ciSlotsForDate.length > 0 ? ciSlotsForDate.indexOf(sk) !== -1 : true);
+          if (mr.assigned && slotMatch) {
             existing.shifts++; existing.amount += slotPay(slot, myId);
           }
         });

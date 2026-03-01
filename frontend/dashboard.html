@@ -909,10 +909,18 @@
         var existing = subDeductions.find(function(x) { return x.subName === lv.substituteName; });
         if (!existing) { existing = { subName: lv.substituteName, shifts: 0, amount: 0, dates: [] }; subDeductions.push(existing); }
         existing.dates.push(lv.date);
+        // Only count slots that are actually in the leave request
+        var lvSlots = lv.slots || [];
+        if (typeof lvSlots === 'string') { try { lvSlots = JSON.parse(lvSlots); } catch(e) { lvSlots = []; } }
         var lvDow = new Date(lv.date).getDay();
+        // Fallback: if leave has no specific slots, use check-in slots for that date
+        var ciForDate = myCheckins[lv.date];
+        var ciSlotsForDate = ciForDate ? ciForDate.slots : [];
         getSlotsForDow(lvDow).forEach(function(slot) {
+          var sk = (slot.startTime || '') + '-' + (slot.endTime || '');
           var mr = getMemberRate(slot, myId);
-          if (mr.assigned) { existing.shifts++; existing.amount += slotPay(slot, myId); }
+          var slotMatch = lvSlots.length > 0 ? lvSlots.indexOf(sk) !== -1 : (ciSlotsForDate.length > 0 ? ciSlotsForDate.indexOf(sk) !== -1 : true);
+          if (mr.assigned && slotMatch) { existing.shifts++; existing.amount += slotPay(slot, myId); }
         });
       });
 
@@ -928,15 +936,29 @@
         var ci = myCheckins[dateStr];
         var ciSlots = ci ? ci.slots : [];
         var isLeave = ci && ci.status === 'leave';
-        var hasSub = isLeave && myLeaves.some(function(lv) { return lv.date === dateStr && lv.substituteName; });
+        // Collect leave slot keys for this date
+        var leaveSlotKeys = [];
+        var hasSub = false;
+        if (isLeave) {
+          myLeaves.forEach(function(lv) {
+            if (lv.date !== dateStr) return;
+            var lvSlots = lv.slots || [];
+            if (typeof lvSlots === 'string') { try { lvSlots = JSON.parse(lvSlots); } catch(e) { lvSlots = []; } }
+            if (lv.substituteName) {
+              hasSub = true;
+              lvSlots.forEach(function(s) { if (leaveSlotKeys.indexOf(s) === -1) leaveSlotKeys.push(s); });
+            }
+          });
+        }
         var dayHours = 0, dayAmt = 0, daySlotCount = 0;
 
         daySlots.forEach(function(slot) {
           var sk = (slot.startTime || '') + '-' + (slot.endTime || '');
           var mr = getMemberRate(slot, myId);
           if (!mr.assigned) return;
-          // ลามีคนแทน = ยังได้เงิน, ลาไม่มีคนแทน = ไม่ได้เงิน
-          if (ciSlots.indexOf(sk) !== -1 || (isLeave && hasSub)) {
+          // ลามีคนแทนเฉพาะ slot ที่ลา = ยังได้เงิน, slot อื่นต้อง check-in จริง
+          var isLeaveSlotWithSub = isLeave && hasSub && leaveSlotKeys.indexOf(sk) !== -1;
+          if (ciSlots.indexOf(sk) !== -1 || isLeaveSlotWithSub) {
             dayHours += calcH(parseMin(slot.startTime), parseMin(slot.endTime));
             dayAmt += slotPay(slot, myId);
             daySlotCount++;

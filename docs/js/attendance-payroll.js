@@ -208,10 +208,10 @@ function apUpdateDateRange() {
 }
 
 /* ═══ LOAD CHECK-INS ════════════════════════════════ */
-var apCheckInStatus = {}; // apCheckInStatus[memberId][date] = 'pending'|'confirmed'
+var apCheckInStatus = {}; // apCheckInStatus[memberId][date][slotKey] = 'pending'|'confirmed'|'leave'
 var apCheckInVenue  = {}; // apCheckInVenue[memberId][date] = venueName
 var apCheckInTime   = {}; // apCheckInTime[memberId][date] = checkInAt timestamp
-var apCheckInSub    = {}; // apCheckInSub[memberId][date] = {name, contact} or null
+var apCheckInSub    = {}; // apCheckInSub[memberId][date][slotKey] = {name, contact} or null
 var apLeaveData     = []; // leave_requests for the date range
 var apLeaveSlots    = {}; // apLeaveSlots[memberId][date] = ['21:00-22:00']
 
@@ -238,15 +238,19 @@ function apLoadCheckIns(cb) {
       if (!apChecked[mem.id]) apChecked[mem.id] = {};
       if (!apChecked[mem.id][ci.date]) apChecked[mem.id][ci.date] = [];
       slots.forEach(function(s) { if (apChecked[mem.id][ci.date].indexOf(s) === -1) apChecked[mem.id][ci.date].push(s); });
-      // Store check-in metadata
+      // Store check-in metadata PER SLOT (not per-date) to avoid leave bleeding across slots
       if (!apCheckInStatus[mem.id]) apCheckInStatus[mem.id] = {};
-      apCheckInStatus[mem.id][ci.date] = ci.status || 'pending';
+      if (!apCheckInStatus[mem.id][ci.date]) apCheckInStatus[mem.id][ci.date] = {};
+      var _ciSt = ci.status || 'pending';
+      slots.forEach(function(s) { apCheckInStatus[mem.id][ci.date][s] = _ciSt; });
       if (!apCheckInVenue[mem.id]) apCheckInVenue[mem.id] = {};
       apCheckInVenue[mem.id][ci.date] = ci.venue || '';
       if (!apCheckInTime[mem.id]) apCheckInTime[mem.id] = {};
       apCheckInTime[mem.id][ci.date] = ci.checkInAt || '';
       if (!apCheckInSub[mem.id]) apCheckInSub[mem.id] = {};
-      apCheckInSub[mem.id][ci.date] = ci.substitute || null;
+      if (!apCheckInSub[mem.id][ci.date]) apCheckInSub[mem.id][ci.date] = {};
+      var _ciSubVal = ci.substitute || null;
+      slots.forEach(function(s) { apCheckInSub[mem.id][ci.date][s] = _ciSubVal; });
     });
     // Merge leave_requests into apCheckInSub, apCheckInStatus AND apLeaveSlots
     apLeaveData.forEach(function(lv) {
@@ -263,15 +267,20 @@ function apLoadCheckIns(cb) {
       lvSlots.forEach(function(s) {
         if (apLeaveSlots[mem.id][lv.date].indexOf(s) === -1) apLeaveSlots[mem.id][lv.date].push(s);
       });
-      // Mark leave status for the date (used as fallback)
+      // Mark leave status PER SLOT (not per-date) so leave doesn't bleed across slots
       if (!apCheckInStatus[mem.id]) apCheckInStatus[mem.id] = {};
-      if (!apCheckInStatus[mem.id][lv.date]) apCheckInStatus[mem.id][lv.date] = 'leave';
-      // Set substitute info
+      if (!apCheckInStatus[mem.id][lv.date]) apCheckInStatus[mem.id][lv.date] = {};
+      lvSlots.forEach(function(s) {
+        if (!apCheckInStatus[mem.id][lv.date][s]) apCheckInStatus[mem.id][lv.date][s] = 'leave';
+      });
+      // Set substitute info PER SLOT
       if (lv.substituteName) {
         if (!apCheckInSub[mem.id]) apCheckInSub[mem.id] = {};
-        if (!apCheckInSub[mem.id][lv.date]) {
-          apCheckInSub[mem.id][lv.date] = { name: lv.substituteName, contact: lv.substituteContact || '' };
-        }
+        if (!apCheckInSub[mem.id][lv.date]) apCheckInSub[mem.id][lv.date] = {};
+        var _lvSubVal = { name: lv.substituteName, contact: lv.substituteContact || '' };
+        lvSlots.forEach(function(s) {
+          if (!apCheckInSub[mem.id][lv.date][s]) apCheckInSub[mem.id][lv.date][s] = _lvSubVal;
+        });
       }
     });
     if (cb) cb();
@@ -348,9 +357,9 @@ function apRenderAttendance() {
         var checked = ciSlots.indexOf(sk) !== -1;
         var ri = apMemberRate(slot, m.id);
         var hasCheckIn = apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].length > 0;
-        var ciSt = (apCheckInStatus[m.id] && apCheckInStatus[m.id][dateStr]) || '';
-        var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][dateStr]) || null;
-        // Check if THIS specific slot has leave (slot-aware)
+        var ciSt = (apCheckInStatus[m.id] && apCheckInStatus[m.id][dateStr] && apCheckInStatus[m.id][dateStr][sk]) || '';
+        var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][dateStr] && apCheckInSub[m.id][dateStr][sk]) || null;
+        // Check if THIS specific slot has leave (slot-aware — both apLeaveSlots AND per-slot ciSt)
         var leaveSlots = (apLeaveSlots[m.id] && apLeaveSlots[m.id][dateStr]) || [];
         var isLeaveSlot = leaveSlots.length > 0 ? leaveSlots.indexOf(sk) !== -1 : (ciSt === 'leave');
         // Leave with substitute = slot is covered → auto-check + count money
@@ -564,25 +573,23 @@ function apBuildSubSummary() {
   var subInfo = []; // {memberName, memberId, subName, shifts, amount, dates[]}
   var RL = { shift:'บ/เบรค', hourly:'บ/ชม', fixed:'คงที่' };
   apMembers.forEach(function(m) {
-    // Check if this member has leave with a substitute
+    // Check if this member has leave with a substitute (per-slot)
     var subDates = {};
     apDateRange.forEach(function(ds) {
-      var sub = (apCheckInSub[m.id] && apCheckInSub[m.id][ds]) || null;
-      if (!sub || !sub.name) return;
-      var key = sub.name;
-      if (!subDates[key]) subDates[key] = { subName: sub.name, contact: sub.contact || '', dates: [], slots: 0, amount: 0 };
-      subDates[key].dates.push(ds);
-      // Count only slots that are in the leave request (slot-aware)
-      var leaveSlots = (apLeaveSlots[m.id] && apLeaveSlots[m.id][ds]) || [];
+      var subsForDate = (apCheckInSub[m.id] && apCheckInSub[m.id][ds]) || {};
       var dow = new Date(ds).getDay();
       var slots = apSlotsForDay(dow);
       slots.forEach(function(slot) {
         var sk = slot.start+'-'+slot.end;
+        var sub = subsForDate[sk] || null;
+        if (!sub || !sub.name) return;
         var ri = apMemberRate(slot, m.id);
-        if (ri.assigned && (leaveSlots.length === 0 || leaveSlots.indexOf(sk) !== -1)) {
-          subDates[key].slots++;
-          subDates[key].amount += apSlotPay(slot, m.id);
-        }
+        if (!ri.assigned) return;
+        var key = sub.name;
+        if (!subDates[key]) subDates[key] = { subName: sub.name, contact: sub.contact || '', dates: [], slots: 0, amount: 0 };
+        if (subDates[key].dates.indexOf(ds) === -1) subDates[key].dates.push(ds);
+        subDates[key].slots++;
+        subDates[key].amount += apSlotPay(slot, m.id);
       });
     });
     Object.keys(subDates).forEach(function(key) {
@@ -689,8 +696,8 @@ function apPrintVenueReceipt() {
       var dayTotal = 0, cells = '';
       apMembers.forEach(function(m) {
         var checked = apChecked[m.id] && apChecked[m.id][ds] && apChecked[m.id][ds].indexOf(sk) !== -1;
-        // Substitute info — always check, regardless of check-in status
-        var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][ds]) || null;
+        // Substitute info — per SLOT (not per-date)
+        var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][ds] && apCheckInSub[m.id][ds][sk]) || null;
         var hasSub = subInfo && subInfo.name;
         var slotCovered = checked || hasSub; // slot worked by member OR substitute
         var amt = slotCovered ? apSlotPay(slot, m.id) : 0;
@@ -772,20 +779,21 @@ function apPrintMemberReceipt() {
     });
     grand += totalAmt;
     var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '-';
-    // Build substitute deduction info for this member
+    // Build substitute deduction info for this member (per-slot)
     var mSubInfo = [];
     apDateRange.forEach(function(ds) {
-      var sub = (apCheckInSub[m.id] && apCheckInSub[m.id][ds]) || null;
-      if (sub && sub.name) {
+      var subsForDate = (apCheckInSub[m.id] && apCheckInSub[m.id][ds]) || {};
+      var dow = new Date(ds).getDay();
+      var daySlots = apSlotsForDay(dow);
+      daySlots.forEach(function(slot) {
+        var sk2 = slot.start+'-'+slot.end;
+        var sub = subsForDate[sk2] || null;
+        if (!sub || !sub.name) return;
         var existing = mSubInfo.find(function(x){ return x.name === sub.name; });
         if (!existing) { existing = { name: sub.name, shifts: 0, amount: 0 }; mSubInfo.push(existing); }
-        var dow = new Date(ds).getDay();
-        var daySlots = apSlotsForDay(dow);
-        daySlots.forEach(function(slot) {
-          var ri = apMemberRate(slot, m.id);
-          if (ri.assigned) { existing.shifts++; existing.amount += apSlotPay(slot, m.id); }
-        });
-      }
+        var ri = apMemberRate(slot, m.id);
+        if (ri.assigned) { existing.shifts++; existing.amount += apSlotPay(slot, m.id); }
+      });
     });
     var subNote = '';
     mSubInfo.forEach(function(si) {

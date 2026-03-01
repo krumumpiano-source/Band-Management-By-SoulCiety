@@ -401,10 +401,14 @@
         var lvSlots = lv.slots || [];
         if (typeof lvSlots === 'string') { try { lvSlots = JSON.parse(lvSlots); } catch(e) { lvSlots = []; } }
         var lvDow = new Date(lv.date).getDay();
+        // Fallback: if leave has no specific slots, use check-in slots for that date
+        var ciForDate = myCheckins[lv.date];
+        var ciSlotsForDate = ciForDate ? ciForDate.slots : [];
         getSlotsForDow(lvDow).forEach(function(slot) {
           var sk = (slot.startTime || '') + '-' + (slot.endTime || '');
           var mr = getMemberRate(slot, mid);
-          if (mr.assigned && (lvSlots.length === 0 || lvSlots.indexOf(sk) !== -1)) {
+          var slotMatch = lvSlots.length > 0 ? lvSlots.indexOf(sk) !== -1 : (ciSlotsForDate.length > 0 ? ciSlotsForDate.indexOf(sk) !== -1 : true);
+          if (mr.assigned && slotMatch) {
             existing.shifts++; existing.amount += slotPay(slot, mid);
           }
         });
@@ -450,8 +454,9 @@
               var sk = (slot.startTime || '') + '-' + (slot.endTime || '');
               var mr = getMemberRate(slot, mid);
               if (!mr.assigned) return;
-              // Only count slots that are in the leave request
-              if (leaveSlotKeys.length === 0 || leaveSlotKeys.indexOf(sk) !== -1) {
+              // Only count slots that are in the leave request; fallback to check-in slots
+              var _slotMatch = leaveSlotKeys.length > 0 ? leaveSlotKeys.indexOf(sk) !== -1 : (ciSlots.length > 0 ? ciSlots.indexOf(sk) !== -1 : true);
+              if (_slotMatch) {
                 dayBreaks++;
                 dayHours += slotHours(slot);
                 dayAmt += slotPay(slot, mid);
