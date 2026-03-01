@@ -631,6 +631,7 @@
     qciLoadSettings(function() {
       qciRenderVenues(); /* venues → auto-selects single venue → renders slots */
       qciCheckExisting();
+      loadEarningsSummary('week'); // ต้องรอ settings โหลดเสร็จก่อน
     });
 
     document.getElementById('qciConfirmBtn').addEventListener('click', qciConfirm);
@@ -694,7 +695,7 @@
     });
 
     loadDashboard();
-    loadEarningsSummary('week');
+    // loadEarningsSummary ถูกเรียกใน qciLoadSettings callback แทน (รอ schedule data)
     // Tab switching
     document.querySelectorAll('.earn-tab').forEach(function(btn) {
       btn.addEventListener('click', function() {
