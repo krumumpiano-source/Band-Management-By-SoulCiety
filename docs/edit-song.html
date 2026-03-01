@@ -23,10 +23,23 @@
       transition:all .15s;user-select:none;line-height:1
     }
     .singer-pill label:hover{border-color:var(--premium-gold);color:var(--premium-gold)}
-    .singer-pill input[type=radio]:checked + label{
-      background:var(--premium-gold,#f9cf45);color:#1a202c;
-      border-color:var(--premium-gold,#f9cf45);
-      box-shadow:0 2px 8px rgba(249,207,69,.35)
+    /* ชาย = blue */
+    #s-male:checked + label{
+      background:#dbeafe;color:#1e3a8a;
+      border-color:#93c5fd;
+      box-shadow:0 2px 8px rgba(59,130,246,.25)
+    }
+    /* หญิง = pink */
+    #s-female:checked + label{
+      background:#fce7f3;color:#9d174d;
+      border-color:#f9a8d4;
+      box-shadow:0 2px 8px rgba(236,72,153,.25)
+    }
+    /* คู่ = green */
+    #s-duet:checked + label{
+      background:#d1fae5;color:#065f46;
+      border-color:#6ee7b7;
+      box-shadow:0 2px 8px rgba(16,185,129,.25)
     }
   </style>
 </head>

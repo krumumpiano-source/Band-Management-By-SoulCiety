@@ -13,7 +13,16 @@
     @media(max-width:480px){.form-r{grid-template-columns:1fr}}
     .singer-group{display:flex;gap:var(--spacing-md);flex-wrap:wrap}
     .singer-option{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.95rem}
-    .singer-option input[type=radio]{accent-color:var(--premium-gold);width:16px;height:16px}
+    .singer-option input[type=radio]{width:16px;height:16px}
+    /* ชาย = blue */
+    .singer-option input[value="ชาย"]{accent-color:#3b82f6}
+    .singer-option input[value="ชาย"]:checked ~ *,.singer-option:has(input[value="ชาย"]:checked){color:#1e3a8a;font-weight:700}
+    /* หญิง = pink */
+    .singer-option input[value="หญิง"]{accent-color:#ec4899}
+    .singer-option input[value="หญิง"]:checked ~ *,.singer-option:has(input[value="หญิง"]:checked){color:#9d174d;font-weight:700}
+    /* คู่ = green */
+    .singer-option input[value="ชาย/หญิง"]{accent-color:#10b981}
+    .singer-option input[value="ชาย/หญิง"]:checked ~ *,.singer-option:has(input[value="ชาย/หญิง"]:checked){color:#065f46;font-weight:700}
   </style>
 </head>
 <body>
