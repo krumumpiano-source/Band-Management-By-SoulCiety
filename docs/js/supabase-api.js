@@ -316,9 +316,9 @@
       delete row.id; delete row.song_id; delete row.songId;
       delete row.band_name; delete row.bandName;
       row.updated_at = new Date().toISOString();
-      var { data, error } = await sb.from(table).update(row).eq('id', id).select().single();
+      var { data, error } = await sb.from(table).update(row).eq('id', id).select();
       if (error) throw error;
-      return { success: true, data: toCamel(data) };
+      return { success: true, data: data && data.length ? toCamel(data[0]) : null };
     }
 
     async function doDelete(table, id) {
