@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -100,7 +100,7 @@
   });
 
   function loadQuotations(){
-    gasRun('getAllQuotations',{},function(r){
+    apiCall('getAllQuotations',{},function(r){
       quotations=(r&&r.data)||[];
       var tbody=document.getElementById('quotBody');
       if(!quotations.length){ tbody.innerHTML='<tr><td colspan="7" class="text-center">'+t('noData')+'</td></tr>'; return; }
@@ -190,7 +190,7 @@
     var vatRate=parseFloat(document.getElementById('qVat').value)||0;
     var id=document.getElementById('quotId').value;
     var action=id?'updateQuotation':'addQuotation';
-    gasRun(action,{
+    apiCall(action,{
       quotationId:id, client:document.getElementById('qClient').value.trim(),
       date:document.getElementById('qDate').value, eventDate:document.getElementById('qEventDate').value,
       venue:document.getElementById('qVenue').value.trim(), items:JSON.stringify(items),
@@ -204,7 +204,7 @@
 
   function generatePdf(id){
     showToast('กำลังสร้าง PDF...','info');
-    gasRun('generateQuotationPdf',{quotationId:id},function(r){
+    apiCall('generateQuotationPdf',{quotationId:id},function(r){
       if(r&&r.success&&r.url){ window.open(r.url,'_blank'); showToast(t('msg_success'),'success'); }
       else showToast((r&&r.message)||t('msg_error'),'error');
     });
@@ -213,7 +213,7 @@
   function deleteQuot(id){
     showConfirm(t('confirmDeleteTitle'),t('confirmDeleteMsg')).then(function(ok){
       if(!ok) return;
-      gasRun('deleteQuotation',{quotationId:id},function(r){
+      apiCall('deleteQuotation',{quotationId:id},function(r){
         if(r&&r.success){ showToast(t('msg_deleted'),'success'); loadQuotations(); }
         else showToast((r&&r.message)||t('msg_error'),'error');
       });

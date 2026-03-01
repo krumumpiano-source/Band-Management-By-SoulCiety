@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -225,7 +225,7 @@
       preview.className = 'invite-preview show';
       loading.style.display = '';
       previewTimer = setTimeout(function() {
-        gasRun('lookupInviteCode', { code: code }, function(r) {
+        apiCall('lookupInviteCode', { code: code }, function(r) {
           loading.style.display = 'none';
           if (r && r.success) {
             var province = r.province ? ' (' + r.province + ')' : '';
@@ -282,7 +282,7 @@
       btn.disabled = true; btn.textContent = '⏳ กำลังสมัคร...';
       var title = val('title');
 
-      gasRun('register', {
+      apiCall('register', {
         name: (title && title !== 'ไม่ระบุ' ? title + ' ' : '') + val('firstName') + ' ' + val('lastName'),
         firstName: val('firstName'), lastName: val('lastName'), nickname: val('nickname'),
         title: title, instrument: val('instrument'), email: email, password: pw,

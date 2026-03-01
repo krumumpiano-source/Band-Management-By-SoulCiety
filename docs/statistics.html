@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -99,7 +99,7 @@
     var year = parseInt(document.getElementById('yearPicker').value);
     var month = document.getElementById('monthPicker').value;
     var bandId = localStorage.getItem('bandId') || '';
-    gasRun('getStatistics', { year: year, month: month !== '' ? parseInt(month) : null, bandId: bandId }, function(r) {
+    apiCall('getStatistics', { year: year, month: month !== '' ? parseInt(month) : null, bandId: bandId }, function(r) {
       if (!r || !r.success) return;
       var d = r.data || {};
       document.getElementById('ovJobs').textContent = d.totalJobs || 0;

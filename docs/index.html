@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -212,7 +212,7 @@
             btn.disabled = true; btn.textContent = (typeof t === 'function' ? t('loading') : 'กำลังโหลด...');
             clearErrors();
 
-            gasRun('login', { email: cred.id, password: cred.password }, function(r) {
+            apiCall('login', { email: cred.id, password: cred.password }, function(r) {
               btn.disabled = false; btn.textContent = (typeof t === 'function' ? t('login') : 'เข้าสู่ระบบ');
               if (r && r.success) {
                 doLoginSuccess(r, cred.id, cred.password, cred.name);
@@ -253,7 +253,7 @@
       var btn = document.getElementById('loginBtn');
       btn.disabled = true; btn.textContent = (typeof t === 'function' ? t('loading') : 'กำลังโหลด...');
 
-      gasRun('login', { email: email, password: password }, function(r) {
+      apiCall('login', { email: email, password: password }, function(r) {
         btn.disabled = false; btn.textContent = (typeof t === 'function' ? t('login') : 'เข้าสู่ระบบ');
         if (r && r.success) {
           doLoginSuccess(r, email, password, r.userName);

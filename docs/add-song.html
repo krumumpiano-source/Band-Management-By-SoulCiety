@@ -82,7 +82,7 @@
       var singerRadio = document.querySelector('input[name="singer"]:checked');
       var bandId   = localStorage.getItem('bandId')   || '';
       var bandName = localStorage.getItem('bandName') || '';
-      gasRun('addSong', {
+      apiCall('addSong', {
         name:     document.getElementById('songName').value.trim(),
         key:      document.getElementById('key').value,
         bpm:      parseInt(document.getElementById('bpm').value) || 0,

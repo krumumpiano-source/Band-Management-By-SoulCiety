@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -366,7 +366,7 @@
 
     // ── โหลดข้อมูล ──
     function loadProfile() {
-      gasRun('getMyProfile', {}, function(r) {
+      apiCall('getMyProfile', {}, function(r) {
         if (!r || !r.success) return;
         var p = r.data || {};
         setVal('title',        p.title      || 'นาย');
@@ -422,7 +422,7 @@
       var btn = $el('saveBtn');
       btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
 
-      gasRun('updateMyProfile', {
+      apiCall('updateMyProfile', {
         title:         $el('title').value,
         firstName:     firstName,
         lastName:      lastName,
@@ -466,7 +466,7 @@
     var btn = $el('changeEmailBtn');
     btn.disabled = true; btn.textContent = 'กำลังดำเนินการ...';
 
-    gasRun('changeEmail', { email: newEmail }, function(r) {
+    apiCall('changeEmail', { email: newEmail }, function(r) {
       btn.disabled = false; btn.textContent = '📧 เปลี่ยนอีเมล';
       if (r && r.success) {
         msgEl.className = 'msg-box success';
@@ -498,7 +498,7 @@
     var btn = $el('changePwdBtn');
     btn.disabled = true; btn.textContent = 'กำลังดำเนินการ...';
 
-    gasRun('changePassword', { password: newPwd }, function(r) {
+    apiCall('changePassword', { password: newPwd }, function(r) {
       btn.disabled = false; btn.textContent = '🔑 เปลี่ยนรหัสผ่าน';
       if (r && r.success) {
         msgEl.className = 'msg-box success';

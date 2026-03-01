@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -313,7 +313,7 @@
       var btn = document.getElementById('submitBtn');
       btn.disabled = true; btn.textContent = '⏳ กำลังส่งคำขอ...';
 
-      gasRun('registerBandRequest', {
+      apiCall('registerBandRequest', {
         bandName:    val('bandName'),
         province:    val('province'),
         memberCount: val('memberCount'),

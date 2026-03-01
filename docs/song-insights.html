@@ -197,8 +197,8 @@
     });
 
     // Fetch insights data from API
-    if (bandId && typeof gasRun === 'function') {
-      gasRun('getSongInsights', { bandId: bandId }, function(result) {
+    if (bandId && typeof apiCall === 'function') {
+      apiCall('getSongInsights', { bandId: bandId }, function(result) {
         if (result && result.success && result.data) {
           allHistory   = result.data.history || [];
           allBandSongs = result.data.songs   || [];

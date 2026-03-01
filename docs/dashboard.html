@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -295,8 +295,7 @@
   <script src="js/nav.js"></script>
   <script>
   function nav(page) {
-    var isGas = typeof google !== 'undefined' && google.script;
-    window.location.href = isGas ? '?page=' + page : page + '.html';
+    window.location.href = page + '.html';
   }
 
   /* ===== Quick Check-In ===== */
@@ -333,8 +332,8 @@
     var stored = localStorage.getItem('bandSettings');
     if (stored) { try { var s = JSON.parse(stored); qciBandSettings = { venues: s.venues||[], scheduleData: s.scheduleData||s.schedule||{} }; } catch(e){} }
     if (qciBandSettings.venues.length > 0) { cb(); return; }
-    if (qciBandId && typeof gasRun === 'function') {
-      gasRun('getBandSettings', { bandId: qciBandId }, function(r) {
+    if (qciBandId && typeof apiCall === 'function') {
+      apiCall('getBandSettings', { bandId: qciBandId }, function(r) {
         if (r && r.success && r.data) {
           qciBandSettings = { venues: r.data.venues||[], scheduleData: r.data.scheduleData||r.data.schedule||{} };
           try { localStorage.setItem('bandSettings', JSON.stringify(r.data)); } catch(e) {}
@@ -496,9 +495,9 @@
   }
 
   function qciCheckExisting() {
-    if (!qciBandId || typeof gasRun !== 'function') return;
+    if (!qciBandId || typeof apiCall !== 'function') return;
     var dateStr = qciSelectedDate.toISOString().split('T')[0];
-    gasRun('getMyCheckIn', { date: dateStr, venue: '', bandId: qciBandId }, function(r) {
+    apiCall('getMyCheckIn', { date: dateStr, venue: '', bandId: qciBandId }, function(r) {
       if (r && r.success && r.checkIn) {
         qciExistingCheckIn = r.checkIn;
         var ci = r.checkIn;
@@ -520,7 +519,7 @@
     var btn = document.getElementById('qciConfirmBtn');
     btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
     var dateStr = qciSelectedDate.toISOString().split('T')[0];
-    gasRun('memberCheckIn', { bandId: qciBandId, date: dateStr, venue: qciSelectedVenue, slots: qciSelectedSlots, notes: '' }, function(r) {
+    apiCall('memberCheckIn', { bandId: qciBandId, date: dateStr, venue: qciSelectedVenue, slots: qciSelectedSlots, notes: '' }, function(r) {
       btn.disabled = false; btn.textContent = '✅ ยืนยันลงเวลา';
       if (r && r.success) {
         qciShowDone(qciSelectedSlots, qciSelectedVenue, 'pending');
@@ -579,8 +578,8 @@
       substituteContact: ''
     };
 
-    if (typeof gasRun === 'function') {
-      gasRun('requestLeave', payload, function(r) {
+    if (typeof apiCall === 'function') {
+      apiCall('requestLeave', payload, function(r) {
         if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
         if (r && r.success) {
           showDashToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
@@ -617,7 +616,7 @@
     // Refresh band name from server (in case localStorage is stale/empty)
     var _wbBandId = localStorage.getItem('bandId') || '';
     if (_wbBandId) {
-      gasRun('getBandSettings', { bandId: _wbBandId }, function(r) {
+      apiCall('getBandSettings', { bandId: _wbBandId }, function(r) {
         if (r && r.success && r.data && r.data.bandName) {
           localStorage.setItem('bandName', r.data.bandName);
           document.getElementById('welcomeBand').textContent = '🎵 ' + r.data.bandName;
@@ -693,7 +692,7 @@
       var btn = document.getElementById('qciCancelBtn');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังยกเลิก...'; }
       var dateStr = qciSelectedDate.toISOString().split('T')[0];
-      gasRun('cancelCheckIn', { bandId: qciBandId, date: dateStr }, function(r) {
+      apiCall('cancelCheckIn', { bandId: qciBandId, date: dateStr }, function(r) {
         if (btn) { btn.disabled = false; btn.textContent = '❌ ยกเลิกลงเวลา'; }
         if (r && r.success) {
           showDashToast('ยกเลิกการลงเวลาเรียบร้อย', 'success');
@@ -733,7 +732,7 @@
   function loadDashBandCode() {
     var bandId = localStorage.getItem('bandId') || '';
     if (!bandId) return;
-    gasRun('getBandCode', { bandId: bandId }, function(r) {
+    apiCall('getBandCode', { bandId: bandId }, function(r) {
       if (r && r.success && r.code) {
         var card = document.getElementById('dashBandCodeCard');
         var codeEl = document.getElementById('dashBandCode');
@@ -768,7 +767,7 @@
   function loadDashPendingMembers() {
     var bandId = localStorage.getItem('bandId') || '';
     if (!bandId) return;
-    gasRun('getPendingMembers', { bandId: bandId }, function(r) {
+    apiCall('getPendingMembers', { bandId: bandId }, function(r) {
       var card = document.getElementById('dashPendingCard');
       var list = document.getElementById('dashPendingList');
       var badge = document.getElementById('dashPendingBadge');
@@ -793,14 +792,14 @@
   }
   function dashApproveMember(userId) {
     if (!confirm('อนุมัติสมาชิกคนนี้เข้าร่วมวง?')) return;
-    gasRun('approveMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
+    apiCall('approveMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
       if (r && r.success) { showDashToast('อนุมัติเรียบร้อย', 'success'); loadDashPendingMembers(); }
       else showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
     });
   }
   function dashRejectMember(userId) {
     if (!confirm('ปฏิเสธคำขอเข้าร่วมวงนี้?')) return;
-    gasRun('rejectMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
+    apiCall('rejectMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
       if (r && r.success) { showDashToast('ปฏิเสธเรียบร้อย', 'success'); loadDashPendingMembers(); }
       else showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
     });
@@ -813,7 +812,7 @@
     var badge = document.getElementById('dashPlaylistBadge');
     if (!card || !body) return;
     var bandId = localStorage.getItem('bandId') || '';
-    if (!bandId || typeof gasRun !== 'function') {
+    if (!bandId || typeof apiCall !== 'function') {
       body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:12px 0">🎵 ยังไม่มีลิสเพลงของวันนี้</p>';
       badge.textContent = '';
       return;
@@ -821,7 +820,7 @@
     var dateStr = qciSelectedDate.toISOString().split('T')[0];
     body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:12px 0">⏳ กำลังโหลด...</p>';
     badge.textContent = '';
-    gasRun('getPlaylistHistoryByDate', { bandId: bandId, date: dateStr }, function(r) {
+    apiCall('getPlaylistHistoryByDate', { bandId: bandId, date: dateStr }, function(r) {
       var lists = (r && r.success && r.data) ? r.data : [];
       if (lists.length === 0) {
         body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:16px 0">🎵 ยังไม่มีลิสเพลงของวันนี้<br><a href="songs.html" style="color:#3b82f6;font-size:var(--text-sm)">➕ ไปสร้างลิสเพลง</a></p>';
@@ -859,7 +858,7 @@
 
   function loadEarningsSummary(period) {
     var bandId = localStorage.getItem('bandId') || '';
-    if (!bandId || typeof gasRun !== 'function') return;
+    if (!bandId || typeof apiCall !== 'function') return;
 
     // Settings
     var settings = qciBandSettings || {};
@@ -1057,14 +1056,14 @@
 
     // Fetch check-ins — batch by date
     dates.forEach(function(dateStr) {
-      gasRun('getCheckInsForDate', { bandId: bandId, date: dateStr }, function(r) {
+      apiCall('getCheckInsForDate', { bandId: bandId, date: dateStr }, function(r) {
         if (r && r.success && r.data) allCheckIns = allCheckIns.concat(r.data);
         if (++loadedCount >= dates.length) { ciLoaded = true; renderEarnings(); }
       });
     });
 
     // Fetch leave requests
-    gasRun('getAllLeaveRequests', { bandId: bandId }, function(r) {
+    apiCall('getAllLeaveRequests', { bandId: bandId }, function(r) {
       if (r && r.success && r.data) {
         var dSet = {}; dates.forEach(function(d) { dSet[d] = true; });
         myLeaves = r.data.filter(function(lv) { return dSet[lv.date] && lv.memberId === myId; });
@@ -1074,7 +1073,7 @@
   }
 
   function loadDashboard() {
-    gasRun('getDashboardSummary', {}, function(r) {
+    apiCall('getDashboardSummary', {}, function(r) {
       if (!r || !r.success) return;
       var d = r.data || {};
 

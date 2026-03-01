@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -82,7 +82,7 @@
     console.log('[edit-song] songId =', songId);
     if (songId) {
       var bandName = localStorage.getItem('bandName') || '';
-      gasRun('getSong', { songId: songId, bandName: bandName }, function(r) {
+      apiCall('getSong', { songId: songId, bandName: bandName }, function(r) {
         console.log('[edit-song] getSong response =', r);
         if (r && r.success && r.data) {
           var s = r.data;
@@ -109,7 +109,7 @@
       e.preventDefault();
       var btn = document.getElementById('saveBtn'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
       var singerRadio = document.querySelector('input[name="singer"]:checked');
-      gasRun('updateSong', {
+      apiCall('updateSong', {
         songId: document.getElementById('songId').value,
         name: document.getElementById('songName').value.trim(),
         key: document.getElementById('key').value,

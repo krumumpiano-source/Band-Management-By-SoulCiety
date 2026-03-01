@@ -142,8 +142,8 @@ function _doSave(data, btn, origText, successMsg) {
     if (btn) { btn.disabled = false; btn.textContent = origText; }
     showToast(msg || 'ไม่สามารถบันทึกได้ ❌', 'error');
   }
-  if (typeof gasRun === 'function') {
-    gasRun('saveBandSettings', data, function(r) { if (r && r.success) onSuccess(); else onFail(r && r.message); });
+  if (typeof apiCall === 'function') {
+    apiCall('saveBandSettings', data, function(r) { if (r && r.success) onSuccess(); else onFail(r && r.message); });
   } else { onSuccess(); }
 }
 
@@ -247,8 +247,8 @@ function loadBandSettings() {
   renderAll();
 
   // Silent server refresh
-  if (currentBandId && typeof gasRun === 'function') {
-    gasRun('getBandSettings', { bandId: currentBandId }, function(r) {
+  if (currentBandId && typeof apiCall === 'function') {
+    apiCall('getBandSettings', { bandId: currentBandId }, function(r) {
       if (r && r.success && r.data) {
         var d = r.data;
         if (d.bandName)    bandNameVal        = d.bandName;
@@ -260,7 +260,7 @@ function loadBandSettings() {
         if (d.inviteCode) { currentInviteCode = d.inviteCode; currentInviteExpires = d.inviteExpires || null; }
         // ถ้า server ไม่ส่ง inviteCode กลับมา ให้ดึงจาก invite_codes table
         if (!currentInviteCode) {
-          gasRun('getBandCode', { bandId: currentBandId }, function(r2) {
+          apiCall('getBandCode', { bandId: currentBandId }, function(r2) {
             if (r2 && r2.success && r2.code) {
               currentInviteCode = r2.code;
               var s2 = JSON.parse(localStorage.getItem('bandSettings') || '{}');
@@ -285,8 +285,8 @@ function renderAll() {
   renderVenueNames();
   renderScheduleGrid();
   // ดึงรหัสประจำวงจาก DB ถ้ายังไม่มีใน localStorage
-  if (!currentInviteCode && currentBandId && typeof gasRun === 'function') {
-    gasRun('getBandCode', { bandId: currentBandId }, function(r) {
+  if (!currentInviteCode && currentBandId && typeof apiCall === 'function') {
+    apiCall('getBandCode', { bandId: currentBandId }, function(r) {
       if (r && r.success && r.code) {
         currentInviteCode = r.code;
         var s = JSON.parse(localStorage.getItem('bandSettings') || '{}');
@@ -330,8 +330,8 @@ function generateBandCode() {
     showToast('รหัสประจำวง: ' + code);
     if (btn) { btn.disabled = false; btn.textContent = '🔄 สร้างรหัสใหม่'; }
   }
-  if (typeof gasRun === 'function' && currentBandId) {
-    gasRun('generateInviteCode', { bandId: currentBandId }, function(r) {
+  if (typeof apiCall === 'function' && currentBandId) {
+    apiCall('generateInviteCode', { bandId: currentBandId }, function(r) {
       if (r && r.success) {
         var s = JSON.parse(localStorage.getItem('bandSettings') || '{}');
         s.inviteCode = r.data.code; s.inviteExpires = null;
@@ -365,8 +365,8 @@ function copyBandCode() {
 function loadPendingMembers() {
   var box = getEl('pendingMembersBox'), list = getEl('pendingMembersList');
   if (!box || !list) return;
-  if (typeof gasRun !== 'function' || !currentBandId) return;
-  gasRun('getPendingMembers', { bandId: currentBandId }, function(r) {
+  if (typeof apiCall !== 'function' || !currentBandId) return;
+  apiCall('getPendingMembers', { bandId: currentBandId }, function(r) {
     if (!r || !r.success || !r.data || r.data.length === 0) {
       box.style.display = 'none'; return;
     }
@@ -388,14 +388,14 @@ function loadPendingMembers() {
 }
 function approveMember(userId) {
   if (!confirm('อนุมัติสมาชิกคนนี้เข้าร่วมวง?')) return;
-  gasRun('approveMember', { userId: userId, bandId: currentBandId }, function(r) {
+  apiCall('approveMember', { userId: userId, bandId: currentBandId }, function(r) {
     if (r && r.success) { showToast('อนุมัติเรียบร้อย'); loadPendingMembers(); }
     else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
   });
 }
 function rejectMember(userId) {
   if (!confirm('ปฏิเสธคำขอเข้าร่วมวงนี้?')) return;
-  gasRun('rejectMember', { userId: userId, bandId: currentBandId }, function(r) {
+  apiCall('rejectMember', { userId: userId, bandId: currentBandId }, function(r) {
     if (r && r.success) { showToast('ปฏิเสธเรียบร้อย'); loadPendingMembers(); }
     else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
   });
@@ -405,8 +405,8 @@ function rejectMember(userId) {
    MEMBERS (from registered profiles — read only)
 ══════════════════════════════════════════ */
 function loadProfileMembers() {
-  if (typeof gasRun !== 'function' || !currentBandId) return;
-  gasRun('getBandProfiles', { bandId: currentBandId }, function(r) {
+  if (typeof apiCall !== 'function' || !currentBandId) return;
+  apiCall('getBandProfiles', { bandId: currentBandId }, function(r) {
     if (r && r.success && r.data) {
       profileMembers = r.data;
       // Sync into bandMembersData so schedule slot detail modal works
@@ -489,7 +489,7 @@ function renderMembers() {
         var label = newRole === 'manager' ? 'ผู้จัดการวง' : 'สมาชิก';
         if (!confirm('เปลี่ยนบทบาทเป็น "' + label + '" ?')) { loadProfileMembers(); return; }
         sel.disabled = true;
-        gasRun('updateMemberRole', { userId: uid, role: newRole }, function(r) {
+        apiCall('updateMemberRole', { userId: uid, role: newRole }, function(r) {
           sel.disabled = false;
           if (r && r.success) {
             showToast('เปลี่ยนบทบาทเรียบร้อย', 'success');
@@ -508,7 +508,7 @@ function renderMembers() {
         var name = btn.dataset.name;
         if (!confirm('ลบ "' + name + '" ออกจากวง?\nสมาชิกจะถูกนำออกจากวงทันที')) return;
         btn.disabled = true;
-        gasRun('removeMember', { userId: uid }, function(r) {
+        apiCall('removeMember', { userId: uid }, function(r) {
           btn.disabled = false;
           if (r && r.success) {
             showToast('ลบสมาชิกออกจากวงเรียบร้อย', 'success');

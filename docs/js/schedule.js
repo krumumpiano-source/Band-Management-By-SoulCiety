@@ -1,7 +1,7 @@
-/**
+﻿/**
  * Schedule Page JavaScript
  * ตารางงาน — ดูรายคน/ทั้งวง เพิ่มงานนอก ดูย้อนหลัง
- * Ported from old frontend — uses gasRun() instead of apiCall()
+ * Ported from old frontend — uses apiCall() instead of apiCall()
  */
 
 var currentBandId = null;
@@ -70,8 +70,8 @@ function loadBandData() {
   }
 
   // Load profile-based members from API (source of truth)
-  if (currentBandId && typeof gasRun === 'function') {
-    gasRun('getBandProfiles', { bandId: currentBandId }, function(r) {
+  if (currentBandId && typeof apiCall === 'function') {
+    apiCall('getBandProfiles', { bandId: currentBandId }, function(r) {
       if (r && r.success && r.data && r.data.length > 0) {
         bandMembersData = r.data.map(function(p) {
           var displayName = p.nickname || p.first_name || p.user_name || p.email || '?';
@@ -88,8 +88,8 @@ function loadBandData() {
   }
 
   // Load schedule from API
-  if (currentBandId && typeof gasRun === 'function') {
-    gasRun('getSchedule', { bandId: currentBandId }, function(result) {
+  if (currentBandId && typeof apiCall === 'function') {
+    apiCall('getSchedule', { bandId: currentBandId }, function(result) {
       if (result && result.success && Array.isArray(result.data)) {
         scheduleData = result.data;
         localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
@@ -112,8 +112,8 @@ function loadBandData() {
 
 function saveScheduleData(callback) {
   var data = { bandId: currentBandId, scheduleData: scheduleData };
-  if (typeof gasRun === 'function' && currentBandId) {
-    gasRun('saveSchedule', data, function(result) {
+  if (typeof apiCall === 'function' && currentBandId) {
+    apiCall('saveSchedule', data, function(result) {
       localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
       if (callback) callback(result && result.success);
     });
@@ -445,8 +445,8 @@ function loadWeeklyTimetable() {
     } catch(e) {}
   }
   renderWeeklyTimetable();
-  if (currentBandId && typeof gasRun === 'function') {
-    gasRun('getBandSettings', { bandId: currentBandId }, function(r) {
+  if (currentBandId && typeof apiCall === 'function') {
+    apiCall('getBandSettings', { bandId: currentBandId }, function(r) {
       if (r && r.success && r.data) {
         if (r.data.venues) weeklyVenues = r.data.venues.map(function(v) { return { id: v.id || v.venueId || '', name: v.name || v.venueName || '' }; });
         if (r.data.schedule) weeklySchedule = r.data.schedule;

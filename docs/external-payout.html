@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -58,7 +58,7 @@
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
     document.getElementById('payDate').value = new Date().toISOString().substring(0,10);
-    gasRun('getSchedule',{},function(r){
+    apiCall('getSchedule',{},function(r){
       var sel=document.getElementById('jobRef'); var jobs=(r&&r.data)||[];
       jobs.forEach(function(j){ var o=document.createElement('option'); o.value=j.jobId||''; o.textContent=formatDate(j.date)+' — '+(j.venue||''); sel.appendChild(o); });
     });
@@ -67,7 +67,7 @@
   document.getElementById('payoutForm').addEventListener('submit', function(e){
     e.preventDefault();
     var btn=document.getElementById('saveBtn'); btn.disabled=true; btn.textContent=t('loading');
-    gasRun('addExternalPayout',{
+    apiCall('addExternalPayout',{
       payeeName: document.getElementById('payeeName').value.trim(),
       payeeType: document.getElementById('payeeType').value,
       amount: document.getElementById('amount').value,
@@ -81,7 +81,7 @@
     });
   });
   function loadPayouts(){
-    gasRun('getAllExternalPayouts',{},function(r){
+    apiCall('getAllExternalPayouts',{},function(r){
       var rows=(r&&r.data)||[];
       var tbody=document.getElementById('payoutBody');
       if(!rows.length){ tbody.innerHTML='<tr><td colspan="6" class="text-center">'+t('noData')+'</td></tr>'; return; }
@@ -96,7 +96,7 @@
   function deletePayout(id){
     showConfirm(t('confirmDeleteTitle'),t('confirmDeleteMsg')).then(function(ok){
       if(!ok) return;
-      gasRun('deleteExternalPayout',{payoutId:id},function(r){
+      apiCall('deleteExternalPayout',{payoutId:id},function(r){
         if(r&&r.success){ showToast(t('msg_deleted'),'success'); loadPayouts(); }
         else showToast((r&&r.message)||t('msg_error'),'error');
       });

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -86,7 +86,7 @@
   });
 
   function loadClients() {
-    gasRun('getAllClients', {}, function(r) {
+    apiCall('getAllClients', {}, function(r) {
       allClients = (r && r.success && r.data) ? r.data : [];
       renderClients(allClients);
     });
@@ -149,7 +149,7 @@
     e.preventDefault();
     var btn = document.getElementById('saveClientBtn'); btn.disabled = true; btn.textContent = t('loading');
     var id = document.getElementById('clientId').value;
-    gasRun(id ? 'updateClient' : 'addClient', {
+    apiCall(id ? 'updateClient' : 'addClient', {
       clientId: id, name: document.getElementById('cName').value.trim(),
       company: document.getElementById('cCompany').value.trim(),
       contactPerson: document.getElementById('cContact').value.trim(),
@@ -169,7 +169,7 @@
     var id = document.getElementById('clientId').value;
     showConfirm(t('confirmDeleteTitle'), t('confirmDeleteMsg')).then(function(ok) {
       if (!ok) return;
-      gasRun('deleteClient', { clientId: id }, function(r) {
+      apiCall('deleteClient', { clientId: id }, function(r) {
         if (r && r.success) { showToast(t('msg_deleted'), 'success'); closeClientModal(); loadClients(); }
         else showToast((r && r.message) || t('msg_error'), 'error');
       });

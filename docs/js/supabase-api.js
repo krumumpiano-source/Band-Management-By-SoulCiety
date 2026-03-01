@@ -1,6 +1,6 @@
-/**
+﻿/**
  * Band Management By SoulCiety — Supabase API Wrapper
- * แทนที่ gasRun() ทุก action ด้วย Supabase REST SDK
+ * แทนที่ apiCall() ทุก action ด้วย Supabase REST SDK
  *
  * Load order ใน HTML:
  *   1. i18n.js
@@ -75,7 +75,7 @@
     }
     function toCamelList(arr) { return (arr || []).map(toCamel); }
 
-    // ── sbRun — interface เดิมกับ gasRun ──────────────────────────
+    // ── sbRun — Supabase API call interface ──────────────────────
     function sbRun(action, data, callback) {
       dispatch(action, data || {}).then(function (result) {
         if (result && result.authError) {
@@ -89,8 +89,8 @@
         if (callback) callback({ success: false, message: err.message || err.toString() });
       });
     }
-    global.sbRun  = sbRun;
-    global.gasRun = sbRun;   // override gasRun เดิมทั้งหมด
+    global.sbRun   = sbRun;
+    global.apiCall = sbRun;
 
     // ── dispatch ────────────────────────────────────────────────────
     async function dispatch(action, d) {
@@ -228,7 +228,7 @@
         case 'deleteUser':      return doAdminDeleteUser(d.userId);
         case 'getSystemInfo':   return doGetSystemInfo();
 
-        // ── Legacy (GAS-only, ไม่รองรับใน Supabase) ────────────────
+        // ── Legacy (ไม่รองรับในเวอร์ชันปัจจุบัน) ──────────────────
         case 'createBackup':
         case 'getSpreadsheetUrl':
         case 'runSetupFromAdmin':

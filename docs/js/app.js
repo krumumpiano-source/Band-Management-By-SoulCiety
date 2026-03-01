@@ -1,6 +1,5 @@
 /**
- * Band Management By SoulCiety — Core App (GitHub Pages version)
- * ใช้ Supabase SDK แทน GAS API
+ * Band Management By SoulCiety — Core App (GitHub Pages + Supabase)
  *
  * Load order:
  *   1. i18n.js
@@ -37,11 +36,6 @@
 (function(global){
   'use strict';
 
-  // ──────────────────────────────────────────────────────────────────
-  // GAS_API_URL ไม่ได้ใช้แล้ว — Supabase แทนที่ทั้งหมดผ่าน supabase-api.js
-  // ──────────────────────────────────────────────────────────────────
-  var GAS_API_URL = ''; // ไม่ใช้แล้ว
-
   // ======================================================
   // Auth
   // ======================================================
@@ -64,10 +58,9 @@
   global.getAuthToken = getAuthToken;
 
   // ======================================================
-  // gasRun — ถูก override โดย supabase-api.js โดยอัตโนมัติ
-  // ฟังก์ชันนี้เป็น placeholder จนกว่า supabase-api.js จะโหลดเสร็จ
+  // apiCall — placeholder จนกว่า supabase-api.js จะโหลดเสร็จ
   // ======================================================
-  function gasRun(action, data, callback) {
+  function apiCall(action, data, callback) {
     var tries = 0;
     var wait = setInterval(function () {
       tries++;
@@ -80,7 +73,7 @@
       }
     }, 100);
   }
-  global.gasRun = gasRun;
+  global.apiCall = apiCall;
 
   // ======================================================
   // Translations

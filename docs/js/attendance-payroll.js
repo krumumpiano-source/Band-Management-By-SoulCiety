@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Attendance & Payroll v2
  * เบิกจ่าย (ผู้จัดการ) — สอดคล้องกับระบบลงเวลาและตารางงาน
  * Profile-based members + schedule slot rates + check-in pre-fill
@@ -108,7 +108,7 @@ function apLoadData() {
   apUpdateBandInfo();
   apRenderVenues();
 
-  if (apBandId && typeof gasRun === 'function') {
+  if (apBandId && typeof apiCall === 'function') {
     var ready = { p: false, s: false };
     function onReady() {
       if (!ready.p || !ready.s) return;
@@ -116,7 +116,7 @@ function apLoadData() {
       apRenderVenues();
       apHandleUrlParams();
     }
-    gasRun('getBandProfiles', { bandId: apBandId }, function(r) {
+    apiCall('getBandProfiles', { bandId: apBandId }, function(r) {
       if (r && r.success && r.data && r.data.length) {
         apMembers = r.data.map(function(p) {
           return { id: p.id, name: p.nickname||p.first_name||p.user_name||p.email||'?', position: p.instrument||'', email: p.email||'', paymentMethod: p.payment_method||'', paymentAccount: p.payment_account||'' };
@@ -125,7 +125,7 @@ function apLoadData() {
       }
       ready.p = true; onReady();
     });
-    gasRun('getBandSettings', { bandId: apBandId }, function(r) {
+    apiCall('getBandSettings', { bandId: apBandId }, function(r) {
       if (r && r.success && r.data) {
         if (r.data.venues) apVenues = r.data.venues;
         apScheduleMap = r.data.schedule || r.data.scheduleData || {};
@@ -221,7 +221,7 @@ function apLoadCheckIns(cb) {
   apCheckInTime   = {};
   apCheckInSub    = {};
   apLeaveData     = [];
-  if (!apBandId || typeof gasRun !== 'function' || !apDateRange.length) { if (cb) cb(); return; }
+  if (!apBandId || typeof apiCall !== 'function' || !apDateRange.length) { if (cb) cb(); return; }
   var dates = apDateRange.slice(), total = dates.length, done = 0, all = [];
   var leaveDone = false, ciDone = false;
   function tryFinish() {
@@ -268,13 +268,13 @@ function apLoadCheckIns(cb) {
   }
   // Load check-ins
   dates.forEach(function(d) {
-    gasRun('getCheckInsForDate', { bandId: apBandId, date: d }, function(r) {
+    apiCall('getCheckInsForDate', { bandId: apBandId, date: d }, function(r) {
       if (r && r.success && r.data) all = all.concat(r.data);
       if (++done >= total) { ciDone = true; tryFinish(); }
     });
   });
   // Load leave requests for the date range
-  gasRun('getAllLeaveRequests', { bandId: apBandId }, function(r) {
+  apiCall('getAllLeaveRequests', { bandId: apBandId }, function(r) {
     if (r && r.success && r.data) {
       var dSet = {}; dates.forEach(function(d) { dSet[d] = true; });
       apLeaveData = r.data.filter(function(lv) { return dSet[lv.date]; });
@@ -615,8 +615,8 @@ function apDoSave() {
       try { var recs = JSON.parse(localStorage.getItem('attendancePayroll')||'[]'); recs.push(data); localStorage.setItem('attendancePayroll', JSON.stringify(recs)); } catch(e){}
     } else apToast(msg||'บันทึกไม่สำเร็จ', 'error');
   }
-  if (typeof gasRun === 'function' && apBandId) {
-    gasRun('addAttendancePayroll', data, function(r) { done(r&&r.success, r&&r.message); });
+  if (typeof apiCall === 'function' && apBandId) {
+    apiCall('addAttendancePayroll', data, function(r) { done(r&&r.success, r&&r.message); });
   } else done(true);
 }
 

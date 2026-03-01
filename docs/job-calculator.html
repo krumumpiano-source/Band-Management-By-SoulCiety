@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -63,7 +63,7 @@
   var members=[];
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav'); applyTranslations();
-    gasRun('getAllBandMembers',{},function(r){
+    apiCall('getAllBandMembers',{},function(r){
       members=(r&&r.data)||[];
       buildMemberRates();
       recalc();

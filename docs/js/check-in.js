@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Member Self Check-In Page JavaScript
  * สมาชิกลงเวลาทำงานของตนเอง
  * Band Management By SoulCiety
@@ -74,7 +74,7 @@ function ciCancelCheckIn() {
   var dateStr = ciSelectedDate;
   var btn = ciGetEl('ciCancelBtn');
   if (btn) { btn.disabled = true; btn.textContent = '\u23f3 \u0e01\u0e33\u0e25\u0e31\u0e07\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01...'; }
-  gasRun('cancelCheckIn', { bandId: ciCurrentBandId, date: dateStr }, function(r) {
+  apiCall('cancelCheckIn', { bandId: ciCurrentBandId, date: dateStr }, function(r) {
     if (btn) { btn.disabled = false; btn.textContent = '\u274c \u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\u0e25\u0e07\u0e40\u0e27\u0e25\u0e32'; }
     if (r && r.success) {
       ciShowToast('\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\u0e01\u0e32\u0e23\u0e25\u0e07\u0e40\u0e27\u0e25\u0e32\u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22', 'success');
@@ -99,8 +99,8 @@ function ciLoadSettings(callback) {
   }
 
   // Always try fetching from API for fresh data if possible
-  if (ciCurrentBandId && typeof gasRun === 'function') {
-    gasRun('getBandSettings', { bandId: ciCurrentBandId }, function(r) {
+  if (ciCurrentBandId && typeof apiCall === 'function') {
+    apiCall('getBandSettings', { bandId: ciCurrentBandId }, function(r) {
       if (r && r.success && r.data) {
         ciBandSettings = {
           scheduleData: r.data.scheduleData || r.data.schedule || {},
@@ -221,8 +221,8 @@ function ciLoadExistingCheckIn() {
   ciExistingCheckIn = null;
   ciSetStatus('', '');
 
-  if (typeof gasRun !== 'function') { ciRenderSlots(); return; }
-  gasRun('getMyCheckIn', { date: date, venue: venue, bandId: ciCurrentBandId }, function(r) {
+  if (typeof apiCall !== 'function') { ciRenderSlots(); return; }
+  apiCall('getMyCheckIn', { date: date, venue: venue, bandId: ciCurrentBandId }, function(r) {
     if (r && r.success && r.checkIn) {
       ciExistingCheckIn = r.checkIn;
       // Show done state if already checked in
@@ -274,7 +274,7 @@ function ciSubmit() {
     payload.notes = (notes ? notes + ' | ' : '') + 'คนแทน: ' + subName + (subContact ? ' (' + subContact + ')' : '');
   }
 
-  gasRun('memberCheckIn', payload, function(r) {
+  apiCall('memberCheckIn', payload, function(r) {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✅ บันทึกเวลาเข้างาน'; }
     if (r && r.success) {
       var msg = isSubstitute ? 'ลงเวลาแทน ' + subName + ' เรียบร้อยแล้ว' : (r.message || 'ลงเวลาเรียบร้อยแล้ว');
@@ -318,8 +318,8 @@ function ciSubmitLeaveSimple() {
     substituteContact: ''
   };
 
-  if (typeof gasRun === 'function') {
-    gasRun('requestLeave', payload, function(r) {
+  if (typeof apiCall === 'function') {
+    apiCall('requestLeave', payload, function(r) {
       if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
       if (r && r.success) {
         ciShowToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');

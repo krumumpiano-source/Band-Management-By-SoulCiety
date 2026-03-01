@@ -8,7 +8,6 @@ function renderMainNav(containerId) {
   var container = document.getElementById(containerId || 'mainNav');
   if (!container) return;
 
-  var isGas = typeof google !== 'undefined' && google.script;
   var bandName     = localStorage.getItem('bandName') || (typeof t === 'function' ? t('yourBand') : 'วงของคุณ');
   var bandProvince = localStorage.getItem('bandProvince') || '';
   // ชื่อสั้นเพื่อแสดง topbar: ชื่อเล่น
@@ -27,20 +26,15 @@ function renderMainNav(containerId) {
   var isManager = !!(localStorage.getItem('bandManager') || userRole === 'manager' || isAdmin);
   var _t = typeof t === 'function' ? t : function(k) { return k; };
 
-  function dashHref() { return isGas ? '?page=dashboard' : 'dashboard.html'; }
-  function indexHref() { return isGas ? '?page=index' : 'index.html'; }
+  function dashHref() { return 'dashboard.html'; }
+  function indexHref() { return 'index.html'; }
 
   // ── ตรวจ active page ──────────────────────────────────
-  var currentPage = '';
-  if (isGas) {
-    currentPage = new URLSearchParams(window.location.search).get('page') || 'dashboard';
-  } else {
-    currentPage = (window.location.pathname.split('/').pop() || 'dashboard.html').replace('.html', '');
-  }
+  var currentPage = (window.location.pathname.split('/').pop() || 'dashboard.html').replace('.html', '');
 
   function navLink(page, label) {
     var isActive = currentPage === page ? ' active' : '';
-    var href = isGas ? '?page=' + page : page + '.html';
+    var href = page + '.html';
     return '<li><a href="' + href + '" class="nav-link' + isActive + '">' + label + '</a></li>';
   }
   function navSection(label) {
@@ -208,14 +202,8 @@ function renderLangSwitcher(containerId) { _renderNavLang(containerId); }
 
 function doLogout() {
   var token = typeof getAuthToken === 'function' ? getAuthToken() : (localStorage.getItem('auth_token') || '');
-  if (token && token.indexOf('demo_') !== 0) {
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-      // GAS-embedded context
-      google.script.run.doPostFromClient({ action: 'logout', _token: token });
-    } else if (typeof gasRun === 'function') {
-      // GitHub Pages / standalone context — fire-and-forget
-      gasRun('logout', { _token: token }, function() {});
-    }
+  if (token && token.indexOf('demo_') !== 0 && typeof apiCall === 'function') {
+    apiCall('logout', { _token: token }, function() {});
   }
   ['auth_token','bandId','bandName','bandManager','userRole','userName','bandSettings',
    'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail'].forEach(function(k) {

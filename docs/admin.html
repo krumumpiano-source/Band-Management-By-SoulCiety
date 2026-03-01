@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -129,7 +129,7 @@
 
   // ── Band Requests ─────────────────────────────────────────
   function loadBandRequests() {
-    gasRun('getPendingBandRequests', {}, function(r) {
+    apiCall('getPendingBandRequests', {}, function(r) {
       var list = document.getElementById('bandReqList');
       if (!r || !r.success || !r.data || !r.data.length) {
         list.innerHTML = '<div style="text-align:center;color:var(--premium-text-muted);padding:var(--spacing-xl)">✅ ไม่มีคำขอที่รออนุมัติ</div>';
@@ -156,7 +156,7 @@
 
   function approveBandReq(reqId, bandName) {
     if (!confirm('อนุมัติวง "' + bandName + '"? ระบบจะสร้างวงและรหัสวงให้อัตโนมัติ')) return;
-    gasRun('approveBandRequest', { requestId: reqId }, function(r) {
+    apiCall('approveBandRequest', { requestId: reqId }, function(r) {
       if (r && r.success) {
         var msg = 'อนุมัติวง "' + bandName + '" เรียบร้อย';
         if (r.band_code) msg += '\nรหัสวง: ' + r.band_code;
@@ -170,7 +170,7 @@
 
   function rejectBandReq(reqId) {
     if (!confirm('ปฏิเสธคำขอสร้างวงนี้?')) return;
-    gasRun('rejectBandRequest', { requestId: reqId }, function(r) {
+    apiCall('rejectBandRequest', { requestId: reqId }, function(r) {
       if (r && r.success) { showToast('ปฏิเสธเรียบร้อย', 'success'); loadBandRequests(); }
       else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
     });
@@ -184,7 +184,7 @@
   }
 
   function loadUsers() {
-    gasRun('getAllUsers', {}, function(r) {
+    apiCall('getAllUsers', {}, function(r) {
       var users = (r && r.data) || [];
       var tbody = document.getElementById('userTbody');
       if (!users.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center">ไม่มีข้อมูล</td></tr>'; return; }
@@ -214,7 +214,7 @@
   }
 
   function updateUserRole(id, role) {
-    gasRun('updateUserRole', { userId: id, role: role }, function(r) {
+    apiCall('updateUserRole', { userId: id, role: role }, function(r) {
       if (r && r.success) showToast(t('msg_saved'), 'success');
       else showToast((r && r.message) || t('msg_error'), 'error');
     });
@@ -223,7 +223,7 @@
   function deleteUser(id) {
     showConfirm('ลบผู้ใช้งาน?', 'คุณแน่ใจที่จะลบผู้ใช้งานนี้?').then(function(ok) {
       if (!ok) return;
-      gasRun('deleteUser', { userId: id }, function(r) {
+      apiCall('deleteUser', { userId: id }, function(r) {
         if (r && r.success) { showToast(t('msg_deleted'), 'success'); loadUsers(); }
         else showToast((r && r.message) || t('msg_error'), 'error');
       });
@@ -231,7 +231,7 @@
   }
 
   function loadSysInfo() {
-    gasRun('getSystemInfo', {}, function(r) {
+    apiCall('getSystemInfo', {}, function(r) {
       if (r && r.data) {
         var d = r.data;
         document.getElementById('sheetCount').textContent = d.sheetCount || '—';
@@ -245,14 +245,14 @@
 
   function triggerBackup() {
     showToast('กำลังสร้าง Backup...', 'info');
-    gasRun('createBackup', {}, function(r) {
+    apiCall('createBackup', {}, function(r) {
       if (r && r.success) showToast('Backup สำเร็จ: ' + (r.url || ''), 'success');
       else showToast((r && r.message) || t('msg_error'), 'error');
     });
   }
 
   function openSpreadsheet() {
-    gasRun('getSpreadsheetUrl', {}, function(r) {
+    apiCall('getSpreadsheetUrl', {}, function(r) {
       if (r && r.url) window.open(r.url, '_blank');
       else showToast(t('msg_error'), 'error');
     });
@@ -261,7 +261,7 @@
   function runSetup() {
     showConfirm('รัน Setup', 'ระบบจะสร้าง Sheets ที่ขาดหายไป ดำเนินการต่อ?').then(function(ok) {
       if (!ok) return;
-      gasRun('runSetupFromAdmin', {}, function(r) {
+      apiCall('runSetupFromAdmin', {}, function(r) {
         if (r && r.success) showToast('Setup สำเร็จ', 'success');
         else showToast((r && r.message) || t('msg_error'), 'error');
       });
@@ -271,7 +271,7 @@
   function clearAllData() {
     showConfirm('⚠️ ล้างข้อมูลทั้งหมด', 'การดำเนินการนี้จะลบข้อมูลทุกอย่างในทุก Sheet ยกเว้น Users คุณแน่ใจ?').then(function(ok) {
       if (!ok) return;
-      gasRun('clearAllData', {}, function(r) {
+      apiCall('clearAllData', {}, function(r) {
         if (r && r.success) showToast('ล้างข้อมูลสำเร็จ', 'success');
         else showToast((r && r.message) || t('msg_error'), 'error');
       });
@@ -281,7 +281,7 @@
   function resetUsers() {
     showConfirm('⚠️ รีเซ็ตบัญชีผู้ใช้งาน', 'ผู้ใช้งานทั้งหมดจะถูกลบ รวมถึงบัญชีของคุณ คุณแน่ใจ?').then(function(ok) {
       if (!ok) return;
-      gasRun('resetUsers', {}, function(r) {
+      apiCall('resetUsers', {}, function(r) {
         if (r && r.success) { showToast('รีเซ็ตสำเร็จ กรุณาสมัครบัญชีใหม่', 'success'); setTimeout(function(){ window.location.href='?page=index'; },2000); }
         else showToast((r && r.message) || t('msg_error'), 'error');
       });

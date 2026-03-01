@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -167,8 +167,8 @@
       } catch(e) {}
     }
     if (lvBandSettings.venues.length > 0) { cb(); return; }
-    if (lvBandId && typeof gasRun === 'function') {
-      gasRun('getBandSettings', { bandId: lvBandId }, function(r) {
+    if (lvBandId && typeof apiCall === 'function') {
+      apiCall('getBandSettings', { bandId: lvBandId }, function(r) {
         if (r && r.success && r.data) {
           lvBandSettings = { venues: r.data.venues || [], scheduleData: r.data.scheduleData || {} };
           try { localStorage.setItem('bandSettings', JSON.stringify(r.data)); } catch(e) {}
@@ -242,7 +242,7 @@
     if (!lvSelectedSlots.length) { showToast('กรุณาเลือกช่วงเวลาที่ต้องการลา', 'error'); return; }
     var btn = document.getElementById('leaveSubmitBtn');
     btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...';
-    gasRun('requestLeave', { bandId: lvBandId, memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '', memberName: localStorage.getItem('userName') || '', date: date, venue: venue, slots: JSON.stringify(lvSelectedSlots), reason: reason }, function(r) {
+    apiCall('requestLeave', { bandId: lvBandId, memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '', memberName: localStorage.getItem('userName') || '', date: date, venue: venue, slots: JSON.stringify(lvSelectedSlots), reason: reason }, function(r) {
       btn.disabled = false; btn.textContent = '✅ ส่งคำขอลา';
       if (r && r.success) {
         showToast('ส่งคำขอลาเรียบร้อยแล้ว รอผู้จัดการดำเนินการ', 'success');
@@ -262,7 +262,7 @@
   function lvLoadMyRequests() {
     var container = document.getElementById('myLeaveList');
     container.innerHTML = '<div class="empty-card">⏳ กำลังโหลด...</div>';
-    gasRun('getMyLeaveRequests', { bandId: lvBandId }, function(r) {
+    apiCall('getMyLeaveRequests', { bandId: lvBandId }, function(r) {
       if (!r || !r.success || !r.data || !r.data.length) {
         container.innerHTML = '<div class="empty-card">📋 ยังไม่มีรายการขอลา</div>';
         return;
@@ -290,7 +290,7 @@
   function lvLoadAllRequests() {
     var container = document.getElementById('allLeaveList');
     container.innerHTML = '<div class="empty-card">⏳ กำลังโหลด...</div>';
-    gasRun('getAllLeaveRequests', { bandId: lvBandId }, function(r) {
+    apiCall('getAllLeaveRequests', { bandId: lvBandId }, function(r) {
       if (!r || !r.success || !r.data || !r.data.length) {
         container.innerHTML = '<div class="empty-card">📋 ยังไม่มีคำขอลาในวง</div>';
         return;
@@ -345,7 +345,7 @@
     var inp = document.getElementById('subInput_' + itemId);
     var substitute = inp ? inp.value.trim() : '';
     if (!substitute) { showToast('กรุณาเลือกหรือพิมพ์ชื่อคนแทน', 'error'); return; }
-    gasRun('assignSubstitute', { bandId: lvBandId, leaveId: itemId, substitute: substitute }, function(r) {
+    apiCall('assignSubstitute', { bandId: lvBandId, leaveId: itemId, substitute: substitute }, function(r) {
       if (r && r.success) {
         showToast('จัดคนแทนเรียบร้อยแล้ว', 'success');
         lvLoadAllRequests();
@@ -355,7 +355,7 @@
 
   function lvReject(itemId) {
     if (!confirm('ยืนยันการปฏิเสธคำขอลานี้?')) return;
-    gasRun('rejectLeave', { bandId: lvBandId, leaveId: itemId }, function(r) {
+    apiCall('rejectLeave', { bandId: lvBandId, leaveId: itemId }, function(r) {
       if (r && r.success) {
         showToast('ปฏิเสธคำขอลาแล้ว', 'success');
         lvLoadAllRequests();

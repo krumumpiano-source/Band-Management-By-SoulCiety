@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -143,8 +143,8 @@
     if (bMgr) document.getElementById('bManager').textContent = '👤 ผู้จัดการ: ' + bMgr;
 
     // Refresh from server
-    if (bandId && typeof gasRun === 'function') {
-      gasRun('getBandSettings', { bandId: bandId }, function(r) {
+    if (bandId && typeof apiCall === 'function') {
+      apiCall('getBandSettings', { bandId: bandId }, function(r) {
         if (r && r.success && r.data) {
           var d = r.data;
           document.getElementById('bName').textContent = d.bandName || bName || '—';

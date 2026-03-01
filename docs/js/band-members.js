@@ -1,8 +1,8 @@
-var _allMembers = [];
+﻿var _allMembers = [];
 var _filteredMembers = [];
 
 function loadBandMembers() {
-  gasRun('getAllBandMembers', {}, function(r) {
+  apiCall('getAllBandMembers', {}, function(r) {
     _allMembers = (r && r.success && r.data) ? r.data : [];
     _filteredMembers = _allMembers;
     renderMemberCards(_allMembers);
@@ -82,7 +82,7 @@ if (document.getElementById('memberForm')) {
       btn.disabled = true; btn.textContent = t('loading');
       var id = document.getElementById('memberId').value;
       var action = id ? 'updateBandMember' : 'addBandMember';
-      gasRun(action, {
+      apiCall(action, {
         memberId: id,
         name: document.getElementById('mName').value.trim(),
         position: document.getElementById('mPosition').value.trim(),
@@ -109,7 +109,7 @@ function deleteCurrentMember() {
   var id = document.getElementById('memberId').value;
   showConfirm(t('confirmDeleteTitle'), t('confirmDeleteMsg')).then(function(ok) {
     if (!ok) return;
-    gasRun('deleteBandMember', { memberId: id }, function(r) {
+    apiCall('deleteBandMember', { memberId: id }, function(r) {
       if (r && r.success) {
         showToast(t('msg_deleted'), 'success');
         closeMemberModal();

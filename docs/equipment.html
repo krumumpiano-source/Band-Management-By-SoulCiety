@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -125,7 +125,7 @@
   });
 
   function loadEquipment() {
-    gasRun('getAllEquipment', {}, function(r) {
+    apiCall('getAllEquipment', {}, function(r) {
       allEquip = (r && r.success && r.data) ? r.data : [];
       renderEquip();
     });
@@ -197,7 +197,7 @@
     var btn = document.getElementById('saveEquipBtn'); btn.disabled = true; btn.textContent = t('loading');
     var id = document.getElementById('equipId').value;
     var statusRadio = document.querySelector('input[name="eStatus"]:checked');
-    gasRun(id ? 'updateEquipment' : 'addEquipment', {
+    apiCall(id ? 'updateEquipment' : 'addEquipment', {
       equipmentId: id, name: document.getElementById('eName').value.trim(),
       type: document.getElementById('eType').value, owner: document.getElementById('eOwner').value.trim(),
       serialNo: document.getElementById('eSerial').value.trim(),
@@ -216,7 +216,7 @@
     var id = document.getElementById('equipId').value;
     showConfirm(t('confirmDeleteTitle'), t('confirmDeleteMsg')).then(function(ok) {
       if (!ok) return;
-      gasRun('deleteEquipment', { equipmentId: id }, function(r) {
+      apiCall('deleteEquipment', { equipmentId: id }, function(r) {
         if (r && r.success) { showToast(t('msg_deleted'), 'success'); closeEquipModal(); loadEquipment(); }
         else showToast((r && r.message) || t('msg_error'), 'error');
       });
