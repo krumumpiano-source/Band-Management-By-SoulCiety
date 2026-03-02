@@ -138,6 +138,19 @@
     #realtimeIndicator{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;transition:background .5s}
     #realtimeIndicator.connected{background:var(--green)}
     #realtimeIndicator.error{background:var(--red)}
+
+    /* guest badge */
+    .guest-badge{background:#7c3aed;color:#fff;font-size:0.7rem;padding:2px 8px;border-radius:10px;white-space:nowrap;font-weight:600}
+
+    /* share/QR button */
+    #shareBtn{background:var(--bg3);border:1px solid #444;color:var(--text2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-family:inherit;white-space:nowrap;transition:background .15s}
+    #shareBtn:active{background:var(--bg4)}
+
+    /* QR modal */
+    #qrModal .modal-sheet{text-align:center;padding-bottom:40px}
+    #qrCode{margin:12px auto;display:block;border-radius:var(--radius);background:#fff;padding:10px}
+    #qrUrl{font-size:0.72rem;color:var(--text3);word-break:break-all;margin-top:8px;padding:0 8px}
+    #qrExpiry{font-size:0.78rem;color:var(--text2);margin-top:6px}
   </style>
 </head>
 <body>
@@ -152,12 +165,14 @@
       <div id="venueLabel"></div>
     </div>
     <div class="tb-right">
+      <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
       <div id="batteryIndicator" title="Battery">
         <div id="batteryBar"><div id="batteryFill" style="width:100%"></div></div>
         <span id="batteryText"></span>
       </div>
       <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
       <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
+      <button id="shareBtn" onclick="shareQR()" style="display:none">📱 แชร์</button>
       <button id="endBreakBtn" onclick="endBreak()">จบเบรค</button>
     </div>
   </div>
@@ -240,6 +255,20 @@
   </div>
 </div>
 
+<!-- ── QR MODAL ── -->
+<div class="modal-backdrop" id="qrModal">
+  <div class="modal-sheet">
+    <h3>📱 แชร์ Live Mode</h3>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:8px">คนมาแทนสแกน QR นี้เพื่อเข้า Live ได้ทันที ไม่ต้องสมัครสมาชิก</p>
+    <img id="qrCode" width="200" height="200" alt="QR Code">
+    <div id="qrUrl"></div>
+    <div id="qrExpiry"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="modal-btn secondary" onclick="closeQR()">ปิด</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -290,11 +319,19 @@ var _wakeLock  = null;
 var _endingTimer = null;
 var _isEnding  = false;
 
+var _isGuest   = false; // guest mode (no login required)
+
 // URL params
 var _params    = new URLSearchParams(location.search);
 var _date      = _params.get('date') || '';
 var _venue     = _params.get('venue') || '';
 var _timeSlot  = _params.get('timeSlot') || '';
+var _guestToken = _params.get('token') || '';
+// guest mode: URL has guest=1&token=XXX&band=XXX
+if (_params.get('guest') === '1') {
+  _isGuest = true;
+  _bandId  = _params.get('band') || _bandId;
+}
 
 // ─────────────────────────────────────────────────────────────────
 //  INIT
@@ -305,7 +342,31 @@ document.addEventListener('DOMContentLoaded', function() {
   initBattery();
   acquireWakeLock();
   document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
-  loadPlaylist();
+
+  if (_isGuest) {
+    // guest mode — verify token first, then load
+    document.getElementById('guestBadge').style.display = 'inline-block';
+    document.getElementById('endBreakBtn').style.display = 'none';
+    document.getElementById('shareBtn').style.display = 'none';
+    document.getElementById('requestBtn').style.display = 'none';
+    if (!_guestToken) { showInvalidToken(); return; }
+    // save to sessionStorage to survive refresh
+    sessionStorage.setItem('liveGuestToken', _guestToken);
+    apiCall('verifyGuestToken', { token: _guestToken }, function(r) {
+      if (!r || !r.success) { showInvalidToken(); return; }
+      var d = r.data;
+      _bandId   = d.bandId   || _bandId;
+      _date     = d.date     || _date;
+      _venue    = d.venue    || _venue;
+      _timeSlot = d.timeSlot || _timeSlot;
+      document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+      loadPlaylist();
+    });
+  } else {
+    // member mode
+    document.getElementById('shareBtn').style.display = 'inline-block';
+    loadPlaylist();
+  }
 
   // beforeunload guard
   window.addEventListener('beforeunload', function(e) {
@@ -574,6 +635,7 @@ function advanceSong() {
 //  SKIP / UNSKIP
 // ─────────────────────────────────────────────────────────────────
 function skipSong(idx) {
+  if (_isGuest) { showToast('Guest ไม่สามารถ skip เพลงได้'); return; }
   if (_playlist[idx]._skipped) return;
   haptic(50);
   _playlist[idx]._skipped = true;
@@ -640,7 +702,7 @@ function addEncore(idx) {
 //  SONG REQUEST MODAL
 // ─────────────────────────────────────────────────────────────────
 function openRequest() {
-  _reqFromAC = null;
+  if (_isGuest) { showToast('Guest ไม่สามารถเพิ่มเพลงได้'); return; }
   document.getElementById('reqSearch').value = '';
   document.getElementById('reqKey').value = '';
   document.getElementById('reqBpm').value = '';
@@ -766,6 +828,7 @@ function submitNote() {
 //  END BREAK (จบเบรค)
 // ─────────────────────────────────────────────────────────────────
 function endBreak() {
+  if (_isGuest) { showToast('เฉพาะสมาชิกเท่านั้นที่กด จบเบรค ได้'); return; }
   if (_modified) {
     var songs = _playlist.map(function(s) {
       return { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0 };
@@ -865,6 +928,34 @@ function getState() {
 function broadcastEvent(event, data) {
   if (!_channel) return;
   _channel.send({ type: 'broadcast', event: event, payload: data });
+}
+
+function showInvalidToken() {
+  document.getElementById('songList').innerHTML =
+    '<div id="emptyState"><div>🔒</div><div>ลิงก์หมดอายุหรือไม่ถูกต้อง</div><div style="font-size:.8rem;color:#555">ขอ QR ใหม่จากสมาชิกในวง</div></div>';
+}
+
+// ─── QR CODE / SHARE ──────────────────────────────────────────────
+function shareQR() {
+  apiCall('createGuestToken', { date: _date, venue: _venue, timeSlot: _timeSlot }, function(r) {
+    if (!r || !r.success) { showToast('สร้าง token ไม่ได้ กรุณา login ใหม่'); return; }
+    var token = r.data.token;
+    var base  = location.origin + location.pathname;
+    var url   = base + '?guest=1&band=' + encodeURIComponent(_bandId) +
+                '&date=' + encodeURIComponent(_date) +
+                '&venue=' + encodeURIComponent(_venue) +
+                '&timeSlot=' + encodeURIComponent(_timeSlot) +
+                '&token=' + encodeURIComponent(token);
+    var qrSrc = 'https://chart.googleapis.com/chart?cht=qr&chs=200x200&choe=UTF-8&chl=' + encodeURIComponent(url);
+    document.getElementById('qrCode').src = qrSrc;
+    document.getElementById('qrUrl').textContent = url;
+    var exp = new Date(r.data.expiresAt);
+    document.getElementById('qrExpiry').textContent = 'หมดอายุ: ' + exp.toLocaleTimeString('th-TH');
+    document.getElementById('qrModal').classList.add('show');
+  });
+}
+function closeQR() {
+  document.getElementById('qrModal').classList.remove('show');
 }
 
 // ─────────────────────────────────────────────────────────────────

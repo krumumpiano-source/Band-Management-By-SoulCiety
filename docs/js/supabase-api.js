@@ -231,6 +231,11 @@
         case 'deleteUser':      return doAdminDeleteUser(d.userId);
         case 'getSystemInfo':   return doGetSystemInfo();
 
+        // ── Live Guest Tokens ──────────────────────────────────────
+        case 'createGuestToken':  return doCreateGuestToken(d);
+        case 'verifyGuestToken':  return doVerifyGuestToken(d);
+        case 'deleteGuestToken':  return doDelete('live_guest_tokens', d.token);
+
         // ── Legacy (ไม่รองรับในเวอร์ชันปัจจุบัน) ──────────────────
         case 'createBackup':
         case 'getSpreadsheetUrl':
@@ -1229,6 +1234,45 @@
       var blob = new Blob([html], { type: 'text/html' });
       var url = URL.createObjectURL(blob);
       return { success: true, url: url };
+    }
+
+    // ── Live Guest Tokens ─────────────────────────────────────────
+    async function doCreateGuestToken(d) {
+      // สร้าง random token 32 chars
+      var arr = new Uint8Array(18);
+      crypto.getRandomValues(arr);
+      var token = Array.from(arr).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      var { data: { user }, error: ue } = await sb.auth.getUser();
+      if (ue || !user) throw new Error('ต้อง login ก่อนสร้าง guest token');
+      var row = {
+        token:      token,
+        band_id:    d.bandId || getBandId(),
+        created_by: user.id,
+        date:       d.date || '',
+        venue:      d.venue || '',
+        time_slot:  d.timeSlot || '',
+        expires_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString()
+      };
+      var { error } = await sb.from('live_guest_tokens').insert(row);
+      if (error) throw error;
+      return { success: true, data: { token: token, expiresAt: row.expires_at } };
+    }
+
+    async function doVerifyGuestToken(d) {
+      var { data, error } = await sb.from('live_guest_tokens')
+        .select('*')
+        .eq('token', d.token)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return { success: false, message: 'ลิงก์หมดอายุหรือไม่ถูกต้อง' };
+      return { success: true, data: {
+        bandId:   data.band_id,
+        date:     data.date,
+        venue:    data.venue,
+        timeSlot: data.time_slot,
+        expiresAt: data.expires_at
+      }};
     }
 
     // ── Restore session จาก Supabase ─────────────────────────────
