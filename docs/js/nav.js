@@ -66,7 +66,7 @@ function renderMainNav(containerId) {
   // ── เมนูผู้จัดการวง ───────────────────────────────────
   var managerLinks = isManager ? (
     navSection('👔 ผู้จัดการวง') +
-    navLink('attendance-payroll', '📋 ' + _t('nav_attendance')) +
+    navLink('attendance-payroll', '� ' + _t('nav_attendance')) +
     navLink('job-calculator',     '🧮 ' + _t('nav_jobCalculator')) +
     navLink('band-fund',          '💰 ' + _t('nav_bandFund')) +
     navLink('external-payout',    '💵 ' + _t('nav_externalPayout')) +

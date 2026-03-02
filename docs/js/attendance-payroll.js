@@ -1,6 +1,6 @@
 ﻿/**
  * Attendance & Payroll v2
- * เบิกจ่าย (ผู้จัดการ) — สอดคล้องกับระบบลงเวลาและตารางงาน
+ * เบิกจ่าย (ผู้จัดการวง) — สอดคล้องกับระบบลงเวลาและตารางงาน
  * Profile-based members + schedule slot rates + check-in pre-fill
  * Band Management By SoulCiety
  */

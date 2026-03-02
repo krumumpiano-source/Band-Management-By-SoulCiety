@@ -25,7 +25,7 @@
       save: 'บันทึก', cancel: 'ยกเลิก', delete: 'ลบ', edit: 'แก้ไข', add: 'เพิ่ม', search: 'ค้นหา',
       loading: 'กำลังโหลด...', yes: 'ใช่', no: 'ไม่ใช่', ok: 'ตกลง', close: 'ปิด', back: 'กลับ', next: 'ถัดไป', submit: 'ส่ง', required: 'จำเป็น', confirm: 'ยืนยัน',
       confirmDeleteTitle: 'ยืนยันการลบ', confirmDeleteMsg: 'ต้องการลบรายการนี้ใช่หรือไม่? ไม่สามารถกู้คืนได้',
-      nav_dashboard: 'แดชบอร์ด', nav_songs: 'โปรแกรมลิสเพลง', nav_attendance: 'เบิกจ่าย (ผู้จัดการ)',
+      nav_dashboard: 'แดชบอร์ด', nav_songs: 'โปรแกรมลิสเพลง', nav_attendance: 'เบิกจ่าย (ผู้จัดการวง)',
       nav_leave: 'คนลาคนแทน', nav_externalPayout: 'เบิกจ่ายงานนอก', nav_schedule: 'ตารางงาน', nav_jobCalculator: 'คำนวณงานนอก',
       nav_quotation: 'ใบเสนอราคา', nav_contract: 'สัญญาว่าจ้าง', nav_statistics: 'สถิติ',
       nav_songInsights: 'สถิติเพลง', nav_bandFund: 'เงินกองกลาง', nav_settings: 'ตั้งค่า',
