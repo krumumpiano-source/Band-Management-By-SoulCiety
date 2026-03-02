@@ -70,8 +70,7 @@
     .badge-next{background:rgba(134,239,172,0.18);color:#86efac;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.04em;border:1px solid rgba(134,239,172,0.3)}
     .song-item.is-skipped{opacity:.38}
     .song-item.is-skipped .si-name{text-decoration:line-through;text-decoration-thickness:2px}
-    .beat-dot{position:absolute;top:12px;right:14px;width:21px;height:21px;border-radius:50%;background:#22c55e;pointer-events:none;opacity:0;transform:scale(.7);box-shadow:0 0 8px 2px rgba(34,197,94,.5)}
-    @keyframes beat-blink{0%,100%{opacity:.55;transform:scale(.8)}50%{opacity:1;transform:scale(1.05)}}
+    .beat-dot{position:absolute;top:12px;right:14px;width:21px;height:21px;border-radius:50%;background:#22c55e;pointer-events:none;opacity:0;transition:none;box-shadow:0 0 8px 3px rgba(34,197,94,.6)}
     .si-num{font-size:0.78rem;color:var(--text3);width:22px;text-align:right;flex-shrink:0}
     .si-singer-dot{width:5px;height:42px;border-radius:3px;flex-shrink:0}
     .si-singer-dot.male{background:var(--blue-bg)}
@@ -540,14 +539,7 @@ function renderNowPlaying() {
   var visIdx  = visible.indexOf(s);
   document.getElementById('songCounter').textContent =
     (visIdx + 1) + ' / ' + visible.length;
-  var bd = document.getElementById('beatDot');
-  if (s.bpm) {
-    bd.style.display = 'block';
-    bd.style.animation = 'beat-blink ' + (60/s.bpm).toFixed(3) + 's ease-in-out infinite';
-  } else {
-    bd.style.display = 'none';
-    bd.style.animation = 'none';
-  }
+  startBeatDot(s.bpm);
 }
 
 function renderSongList() {
@@ -726,6 +718,30 @@ function startClock() {
   }
   tick();
   setInterval(tick, 1000);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  BEAT DOT  (clock-synced, sharp on/off, all devices in unison)
+// ─────────────────────────────────────────────────────────────────
+var _beatTimer = null;
+function startBeatDot(bpm) {
+  stopBeatDot();
+  var bd = document.getElementById('beatDot');
+  if (!bpm || !bd) return;
+  bd.style.display = 'block';
+  var interval = 60000 / bpm;   // ms per beat
+  function tick() {
+    // Date.now() % interval = position within current beat cycle
+    // all devices using same wall clock → perfectly synchronized
+    bd.style.opacity = (Date.now() % interval) < (interval / 2) ? '1' : '0';
+  }
+  tick();
+  _beatTimer = setInterval(tick, 30);  // check 33×/sec — crisp & light
+}
+function stopBeatDot() {
+  if (_beatTimer) { clearInterval(_beatTimer); _beatTimer = null; }
+  var bd = document.getElementById('beatDot');
+  if (bd) { bd.style.display = 'none'; bd.style.opacity = '0'; }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1147,6 +1163,7 @@ function exitLive() {
 function doExit() {
   if (_breakWarningTimer) clearTimeout(_breakWarningTimer);
   if (_channel) { _channel.unsubscribe(); _channel = null; }
+  stopBeatDot();
   releaseWakeLock();
   var ref = _params.get('from') || 'dashboard.html';
   location.href = ref;
