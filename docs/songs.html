@@ -517,6 +517,7 @@ html{scroll-behavior:smooth}
     <button onclick="copyPlaylist()">📋 คัดลอกลิส</button>
     <button onclick="saveHistoryManual()" style="background:#2563eb">💾 บันทึกลิส</button>
     <button onclick="showHistory()" style="background:#4a5568">📗 ประวัติ</button>
+    <button onclick="goLiveMode()" id="liveModeBtn" style="background:#0d9488;display:none">🎤 Live</button>
     <button onclick="refreshPlaylist()" style="background:var(--danger)">🔄 รีเฟรชลิส</button>
   </div>
 
@@ -1158,6 +1159,9 @@ function renderPlaylist(){
     });
 
     ul.appendChild(fragment);
+    // show/hide Live button
+    var liveBtn = document.getElementById('liveModeBtn');
+    if (liveBtn) liveBtn.style.display = playlistData.filter(function(s){ return !s.break; }).length > 0 ? 'inline-flex' : 'none';
   });
 }
 
@@ -1327,6 +1331,14 @@ function copyPlaylist(){
 
 var _historyCache = [];
 var _savingHistory = false;
+
+function goLiveMode() {
+  var date = (document.getElementById('useDate') || {}).value || '';
+  var venue = (document.getElementById('venue') || {}).value || '';
+  var slot = (document.getElementById('timeSlot') || {}).value || '';
+  location.href = 'live.html?from=songs.html&date=' + encodeURIComponent(date) +
+    '&venue=' + encodeURIComponent(venue) + '&timeSlot=' + encodeURIComponent(slot);
+}
 
 function saveHistoryManual() {
   if (playlistData.length === 0) { alert('ยังไม่มีเพลงในลิส'); return; }
