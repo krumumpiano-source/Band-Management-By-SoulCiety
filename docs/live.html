@@ -375,6 +375,10 @@ var _breakWarningTimer = null;
 // ── Drag-reorder state ────────────────────────────────────────────
 var _drag = { active: false, fromIdx: -1, toIdx: -1, ghostEl: null };
 
+// ── Double-tap / double-click detection ──────────────────────────
+var _tapTimer   = null;
+var _lastTapIdx = -1;
+
 var _isGuest   = false; // guest mode (no login required)
 
 // URL params
@@ -655,13 +659,21 @@ function renderSongList() {
       if (_drag.active || _didDrag || _didSwipe) return;
       if (e.target.classList.contains('badge-skip')) return;
       if (e.target.classList.contains('si-del')) return;
-      _current = idx;
-      renderNowPlaying();
-      renderSongList();
-      scrollToCurrent();
+      // Detect double-tap: second click on same idx within 260ms
+      if (_lastTapIdx === idx && _tapTimer) {
+        clearTimeout(_tapTimer); _tapTimer = null; _lastTapIdx = -1;
+        setAsNext(idx);
+        return;
+      }
+      _lastTapIdx = idx;
+      _tapTimer = setTimeout(function() {
+        _tapTimer = null; _lastTapIdx = -1;
+        _current = idx;
+        renderNowPlaying();
+        renderSongList();
+        scrollToCurrent();
+      }, 260);
     });
-
-    item.addEventListener('dblclick', function() { addEncore(idx); });
   });
 
   scrollToCurrent();
@@ -806,6 +818,23 @@ function advanceSong() {
   } else {
     showToast('เพลงสุดท้ายในเบรคแล้ว 🎉');
   }
+}
+
+function setAsNext(idx) {
+  if (_isGuest) { showToast('Guest ไม่สามารถจัดคิวเพลงได้'); return; }
+  if (idx === _current) return;
+  var nextPos = _current + 1;
+  if (idx === nextPos) { showToast('"' + (_playlist[idx]||{name:''}).name + '" เป็นเพลงถัดไปอยู่แล้ว ✅'); return; }
+  var song = _playlist.splice(idx, 1)[0];
+  var insertAt = _current + 1;
+  if (idx < _current) { _current--; insertAt = _current + 1; }
+  _playlist.splice(insertAt, 0, song);
+  _modified = true;
+  broadcastEvent('set_next', { idx: idx });
+  renderNowPlaying();
+  renderSongList();
+  showToast('"' + song.name + '" → เพลงถัดไป ✅');
+  haptic(60);
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1244,6 +1273,17 @@ function initRealtime() {
       if (d.joinedAt && _joinedAt < d.joinedAt) {
         broadcastEvent('state_sync', getState());
       }
+    })
+    .on('broadcast', { event: 'set_next' }, function(payload) {
+      var d = payload.payload || {};
+      var idx = d.idx;
+      if (typeof idx !== 'number' || idx === _current || idx < 0 || idx >= _playlist.length) return;
+      var song = _playlist.splice(idx, 1)[0];
+      var insertAt = _current + 1;
+      if (idx < _current) { _current--; insertAt = _current + 1; }
+      _playlist.splice(insertAt, 0, song);
+      renderNowPlaying();
+      renderSongList();
     })
     .on('broadcast', { event: 'beat_ref' }, function(payload) {
       var d = payload.payload || {};
