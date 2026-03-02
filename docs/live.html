@@ -70,7 +70,7 @@
     .badge-next{background:rgba(134,239,172,0.18);color:#86efac;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.04em;border:1px solid rgba(134,239,172,0.3)}
     .song-item.is-skipped{opacity:.38}
     .song-item.is-skipped .si-name{text-decoration:line-through;text-decoration-thickness:2px}
-    .beat-dot{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:50%;background:#22c55e;pointer-events:none;opacity:.2;transform:scale(.7)}
+    .beat-dot{position:absolute;top:12px;right:14px;width:21px;height:21px;border-radius:50%;background:#22c55e;pointer-events:none;opacity:.2;transform:scale(.7)}
     @keyframes beat-blink{0%,100%{opacity:.2;transform:scale(.7)}50%{opacity:.9;transform:scale(1)}}
     .si-num{font-size:0.78rem;color:var(--text3);width:22px;text-align:right;flex-shrink:0}
     .si-singer-dot{width:5px;height:42px;border-radius:3px;flex-shrink:0}
@@ -209,6 +209,7 @@
   <!-- ── NOW PLAYING ── -->
   <div id="nowPlaying">
     <div class="singer-strip" id="singerStrip"></div>
+    <span id="beatDot" class="beat-dot" style="display:none"></span>
     <div id="nowLabel">▶ กำลังเล่น</div>
     <div id="nowTitle">—</div>
     <div class="now-meta">
@@ -539,6 +540,13 @@ function renderNowPlaying() {
   var visIdx  = visible.indexOf(s);
   document.getElementById('songCounter').textContent =
     (visIdx + 1) + ' / ' + visible.length;
+  var bd = document.getElementById('beatDot');
+  if (s.bpm) {
+    bd.style.display = '';
+    bd.style.animation = 'beat-blink ' + (60/s.bpm).toFixed(3) + 's ease-in-out infinite';
+  } else {
+    bd.style.display = 'none';
+  }
 }
 
 function renderSongList() {
@@ -568,7 +576,6 @@ function renderSongList() {
         (isNext ? ' is-next' : '') +
         (s._skipped ? ' is-skipped' : '') +
       '" data-idx="' + i + '">' +
-        (i === _current && s.bpm ? '<span class="beat-dot" style="animation:beat-blink ' + (60/s.bpm).toFixed(3) + 's ease-in-out infinite"></span>' : '') +
         '<div class="si-num">' + (i + 1) + '</div>' +
         dot +
         '<div class="si-content">' +
