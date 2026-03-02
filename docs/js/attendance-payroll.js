@@ -802,20 +802,20 @@ function apPrintVenueReceipt() {
   var nowStr = apFmtDate(now) + ' เวลา ' + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ' น.';
 
   var html =
-    // ── Document header ──
-    '<div style="border-bottom:3px solid #1a1a1a;padding-bottom:16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start">' +
-      '<div>' +
+    // ── Document header (table layout — flex not reliable in html2canvas) ──
+    '<table style="width:100%;border-bottom:3px solid #1a1a1a;margin-bottom:18px;border-collapse:collapse"><tr>' +
+      '<td style="vertical-align:top;padding-bottom:14px">' +
         '<div style="font-size:10px;color:#888;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">ใบเบิกเงินค่าจ้างนักดนตรี / Musician Payment Request</div>' +
         '<h1 style="margin:0 0 4px;font-size:22px;font-weight:800;color:#1a1a1a;letter-spacing:.3px">' + apEsc(apBandName) + '</h1>' +
         '<div style="font-size:14px;color:#444;font-weight:600">สถานที่: ' + apEsc(vn) + '</div>' +
         '<div style="font-size:13px;color:#666;margin-top:2px">ช่วงวันที่: ' + dt + '</div>' +
-      '</div>' +
-      '<div style="text-align:right;font-size:11px;color:#888">' +
+      '</td>' +
+      '<td style="vertical-align:top;text-align:right;padding-bottom:14px;font-size:11px;color:#888;white-space:nowrap">' +
         '<div style="font-weight:700;color:#555;font-size:13px">เลขที่เอกสาร</div>' +
         '<div style="font-family:monospace;font-size:12px;color:#444">' + docNo + '</div>' +
         '<div style="margin-top:6px">วันที่พิมพ์: ' + nowStr + '</div>' +
-      '</div>' +
-    '</div>' +
+      '</td>' +
+    '</tr></table>' +
     // ── Table ──
     '<table style="width:100%;border-collapse:collapse">' +
     '<thead><tr>' +
@@ -873,9 +873,10 @@ function apPrintMemberReceipt() {
     var mSubList = Object.values ? Object.values(mSubMap) : Object.keys(mSubMap).map(function(k){ return mSubMap[k]; });
     var totalSubAmt = mSubList.reduce(function(s,x){ return s+x.amount; }, 0);
     // Payment method
-    var pmMethod = apPaymentMethod[m.id] || '';
+    var pmMethod = _payMethodLabels[m.paymentMethod] || m.paymentMethod || '';
+    var pmAccount = m.paymentAccount || '';
     grand += totalAmt;
-    memberData.push({ m:m, dr:dr, totalSlots:totalSlots, totalAmt:totalAmt, pmMethod:pmMethod, mSubList:mSubList, totalSubAmt:totalSubAmt });
+    memberData.push({ m:m, dr:dr, totalSlots:totalSlots, totalAmt:totalAmt, pmMethod:pmMethod, pmAccount:pmAccount, mSubList:mSubList, totalSubAmt:totalSubAmt });
   });
 
   // ── Table Header ──
@@ -919,6 +920,7 @@ function apPrintMemberReceipt() {
       '</td>' +
       '<td style="padding:9px 10px;' + B + ';vertical-align:top">' +
         '<div style="font-size:11px;color:#374151">' + (d.pmMethod ? apEsc(d.pmMethod) : '<span style="color:#d1d5db">—</span>') + '</div>' +
+        (d.pmAccount ? '<div style="font-size:10px;color:#555;font-family:monospace">' + apEsc(d.pmAccount) + '</div>' : '') +
       '</td></tr>';
   });
 
@@ -933,20 +935,20 @@ function apPrintMemberReceipt() {
   var docNo = 'PAY-' + (apDateRange[0]||'').replace(/-/g,'') + '-' + Date.now().toString().slice(-4);
 
   var html =
-    // ── Document header ──
-    '<div style="border-bottom:3px solid #1e3a5f;padding-bottom:16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start">' +
-      '<div>' +
+    // ── Document header (table layout — flex not reliable in html2canvas) ──
+    '<table style="width:100%;border-bottom:3px solid #1e3a5f;padding-bottom:16px;margin-bottom:18px;border-collapse:collapse"><tr>' +
+      '<td style="vertical-align:top;padding-bottom:16px">' +
         '<div style="font-size:10px;color:#888;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">ใบแจ้งจ่ายเงินสมาชิก / Member Payment Slip</div>' +
         '<h1 style="margin:0 0 4px;font-size:22px;font-weight:800;color:#1a1a1a">' + apEsc(apBandName) + '</h1>' +
         '<div style="font-size:13px;color:#444;font-weight:600">ผู้จัดการวง: ' + apEsc(apBandManager||'—') + '</div>' +
         '<div style="font-size:13px;color:#666;margin-top:2px">ช่วงวันที่: ' + dt + '</div>' +
-      '</div>' +
-      '<div style="text-align:right;font-size:11px;color:#888">' +
+      '</td>' +
+      '<td style="vertical-align:top;text-align:right;padding-bottom:16px;font-size:11px;color:#888;white-space:nowrap">' +
         '<div style="font-weight:700;color:#555;font-size:13px">เลขที่เอกสาร</div>' +
         '<div style="font-family:monospace;font-size:12px;color:#444">' + docNo + '</div>' +
         '<div style="margin-top:6px">วันที่พิมพ์: ' + nowStr + '</div>' +
-      '</div>' +
-    '</div>' +
+      '</td>' +
+    '</tr></table>' +
     // ── Table ──
     '<table style="width:100%;border-collapse:collapse">' +
     '<thead>' + headerRow + '</thead>' +
