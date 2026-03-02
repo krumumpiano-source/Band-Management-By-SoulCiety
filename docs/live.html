@@ -554,62 +554,92 @@ function renderSongList() {
         '</div>' +
         (badges ? '<div class="si-badges">' + badges + '</div>' : '') +
         (!_isGuest ? '<button class="si-del" onclick="removeSong(event,' + i + ')" title="\u0e25\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e19\u0e35\u0e49">\u2715</button>' : '') +
-        (!_isGuest ? '<span class="si-drag" data-idx="' + i + '" title="\u0e25\u0e32\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e23\u0e35\u0e22\u0e07">\u2807</span>' : '') +
       '</div>'
     );
   });
   el.innerHTML = buf.join('');
 
-  // bind tap / long-press (note) on song items
+  // bind all touch/click interactions per song item
   el.querySelectorAll('.song-item').forEach(function(item) {
     var idx = parseInt(item.dataset.idx, 10);
-    var pressTimer = null;
+    var _sx = 0, _sy = 0, _dragTimer = null, _didSwipe = false, _didDrag = false;
+
+    function cancelDragTimer() {
+      if (_dragTimer) { clearTimeout(_dragTimer); _dragTimer = null; }
+    }
+
     item.addEventListener('touchstart', function(e) {
-      if (e.target.classList.contains('si-drag') ||
-          e.target.classList.contains('badge-skip') ||
+      if (e.target.classList.contains('badge-skip') ||
           e.target.classList.contains('si-del')) return;
-      pressTimer = setTimeout(function() { pressTimer = null; openNote(idx); }, 650);
-    }, {passive: true});
+      _sx = e.touches[0].clientX;
+      _sy = e.touches[0].clientY;
+      _didSwipe = false;
+      _didDrag  = false;
+
+      if (!_isGuest) {
+        _dragTimer = setTimeout(function() {
+          _dragTimer = null;
+          _didDrag = true;
+          _drag.active  = true;
+          _drag.fromIdx = idx;
+          _drag.toIdx   = idx;
+          haptic(40);
+          item.classList.add('drag-source');
+          var ghost = document.getElementById('dragGhost');
+          ghost.textContent = _playlist[idx] ? _playlist[idx].name : '';
+          ghost.style.display = 'block';
+          ghost.style.left = (_sx - 80) + 'px';
+          ghost.style.top  = (_sy + 14) + 'px';
+          _drag.ghostEl = ghost;
+        }, 450);
+      }
+    }, { passive: true });
+
+    item.addEventListener('touchmove', function(e) {
+      if (_drag.active) return; // global handler takes over
+      if (!_dragTimer) return;
+      var dx = e.touches[0].clientX - _sx;
+      var dy = e.touches[0].clientY - _sy;
+      // ถ้าขยับก่อน 450ms → ยกเลิก drag intent
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        cancelDragTimer();
+        if (Math.abs(dx) > Math.abs(dy) * 1.2 && Math.abs(dx) > 15) {
+          _didSwipe = true;
+          item.classList.toggle('swipe-left',  dx < -20);
+          item.classList.toggle('swipe-right', dx > 20);
+        }
+      }
+    }, { passive: true });
+
     item.addEventListener('touchend', function(e) {
-      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      cancelDragTimer();
+      item.classList.remove('swipe-left', 'swipe-right');
+      if (_drag.active) return; // global onDragEnd handles
+      if (_didSwipe) {
+        var dx = e.changedTouches[0].clientX - _sx;
+        if (dx < -50) skipSong(idx);
+        else if (dx > 50 && _playlist[idx] && _playlist[idx]._skipped) unskipSong(e, idx);
+      }
     });
-    item.addEventListener('touchmove', function() {
-      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    }, {passive: true});
+
+    item.addEventListener('touchcancel', function() {
+      cancelDragTimer();
+      item.classList.remove('swipe-left', 'swipe-right');
+    });
+
     item.addEventListener('click', function(e) {
+      if (_drag.active || _didDrag || _didSwipe) return;
       if (e.target.classList.contains('badge-skip')) return;
       if (e.target.classList.contains('si-del')) return;
-      if (e.target.classList.contains('si-drag')) return;
       _current = idx;
       renderNowPlaying();
       renderSongList();
       scrollToCurrent();
     });
+
     item.addEventListener('dblclick', function() { addEncore(idx); });
   });
 
-  // bind drag handles
-  if (!_isGuest) {
-    el.querySelectorAll('.si-drag').forEach(function(handle) {
-      handle.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        var idx = parseInt(handle.dataset.idx, 10);
-        _drag.active  = true;
-        _drag.fromIdx = idx;
-        _drag.toIdx   = idx;
-        haptic(30);
-        handle.closest('.song-item').classList.add('drag-source');
-        var ghost = document.getElementById('dragGhost');
-        ghost.textContent = _playlist[idx] ? _playlist[idx].name : '';
-        ghost.style.display = 'block';
-        ghost.style.left = (e.touches[0].clientX - 80) + 'px';
-        ghost.style.top  = (e.touches[0].clientY + 14) + 'px';
-        _drag.ghostEl = ghost;
-      }, { passive: false });
-    });
-  }
-
-  setupSwipe();
   scrollToCurrent();
 }
 
@@ -770,37 +800,7 @@ function unskipSong(e, idx) {
 // ─────────────────────────────────────────────────────────────────
 //  SWIPE GESTURES
 // ─────────────────────────────────────────────────────────────────
-function setupSwipe() {
-  var items = document.querySelectorAll('.song-item');
-  items.forEach(function(item) {
-    var startX = 0, startY = 0, moved = false;
-    item.addEventListener('touchstart', function(e) {
-      if (e.target.classList.contains('si-drag')) return; // handled by drag
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      moved = false;
-    }, { passive: true });
-    item.addEventListener('touchmove', function(e) {
-      if (_drag.active) return;
-      var dx = e.touches[0].clientX - startX;
-      var dy = e.touches[0].clientY - startY;
-      if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 20) {
-        moved = true;
-        item.classList.toggle('swipe-left',  dx < -30);
-        item.classList.toggle('swipe-right', dx > 30);
-      }
-    }, { passive: true });
-    item.addEventListener('touchend', function(e) {
-      if (_drag.active) return;
-      var idx = parseInt(item.dataset.idx, 10);
-      var dx = e.changedTouches[0].clientX - startX;
-      item.classList.remove('swipe-left','swipe-right');
-      if (!moved) return;
-      if (dx < -50) skipSong(idx);
-      else if (dx > 50 && _playlist[idx]._skipped) unskipSong(e, idx);
-    });
-  });
-}
+function setupSwipe() { /* logic merged into renderSongList per-item handlers */ }
 
 // ─────────────────────────────────────────────────────────────────
 //  DRAG-TO-REORDER (global handlers)
