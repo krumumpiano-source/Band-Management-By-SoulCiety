@@ -87,6 +87,9 @@
     .badge-req{background:#7c3aed;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:10px;white-space:nowrap}
     .badge-encore{background:#0e7490;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:10px}
     .badge-skip{background:var(--bg4);color:var(--text2);font-size:0.65rem;padding:1px 6px;border-radius:10px;cursor:pointer}
+    /* delete button */
+    .si-del{flex-shrink:0;background:none;border:none;color:#4b5563;font-size:1rem;padding:4px 6px;cursor:pointer;border-radius:6px;line-height:1;transition:color .15s,background .15s}
+    .si-del:active{color:#ef4444;background:rgba(239,68,68,0.1)}
     /* swipe feedback */
     .song-item.swipe-left{background:rgba(239,68,68,0.12)!important}
     .song-item.swipe-right{background:rgba(16,185,129,0.12)!important}
@@ -491,6 +494,7 @@ function renderSongList() {
           (s._note ? '<div class="si-note">' + escHtml(s._note) + '</div>' : '') +
         '</div>' +
         (badges ? '<div class="si-badges">' + badges + '</div>' : '') +
+        (!_isGuest ? '<button class="si-del" onclick="removeSong(event,' + i + ')" title="\u0e25\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e19\u0e35\u0e49">\u2715</button>' : '') +
       '</div>'
     );
   });
@@ -508,6 +512,7 @@ function renderSongList() {
     });
     item.addEventListener('click', function(e) {
       if (e.target.classList.contains('badge-skip')) return;
+      if (e.target.classList.contains('si-del')) return;
       // jump to song
       _current = idx;
       renderNowPlaying();
@@ -526,6 +531,20 @@ function renderSongList() {
 
   setupSwipe();
   scrollToCurrent();
+}
+
+// ─── REMOVE SONG FROM PLAYLIST ────────────────────────────────────────────────
+function removeSong(e, idx) {
+  e.stopPropagation();
+  if (_isGuest) return;
+  var name = _playlist[idx] ? _playlist[idx].name : '';
+  if (!confirm('\u0e25บ \u201c' + name + '\u201d \u0e2dอกจากลิส?')) return;
+  _playlist.splice(idx, 1);
+  if (_current >= _playlist.length) _current = Math.max(0, _playlist.length - 1);
+  renderNowPlaying();
+  renderSongList();
+  broadcastEvent('remove', { idx: idx });
+  showToast('\u0e25\u0e1a \u201c' + name + '\u201d \u0e41\u0e25\u0e49\u0e27');
 }
 
 function scrollToCurrent() {
@@ -904,6 +923,15 @@ function initRealtime() {
       var d = payload.payload || {};
       if (_playlist[d.idx]) { _playlist[d.idx]._skipped = false; }
       renderSongList();
+    })
+    .on('broadcast', { event: 'remove' }, function(payload) {
+      var d = payload.payload || {};
+      if (typeof d.idx === 'number' && d.idx >= 0 && d.idx < _playlist.length) {
+        _playlist.splice(d.idx, 1);
+        if (_current >= _playlist.length) _current = Math.max(0, _playlist.length - 1);
+        renderNowPlaying();
+        renderSongList();
+      }
     })
     .on('broadcast', { event: 'request_state' }, function(payload) {
       // someone is asking for state — send if I joined earlier
