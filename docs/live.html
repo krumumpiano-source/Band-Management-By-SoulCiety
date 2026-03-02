@@ -36,6 +36,9 @@
     #venueLabel{font-size:0.78rem;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
     .font-btn{background:var(--bg3);border:none;color:var(--text);cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:0.8rem;font-weight:700;font-family:inherit;transition:background .15s}
     .font-btn:active{background:var(--bg4)}
+    #beatToggleBtn{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:#22c55e;cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:0.88rem;font-family:inherit;transition:background .15s,border-color .15s,color .15s;display:none;align-items:center;justify-content:center}
+    #beatToggleBtn:active{background:rgba(34,197,94,.3)}
+    #beatToggleBtn.off{background:var(--bg3);border-color:#444;color:var(--text3)}
     #endBreakBtn{background:var(--bg3);border:1px solid #444;color:var(--text2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-family:inherit;white-space:nowrap;transition:background .15s}
     #endBreakBtn:active{background:var(--bg4)}
 
@@ -199,6 +202,7 @@
       <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
       <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
       <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
+      <button id="beatToggleBtn" onclick="toggleBeatDot()" title="เปิด/ปิดไฟ BPM">💡</button>
       <button id="shareBtn" onclick="shareQR()" style="display:none">📱 แชร์</button>
       <button id="endBreakBtn" onclick="endBreak()">จบเบรค</button>
       <button id="exitLiveBtn" onclick="exitLive()" title="ออกจาก Live Mode">✕ ออก</button>
@@ -743,6 +747,18 @@ var _beatOffTimer   = null;  // setTimeout to turn dot OFF
 var _beatLocalTimer = null;  // receiver's local phase-locked setInterval
 var _beatBpm        = 0;
 var _beatInterval   = 0;
+var _beatDotEnabled = true;  // user toggle
+
+function toggleBeatDot() {
+  _beatDotEnabled = !_beatDotEnabled;
+  var btn = document.getElementById('beatToggleBtn');
+  if (btn) btn.classList.toggle('off', !_beatDotEnabled);
+  if (!_beatDotEnabled) {
+    // pause only visual — keep timers running so sync is alive
+    var bd = document.getElementById('beatDot');
+    if (bd) bd.style.opacity = '0';
+  }
+}
 
 function startBeatDot(bpm) {
   stopBeatDot();
@@ -751,6 +767,8 @@ function startBeatDot(bpm) {
   _beatBpm      = bpm;
   _beatInterval = 60000 / bpm;
   bd.style.display = 'block';
+  var btn = document.getElementById('beatToggleBtn');
+  if (btn) { btn.style.display = 'inline-flex'; btn.classList.toggle('off', !_beatDotEnabled); }
 
   if (!_isGuest) {
     // MANAGER: drive the metronome, broadcast every tick
@@ -768,6 +786,7 @@ function flashBeatDot() {
   var bd = document.getElementById('beatDot');
   if (!bd || bd.style.display === 'none') return;
   if (_beatOffTimer) { clearTimeout(_beatOffTimer); _beatOffTimer = null; }
+  if (!_beatDotEnabled) return;   // timers run but dot stays invisible
   bd.style.opacity = '1';
   _beatOffTimer = setTimeout(function() {
     bd.style.opacity = '0';
@@ -781,6 +800,8 @@ function stopBeatDot() {
   if (_beatLocalTimer) { clearInterval(_beatLocalTimer); _beatLocalTimer = null; }
   var bd = document.getElementById('beatDot');
   if (bd) { bd.style.display = 'none'; bd.style.opacity = '0'; }
+  var btn = document.getElementById('beatToggleBtn');
+  if (btn) btn.style.display = 'none';
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1315,8 +1336,10 @@ function initRealtime() {
       _beatBpm = d.bpm || 0;
       _beatInterval = _beatBpm ? 60000 / _beatBpm : 0;
       var bd = document.getElementById('beatDot');
-      if (!_beatBpm || !bd) { if (bd) { bd.style.display = 'none'; } return; }
+      var btn = document.getElementById('beatToggleBtn');
+      if (!_beatBpm || !bd) { if (bd) bd.style.display = 'none'; if (btn) btn.style.display = 'none'; return; }
       bd.style.display = 'block';
+      if (btn) { btn.style.display = 'inline-flex'; btn.classList.toggle('off', !_beatDotEnabled); }
     })
     .on('broadcast', { event: 'beat_sync' }, function(payload) {
       // LOCAL PHASE RE-SYNC:
