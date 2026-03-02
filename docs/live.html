@@ -34,10 +34,11 @@
     #clock{font-size:1.05rem;font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
     #songCounter{font-size:0.85rem;color:var(--text2);white-space:nowrap}
     #venueLabel{font-size:0.78rem;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
-    #batteryIndicator{display:flex;align-items:center;gap:3px;font-size:0.78rem;color:var(--text2)}
-    #batteryBar{width:22px;height:11px;border:1.5px solid currentColor;border-radius:2px;position:relative;overflow:hidden}
-    #batteryBar::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);width:3px;height:6px;background:currentColor;border-radius:0 1px 1px 0}
-    #batteryFill{height:100%;background:currentColor;transition:width .5s}
+    #batteryIndicator{display:flex;align-items:center;gap:2px;font-size:0.78rem;color:var(--text2);flex-shrink:0;white-space:nowrap}
+    #batteryBody{width:22px;height:11px;border:1.5px solid currentColor;border-radius:2px;position:relative;overflow:hidden;flex-shrink:0}
+    #batteryFill{position:absolute;left:0;top:0;bottom:0;background:currentColor;transition:width .5s;border-radius:1px}
+    #batteryCap{width:3px;height:6px;background:currentColor;border-radius:0 1.5px 1.5px 0;flex-shrink:0;opacity:.85}
+    #batteryPct{font-size:0.72rem;margin-left:1px}
     .font-btn{background:var(--bg3);border:none;color:var(--text);cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:0.8rem;font-weight:700;font-family:inherit;transition:background .15s}
     .font-btn:active{background:var(--bg4)}
     #endBreakBtn{background:var(--bg3);border:1px solid #444;color:var(--text2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-family:inherit;white-space:nowrap;transition:background .15s}
@@ -201,8 +202,9 @@
     <div class="tb-right">
       <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
       <div id="batteryIndicator" title="Battery">
-        <div id="batteryBar"><div id="batteryFill" style="width:100%"></div></div>
-        <span id="batteryText"></span>
+        <div id="batteryBody"><div id="batteryFill" style="width:100%"></div></div>
+        <div id="batteryCap"></div>
+        <span id="batteryPct"></span>
       </div>
       <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
       <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
@@ -731,21 +733,29 @@ function startClock() {
 // ─────────────────────────────────────────────────────────────────
 var _batteryInited = false;
 function initBattery() {
-  if (_batteryInited) return;          // ป้องกัน init ซ้ำ
+  if (_batteryInited) return;   // ป้องกัน init ซ้ำ — local device เท่านั้น
   _batteryInited = true;
-  var el = document.getElementById('batteryIndicator');
-  if (!navigator.getBattery) { el.style.display = 'none'; return; }
+  var wrap = document.getElementById('batteryIndicator');
+  if (!navigator.getBattery) { wrap.style.display = 'none'; return; }
   navigator.getBattery().then(function(bat) {
+    var fillEl = document.getElementById('batteryFill');
+    var capEl  = document.getElementById('batteryCap');
+    var pctEl  = document.getElementById('batteryPct');
     function updateBat() {
       var pct = Math.round(bat.level * 100);
-      document.getElementById('batteryFill').style.width = pct + '%';
-      document.getElementById('batteryText').textContent = pct + '%';
-      el.style.color = pct <= 20 ? '#ef4444' : pct <= 50 ? '#f59e0b' : '#a0a0a0';
+      var color = pct <= 20 ? '#ef4444' : pct <= 50 ? '#f59e0b' : '#6b7280';
+      fillEl.style.width   = pct + '%';
+      fillEl.style.background = color;
+      capEl.style.background  = color;
+      pctEl.textContent    = pct + '%';
+      pctEl.style.color    = color;
     }
     updateBat();
-    bat.addEventListener('levelchange',   updateBat);
+    bat.addEventListener('levelchange',    updateBat);
     bat.addEventListener('chargingchange', updateBat);
-  }).catch(function() { el.style.display = 'none'; });
+  }).catch(function() {
+    document.getElementById('batteryIndicator').style.display = 'none';
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────
