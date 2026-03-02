@@ -499,8 +499,8 @@ function apRenderPayout() {
         // Skip slots where this member is on leave — pay goes to substitute instead
         var lvSlots = (apLeaveSlots[m.id] && apLeaveSlots[m.id][dateStr]) || [];
         var ciSt = (apCheckInStatus[m.id] && apCheckInStatus[m.id][dateStr] && apCheckInStatus[m.id][dateStr][sk]) || '';
-        var isLeaveSlot = lvSlots.length > 0 ? lvSlots.indexOf(sk) !== -1 : ciSt === 'leave';
-        if (!isLeaveSlot && apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) amt += apSlotPay(slot, m.id);
+        // คนที่ลาและมีคนแทนถือว่าทำงานครบ — ยังได้รับเงินปกติ (จ่ายคนแทนไปเองแล้ว)
+        if (apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) amt += apSlotPay(slot, m.id);
       });
       mGrand[m.id] += amt; dayTotal += amt;
       b += '<td style="text-align:right">' + (amt > 0 ? amt.toLocaleString('th-TH') : '-') + '</td>';
@@ -661,13 +661,21 @@ function apDoSave() {
 }
 
 /* ═══ RECEIPTS (save as image) ═══════════════════════ */
-/* Helper: render an off-screen HTML block, capture it as PNG, trigger download */
 function apSaveAsImage(htmlContent, fileName) {
   var wrap = document.createElement('div');
   wrap.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;background:#fff;padding:36px 40px;font-family:Sarabun,Kanit,sans-serif;min-width:800px;width:max-content;max-width:1400px';
   wrap.innerHTML = htmlContent;
   document.body.appendChild(wrap);
-  if (typeof html2canvas === 'undefined') { apToast('กรุณารอโหลด html2canvas', 'error'); document.body.removeChild(wrap); return; }
+  if (typeof html2canvas === 'undefined') {
+    document.body.removeChild(wrap);
+    var pw = window.open('', '_blank');
+    if (pw) {
+      pw.document.write('<html><head><meta charset="UTF-8"><title>' + fileName + '</title><style>body{font-family:Sarabun,sans-serif;padding:32px}</style></head><body>' + htmlContent + '</body></html>');
+      pw.document.close(); pw.focus();
+      setTimeout(function(){ pw.print(); }, 500);
+    } else { apToast('กรุณาอนุญาต popup เพื่อพิมพ์เอกสาร', 'error'); }
+    return;
+  }
   html2canvas(wrap, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(function(canvas) {
     document.body.removeChild(wrap);
     var link = document.createElement('a');
@@ -814,8 +822,10 @@ function apPrintMemberReceipt() {
     var dr = apDefaultRate(m.id);
     var totalSlots = 0, totalAmt = 0;
     apDateRange.forEach(function(ds) {
-      apSlotsForDay(new Date(ds).getDay()).forEach(function(slot) {
+      var daySlots = apSlotsForDay(new Date(ds).getDay());
+      daySlots.forEach(function(slot) {
         var sk = slot.start+'-'+slot.end;
+        // นับทุก slot ที่ checked รวมทั้ง leave+sub slots
         if (apChecked[m.id]&&apChecked[m.id][ds]&&apChecked[m.id][ds].indexOf(sk)!==-1) {
           totalSlots++; totalAmt += apSlotPay(slot, m.id);
         }
@@ -925,7 +935,7 @@ function apPrintMemberReceipt() {
   apSaveAsImage(html, 'แจ้งจ่ายรายคน_' + (apDateRange[0]||'') + '.png');
 }
 
-/* ═══ INIT ══════════════════════════════════════════ */
+/* ═══ INIT ══════════════════════════════════════════════════════════════ */
 function apApplyWeekRange() {
   var sd = apEl('startDate'), ed = apEl('endDate');
   if (!sd || !ed) return;
