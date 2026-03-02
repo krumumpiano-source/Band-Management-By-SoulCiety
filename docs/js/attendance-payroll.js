@@ -785,7 +785,6 @@ function apPrintVenueReceipt() {
         '<div style="font-weight:700;color:#555;font-size:13px">เลขที่เอกสาร</div>' +
         '<div style="font-family:monospace;font-size:12px;color:#444">' + docNo + '</div>' +
         '<div style="margin-top:6px">วันที่พิมพ์: ' + nowStr + '</div>' +
-        '<div>ผู้จัดการวง: ' + apEsc(apBandManager||'—') + '</div>' +
       '</div>' +
     '</div>' +
     // ── Table ──
