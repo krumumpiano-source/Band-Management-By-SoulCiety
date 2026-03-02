@@ -423,7 +423,25 @@ document.addEventListener('DOMContentLoaded', function() {
       _venue    = d.venue    || _venue;
       _timeSlot = d.timeSlot || _timeSlot;
       document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
-      loadPlaylist();
+
+      // ── ตรวจว่าผู้ใช้นี้เป็นสมาชิกวงจริงหรือเปล่า ──
+      var storedBand  = localStorage.getItem('bandId')     || '';
+      var storedToken = localStorage.getItem('auth_token') || '';
+      if (storedToken && storedBand === _bandId) {
+        // เป็นสมาชิก — อัปเกรดเป็น member mode
+        _isGuest = false;
+        document.getElementById('guestBadge').style.display = 'none';
+        document.getElementById('endBreakBtn').style.display = 'inline-block';
+        document.getElementById('exitLiveBtn').style.display = 'inline-block';
+        document.getElementById('shareBtn').style.display = 'inline-block';
+        document.getElementById('requestBtn').style.display = 'inline-block';
+        loadPlaylist();
+        preGenerateToken();
+        setupBreakWarning();
+      } else {
+        // guest จริง — read-only
+        loadPlaylist();
+      }
     });
   } else {
     // member mode
