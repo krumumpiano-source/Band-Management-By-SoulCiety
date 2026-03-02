@@ -20,11 +20,14 @@ textarea::placeholder { color:var(--premium-text-muted);opacity:.6 }
 }
 
 /* Smooth touch scrolling on scrollable containers */
-.table-responsive,
 .nav-menu-wrap,
 .modal-box{
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  overscroll-behavior: contain;  /* prevent page scroll when modal is at boundary */
+}
+.table-responsive{
+  -webkit-overflow-scrolling: touch;  /* smooth momentum scroll for table */
+  /* NO overscroll-behavior here — would eat mouse wheel & touch scroll on page */
 }
 
 /* Table responsive: allow horizontal scroll + both pan directions */
