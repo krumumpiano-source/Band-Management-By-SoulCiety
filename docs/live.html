@@ -742,12 +742,14 @@ function startClock() {
 //    → Beat 2+: driven by local timer, ZERO network delay
 //    → Each received signal resets phase → no accumulated drift
 // ─────────────────────────────────────────────────────────────────
-var _beatTimer      = null;  // manager's master setInterval
+var _beatTimer      = null;  // manager's master setTimeout id
 var _beatOffTimer   = null;  // setTimeout to turn dot OFF
-var _beatLocalTimer = null;  // receiver's local phase-locked setInterval
+var _beatLocalTimer = null;  // receiver's local phase-locked setTimeout id
 var _beatBpm        = 0;
 var _beatInterval   = 0;
 var _beatDotEnabled = true;  // user toggle
+var _beatNextTime      = 0; // manager absolute reference (performance.now)
+var _beatLocalNextTime = 0; // receiver absolute reference
 
 function toggleBeatDot() {
   _beatDotEnabled = !_beatDotEnabled;
@@ -771,13 +773,16 @@ function startBeatDot(bpm) {
   if (btn) btn.classList.toggle('off', !_beatDotEnabled);
 
   if (!_isGuest) {
-    // MANAGER: drive the metronome, broadcast every tick
+    // MANAGER: self-correcting setTimeout — eliminates accumulated drift
+    _beatNextTime = performance.now();
     function tick() {
       flashBeatDot();
       broadcastEvent('beat_sync', { bpm: bpm });
+      _beatNextTime += _beatInterval;
+      var delay = _beatNextTime - performance.now();
+      _beatTimer = setTimeout(tick, Math.max(0, delay));
     }
     tick();
-    _beatTimer = setInterval(tick, _beatInterval);
   }
   // Receiver: waits for first beat_sync, then locks local phase
 }
@@ -795,9 +800,9 @@ function flashBeatDot() {
 }
 
 function stopBeatDot() {
-  if (_beatTimer)      { clearInterval(_beatTimer);      _beatTimer      = null; }
-  if (_beatOffTimer)   { clearTimeout(_beatOffTimer);    _beatOffTimer   = null; }
-  if (_beatLocalTimer) { clearInterval(_beatLocalTimer); _beatLocalTimer = null; }
+  if (_beatTimer)      { clearTimeout(_beatTimer);      _beatTimer      = null; }
+  if (_beatOffTimer)   { clearTimeout(_beatOffTimer);   _beatOffTimer   = null; }
+  if (_beatLocalTimer) { clearTimeout(_beatLocalTimer); _beatLocalTimer = null; }
   var bd = document.getElementById('beatDot');
   if (bd) { bd.style.display = 'none'; bd.style.opacity = '0'; }
 }
@@ -1351,11 +1356,18 @@ function initRealtime() {
         if (bd) bd.style.display = 'block';
       }
       if (!_beatBpm) return;
-      // Flash now (current beat)
+      // Flash now (current beat) — reset phase reference to NOW
       flashBeatDot();
-      // Restart local interval locked to this phase
-      if (_beatLocalTimer) clearInterval(_beatLocalTimer);
-      _beatLocalTimer = setInterval(flashBeatDot, _beatInterval);
+      // Restart self-correcting local timer locked to this phase
+      if (_beatLocalTimer) { clearTimeout(_beatLocalTimer); _beatLocalTimer = null; }
+      _beatLocalNextTime = performance.now() + _beatInterval;
+      function localTick() {
+        flashBeatDot();
+        _beatLocalNextTime += _beatInterval;
+        var delay = _beatLocalNextTime - performance.now();
+        _beatLocalTimer = setTimeout(localTick, Math.max(0, delay));
+      }
+      _beatLocalTimer = setTimeout(localTick, Math.max(0, _beatLocalNextTime - performance.now()));
     })
     .on('broadcast', { event: 'state_sync' }, function(payload) {
       var d = payload.payload || {};
