@@ -744,6 +744,10 @@ function apPrintVenueReceipt() {
       var sk = slot.start + '-' + slot.end;
       var isFirst = si === 0;
       var isLast  = si === slots.length - 1;
+      // Accent line spans full row
+      var cellTopBd = isFirst ? 'border-top:2px solid ' + accent : 'border-top:none';
+      var cellBotBd = isLast  ? 'border-bottom:1px solid #ddd'   : 'border-bottom:none';
+      var cellBorder = 'border-left:1px solid #ddd;border-right:1px solid #ddd;' + cellTopBd + ';' + cellBotBd;
       var dayTotal = 0, cells = '';
       apMembers.forEach(function(m) {
         var checked = apChecked[m.id] && apChecked[m.id][ds] && apChecked[m.id][ds].indexOf(sk) !== -1;
@@ -755,21 +759,21 @@ function apPrintVenueReceipt() {
         if (slotCovered) mBreaks[m.id]++;
         var cellContent = slotCovered ? '<span style="color:#27ae60;font-size:16px">✓</span>' : '';
         if (hasSub) cellContent += '<br><span style="font-size:10px;color:#8e44ad;font-weight:700">↳ ' + apEsc(subInfo.name) + '</span>';
-        cells += '<td style="text-align:center;padding:8px 6px;background:' + rowBg + ';' + BD + ';font-size:13px">' + cellContent + '</td>';
+        cells += '<td style="text-align:center;padding:8px 6px;background:' + rowBg + ';' + cellBorder + ';font-size:13px">' + cellContent + '</td>';
       });
       total += dayTotal;
 
-      // Visual merge: วัน+วันที่ — first slot shows text + no bottom border, subsequent slots empty + no top/bottom border
-      var topBd    = isFirst ? 'border-top:2px solid ' + accent    : 'border-top:none';
-      var botBd    = isLast  ? 'border-bottom:1px solid #ddd'      : 'border-bottom:none';
+      // Visual merge: วัน+วันที่ — accent border top/bottom only on first/last slot of day
+      var topBd    = isFirst ? 'border-top:2px solid ' + accent : 'border-top:none';
+      var botBd    = isLast  ? 'border-bottom:1px solid #ddd'   : 'border-bottom:none';
       var dayStyle = 'padding:8px 10px;background:' + rowBg + ';border-left:4px solid ' + accent + ';border-right:1px solid #ddd;' + topBd + ';' + botBd;
 
       tableRows += '<tr>' +
         '<td style="text-align:center;vertical-align:middle;min-width:44px;font-weight:700;font-size:14px;color:#2c3e50;' + dayStyle + '">' + (isFirst ? DNs(dow) : '') + '</td>' +
         '<td style="vertical-align:middle;min-width:96px;white-space:nowrap;font-size:13px;color:#34495e;' + dayStyle + ';border-left:1px solid #ddd;border-right:2px solid #bbb">' + (isFirst ? apFmtDate(dtObj) : '') + '</td>' +
-        '<td style="padding:8px 10px;background:' + rowBg + ';' + BD + ';font-size:13px;font-weight:600;color:#c0392b;white-space:nowrap">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
+        '<td style="padding:8px 10px;background:' + rowBg + ';' + cellBorder + ';font-size:13px;font-weight:600;color:#c0392b;white-space:nowrap">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
         cells +
-        '<td style="text-align:right;padding:8px 10px;background:' + rowBg + ';' + BD + ';font-size:13px;font-weight:700;color:#c0392b">' + (dayTotal > 0 ? dayTotal.toLocaleString('th-TH') + ' ฿' : '—') + '</td></tr>';
+        '<td style="text-align:right;padding:8px 10px;background:' + rowBg + ';' + cellBorder + ';font-size:13px;font-weight:700;color:#c0392b">' + (dayTotal > 0 ? dayTotal.toLocaleString('th-TH') + ' ฿' : '—') + '</td></tr>';
     });
   });
 
