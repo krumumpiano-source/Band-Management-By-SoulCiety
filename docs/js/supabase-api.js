@@ -129,6 +129,7 @@
         case 'getPlaylistHistory': return doGetPlaylistHistory(d);
         case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);
         case 'getSongInsights':    return doGetSongInsights(d);
+        case 'searchSongs':        return doSearchSongs(d);
 
         // ── Band Members ───────────────────────────────────────────
         case 'getAllBandMembers':
@@ -450,6 +451,18 @@
       var q = sb.from('band_songs').select('*').order('name');
       if (source === 'band') q = q.eq('band_id', getBandId());
       var { data, error } = await q.limit(500);
+      if (error) throw error;
+      return { success: true, data: toCamelList(data) };
+    }
+
+    async function doSearchSongs(d) {
+      var term = (d.query || '').trim();
+      var { data, error } = await sb.from('band_songs')
+        .select('name, key, bpm, singer, artist')
+        .eq('band_id', getBandId())
+        .ilike('name', '%' + term + '%')
+        .order('name')
+        .limit(10);
       if (error) throw error;
       return { success: true, data: toCamelList(data) };
     }
