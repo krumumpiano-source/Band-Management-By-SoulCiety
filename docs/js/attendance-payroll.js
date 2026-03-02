@@ -73,7 +73,13 @@ function apMemberRate(slot, mid) {
 
 function apSlotPay(slot, mid) {
   var r = apMemberRate(slot, mid);
-  if (r.rate <= 0) return 0;
+  // If member not assigned to this specific slot, fall back to their band-wide default rate
+  // (covers leave+sub cases where the sub works a slot the original member isn't in)
+  if (r.rate <= 0) {
+    var dr = apDefaultRate(mid);
+    if (dr.rate <= 0) return 0;
+    r = { rate: dr.rate, type: dr.type };
+  }
   if (r.type === 'hourly') return apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * r.rate;
   return r.rate;
 }
