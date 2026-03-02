@@ -731,14 +731,18 @@ function startClock() {
 
 // ─────────────────────────────────────────────────────────────────
 //  BEAT DOT
-//  Manager = master metronome (setInterval). Broadcast beat_sync each tick.
-//  Guest/viewer = react only to received signal. No local clock math.
-//  Error = only network jitter (~5-20ms WiFi) — no drift, no phase mismatch.
+//  BEAT DOT — Local Phase Re-sync
+//  Manager = master metronome (setInterval), broadcasts beat_sync every tick.
+//  Receiver = on beat_sync: flash immediately + restart local setInterval
+//    → Beat 1: small network delay (~5-20ms WiFi), imperceptible
+//    → Beat 2+: driven by local timer, ZERO network delay
+//    → Each received signal resets phase → no accumulated drift
 // ─────────────────────────────────────────────────────────────────
-var _beatTimer   = null;   // manager's setInterval
-var _beatOffTimer = null;  // receiver's setTimeout to turn off
-var _beatBpm      = 0;
-var _beatInterval = 0;
+var _beatTimer      = null;  // manager's master setInterval
+var _beatOffTimer   = null;  // setTimeout to turn dot OFF
+var _beatLocalTimer = null;  // receiver's local phase-locked setInterval
+var _beatBpm        = 0;
+var _beatInterval   = 0;
 
 function startBeatDot(bpm) {
   stopBeatDot();
@@ -749,19 +753,18 @@ function startBeatDot(bpm) {
   bd.style.display = 'block';
 
   if (!_isGuest) {
-    // MANAGER: drive the metronome locally, broadcast on every tick
+    // MANAGER: drive the metronome, broadcast every tick
     function tick() {
-      flashBeatDot();                              // manager sees it immediately
-      broadcastEvent('beat_sync', { bpm: bpm });   // all others react to this
+      flashBeatDot();
+      broadcastEvent('beat_sync', { bpm: bpm });
     }
-    tick();   // fire once immediately so all devices see beat 1 at the same moment
+    tick();
     _beatTimer = setInterval(tick, _beatInterval);
   }
-  // Guest/viewer just waits for broadcast (handled in realtime handler)
+  // Receiver: waits for first beat_sync, then locks local phase
 }
 
 function flashBeatDot() {
-  // Called on: (a) manager's own tick, (b) receiver getting beat_sync
   var bd = document.getElementById('beatDot');
   if (!bd || bd.style.display === 'none') return;
   if (_beatOffTimer) { clearTimeout(_beatOffTimer); _beatOffTimer = null; }
@@ -769,14 +772,15 @@ function flashBeatDot() {
   _beatOffTimer = setTimeout(function() {
     bd.style.opacity = '0';
     _beatOffTimer = null;
-  }, _beatInterval * 0.45);   // ON for 45% of beat, OFF for 55%
+  }, _beatInterval * 0.45);
 }
 
 function stopBeatDot() {
-  if (_beatTimer)    { clearInterval(_beatTimer);   _beatTimer    = null; }
-  if (_beatOffTimer) { clearTimeout(_beatOffTimer); _beatOffTimer = null; }
+  if (_beatTimer)      { clearInterval(_beatTimer);      _beatTimer      = null; }
+  if (_beatOffTimer)   { clearTimeout(_beatOffTimer);    _beatOffTimer   = null; }
+  if (_beatLocalTimer) { clearInterval(_beatLocalTimer); _beatLocalTimer = null; }
   var bd = document.getElementById('beatDot');
-  if (bd) { bd.style.display = 'none'; bd.style.transition = 'none'; bd.style.opacity = '0'; }
+  if (bd) { bd.style.display = 'none'; bd.style.opacity = '0'; }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1315,19 +1319,22 @@ function initRealtime() {
       bd.style.display = 'block';
     })
     .on('broadcast', { event: 'beat_sync' }, function(payload) {
-      // Manager sent a beat tick — flash immediately on receipt
-      // Only network jitter separates devices (≈5-20ms WiFi)
-      if (_isGuest || !_beatBpm) {
-        // Guests also flash when they receive — keeps them in sync
-        var d = payload.payload || {};
-        if (d.bpm && !_beatBpm) {
-          _beatBpm = d.bpm;
-          _beatInterval = 60000 / d.bpm;
-          var bd = document.getElementById('beatDot');
-          if (bd) bd.style.display = 'block';
-        }
+      // LOCAL PHASE RE-SYNC:
+      // 1) Flash immediately for this beat (only network latency as error)
+      // 2) Restart local phase-locked timer so next beats have ZERO network delay
+      var d = payload.payload || {};
+      if (d.bpm) {
+        _beatBpm      = d.bpm;
+        _beatInterval = 60000 / d.bpm;
+        var bd = document.getElementById('beatDot');
+        if (bd) bd.style.display = 'block';
       }
-      if (_beatBpm) flashBeatDot();
+      if (!_beatBpm) return;
+      // Flash now (current beat)
+      flashBeatDot();
+      // Restart local interval locked to this phase
+      if (_beatLocalTimer) clearInterval(_beatLocalTimer);
+      _beatLocalTimer = setInterval(flashBeatDot, _beatInterval);
     })
     .on('broadcast', { event: 'state_sync' }, function(payload) {
       var d = payload.payload || {};
