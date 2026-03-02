@@ -100,10 +100,10 @@ function apLoadData() {
     if (s.venues) apVenues = s.venues;
     apScheduleMap = s.schedule || s.scheduleData || {};
     // Read payroll settings from manager's band-settings
+    // NOTE: Do NOT read weekStart/weekEnd from localStorage — may be stale.
+    //       These are loaded from server in apLoadData() async callback only.
     if (s.payroll) {
       if (s.payroll.period) apRecordType = s.payroll.period;
-      if (s.payroll.weekStart !== undefined) apWeekStart = parseInt(s.payroll.weekStart, 10);
-      if (s.payroll.weekEnd !== undefined) apWeekEnd = parseInt(s.payroll.weekEnd, 10);
     }
   } catch(e) {}
   apUpdateBandInfo();
@@ -144,20 +144,23 @@ function apLoadData() {
           // Update UI to reflect manager's settings
           var _rt = apEl('recordType'); if (_rt) _rt.value = apRecordType;
           apShowDateGroups();
-          // Re-apply week range with now-correct settings
-          // Always recalculate endDate from current startDate using fresh weekEnd
+          // Now that globals have correct weekStart/weekEnd, re-compute dates
           var _sdEl = apEl('startDate'), _edEl = apEl('endDate');
-          if (_sdEl && _sdEl.value && _edEl) {
-            var _pd = new Date(_sdEl.value + 'T00:00:00');
-            if (!isNaN(_pd.getTime())) {
-              var _pdow = _pd.getDay();
-              var _dte = (apWeekEnd - _pdow + 7) % 7;
-              if (_dte === 0) { var _sp = (apWeekEnd - apWeekStart + 7) % 7; _dte = _sp === 0 ? 6 : _sp; }
-              var _ed = new Date(_pd); _ed.setDate(_pd.getDate() + _dte);
-              _edEl.value = _ed.toISOString().split('T')[0];
+          if (_sdEl && _edEl) {
+            if (_sdEl.value) {
+              // Re-compute endDate from whatever startDate is currently shown
+              var _pd = new Date(_sdEl.value + 'T00:00:00');
+              if (!isNaN(_pd.getTime())) {
+                var _pdow = _pd.getDay();
+                var _dte = (apWeekEnd - _pdow + 7) % 7;
+                if (_dte === 0) { var _sp = (apWeekEnd - apWeekStart + 7) % 7; _dte = _sp === 0 ? 6 : _sp; }
+                var _ed = new Date(_pd); _ed.setDate(_pd.getDate() + _dte);
+                _edEl.value = _ed.toISOString().split('T')[0];
+              }
+            } else {
+              // No date selected yet — apply current week range
+              apApplyWeekRange();
             }
-          } else {
-            apApplyWeekRange();
           }
         }
       }
