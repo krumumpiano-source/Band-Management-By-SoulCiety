@@ -631,6 +631,14 @@
       setTimeout(showFullView, 1000);
       return;
     }
+    /* ตรวจ crypto.subtle ก่อน */
+    if(!window.crypto || !window.crypto.subtle){
+      pinReset();
+      setMsg('Browser ไม่รองรับ PIN — ใช้รหัสผ่านแทน',true);
+      setTimeout(switchToFull, 2500);
+      return;
+    }
+    setMsg('กำลังตรวจสอบ...','');
     /* hash PIN แล้วเช็ค */
     sha256hex(pin+':'+email).then(function(h){
       if(h!==_ql.pin){
@@ -642,8 +650,10 @@
       var pw='';
       try{ pw=xorStr(atob(_ql.enc),pin); }catch(ex){}
       if(!pw){
-        showToast('ข้อมูลบัญชีเสียหาย กรุณาใช้รหัสผ่าน');
-        pinReset(); switchToFull(); return;
+        setMsg('ข้อมูลเสียหาย — กรุณา Login ด้วยอีเมล',true);
+        ['sc_ql_pin','sc_ql_enc'].forEach(function(k){ localStorage.removeItem(k); });
+        setTimeout(function(){ pinReset(); switchToFull(); },2500);
+        return;
       }
       setMsg('กำลังเข้าสู่ระบบ...','');
       /* รอ apiCall โหลด */
@@ -660,10 +670,10 @@
           setTimeout(pinReset,2500);
         }
       },100);
-    })['catch'](function(){
+    })['catch'](function(err){
       pinReset();
-      setMsg('เกิดข้อผิดพลาด ลองใหม่',true);
-      setTimeout(pinReset,2000);
+      setMsg('PIN ไม่ทำงาน — ใช้รหัสผ่านแทน',true);
+      setTimeout(switchToFull,2500);
     });
   }
   function _doLogin(email,pw){
@@ -851,17 +861,26 @@
     } else {
       if(_psPin===_psFirst){
         var pin=_psFirst,enc=btoa(xorStr(_pendingPassword,pin));
+        qs('psSub').textContent='กำลังบันทึก PIN...';
         sha256hex(pin+':'+_pendingEmail).then(function(h){
           localStorage.setItem('sc_ql_email',_pendingEmail);
           localStorage.setItem('sc_ql_name',_pendingName);
           localStorage.setItem('sc_ql_pin',h);
           localStorage.setItem('sc_ql_enc',enc);
           qs('pinSetupModal').classList.remove('show');
-          /* Offer WebAuthn registration */
-          registerWebAuthn(_pendingEmail,_pendingName,_pendingPassword).then(function(){
-            showToast('✅ ตั้ง PIN สำเร็จ!',2500);
-            setTimeout(function(){window.location.href='dashboard.html';},700);
-          });
+          /* Offer WebAuthn registration แต่ redirect ไม่รอ WebAuthn */
+          showToast('✅ ตั้ง PIN สำเร็จ!',2500);
+          setTimeout(function(){window.location.href='dashboard.html';},500);
+          registerWebAuthn(_pendingEmail,_pendingName,_pendingPassword)['catch'](function(){});
+        })['catch'](function(){
+          qs('psSub').textContent='เกิดข้อผิดพลาด — กรุณาลองใหม่';
+          renderPsDots(true);
+          setTimeout(function(){
+            _psPin=''; _psStep=1; _psFirst='';
+            qs('psTitle').textContent='ตั้งรหัส PIN 6 หลัก';
+            qs('psSub').textContent='เข้าสู่ระบบได้รวดเร็ว ไม่ต้องพิมพ์รหัสผ่านทุกครั้ง';
+            renderPsDots(false);
+          },1500);
         });
       } else {
         renderPsDots(true);
