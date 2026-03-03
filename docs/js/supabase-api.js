@@ -1317,17 +1317,23 @@
 
     // ── Push Subscriptions ────────────────────────────────────────
     async function doSavePushSubscription(d) {
-      var { data: { user }, error: ue } = await sb.auth.getUser();
-      if (ue || !user) throw new Error('ต้อง login ก่อน');
-      var row = {
-        user_id:  user.id,
-        band_id:  d.bandId || getBandId(),
-        endpoint: d.endpoint,
-        p256dh:   d.p256dh,
-        auth_key: d.authKey
-      };
+      /* ใช้ getSession() แทน getUser() — เร็วกว่า (อ่านจาก localStorage cache) */
+      var { data: { session } } = await sb.auth.getSession();
+      var userId = session && session.user && session.user.id;
+      if (!userId) throw new Error('ต้อง login ก่อน — session หมดอายุ กรุณา login ใหม่');
+      /* ลบ endpoint เก่า (ถ้ามี) แล้ว insert ใหม่ — หลีกเลี่ยง UPDATE RLS */
+      await sb.from('push_subscriptions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('endpoint', d.endpoint);
       var { error } = await sb.from('push_subscriptions')
-        .upsert(row, { onConflict: 'user_id,endpoint' });
+        .insert({
+          user_id:  userId,
+          band_id:  d.bandId || getBandId(),
+          endpoint: d.endpoint,
+          p256dh:   d.p256dh,
+          auth_key: d.authKey
+        });
       if (error) throw error;
       return { success: true };
     }

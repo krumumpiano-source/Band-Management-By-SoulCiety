@@ -79,26 +79,41 @@
 
   // ── subscribe push ────────────────────────────────────────────
   function subscribePush(callback) {
+    if (!_VAPID_PUBLIC_KEY) {
+      console.error('[Push] VAPID public key missing');
+      callback && callback({ success: false, error: 'VAPID key missing' });
+      return;
+    }
     waitForSW(function (reg) {
-      if (!reg) { callback && callback({ success: false, error: 'Service Worker ไม่พร้อม' }); return; }
+      if (!reg) {
+        console.error('[Push] Service Worker not ready');
+        callback && callback({ success: false, error: 'Service Worker ไม่พร้อม — ลองรีเฟรชหน้า' });
+        return;
+      }
       _swReg = reg;
       reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(_VAPID_PUBLIC_KEY)
       }).then(function (sub) {
-        var key    = sub.getKey ? sub.getKey('p256dh') : null;
+        var key     = sub.getKey ? sub.getKey('p256dh') : null;
         var authKey = sub.getKey ? sub.getKey('auth') : null;
-        var p256dh = key    ? btoa(String.fromCharCode.apply(null, new Uint8Array(key))) : '';
-        var auth   = authKey ? btoa(String.fromCharCode.apply(null, new Uint8Array(authKey))) : '';
+        var p256dh  = key     ? btoa(String.fromCharCode.apply(null, new Uint8Array(key))) : '';
+        var auth    = authKey ? btoa(String.fromCharCode.apply(null, new Uint8Array(authKey))) : '';
         apiCall('savePushSubscription', {
           endpoint: sub.endpoint,
           p256dh:   p256dh,
           authKey:  auth
         }, function (r) {
-          callback && callback({ success: !!(r && r.success), subscription: sub });
+          if (r && r.success) {
+            callback && callback({ success: true, subscription: sub });
+          } else {
+            /* บันทึกลง Supabase ไม่ได้ แต่ browser subscription สำเร็จแล้ว */
+            console.warn('[Push] savePushSubscription failed:', r && r.message);
+            callback && callback({ success: false, error: r && r.message });
+          }
         });
       }).catch(function (err) {
-        console.warn('[Push] subscribe error', err);
+        console.warn('[Push] pushManager.subscribe error:', err);
         callback && callback({ success: false, error: String(err) });
       });
     });
@@ -209,9 +224,16 @@
         if (banner) banner.style.display = 'none';
         if (typeof global.showToast === 'function') global.showToast('✅ เปิดการแจ้งเตือนแล้ว');
       } else {
-        if (banner) banner.style.display = 'none';
-        localStorage.setItem('notif_dismissed', '1');
-        if (typeof global.showToast === 'function') global.showToast('ไม่สามารถเปิดการแจ้งเตือนได้');
+        if (banner) {
+          /* แสดง error message โดยตรงใน banner แทนที่จะซ่อน */
+          banner.innerHTML = '<div style="flex:1;font-size:13px">' +
+            '<b>⚠️ เปิดการแจ้งเตือนไม่ได้</b><br>' +
+            '<span style="font-size:11px;opacity:.85">' + (r && r.error ? r.error : 'ลองรีเฟรชหน้าแล้วกดใหม่') + '</span>' +
+            '</div>' +
+            '<button onclick="this.parentElement.style.display=\'none\'" ' +
+            'style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer">ปิด</button>';
+        }
+        if (typeof global.showToast === 'function') global.showToast('ไม่สามารถเปิดการแจ้งเตือน: ' + (r && r.error || 'ลองใหม่อีกครั้ง'));
       }
     });
   };

@@ -577,10 +577,9 @@
   function profileToggleNotif() {
     var msgEl = document.getElementById('notifMsg');
     if (_notifEnabled) {
-      // ปิด - ยกเลิก subscription
       if (typeof unsubscribePush === 'function') {
-        unsubscribePush(function(ok) {
-          if (ok) {
+        unsubscribePush(function(r) {
+          if (r && r.success) {
             _notifEnabled = false; updateNotifUI();
             if (msgEl) { msgEl.style.color = '#6b7280'; msgEl.textContent = '✅ ปิดการแจ้งเตือนแล้ว'; }
           } else {
@@ -589,14 +588,16 @@
         });
       }
     } else {
-      // เปิด - ขอ permission และ subscribe
+      if (msgEl) { msgEl.style.color = '#6b7280'; msgEl.textContent = '⏳ กำลังเปิดการแจ้งเตือน...'; }
       if (typeof requestAndSubscribePush === 'function') {
-        requestAndSubscribePush(function(ok) {
-          if (ok) {
+        requestAndSubscribePush(function(r) {
+          /* r = { success: true/false, error: '...' } */
+          if (r && r.success) {
             _notifEnabled = true; updateNotifUI();
             if (msgEl) { msgEl.style.color = '#15803d'; msgEl.textContent = '✅ เปิดการแจ้งเตือนแล้ว!'; }
           } else {
-            if (msgEl) { msgEl.style.color = '#b91c1c'; msgEl.textContent = '❌ ไม่สามารถเปิดได้ กรุณาตรวจสอบการตั้งค่าเบราว์เซอร์'; }
+            var errMsg = (r && r.error) ? r.error : 'ตรวจสอบการตั้งค่าเบราว์เซอร์';
+            if (msgEl) { msgEl.style.color = '#b91c1c'; msgEl.textContent = '❌ ' + errMsg; }
           }
         });
       }
