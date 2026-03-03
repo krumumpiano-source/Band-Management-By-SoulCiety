@@ -23,6 +23,7 @@
       --font-size-now:2.4rem;
     }
     html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Kanit','Sarabun',sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+    input,textarea,select{user-select:text;-webkit-user-select:text;touch-action:manipulation}
 
     /* ─── LAYOUT ─── */
     #liveApp{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
@@ -929,6 +930,8 @@ function setupSwipe() { /* logic merged into renderSongList per-item handlers */
 // ─────────────────────────────────────────────────────────────────
 function onDragMove(e) {
   if (!_drag.active) return;
+  // ไม่ block event ถ้า modal กำลังเปิดอยู่ (ป้องกัน keyboard ไม่ขึ้นบน Android)
+  if (document.querySelector('.modal-backdrop.show')) return;
   e.preventDefault();
   var touch = e.touches[0];
   var ghost = _drag.ghostEl;
