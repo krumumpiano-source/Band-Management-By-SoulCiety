@@ -1097,11 +1097,11 @@
       // finance
       var fl = document.getElementById('financeList');
       var fin = d.finance || {};
+      var balance = (fin.income||0) - (fin.expense||0);
       fl.innerHTML = [
-        ['รายรับทั้งหมด', formatCurrency(fin.income||0), 'val-pos'],
-        ['รายจ่ายทั้งหมด', formatCurrency(fin.expense||0), 'val-neg'],
-        ['กองกลาง', formatCurrency(fin.fund||0), ''],
-        ['คงเหลือ', formatCurrency((fin.income||0)-(fin.expense||0)), (fin.income||0)>=(fin.expense||0)?'val-pos':'val-neg'],
+        ['รายรับรวม', formatCurrency(fin.income||0), 'val-pos'],
+        ['รายจ่ายรวม', formatCurrency(fin.expense||0), 'val-neg'],
+        ['ยอดคงเหลือ', formatCurrency(balance), balance >= 0 ? 'val-pos' : 'val-neg'],
       ].map(function(row){
         return '<div class="finance-row"><span class="label">'+row[0]+'</span><span class="'+row[2]+'">'+row[1]+'</span></div>';
       }).join('');
