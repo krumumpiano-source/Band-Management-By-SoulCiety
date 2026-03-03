@@ -28,7 +28,7 @@
     #liveApp{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
 
     /* ─── TOP BAR ─── */
-    #topBar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-bottom:1px solid #333;flex-shrink:0;gap:8px}
+    #topBar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-bottom:1px solid #333;flex-shrink:0;gap:8px;position:relative;z-index:10}
     #topBar .tb-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
     #topBar .tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
     #clock{font-size:1.05rem;font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -666,7 +666,7 @@ function renderSongList() {
       // Detect double-tap: second click on same idx within 260ms
       if (_lastTapIdx === idx && _tapTimer) {
         clearTimeout(_tapTimer); _tapTimer = null; _lastTapIdx = -1;
-        setAsNext(idx);
+        playNow(idx);
         return;
       }
       _lastTapIdx = idx;
@@ -866,6 +866,18 @@ function advanceSong() {
   } else {
     showToast('เพลงสุดท้ายในเบรคแล้ว 🎉');
   }
+}
+
+function playNow(idx) {
+  if (_isGuest) { showToast('Guest ไม่สามารถเลือกเพลงได้'); return; }
+  if (idx === _current) return;
+  _current = idx;
+  _modified = true;
+  haptic(80);
+  broadcastEvent('beat_ref', { bpm: _playlist[_current].bpm || 0 });
+  renderNowPlaying();
+  renderSongList();
+  showToast('▶ เล่น: ' + (_playlist[idx] ? _playlist[idx].name : ''));
 }
 
 function setAsNext(idx) {
@@ -1115,9 +1127,14 @@ function submitRequest() {
   var artist = _reqFromAC ? (_reqFromAC.artist || '') : '';
   var song = { name: name, key: key, bpm: bpm, singer: singer, artist: artist,
                _key: key, _note: '', _skipped: false, _isRequest: true, _isEncore: false };
-  _playlist.splice(_current + 1, 0, song);
+  // หาตำแหน่งสุดท้ายของเพลงขอที่อยู่หลัง current แล้ว insert ต่อท้าย (FIFO)
+  var insertAt = _current + 1;
+  for (var qi = _current + 1; qi < _playlist.length; qi++) {
+    if (_playlist[qi]._isRequest) { insertAt = qi + 1; } else { break; }
+  }
+  _playlist.splice(insertAt, 0, song);
   _modified = true;
-  broadcastEvent('request_song', { song: song, insertAfter: _current });
+  broadcastEvent('request_song', { song: song, insertAfter: insertAt - 1 });
   closeRequest();
   renderSongList();
   showToast('➕ เพิ่มเพลง: ' + name);
