@@ -530,8 +530,7 @@ html{scroll-behavior:smooth}
 
   <div class="action-buttons" style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap">
     <button onclick="addBreak()">➕ เพิ่มพัก</button>
-    <button onclick="copyPlaylist()">📋 คัดลอกลิส</button>
-    <button onclick="saveHistoryManual()" style="background:#2563eb">💾 บันทึกลิส</button>
+    <button onclick="copyPlaylist()">📋 คัดลอก &amp; บันทึกลิส</button>
     <button onclick="showHistory()" style="background:#4a5568">📗 ประวัติ</button>
     <button onclick="refreshPlaylist()" style="background:var(--danger)">🔄 รีเฟรชลิส</button>
   </div>
@@ -553,7 +552,7 @@ html{scroll-behavior:smooth}
 </div>
 
 
-<div id="toast" class="toast">คัดลอกลิสสำเร็จ</div>
+<div id="toast" class="toast">📋 คัดลอก & บันทึกลิสสำเร็จ!</div>
 
 <!-- History Modal -->
 <div id="historyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;overflow-y:auto;padding:16px">
@@ -1327,17 +1326,18 @@ function copyPlaylist(){
       throw new Error("ไม่สามารถคัดลอกได้");
     }
 
+    // บันทึกประวัติพร้อมกับคัดลอก
+    saveHistory();
     const toast = document.getElementById("toast");
     if(toast){
+      toast.textContent = '📋 คัดลอก & บันทึกลิสสำเร็จ!';
       toast.style.display = "block";
       toast.classList.add("show");
       setTimeout(()=>{
         toast.classList.remove("show");
-        setTimeout(()=>toast.style.display="none",300);
-      },2000);
+        setTimeout(()=>{ toast.style.display="none"; toast.textContent='📋 คัดลอก & บันทึกลิสสำเร็จ!'; },300);
+      },2500);
     }
-    // บันทึกประวัติอัตโนมัติ
-    saveHistory();
 
   } catch (err) {
     alert("คัดลอกไม่สำเร็จ: " + err.message);
