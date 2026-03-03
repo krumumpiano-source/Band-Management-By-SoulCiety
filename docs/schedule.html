@@ -38,6 +38,14 @@
     #noScheduleData{display:none;text-align:center;padding:var(--spacing-xl);color:var(--premium-text-muted)}
     #toast{display:none;position:fixed;bottom:24px;right:24px;background:var(--premium-gold);color:#fff;padding:12px 20px;border-radius:var(--radius-md);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.25)}
     #toast.show{display:block}
+    @media(max-width:600px){
+      .modal-backdrop{align-items:flex-end}
+      .modal-box{width:100%;max-width:100%!important;border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding-bottom:calc(var(--spacing-xl) + env(safe-area-inset-bottom))}
+      /* Stack 2-col grids inside schedule modal */
+      .modal-box [style*="grid-template-columns"]{grid-template-columns:1fr!important}
+    }
+    /* historyDateGroup spans 2 cols — collapse on narrow screens */
+    @media(max-width:500px){#historyDateGroup{grid-column:span 1!important}}
     /* Weekly Timetable */
     .wt-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
     @media(max-width:768px){.wt-grid{grid-template-columns:1fr}}
