@@ -718,10 +718,10 @@
         sb.from('schedule').select('id,venue_name,date,type').eq('band_id', bandId).gte('date', today).order('date', { ascending: true }).limit(5),
         sb.from('schedule').select('id', { count: 'exact', head: true }).eq('band_id', bandId).gte('date', today),
         sb.from('quotations').select('id', { count: 'exact', head: true }).eq('band_id', bandId),
-        sb.from('band_fund').select('amount,type').eq('band_id', bandId).gte('date', firstOfMonth)
+        sb.from('fund_transactions').select('amount,type').eq('band_id', bandId).gte('date', firstOfMonth)
       ]);
 
-      // Calculate income/expense from band_fund table
+      // Calculate income/expense from fund_transactions table
       var income = 0, expense = 0;
       (fundRes.data || []).forEach(function(r) {
         if (r.type === 'income') income += (r.amount || 0);
