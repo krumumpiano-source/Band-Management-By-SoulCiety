@@ -155,10 +155,11 @@
             ⏳ รายการที่คุณบันทึกจะส่งให้ผู้จัดการวงอนุมัติก่อน จึงจะเข้าบัญชีกองกลาง
           </div>
           <form id="fundForm">
+            <!-- Row 1: ประเภท / จำนวน / วันที่ -->
             <div class="form-grid-3">
               <div class="form-group">
                 <label>ประเภท *</label>
-                <select id="txType">
+                <select id="txType" onchange="onTypeChange()">
                   <option value="income">💚 รายรับ</option>
                   <option value="expense">❤️ รายจ่าย</option>
                 </select>
@@ -171,25 +172,48 @@
                 <label>วันที่ *</label>
                 <input type="date" id="txDate" required>
               </div>
+            </div>
+
+            <!-- ── Income fields ── -->
+            <div id="incomeFields">
+              <div class="form-group">
+                <label>🏪 Tip จากร้าน</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <select id="txVenueSelect" style="flex:1" onchange="onVenueSelect()">
+                    <option value="">— พิมพ์ชื่อร้านด้านล่าง หรือเลือกจากรายการ —</option>
+                  </select>
+                </div>
+                <input type="text" id="txVenueName" placeholder="ชื่อร้าน / แหล่งที่มาของ Tip (พิมพ์เองได้)" style="margin-top:6px">
+              </div>
+              <div class="form-group">
+                <label>หมายเหตุเพิ่มเติม</label>
+                <input type="text" id="txIncomeNote" placeholder="เช่น ค่ำคืนพิเศษ, วันหยุด... (ไม่บังคับ)">
+              </div>
+            </div>
+
+            <!-- ── Expense fields ── -->
+            <div id="expenseFields" style="display:none">
+              <div class="form-grid-3">
+                <div class="form-group" style="grid-column:1/-1">
+                  <label>🧾 จ่ายอะไร *</label>
+                  <input type="text" id="txExpenseWhat" placeholder="เช่น ซื้อสาย Guitar, ค่าน้ำมันรถ, ค่าอาหารซ้อม...">
+                </div>
+              </div>
               <div class="form-group">
                 <label>หมวดหมู่</label>
                 <select id="txCategory">
-                  <option value="กองกลาง">กองกลาง</option>
-                  <option value="รายได้จากงาน">รายได้จากงาน</option>
                   <option value="ค่าซ้อม">ค่าซ้อม</option>
                   <option value="อุปกรณ์">อุปกรณ์</option>
                   <option value="ค่าเดินทาง">ค่าเดินทาง</option>
                   <option value="ค่าอาหาร">ค่าอาหาร</option>
                   <option value="ค่าเช่าสถานที่">ค่าเช่าสถานที่</option>
+                  <option value="กองกลาง">กองกลาง</option>
                   <option value="อื่นๆ">อื่นๆ</option>
                 </select>
               </div>
             </div>
-            <div class="form-group">
-              <label>รายละเอียด *</label>
-              <input type="text" id="txDesc" placeholder="ระบุรายละเอียด..." required>
-            </div>
-            <div style="display:flex;justify-content:flex-end">
+
+            <div style="display:flex;justify-content:flex-end;margin-top:var(--spacing-md)">
               <button type="submit" class="btn btn-primary" id="saveTxBtn">📤 ส่งคำขอ</button>
             </div>
           </form>
@@ -223,6 +247,7 @@
   var _allTx      = [];
   var _isManager  = false;
   var _rejectTarget = null;
+  var _venues     = [];
 
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
@@ -239,6 +264,15 @@
     }
 
     document.getElementById('txDate').value = new Date().toISOString().substring(0, 10);
+
+    // โหลด venues จาก band settings
+    apiCall('getBandSettings', {}, function(r) {
+      if (r && r.success && r.data && r.data.venues) {
+        _venues = r.data.venues;
+      }
+      populateVenueSelect();
+    });
+
     loadFund();
   });
 
@@ -403,18 +437,80 @@
     btn.classList.add('active');
   }
 
+  /* ── Venue select ── */
+  function populateVenueSelect() {
+    var sel = document.getElementById('txVenueSelect');
+    // ลบ options เก่า (เก็บ option แรก)
+    while (sel.options.length > 1) sel.remove(1);
+    _venues.forEach(function(v) {
+      var opt = document.createElement('option');
+      opt.value = v.name || v.id || '';
+      opt.textContent = '🏪 ' + (v.name || '');
+      sel.appendChild(opt);
+    });
+  }
+
+  function onVenueSelect() {
+    var sel = document.getElementById('txVenueSelect');
+    var nameInput = document.getElementById('txVenueName');
+    if (sel.value) nameInput.value = sel.value;
+  }
+
+  /* ── Type toggle ── */
+  function onTypeChange() {
+    var type = document.getElementById('txType').value;
+    document.getElementById('incomeFields').style.display  = type === 'income'  ? '' : 'none';
+    document.getElementById('expenseFields').style.display = type === 'expense' ? '' : 'none';
+    // ล้างค่า
+    document.getElementById('txVenueName').value   = '';
+    document.getElementById('txVenueSelect').value = '';
+    if (document.getElementById('txExpenseWhat')) document.getElementById('txExpenseWhat').value = '';
+  }
+
   /* ── Submit form ── */
   document.getElementById('fundForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    var type = document.getElementById('txType').value;
+
+    // validate
+    if (type === 'income') {
+      var vname = document.getElementById('txVenueName').value.trim();
+      if (!vname) {
+        showToast('กรุณาระบุชื่อร้าน / แหล่งที่มาของ Tip', 'error');
+        document.getElementById('txVenueName').focus();
+        return;
+      }
+    } else {
+      var what = document.getElementById('txExpenseWhat').value.trim();
+      if (!what) {
+        showToast('กรุณาระบุว่าจ่ายอะไร', 'error');
+        document.getElementById('txExpenseWhat').focus();
+        return;
+      }
+    }
+
     var btn = document.getElementById('saveTxBtn');
     btn.disabled = true; btn.textContent = 'กำลังส่ง...';
     var userName = localStorage.getItem('userNickname') || localStorage.getItem('userFirstName') || localStorage.getItem('userName') || '';
+
+    var category, description;
+    if (type === 'income') {
+      var venueName = document.getElementById('txVenueName').value.trim();
+      var incomeNote = document.getElementById('txIncomeNote').value.trim();
+      category    = 'Tip';
+      description = 'Tip จากร้าน ' + venueName + (incomeNote ? ' — ' + incomeNote : '');
+    } else {
+      category    = document.getElementById('txCategory').value;
+      var expWhat = document.getElementById('txExpenseWhat').value.trim();
+      description = expWhat;
+    }
+
     apiCall('addFundTransaction', {
-      type:        document.getElementById('txType').value,
+      type:        type,
       amount:      document.getElementById('txAmount').value,
       date:        document.getElementById('txDate').value,
-      category:    document.getElementById('txCategory').value,
-      description: document.getElementById('txDesc').value.trim(),
+      category:    category,
+      description: description,
       submittedBy: userName
     }, function(r) {
       btn.disabled = false;
@@ -424,6 +520,7 @@
         showToast(msg, 'success');
         document.getElementById('fundForm').reset();
         document.getElementById('txDate').value = new Date().toISOString().substring(0, 10);
+        onTypeChange(); // reset dynamic fields
         loadFund();
         if (!r.autoApproved) {
           var pendingBtn = document.querySelectorAll('.fund-tab')[1];
