@@ -355,16 +355,19 @@
 
       var dateFrom = range.dates[0], dateTo = range.dates[range.dates.length - 1];
       var ciDone = false, lvDone = false;
+      var isManager = (myRole === 'admin' || myRole === 'manager');
+      // สมาชิกธรรมดา: fetch เฉพาะของตัวเอง | ผู้จัดการ: fetch ทั้งวง
+      var memberFilter = isManager ? undefined : myId;
 
       // Single range query for check-ins
-      apiCall('getCheckInsForRange', { bandId: bandId, dateFrom: dateFrom, dateTo: dateTo }, function(r) {
+      apiCall('getCheckInsForRange', { bandId: bandId, dateFrom: dateFrom, dateTo: dateTo, memberId: memberFilter }, function(r) {
         if (r && r.success && r.data) _allCheckIns = r.data;
         ciDone = true;
         if (lvDone) renderStats();
       });
 
       // Single range query for leave requests
-      apiCall('getLeaveRequestsForRange', { bandId: bandId, dateFrom: dateFrom, dateTo: dateTo }, function(r) {
+      apiCall('getLeaveRequestsForRange', { bandId: bandId, dateFrom: dateFrom, dateTo: dateTo, memberId: memberFilter }, function(r) {
         if (r && r.success && r.data) _allLeaves = r.data;
         lvDone = true;
         if (ciDone) renderStats();

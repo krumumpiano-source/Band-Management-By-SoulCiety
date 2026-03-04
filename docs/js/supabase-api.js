@@ -146,13 +146,13 @@
         case 'getMyCheckIn':       return doGetMyCheckIn(d);
         case 'cancelCheckIn':      return doCancelCheckIn(d);
         case 'getCheckInsForDate': return doSelect('member_check_ins', { band_id: getBandId(), date: d.date });
-        case 'getCheckInsForRange': return doSelectRange('member_check_ins', getBandId(), d.dateFrom, d.dateTo);
+        case 'getCheckInsForRange': return doSelectRange('member_check_ins', getBandId(), d.dateFrom, d.dateTo, d.memberId);
 
         // ── Leave ──────────────────────────────────────────────────
         case 'requestLeave':       return doRequestLeave(d);
         case 'getMyLeaveRequests': return doSelect('leave_requests', { band_id: getBandId(), member_id: d.memberId }, '-date', 100);
         case 'getAllLeaveRequests': return doSelect('leave_requests', { band_id: getBandId() }, '-date', 200);
-        case 'getLeaveRequestsForRange': return doSelectRange('leave_requests', getBandId(), d.dateFrom, d.dateTo);
+        case 'getLeaveRequestsForRange': return doSelectRange('leave_requests', getBandId(), d.dateFrom, d.dateTo, d.memberId);
         case 'assignSubstitute':   return doUpdate('leave_requests', d.leaveId, { substitute_id: d.substituteId, substitute_name: d.substituteName, status: 'approved' });
         case 'rejectLeave':        return doUpdate('leave_requests', d.leaveId, { status: 'rejected' });
 
@@ -297,10 +297,11 @@
     }
 
     /** Select rows within a date range (gte..lte) – used by statistics */
-    async function doSelectRange(table, bandId, dateFrom, dateTo) {
+    async function doSelectRange(table, bandId, dateFrom, dateTo, memberId) {
       var q = sb.from(table).select('*').eq('band_id', bandId);
-      if (dateFrom) q = q.gte('date', dateFrom);
-      if (dateTo)   q = q.lte('date', dateTo);
+      if (dateFrom)  q = q.gte('date', dateFrom);
+      if (dateTo)    q = q.lte('date', dateTo);
+      if (memberId)  q = q.eq('member_id', memberId);
       q = q.order('date', { ascending: true }).limit(5000);
       var { data, error } = await q;
       if (error) throw error;
