@@ -172,6 +172,8 @@
         case 'getFundTransactions':    return doGetFundTransactions(d);
         case 'addFundTransaction':     return doAddFundTransaction(d);
         case 'deleteFundTransaction':  return doDeleteFundTransaction(d);
+        case 'approveFundTransaction': return doApproveFundTransaction(d);
+        case 'rejectFundTransaction':  return doRejectFundTransaction(d);
 
         // ── External Payout ────────────────────────────────────────
         case 'addExternalPayout':      return doInsert('external_payouts', Object.assign({ band_id: getBandId() }, toSnakeObj(d)));
@@ -190,10 +192,11 @@
         case 'getSchedule':   return doGetSchedule(d);
 
         // ── Equipment ──────────────────────────────────────────────
-        case 'getAllEquipment':   return doSelect('equipment', { band_id: getBandId() }, 'name');
-        case 'addEquipment':      return doInsert('equipment', d.data || d);
-        case 'updateEquipment':   return doUpdate('equipment', d.equipmentId, d.data || d);
-        case 'deleteEquipment':   return doDelete('equipment', d.equipmentId);
+        case 'getAllEquipment':        return doSelect('equipment', { band_id: getBandId() }, 'name');
+        case 'addEquipment':           return doInsert('equipment', d.data || d);
+        case 'updateEquipment':        return doUpdate('equipment', d.equipmentId, d.data || d);
+        case 'deleteEquipment':        return doDelete('equipment', d.equipmentId);
+        case 'uploadEquipmentImage':   return doUploadEquipmentImage(d);
 
         // ── Clients ────────────────────────────────────────────────
         case 'getAllClients':   return doSelect('clients', { band_id: getBandId() }, 'name');
@@ -261,6 +264,7 @@
         joinedAt: 'joined_at', checkInAt: 'check_in_at', expiresAt: 'expires_at',
         eventDate: 'event_date', eventType: 'event_type', vatAmount: 'vat_amount',
         docUrl: 'doc_url', serialNo: 'serial_no', purchaseDate: 'purchase_date',
+        purchaseSource: 'purchase_source', fundSource: 'fund_source', imageUrl: 'image_url',
         contactPerson: 'contact_person', lineId: 'line_id',
         totalGigs: 'total_gigs', totalRevenue: 'total_revenue',
         effectiveFrom: 'effective_from', effectiveTo: 'effective_to',
@@ -334,6 +338,19 @@
       var { data, error } = await sb.from(table).update(row).eq('id', id).select();
       if (error) throw error;
       return { success: true, data: data && data.length ? toCamel(data[0]) : null };
+    }
+
+    async function doUploadEquipmentImage(d) {
+      var file = d.file;
+      if (!file) return { success: false, message: 'ไม่พบไฟล์รูป' };
+      var ext = file.name.split('.').pop().toLowerCase();
+      var bandId = getBandId();
+      var equipId = d.equipmentId || ('new_' + Date.now());
+      var path = bandId + '/' + equipId + '/' + Date.now() + '.' + ext;
+      var { error: upErr } = await sb.storage.from('equipment-images').upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      var { data: urlData } = sb.storage.from('equipment-images').getPublicUrl(path);
+      return { success: true, imageUrl: urlData.publicUrl };
     }
 
     async function doDelete(table, id) {
@@ -1143,25 +1160,54 @@
         .select('*').eq('band_id', bandId).order('date', { ascending: false });
       if (error) throw error;
       var rows = toCamelList(data || []);
-      var balance = 0;
+      var balance = 0, totalIncome = 0, totalExpense = 0;
       (data || []).forEach(function(r) {
-        if (r.type === 'income') balance += (r.amount || 0);
-        else balance -= (r.amount || 0);
+        // คำนวณยอดเฉพาะ approved
+        if (r.status === 'approved' || !r.status) {
+          if (r.type === 'income') { totalIncome += (r.amount || 0); balance += (r.amount || 0); }
+          else { totalExpense += (r.amount || 0); balance -= (r.amount || 0); }
+        }
       });
-      return { success: true, data: { transactions: rows, balance: balance } };
+      return { success: true, data: { transactions: rows, balance: balance, totalIncome: totalIncome, totalExpense: totalExpense } };
     }
 
     async function doAddFundTransaction(d) {
-      var bandId = d.bandId || getBandId();
+      var bandId   = d.bandId || getBandId();
+      var userName = localStorage ? (localStorage.getItem('userNickname') || localStorage.getItem('userFirstName') || localStorage.getItem('userName') || '') : '';
+      var userRole = localStorage ? (localStorage.getItem('userRole') || 'member') : 'member';
+      // ผู้จัดการ/แอดมิน → approved ทันที, สมาชิก → pending รออนุมัติ
+      var isManager = (userRole === 'admin' || userRole === 'manager');
       var row = {
-        band_id:     bandId,
-        type:        d.type || 'income',
-        amount:      parseFloat(d.amount) || 0,
-        date:        d.date || new Date().toISOString().slice(0, 10),
-        category:    d.category || '',
-        description: d.description || ''
+        band_id:      bandId,
+        type:         d.type || 'income',
+        amount:       parseFloat(d.amount) || 0,
+        date:         d.date || new Date().toISOString().slice(0, 10),
+        category:     d.category || '',
+        description:  d.description || '',
+        status:       isManager ? 'approved' : 'pending',
+        submitted_by: d.submittedBy || userName,
+        approved_by:  isManager ? userName : '',
+        approved_at:  isManager ? new Date().toISOString() : null
       };
       var { data, error } = await sb.from('fund_transactions').insert(row).select().single();
+      if (error) throw error;
+      return { success: true, data: toCamel(data), autoApproved: isManager };
+    }
+
+    async function doApproveFundTransaction(d) {
+      var userName = localStorage ? (localStorage.getItem('userNickname') || localStorage.getItem('userFirstName') || localStorage.getItem('userName') || 'ผู้จัดการ') : 'ผู้จัดการ';
+      var { data, error } = await sb.from('fund_transactions')
+        .update({ status: 'approved', approved_by: userName, approved_at: new Date().toISOString(), reject_reason: '' })
+        .eq('id', d.txId).select().single();
+      if (error) throw error;
+      return { success: true, data: toCamel(data) };
+    }
+
+    async function doRejectFundTransaction(d) {
+      var userName = localStorage ? (localStorage.getItem('userNickname') || localStorage.getItem('userFirstName') || localStorage.getItem('userName') || 'ผู้จัดการ') : 'ผู้จัดการ';
+      var { data, error } = await sb.from('fund_transactions')
+        .update({ status: 'rejected', approved_by: userName, approved_at: new Date().toISOString(), reject_reason: d.reason || '' })
+        .eq('id', d.txId).select().single();
       if (error) throw error;
       return { success: true, data: toCamel(data) };
     }

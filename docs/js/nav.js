@@ -60,6 +60,7 @@ function renderMainNav(containerId) {
     navLink('schedule',      '📅 ' + _t('nav_schedule'),     'ปฏิทินงานและตารางนัด') +
     navLink('statistics',    '📈 ' + _t('nav_statistics'),   'รายได้ & สถิติรายเดือน') +
     navLink('equipment',     '🎸 ' + _t('nav_equipment'),    'อุปกรณ์วงและงบซ่อมบำรุง') +
+    navLink('band-fund',     '💰 ' + _t('nav_bandFund'),     'บัญชีรายรับรายจ่ายกองกลาง') +
     navLink('band-info',     '👥 ' + _t('nav_bandInfo'),     'สมาชิก ช่องทางติดต่อ ร้านที่เล่น') +
     navLink('my-profile',    '👤 ' + _t('nav_myProfile'),    'ข้อมูลส่วนตัวและอัตราค่าตัว');
 
@@ -68,7 +69,6 @@ function renderMainNav(containerId) {
     navSection('👔 ผู้จัดการวง') +
     navLink('attendance-payroll', '📋 ' + _t('nav_attendance'),    'บันทึกเข้างานและค่าตัว') +
     navLink('job-calculator',     '🧮 ' + _t('nav_jobCalculator'), 'คำนวณราคารับงาน') +
-    navLink('band-fund',          '💰 ' + _t('nav_bandFund'),      'กองกลางและค่าใช้จ่ายวง') +
     navLink('external-payout',    '💵 ' + _t('nav_externalPayout'),'จ่ายเงินให้บุคคลภายนอก') +
     navLink('quotation',          '📄 ' + _t('nav_quotation'),     'สร้างและส่งใบเสนอราคา') +
     navLink('clients',            '🤝 ' + _t('nav_clients'),       'ข้อมูลลูกค้าและสถานที่') +
