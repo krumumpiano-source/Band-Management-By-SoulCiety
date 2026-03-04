@@ -56,7 +56,6 @@ function renderMainNav(containerId) {
     navLink('songs',           '🎵 ' + _t('nav_songs')) +
     navLink('song-insights',   '🎙️ ' + _t('nav_songInsights')) +
     navLink('schedule',        '📅 ' + _t('nav_schedule')) +
-    navLink('check-in',        '✅ ' + _t('nav_checkIn')) +
     navLink('setlist',         '🎼 ' + _t('nav_setlist')) +
     navLink('statistics',      '📈 ' + _t('nav_statistics')) +
     navLink('equipment',       '🎸 ' + _t('nav_equipment')) +
