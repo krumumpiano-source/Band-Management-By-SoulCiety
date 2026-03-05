@@ -44,6 +44,8 @@
             <div class="admin-nav">
               <div class="a-nav-item active" onclick="showPanel('bandreqs',this)">🎵 คำขอสร้างวง</div>
               <div class="a-nav-item" onclick="showPanel('users',this)">👥 ผู้ใช้งาน</div>
+              <div class="a-nav-item" onclick="showPanel('subscriptions',this)">💳 Subscriptions</div>
+              <div class="a-nav-item" onclick="showPanel('pricing',this)">💰 ตั้งราคา / Package</div>
               <div class="a-nav-item" onclick="showPanel('sysinfo',this)">📊 ระบบ</div>
               <div class="a-nav-item" onclick="showPanel('backup',this)">💾 สำรองข้อมูล</div>
               <div class="a-nav-item" onclick="showPanel('danger',this)">⚠️ Danger Zone</div>
@@ -101,6 +103,39 @@
               <button class="btn btn-secondary" onclick="openSpreadsheet()">📊 เปิด Spreadsheet โดยตรง</button>
               <button class="btn btn-secondary" onclick="runSetup()">🔧 รัน Setup (สร้าง Sheets ที่ขาดหายไป)</button>
             </div>
+          </div>
+
+          <!-- Subscriptions Panel -->
+          <div class="card a-panel" id="panel-subscriptions">
+            <div class="card-header" style="justify-content:space-between">
+              <h3 class="card-title">💳 ประวัติการสมัครแพ็กเกจ</h3>
+              <button class="btn btn-primary btn-sm" onclick="loadSubscriptions()">🔄 รีเฟรช</button>
+            </div>
+            <div id="subsFilterRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+              <select id="subsFilterPlan" onchange="loadSubscriptions()" style="font-size:var(--text-sm);padding:4px 8px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);background:var(--premium-off-white)">
+                <option value="">ทุกแพ็กเกจ</option><option value="lite">Lite</option><option value="pro">Pro</option>
+              </select>
+              <select id="subsFilterStatus" onchange="loadSubscriptions()" style="font-size:var(--text-sm);padding:4px 8px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);background:var(--premium-off-white)">
+                <option value="">ทุกสถานะ</option><option value="active">Active</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div id="subsStats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px"></div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead><tr><th>วง</th><th>แพ็กเกจ</th><th>ราคา</th><th>สถานะ</th><th>เริ่ม</th><th>หมดอายุ</th><th>Charge ID</th></tr></thead>
+                <tbody id="subsTbody"><tr><td colspan="7" class="text-center" style="color:var(--premium-text-muted)">กำลังโหลด...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Pricing Panel -->
+          <div class="card a-panel" id="panel-pricing">
+            <div class="card-header" style="justify-content:space-between">
+              <h3 class="card-title">💰 ตั้งราคาและฟีเจอร์แพ็กเกจ</h3>
+              <button class="btn btn-primary btn-sm" onclick="loadPricing()">🔄 รีเฟรช</button>
+            </div>
+            <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:16px">แก้ไขราคา/ฟีเจอร์ที่นี่ — มีผลทันทีสำหรับการสมัครครั้งถัดไป (ลูกค้าที่ชำระแล้วไม่ได้รับผลกระทบ)</p>
+            <div id="pricingCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px"></div>
           </div>
 
           <!-- Danger Zone Panel -->
@@ -188,6 +223,8 @@
     document.getElementById('panel-'+id).classList.add('active');
     document.querySelectorAll('.a-nav-item').forEach(function(n){n.classList.remove('active');});
     el.classList.add('active');
+    if (id === 'subscriptions') setTimeout(loadSubscriptions, 100);
+    if (id === 'pricing')       setTimeout(loadPricing, 100);
   }
 
   function loadUsers() {
@@ -293,6 +330,114 @@
         else showToast((r && r.message) || t('msg_error'), 'error');
       });
     });
+  }
+
+  // ── Subscriptions Panel ───────────────────────────────────────────────────
+  async function loadSubscriptions() {
+    var tbody   = document.getElementById('subsTbody');
+    var statsEl = document.getElementById('subsStats');
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--premium-text-muted)">กำลังโหลด...</td></tr>';
+    statsEl.innerHTML = '';
+    var sb = window._sb;
+    if (!sb) { tbody.innerHTML = '<tr><td colspan="7">กรุณารอให้โหลดเสร็จแล้วลองใหม่</td></tr>'; return; }
+
+    var filterPlan   = document.getElementById('subsFilterPlan').value;
+    var filterStatus = document.getElementById('subsFilterStatus').value;
+
+    var query = sb.from('subscriptions')
+      .select('id, band_id, plan, amount, omise_charge_id, status, started_at, expires_at, bands(band_name)')
+      .order('started_at', { ascending: false });
+    if (filterPlan)   query = query.eq('plan', filterPlan);
+    if (filterStatus) query = query.eq('status', filterStatus);
+
+    var result = await query;
+    var data = result.data || [];
+    var error = result.error;
+    if (error) { tbody.innerHTML = '<tr><td colspan="7" style="color:#ef4444">Error: ' + escapeHtml(error.message) + '</td></tr>'; return; }
+
+    // Stats bar
+    var total   = data.length;
+    var active  = data.filter(function(r){ return r.status === 'active'; }).length;
+    var revenue = data.reduce(function(s, r){ return s + (r.amount || 0); }, 0);
+    statsEl.innerHTML =
+      '<div style="background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:8px 16px;font-size:var(--text-sm)">📋 ทั้งหมด <b>' + total + '</b></div>' +
+      '<div style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:8px 16px;font-size:var(--text-sm)">✅ Active <b>' + active + '</b></div>' +
+      '<div style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);border-radius:8px;padding:8px 16px;font-size:var(--text-sm)">💰 รายรับ <b>' + (revenue / 100).toLocaleString('th-TH', { minimumFractionDigits: 0 }) + '฿</b></div>';
+
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--premium-text-muted)">ไม่มีข้อมูล</td></tr>';
+      return;
+    }
+    var planColors   = { lite: '#2563eb', pro: '#d97706' };
+    var statusColors = { active: '#22c55e', expired: '#9ca3af', cancelled: '#ef4444' };
+    tbody.innerHTML = data.map(function(r) {
+      var bandName  = (r.bands && r.bands.band_name) || r.band_id || '—';
+      var expires   = r.expires_at ? new Date(r.expires_at) : null;
+      var isExpired = expires && expires < new Date();
+      return '<tr>'
+        + '<td><b>' + escapeHtml(bandName) + '</b></td>'
+        + '<td><span style="background:' + (planColors[r.plan] || '#6b7280') + ';color:#fff;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700">' + (r.plan || '—').toUpperCase() + '</span></td>'
+        + '<td>' + Math.round((r.amount || 0) / 100) + '฿</td>'
+        + '<td style="color:' + (statusColors[r.status] || '#9ca3af') + ';font-weight:600">' + (r.status || '—') + '</td>'
+        + '<td style="font-size:.78rem">' + (r.started_at ? new Date(r.started_at).toLocaleDateString('th-TH') : '—') + '</td>'
+        + '<td style="font-size:.78rem;color:' + (isExpired ? '#ef4444' : 'inherit') + '">' + (expires ? expires.toLocaleDateString('th-TH') : '—') + (isExpired ? ' ⚠️' : '') + '</td>'
+        + '<td style="font-size:.68rem;color:var(--premium-text-muted)">' + escapeHtml(r.omise_charge_id || '—') + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  // ── Pricing Panel ─────────────────────────────────────────────────────────
+  async function loadPricing() {
+    var el = document.getElementById('pricingCards');
+    el.innerHTML = '<div style="color:var(--premium-text-muted)">กำลังโหลด...</div>';
+    var sb = window._sb;
+    if (!sb) { el.innerHTML = '<div style="color:#ef4444">กรุณารอให้โหลดเสร็จแล้วลองใหม่</div>'; return; }
+    var { data, error } = await sb.from('plan_config').select('*').order('price');
+    if (error || !data) { el.innerHTML = '<div style="color:#ef4444">Error: ' + escapeHtml((error && error.message) || 'unknown') + '</div>'; return; }
+    el.innerHTML = data.map(function(plan) {
+      var feats = Array.isArray(plan.features) ? plan.features.join('\n') : '';
+      return '<div style="background:var(--bg-card);border:2px solid var(--border-color);border-radius:12px;padding:20px">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+        + '<h4 style="margin:0;font-size:1.15rem">⭐ ' + escapeHtml(plan.label || plan.id) + '</h4>'
+        + '<label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer">'
+        + '<input type="checkbox" id="active_' + plan.id + '"' + (plan.active ? ' checked' : '') + '> เปิดใช้งาน</label>'
+        + '</div>'
+        + '<div style="margin-bottom:10px">'
+        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">ราคา (satang) — 9900 = 99฿, 19900 = 199฿</label>'
+        + '<div style="display:flex;align-items:center;gap:8px">'
+        + '<input id="price_' + plan.id + '" type="number" min="0" step="100" value="' + plan.price + '" style="flex:1;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:var(--text-base)">'
+        + '<span id="priceDisplay_' + plan.id + '" style="font-size:.85rem;color:var(--premium-gold);font-weight:700;min-width:60px">' + Math.round(plan.price / 100) + '฿</span>'
+        + '</div>'
+        + '<input type="range" min="0" max="99900" step="100" value="' + plan.price + '" oninput="document.getElementById(\'price_' + plan.id + '\').value=this.value;document.getElementById(\'priceDisplay_' + plan.id + '\').textContent=Math.round(this.value/100)+\'฿\'" style="width:100%;margin-top:6px;accent-color:var(--premium-gold)">'
+        + '</div>'
+        + '<div style="margin-bottom:14px">'
+        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">ฟีเจอร์แต่ละแพ็ก (แต่ละบรรทัด = 1 รายการ)</label>'
+        + '<textarea id="feats_' + plan.id + '" rows="5" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:var(--text-sm);resize:vertical;box-sizing:border-box">' + escapeHtml(feats) + '</textarea>'
+        + '</div>'
+        + '<button class="btn btn-primary" style="width:100%" onclick="savePlan(\'' + plan.id + '\')">💾 บันทึก ' + escapeHtml(plan.label || plan.id) + '</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  async function savePlan(planId) {
+    var sb = window._sb;
+    if (!sb) { showToast('ยังโหลด Supabase ไม่สำเร็จ', 'error'); return; }
+    var priceEl  = document.getElementById('price_' + planId);
+    var featsEl  = document.getElementById('feats_' + planId);
+    var activeEl = document.getElementById('active_' + planId);
+    if (!priceEl || !featsEl) return;
+    var price    = parseInt(priceEl.value);
+    var features = featsEl.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    var active   = activeEl ? activeEl.checked : true;
+    if (isNaN(price) || price < 0) { showToast('ราคาไม่ถูกต้อง', 'error'); return; }
+    var { error } = await sb.from('plan_config')
+      .update({ price: price, features: features, active: active, updated_at: new Date().toISOString() })
+      .eq('id', planId);
+    if (error) { showToast('บันทึกไม่สำเร็จ: ' + error.message, 'error'); }
+    else {
+      showToast('✅ บันทึก ' + planId.toUpperCase() + ' = ' + Math.round(price/100) + '฿ สำเร็จ', 'success');
+      document.getElementById('priceDisplay_' + planId).textContent = Math.round(price / 100) + '฿';
+    }
   }
   </script>
 </body>

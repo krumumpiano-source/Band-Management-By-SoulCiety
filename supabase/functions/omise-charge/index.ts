@@ -7,11 +7,6 @@ const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const OMISE_SECRET_KEY  = Deno.env.get('OMISE_SECRET_KEY')!;  // skey_test_...
 
-const PLANS: Record<string, number> = {
-  lite: 9900,   // 99 บาท (หน่วย satang)
-  pro:  19900,  // 199 บาท
-};
-
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -38,9 +33,18 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { token, plan } = body;  // token = Omise token ID, plan = 'lite' | 'pro'
 
-    if (!token || !PLANS[plan]) return err('Invalid token or plan');
+    if (!token || !['lite','pro'].includes(plan)) return err('Invalid token or plan');
 
-    // ── 3. ดึง band_id จาก profile ─────────────────────────────────────────
+    // ── 3. ดึงราคาจาก plan_config (dynamic pricing) ─────────────────────────
+    const { data: planRow } = await sb
+      .from('plan_config')
+      .select('price, active')
+      .eq('id', plan)
+      .single();
+    if (!planRow || !planRow.active) return err('Plan not available');
+    const amount = planRow.price;
+
+    // ── 4. ดึง band_id จาก profile ─────────────────────────────────────────
     const { data: profile } = await sb
       .from('profiles')
       .select('band_id')
@@ -49,7 +53,6 @@ Deno.serve(async (req) => {
     if (!profile?.band_id) return err('No band found');
 
     const bandId = profile.band_id;
-    const amount = PLANS[plan];
 
     // ── 4. สร้าง Charge ผ่าน Omise API ─────────────────────────────────────
     const omiseRes = await fetch('https://api.omise.co/charges', {

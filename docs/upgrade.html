@@ -73,8 +73,8 @@
   <div class="plan-grid">
     <div class="plan-card" id="cardLite" onclick="selectPlan('lite')">
       <div class="plan-name">🎵 Lite</div>
-      <div class="plan-price">฿99<span>/เดือน</span></div>
-      <ul class="plan-features">
+      <div class="plan-price" id="price_display_lite">฿99<span>/เดือน</span></div>
+      <ul class="plan-features" id="feats_lite">
         <li>ไม่มีโฆษณา</li>
         <li>บันทึกเพลงได้ไม่จำกัด</li>
         <li>สมาชิกได้ 5 คน</li>
@@ -84,8 +84,8 @@
     <div class="plan-card" id="cardPro" onclick="selectPlan('pro')">
       <div class="badge">แนะนำ</div>
       <div class="plan-name">👑 Pro</div>
-      <div class="plan-price">฿199<span>/เดือน</span></div>
-      <ul class="plan-features">
+      <div class="plan-price" id="price_display_pro">฿199<span>/เดือน</span></div>
+      <ul class="plan-features" id="feats_pro">
         <li>ไม่มีโฆษณา</li>
         <li>บันทึกเพลงได้ไม่จำกัด</li>
         <li>สมาชิกได้ไม่จำกัด</li>
@@ -137,6 +137,29 @@
   // ── Plan Selection ────────────────────────────────────────────────────────
   var selectedPlan = null;
   var prices = { lite: 99, pro: 199 };
+
+  // โหลดราคาไดนามิกจาก plan_config
+  function loadDynamicPrices() {
+    var sb = window._sb;
+    if (!sb) { setTimeout(loadDynamicPrices, 300); return; }
+    sb.from('plan_config').select('id, price, features, active').then(function(res) {
+      if (!res.data) return;
+      res.data.forEach(function(p) {
+        prices[p.id] = Math.round(p.price / 100);
+        var priceEl = document.getElementById('price_display_' + p.id);
+        if (priceEl) priceEl.innerHTML = '฿' + Math.round(p.price / 100) + '<span>/เดือน</span>';
+        var featsEl = document.getElementById('feats_' + p.id);
+        if (featsEl && Array.isArray(p.features)) {
+          featsEl.innerHTML = p.features.map(function(f){ return '<li>' + f + '</li>'; }).join('');
+        }
+        if (!p.active) {
+          var card = document.getElementById('card' + p.id.charAt(0).toUpperCase() + p.id.slice(1));
+          if (card) { card.style.opacity = '.4'; card.style.pointerEvents = 'none'; }
+        }
+      });
+    });
+  }
+  setTimeout(loadDynamicPrices, 500);
 
   window.selectPlan = function (plan) {
     selectedPlan = plan;
