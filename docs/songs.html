@@ -430,6 +430,7 @@ html{scroll-behavior:smooth}
 <body>
 <div id="mainNav"></div>
 
+<main>
 <div class="container">
 
   <div id="songPageHeader" style="background:linear-gradient(135deg,#2d3748,#4a5568);color:#fff;border-radius:var(--radius-xl);padding:var(--spacing-lg) var(--spacing-xl);margin-bottom:var(--spacing-lg)">
@@ -552,6 +553,7 @@ html{scroll-behavior:smooth}
   <ul id="playlist" class="list"></ul>
 </div>
 </div>
+</main>
 
 
 <div id="toast" class="toast">📋 คัดลอก & บันทึกลิสสำเร็จ!</div>
@@ -711,7 +713,8 @@ function loadInitial(forceRefresh) {
   if (!forceRefresh) {
     try {
       var cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
-      if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.data) {
+      // ใช้ cache เฉพาะถ้ายังไม่หมดอายุและมีข้อมูลจริง (length > 0)
+      if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.data && cached.data.length > 0) {
         allResults = cached.data;
         setLoading(false);
         applyFiltersAndRender();
@@ -723,7 +726,10 @@ function loadInitial(forceRefresh) {
   apiCall('getAllSongs', { source: 'global', bandName: bandName, bandId: bandId }, function(result) {
     if (result && result.success && result.data) {
       allResults = result.data;
-      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: allResults })); } catch(e) {}
+      // เก็บ cache เฉพาะกรณีมีเพลง — ไม่เก็บ empty array
+      if (allResults.length > 0) {
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: allResults })); } catch(e) {}
+      }
       setLoading(false);
       applyFiltersAndRender();
     } else {
