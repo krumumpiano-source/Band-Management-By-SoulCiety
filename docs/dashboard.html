@@ -839,6 +839,10 @@
     badge.textContent = '';
     apiCall('getPlaylistHistoryByDate', { bandId: bandId, date: dateStr }, function(r) {
       var lists = (r && r.success && r.data) ? r.data : [];
+      // เรียงตามช่วงเวลา (timeSlot เช่น "19:00-21:00") จากเร็วไปช้า
+      lists.sort(function(a, b) {
+        return (a.timeSlot || '').localeCompare(b.timeSlot || '');
+      });
       if (lists.length === 0) {
         body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:16px 0">🎵 ยังไม่มีลิสเพลงของวันนี้<br><a href="songs.html" style="color:#3b82f6;font-size:var(--text-sm)">➕ ไปสร้างลิสเพลง</a></p>';
         badge.textContent = '';
