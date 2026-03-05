@@ -130,6 +130,7 @@
         case 'savePlaylistHistory':return doSavePlaylistHistory(d);
         case 'getPlaylistHistory': return doGetPlaylistHistory(d);
         case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);
+        case 'deletePlaylistHistory': return doDeletePlaylistHistory(d);
         case 'getSongInsights':    return doGetSongInsights(d);
         case 'searchSongs':        return doSearchSongs(d);
         case 'getRequestedSongsFromHistory': return doGetRequestedSongsFromHistory(d);
@@ -1208,6 +1209,16 @@
         };
       });
       return { success: true, data: rows };
+    }
+
+    async function doDeletePlaylistHistory(d) {
+      var id     = d.id     || null;
+      var bandId = d.bandId || getBandId();
+      if (!id) return { success: false, message: 'ไม่พบ id' };
+      var { error } = await sb.from('playlist_history')
+        .delete().eq('id', id).eq('band_id', bandId);
+      if (error) throw error;
+      return { success: true };
     }
 
     // ── Song Insights (สถิติเพลง) ────────────────────────────────

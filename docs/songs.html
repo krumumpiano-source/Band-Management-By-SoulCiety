@@ -1018,10 +1018,29 @@ function renderExistingPlaylistsBadge() {
       + '<span style="font-weight:600;font-size:var(--text-sm)">' + (venue ? venue + ' · ' : '') + slot + '</span>'
       + '<span style="color:var(--premium-text-muted);font-size:var(--text-xs)">' + count + ' เพลง' + (creator ? ' · โดย ' + creator : '') + '</span>'
       + '<button onclick="loadExistingPlaylist(' + idx + ')" style="margin-left:auto;padding:4px 12px;font-size:12px;background:#38a169;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">📂 โหลด/แก้ไข</button>'
+      + '<button onclick="deleteExistingPlaylist(' + idx + ')" style="padding:4px 10px;font-size:12px;background:#e53e3e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">🗑 ลบ</button>'
       + '</div>';
   }).join('');
   badge.innerHTML = '<div style="margin-bottom:8px;font-size:var(--text-xs);font-weight:600;color:#276749">📋 ลิสที่ทำแล้ววันนี้:</div>' + html;
   badge.style.display = 'block';
+}
+
+/* ── Delete an existing playlist from DB ── */
+function deleteExistingPlaylist(idx) {
+  var p = _plExistingForDate[idx];
+  if (!p) return;
+  var label = (p.venue ? p.venue + ' · ' : '') + (p.timeSlot || '') + ' (' + (p.songs || []).length + ' เพลง)';
+  if (!confirm('ลบลิส: ' + label + ' ใช่ไหม?')) return;
+  apiCall('deletePlaylistHistory', { id: p.id, bandId: localStorage.getItem('bandId') || '' }, function(r) {
+    if (r && r.success) {
+      _plExistingForDate.splice(idx, 1);
+      renderExistingPlaylistsBadge();
+      refreshTimeSlotsLabels();
+      showSongsAlert('🗑 ลบลิส ' + label + ' แล้ว');
+    } else {
+      showSongsAlert('❌ ลบไม่สำเร็จ: ' + ((r && r.message) || ''));
+    }
+  });
 }
 
 /* ── Load an existing playlist into the editable list ── */
