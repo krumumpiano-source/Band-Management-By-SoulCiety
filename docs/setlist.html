@@ -265,6 +265,18 @@
     renderSetTabs();
     renderQuota();
     renderPool();
+
+    // Auto-select เซ็ตแรกที่มีข้อมูลบันทึกไว้ → แสดงลิสต์โดยอัตโนมัติ
+    var savedKeys = Object.keys(setsData)
+      .map(Number)
+      .filter(function(n){ return !isNaN(n) && n > 0 && (setsData[String(n)] || []).length > 0; });
+    if (savedKeys.length) {
+      savedKeys.sort(function(a, b){ return a - b; });
+      currentSetIdx = String(savedKeys[0]);
+      renderSetTabs();
+      renderSetBuilder();
+      renderPool();
+    }
   }
 
   function renderSetTabs() {
