@@ -65,9 +65,9 @@
     #nowBpm{font-size:0.9rem;color:var(--text2)}
     #nowSinger{font-size:0.85rem;color:var(--text2)}
     #nowNote{font-size:0.82rem;color:var(--gold);margin-top:6px;font-style:italic;min-height:18px}
-    /* pulse animation */
-    @keyframes songEndPulse{0%{opacity:1}25%{opacity:.15}50%{opacity:1}75%{opacity:.15}100%{opacity:1}}
-    #nowPlaying.pulsing{animation:songEndPulse 3s ease-in-out}
+    /* pulse animation — bright white strobe flash */
+    @keyframes songEndPulse{0%{background:#fff;color:#000}8%{background:var(--card);color:var(--text)}16%{background:#fff;color:#000}24%{background:var(--card);color:var(--text)}32%{background:#fff;color:#000}40%{background:var(--card);color:var(--text)}50%{background:#fff;color:#000}60%{background:var(--card);color:var(--text)}72%{background:#fff;color:#000}80%{background:var(--card);color:var(--text)}90%{background:#fff;color:#000}100%{background:var(--card);color:var(--text)}}
+    #nowPlaying.pulsing{animation:songEndPulse 2.5s ease-in-out}
 
     /* ─── SONG LIST ─── */
     #songListWrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
@@ -317,7 +317,7 @@
 
 <!-- ── ACTION BAR ── -->
 <div id="actionBar">
-  <button id="endSongBtn" onclick="endSong()">⏭ จบเพลง</button>
+  <button id="endSongBtn" onclick="endSong()">⏭ ไปเพลงถัดไป</button>
   <button id="requestBtn" onclick="openRequest()">➕ เพลงขอ</button>
 </div>
 
@@ -332,7 +332,7 @@
 <!-- ── GESTURE HINTS ── -->
 <div id="gestureHints" class="hidden">
   <div style="font-size:1.3rem;font-weight:700;color:var(--gold);margin-bottom:4px">🎤 วิธีใช้ Live Mode</div>
-  <div class="hint-item"><div class="hint-icon">⏭</div><div class="hint-text"><strong>จบเพลง</strong> — กดปุ่มใหญ่ด้านล่าง</div></div>
+  <div class="hint-item"><div class="hint-icon">⏭</div><div class="hint-text"><strong>ไปเพลงถัดไป</strong> — กดปุ่มใหญ่ด้านล่าง</div></div>
   <div class="hint-item"><div class="hint-icon">👆</div><div class="hint-text"><strong>กดค้างเพลง</strong> — เมนูลัด (เล่นตอนนี้ / ถัดไป / skip / โน้ต)</div></div>
   <div class="hint-item"><div class="hint-icon">👈</div><div class="hint-text"><strong>ปัดซ้าย</strong> — skip เพลง</div></div>
   <div class="hint-item"><div class="hint-icon">🎵</div><div class="hint-text"><strong>แตะคีย์</strong> — transpose ขึ้น/ลง</div></div>
@@ -1184,7 +1184,7 @@ function triggerEnding(nextIdx) {
 
   np.addEventListener('animationend', finishEnding, { once: true });
   // Safety timeout: if animationend never fires (prefers-reduced-motion, etc.), advance anyway
-  _endingTimer = setTimeout(finishEnding, 3500);
+  _endingTimer = setTimeout(finishEnding, 3000);
 }
 
 // advanceSong ใช้โดย skipSong เท่านั้น — broadcast current_changed ด้วย
