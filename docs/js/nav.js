@@ -287,88 +287,83 @@ function _escHtml(text) {
 
 // ── FAQ Chatbot ──────────────────────────────────────────────────────────────
 var FAQ_DATA = {
-  general: {
-    label: '📌 ทั่วไป',
-    items: [
-      {
-        q: 'วิธี Login เข้าระบบ',
-        a: 'เปิดแอป → ใส่ Email และ Password ที่สมัครไว้ → กด "เข้าสู่ระบบ"\n\nหากลืมรหัสผ่าน กดที่ "ลืมรหัสผ่าน?" ใต้ปุ่ม Login'
-      },
-      {
-        q: 'ลืมรหัสผ่านทำยังไง',
-        a: 'หน้า Login → กด "ลืมรหัสผ่าน?" → ใส่ Email → กดยืนยัน\nระบบจะส่งลิงก์ Reset ไปที่ Email ของคุณ'
-      },
-      {
-        q: 'วิธีแก้ไขโปรไฟล์ตัวเอง',
-        a: '📌 My Profile → กดแก้ไขข้อมูล\nเช่น ชื่อ เครื่องดนตรี อัตราค่าตัว เบอร์โทร รูปบัตรประชาชน'
-      },
-      {
-        q: 'วิธีเปลี่ยนภาษา (TH/EN)',
-        a: 'กดปุ่ม TH / EN ที่มุมซ้ายล่างของเมนู sidebar\nหรือที่ด้านขวาบนของหน้าจอ (มือถือ)'
-      },
-    ]
+  th: {
+    greeting: 'สวัสดีครับ 👋 จะถามเรื่องอะไรดีครับ?',
+    catLabel: 'หมวดอื่นในหมวดนี้:',
+    backLabel: '◀ กลับหมวดหมู่',
+    headerSub: 'เลือกคำถามที่ต้องการ',
+    catGreet: function(cat) { return cat + ' — เลือกคำถามได้เลยครับ'; },
+    general: {
+      label: '📌 ทั่วไป',
+      items: [
+        { q: 'วิธี Login เข้าระบบ', a: 'เปิดแอป → ใส่ Email และ Password ที่สมัครไว้ → กด "เข้าสู่ระบบ"\n\nหากลืมรหัสผ่าน กดที่ "ลืมรหัสผ่าน?" ใต้ปุ่ม Login' },
+        { q: 'ลืมรหัสผ่านทำยังไง', a: 'หน้า Login → กด "ลืมรหัสผ่าน?" → ใส่ Email → กดยืนยัน\nระบบจะส่งลิงก์ Reset ไปที่ Email ของคุณ' },
+        { q: 'วิธีแก้ไขโปรไฟล์ตัวเอง', a: '📌 เมนู My Profile → กดแก้ไขข้อมูล\nเช่น ชื่อ เครื่องดนตรี อัตราค่าตัว เบอร์โทร รูปบัตรประชาชน' },
+        { q: 'วิธีเปลี่ยนภาษา (TH/EN)', a: 'กดปุ่ม TH / EN ที่มุมซ้ายล่างของเมนู sidebar\nหรือที่ด้านขวาบนของหน้าจอ (มือถือ)' },
+      ]
+    },
+    member: {
+      label: '🎸 สมาชิกวง',
+      items: [
+        { q: 'วิธีลงเวลาประจำวัน (Check-In)', a: '📍 หน้า Dashboard → กล่อง "ลงเวลาประจำวัน"\n1. เลือกวัน (ค่าเริ่มต้นคือวันนี้)\n2. เลือกร้าน (ถ้ามีหลายร้าน)\n3. เลือกรอบเวลาที่เล่น\n4. กด ✅ ยืนยันลงเวลา' },
+        { q: 'วิธีลา / แจ้งขาดงาน', a: '📍 Dashboard → กล่องลงเวลา → กดปุ่ม "🚫 ลา"\n→ กรอกชื่อคนมาแทน หรือเลือก "ไม่มีคนแทน"\n→ กด ✅ ยืนยันลา' },
+        { q: 'ดูตารางงานได้ที่ไหน', a: '📅 เมนู "ตารางงาน" (Schedule)\nจะแสดงงานและวันซ้อมทั้งหมด แบ่งตามสัปดาห์/เดือน' },
+        { q: 'ดูรายได้ของตัวเองได้ที่ไหน', a: '📊 Dashboard → กล่อง "สรุปรายได้ของฉัน"\nหรือไปที่เมนู 📈 สถิติ เพื่อดูรายละเอียดเพิ่มเติม' },
+        { q: 'วิธีดูรายชื่อสมาชิกวง', a: '👥 เมนู "ข้อมูลวง" (Band Info)\nจะแสดงรายชื่อ เบอร์โทร เครื่องดนตรีของสมาชิกทุกคน' },
+        { q: 'วิธีดูเพลง / เซ็ตลิสต์', a: '🎵 เมนู "รายการเพลง" (Songs)\nดูเพลงทั้งหมดในคลัง และเซ็ตลิสต์ประจำวัน' },
+      ]
+    },
+    manager: {
+      label: '👔 ผู้จัดการวง',
+      items: [
+        { q: 'วิธีเชิญสมาชิกเข้าวง', a: '👥 เมนู "ข้อมูลวง" → ดูรหัสวง (Band Code)\nส่งรหัสนี้ให้สมาชิก → ให้เขาไปที่หน้า Register → กรอกรหัสวง\nหรือกด "คัดลอกลิงก์เชิญ" เพื่อแชร์ได้เลย' },
+        { q: 'วิธีตั้งค่าวง (ชื่อ ร้าน ตาราง)', a: '⚙️ เมนู "ตั้งค่าวง" (Band Settings)\nตั้งได้: ชื่อวง จังหวัด ร้านที่เล่น รอบเวลา ค่าตัวสมาชิก' },
+        { q: 'วิธีสร้างใบเสนอราคา', a: '📄 เมนู "ใบเสนอราคา" (Quotation)\nกรอกรายละเอียดงาน → ระบบสร้าง PDF ให้อัตโนมัติ\nสามารถส่ง หรือดาวน์โหลดได้ทันที' },
+        { q: 'วิธีบันทึกการเงิน / เบิกเงิน', a: '📋 เมนู "บันทึกเข้างาน" (Attendance & Payroll)\nบันทึกการเข้างานของสมาชิก และคำนวณค่าตัวอัตโนมัติ' },
+        { q: 'วิธีคำนวณราคารับงาน', a: '🧮 เมนู "คำนวณราคา" (Job Calculator)\nกรอก: จำนวนชั่วโมง จำนวนสมาชิก ค่าเดินทาง ค่าอุปกรณ์\nระบบจะคำนวณราคาแนะนำให้ทันที' },
+        { q: 'วิธีอนุมัติสมาชิกใหม่', a: '📍 Dashboard → กล่อง "คำขอเข้าร่วมวง"\nกด ✅ อนุมัติ หรือ ❌ ปฏิเสธ ได้เลย' },
+        { q: 'วิธีดูประวัติงานนอก', a: '📁 เมนู "ประวัติงานนอก" (Job History)\nดูรายละเอียดงานนอกทั้งหมด พร้อมสถานะและยอดเงิน' },
+      ]
+    }
   },
-  member: {
-    label: '🎸 สมาชิกวง',
-    items: [
-      {
-        q: 'วิธีลงเวลาประจำวัน (Check-In)',
-        a: '📍 หน้า Dashboard → กล่อง "ลงเวลาประจำวัน"\n1. เลือกวัน (ค่าเริ่มต้นคือวันนี้)\n2. เลือกร้าน (ถ้ามีหลายร้าน)\n3. เลือกรอบเวลาที่เล่น\n4. กด ✅ ยืนยันลงเวลา'
-      },
-      {
-        q: 'วิธีลา / แจ้งขาดงาน',
-        a: '📍 Dashboard → กล่องลงเวลา → กดปุ่ม "🚫 ลา"\n→ กรอกชื่อคนมาแทน หรือเลือก "ไม่มีคนแทน"\n→ กด ✅ ยืนยันลา'
-      },
-      {
-        q: 'ดูตารางงานได้ที่ไหน',
-        a: '📅 เมนู "ตารางงาน" (Schedule)\nจะแสดงงานและวันซ้อมทั้งหมด แบ่งตามสัปดาห์/เดือน'
-      },
-      {
-        q: 'ดูรายได้ของตัวเองได้ที่ไหน',
-        a: '📊 Dashboard → ดูกล่อง "สรุปรายได้ของฉัน"\nหรือไปที่เมนู 📈 สถิติ เพื่อดูรายละเอียดเพิ่มเติม'
-      },
-      {
-        q: 'วิธีดูรายชื่อสมาชิกวง',
-        a: '👥 เมนู "ข้อมูลวง" (Band Info)\nจะแสดงรายชื่อ เบอร์โทร เครื่องดนตรีของสมาชิกทุกคน'
-      },
-      {
-        q: 'วิธีดูเพลง / เซ็ตลิสต์',
-        a: '🎵 เมนู "รายการเพลง" (Songs)\nดูเพลงทั้งหมดในคลัง และเซ็ตลิสต์ประจำวัน'
-      },
-    ]
-  },
-  manager: {
-    label: '👔 ผู้จัดการวง',
-    items: [
-      {
-        q: 'วิธีเชิญสมาชิกเข้าวง',
-        a: '👥 เมนู "ข้อมูลวง" → ดูรหัสวง (Band Code)\nส่งรหัสนี้ให้สมาชิก → ให้เขาไปที่หน้า Register → กรอกรหัสวง\nหรือกด "คัดลอกลิงก์เชิญ" เพื่อแชร์ได้เลย'
-      },
-      {
-        q: 'วิธีตั้งค่าวง (ชื่อ ร้าน ตาราง)',
-        a: '⚙️ เมนู "ตั้งค่าวง" (Band Settings)\nตั้งได้: ชื่อวง จังหวัด ร้านที่เล่น รอบเวลา ค่าตัวสมาชิก'
-      },
-      {
-        q: 'วิธีสร้างใบเสนอราคา',
-        a: '📄 เมนู "ใบเสนอราคา" (Quotation)\nกรอกรายละเอียดงาน → ระบบสร้าง PDF ให้อัตโนมัติ\nสามารถส่ง หรือดาวน์โหลดได้ทันที'
-      },
-      {
-        q: 'วิธีบันทึกการเงิน / เบิกเงิน',
-        a: '📋 เมนู "บันทึกเข้างาน" (Attendance & Payroll)\nบันทึกการเข้างานของสมาชิก และคำนวณค่าตัวอัตโนมัติ'
-      },
-      {
-        q: 'วิธีคำนวณราคารับงาน',
-        a: '🧮 เมนู "คำนวณราคา" (Job Calculator)\nกรอก: จำนวนชั่วโมง จำนวนสมาชิก ค่าเดินทาง ค่าอุปกรณ์\nระบบจะคำนวณราคาแนะนำให้ทันที'
-      },
-      {
-        q: 'วิธีอนุมัติสมาชิกใหม่',
-        a: '📍 Dashboard → กล่อง "คำขอเข้าร่วมวง"\nกด ✅ อนุมัติ หรือ ❌ ปฏิเสธ ได้เลย'
-      },
-      {
-        q: 'วิธีดูประวัติงานนอก',
-        a: '📁 เมนู "ประวัติงานนอก" (Job History)\nดูรายละเอียดงานนอกทั้งหมด พร้อมสถานะและยอดเงิน'
-      },
-    ]
+  en: {
+    greeting: 'Hello 👋 What would you like to know?',
+    catLabel: 'More in this category:',
+    backLabel: '◀ Back to categories',
+    headerSub: 'Choose a topic',
+    catGreet: function(cat) { return cat + ' — Select a question'; },
+    general: {
+      label: '📌 General',
+      items: [
+        { q: 'How to login', a: 'Open the app → Enter your Email and Password → Tap "Login"\n\nIf you forgot your password, tap "Forgot password?" below the Login button.' },
+        { q: 'Forgot my password', a: 'Login page → Tap "Forgot password?" → Enter your email → Confirm\nThe system will send a reset link to your email.' },
+        { q: 'How to edit my profile', a: '📌 Go to My Profile menu → Tap Edit\nYou can update: name, instrument, pay rate, phone, ID card photo.' },
+        { q: 'How to change language (TH/EN)', a: 'Tap TH / EN at the bottom-left of the sidebar menu\nor at the top-right of the screen (mobile).' },
+      ]
+    },
+    member: {
+      label: '🎸 Band Members',
+      items: [
+        { q: 'How to clock in (Check-In)', a: '📍 Dashboard → "Daily Check-In" box\n1. Select date (default is today)\n2. Select venue (if multiple)\n3. Select your time slot(s)\n4. Tap ✅ Confirm Check-In' },
+        { q: 'How to request leave / absence', a: '📍 Dashboard → Check-In box → Tap "🚫 Leave"\n→ Enter substitute name or check "No substitute"\n→ Tap ✅ Confirm Leave' },
+        { q: 'Where to view the schedule', a: '📅 Schedule menu\nShows all gigs and rehearsals, sorted by week/month.' },
+        { q: 'Where to view my earnings', a: '📊 Dashboard → "My Earnings" summary box\nOr go to 📈 Statistics menu for detailed breakdown.' },
+        { q: 'How to see band members list', a: '👥 Band Info menu\nShows all members with phone, instrument, and contact info.' },
+        { q: 'How to view songs / setlist', a: '🎵 Songs menu\nBrowse the song library and view today\'s setlist.' },
+      ]
+    },
+    manager: {
+      label: '👔 Band Manager',
+      items: [
+        { q: 'How to invite members', a: '👥 Band Info menu → Find the Band Code\nShare this code with members → they go to Register → enter the code\nOr tap "Copy Invite Link" to share directly.' },
+        { q: 'How to configure band settings', a: '⚙️ Band Settings menu\nConfigure: band name, province, venues, time slots, member pay rates.' },
+        { q: 'How to create a quotation', a: '📄 Quotation menu\nFill in job details → system generates a PDF automatically\nYou can send or download it immediately.' },
+        { q: 'How to manage payroll', a: '📋 Attendance & Payroll menu\nRecord member attendance and auto-calculate pay.' },
+        { q: 'How to calculate job pricing', a: '🧮 Job Calculator menu\nEnter: hours, number of members, travel, equipment costs\nThe system recommends a price instantly.' },
+        { q: 'How to approve new members', a: '📍 Dashboard → "Join Requests" box\nTap ✅ Approve or ❌ Reject.' },
+        { q: 'How to view external job history', a: '📁 Job History menu\nSee all external jobs with status and payment details.' },
+      ]
+    }
   }
 };
 
@@ -386,21 +381,27 @@ function renderFaqBot() {
   var panel = document.createElement('div');
   panel.id = 'faqBotPanel';
   panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', 'ช่วยเหลือการใช้งาน');
+  panel.setAttribute('aria-label', 'Help / FAQ');
+  var _ld0 = (typeof getLang === 'function' && getLang() === 'en') ? FAQ_DATA.en : FAQ_DATA.th;
   panel.innerHTML =
     '<div class="faqbot-header">' +
       '<div class="faqbot-avatar">🤖</div>' +
-      '<div><h4>BandFlow ช่วยเหลือ</h4><p>เลือกคำถามที่ต้องการ</p></div>' +
-      '<button class="faqbot-header-close" id="faqBotClose" aria-label="ปิด">✕</button>' +
+      '<div><h4>BandFlow Help</h4><p id="faqBotHeaderSub">' + _ld0.headerSub + '</p></div>' +
+      '<button class="faqbot-header-close" id="faqBotClose" aria-label="Close">✕</button>' +
     '</div>' +
     '<div class="faqbot-body" id="faqBotBody"></div>' +
     '<div class="faqbot-footer">' +
-      '<button class="faqbot-back" id="faqBotBack">◀ กลับหมวดหมู่</button>' +
+      '<button class="faqbot-back" id="faqBotBack">' + _ld0.backLabel + '</button>' +
     '</div>';
   document.body.appendChild(panel);
 
   var body    = document.getElementById('faqBotBody');
   var backBtn = document.getElementById('faqBotBack');
+
+  function getLangData() {
+    var lang = typeof getLang === 'function' ? getLang() : 'th';
+    return FAQ_DATA[lang] || FAQ_DATA.th;
+  }
 
   function addBubble(text, type) {
     var b = document.createElement('div');
@@ -415,7 +416,8 @@ function renderFaqBot() {
   function showCategories() {
     body.innerHTML = '';
     backBtn.style.display = 'none';
-    addBubble('สวัสดีครับ 👋 จะถามเรื่องอะไรดีครับ?', 'bot');
+    var ld = getLangData();
+    addBubble(ld.greeting, 'bot');
     var role = localStorage.getItem('userRole') || 'member';
     var isManager = role === 'manager' || role === 'admin';
 
@@ -423,8 +425,8 @@ function renderFaqBot() {
     wrap.className = 'faqbot-qs';
 
     var cats = isManager
-      ? [FAQ_DATA.general, FAQ_DATA.manager, FAQ_DATA.member]
-      : [FAQ_DATA.general, FAQ_DATA.member, FAQ_DATA.manager];
+      ? [ld.general, ld.manager, ld.member]
+      : [ld.general, ld.member, ld.manager];
 
     cats.forEach(function(cat) {
       var q = document.createElement('button');
@@ -440,7 +442,8 @@ function renderFaqBot() {
   function showCategory(cat) {
     body.innerHTML = '';
     backBtn.style.display = 'flex';
-    addBubble(cat.label + ' — เลือกคำถามได้เลยครับ', 'bot');
+    var ld = getLangData();
+    addBubble(ld.catGreet(cat.label), 'bot');
     var wrap = document.createElement('div');
     wrap.className = 'faqbot-qs';
     cat.items.forEach(function(item) {
@@ -457,16 +460,16 @@ function renderFaqBot() {
   function showAnswer(item, cat) {
     body.innerHTML = '';
     backBtn.style.display = 'flex';
+    var ld = getLangData();
     addBubble(item.q, 'user');
     setTimeout(function() {
       addBubble(item.a, 'bot');
-      // "More questions" in same category
       var moreWrap = document.createElement('div');
       moreWrap.className = 'faqbot-qs';
       moreWrap.style.marginTop = '4px';
       var moreLabel = document.createElement('div');
       moreLabel.style.cssText = 'font-size:.72rem;color:#94a3b8;margin-bottom:4px';
-      moreLabel.textContent = 'คำถามอื่นในหมวดนี้:';
+      moreLabel.textContent = ld.catLabel;
       moreWrap.appendChild(moreLabel);
       cat.items.filter(function(i){ return i.q !== item.q; }).slice(0,3).forEach(function(other) {
         var q = document.createElement('button');
@@ -484,6 +487,12 @@ function renderFaqBot() {
   function openPanel() {
     panel.classList.add('open');
     btn.querySelector('.faq-badge').style.display = 'none';
+    // update labels to current language
+    var ld = getLangData();
+    var backEl = document.getElementById('faqBotBack');
+    var subEl  = document.getElementById('faqBotHeaderSub');
+    if (backEl) backEl.textContent = ld.backLabel;
+    if (subEl)  subEl.textContent  = ld.headerSub;
     if (!body.innerHTML) showCategories();
   }
   function closePanel() { panel.classList.remove('open'); }

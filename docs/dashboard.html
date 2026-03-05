@@ -127,9 +127,9 @@
 
       <!-- ===== Onboarding Card ===== -->
       <div class="ob-card" id="obCard" style="display:none">
-        <button class="ob-dismiss" id="obDismiss">ไม่ต้องแสดงอีก ✕</button>
-        <h3 id="obTitle">🚀 เริ่มต้นใช้งาน BandFlow</h3>
-        <p class="ob-subtitle" id="obSubtitle">ทำตามขั้นตอนเหล่านี้เพื่อเริ่มต้นได้เลย</p>
+        <button class="ob-dismiss" id="obDismiss"></button>
+        <h3 id="obTitle"></h3>
+        <p class="ob-subtitle" id="obSubtitle"></p>
         <div class="ob-progress-bar"><div class="ob-progress-fill" id="obProgressFill" style="width:0%"></div></div>
         <div class="ob-steps" id="obSteps"></div>
       </div>
@@ -1203,26 +1203,64 @@
   var OB_KEY = 'ob_dismissed_v1';
   var OB_DONE_KEY = 'ob_steps_done';
 
-  var OB_MANAGER_STEPS = [
-    { key: 'settings',   icon: '⚙️', label: 'ตั้งค่าวง',        desc: 'ตั้งชื่อวง จังหวัด และตารางงาน',       href: 'band-settings.html' },
-    { key: 'members',    icon: '👥', label: 'เชิญสมาชิก',       desc: 'แชร์รหัสวงให้สมาชิกกดเข้าร่วม',        href: 'band-info.html' },
-    { key: 'schedule',   icon: '📅', label: 'กำหนดตารางงาน',    desc: 'ร้านที่เล่นและรอบเวลาประจำสัปดาห์',    href: 'schedule.html' },
-    { key: 'songs',      icon: '🎵', label: 'เพิ่มเพลงคลัง',    desc: 'สร้างเซ็ตลิสต์สำหรับการแสดง',          href: 'add-song.html' },
-    { key: 'calculator', icon: '🧮', label: 'คำนวณราคางาน',     desc: 'ประเมินราคารับงานครั้งแรก',             href: 'job-calculator.html' },
-  ];
-  var OB_MEMBER_STEPS = [
-    { key: 'profile',   icon: '👤', label: 'ตั้งค่าโปรไฟล์',    desc: 'ใส่ชื่อ เครื่องดนตรี และอัตราค่าตัว',  href: 'my-profile.html' },
-    { key: 'bandinfo',  icon: '🎸', label: 'ดูข้อมูลวง',         desc: 'รายชื่อสมาชิกและช่องทางติดต่อ',         href: 'band-info.html' },
-    { key: 'schedule',  icon: '📅', label: 'ดูตารางงาน',         desc: 'ตรวจสอบงานและวันซ้อมที่กำลังจะมา',     href: 'schedule.html' },
-    { key: 'checkin',   icon: '⏰', label: 'ลงเวลาประจำวัน',     desc: 'กดลงเวลาที่กล่องด้านล่างนี้ทุกวัน',     href: '#qciCard' },
-    { key: 'earnings',  icon: '📊', label: 'ดูรายได้ของฉัน',     desc: 'สรุปรายได้รายสัปดาห์ รายเดือน รายปี',  href: 'statistics.html' },
-  ];
+  var OB_STEPS = {
+    manager: {
+      th: [
+        { key: 'settings',   icon: '⚙️', label: 'ตั้งค่าวง',        desc: 'ตั้งชื่อวง จังหวัด และตารางงาน',       href: 'band-settings.html' },
+        { key: 'members',    icon: '👥', label: 'เชิญสมาชิก',       desc: 'แชร์รหัสวงให้สมาชิกกดเข้าร่วม',        href: 'band-info.html' },
+        { key: 'schedule',   icon: '📅', label: 'กำหนดตารางงาน',    desc: 'ร้านที่เล่นและรอบเวลาประจำสัปดาห์',    href: 'schedule.html' },
+        { key: 'songs',      icon: '🎵', label: 'เพิ่มเพลงคลัง',    desc: 'สร้างเซ็ตลิสต์สำหรับการแสดง',          href: 'add-song.html' },
+        { key: 'calculator', icon: '🧮', label: 'คำนวณราคางาน',     desc: 'ประเมินราคารับงานครั้งแรก',             href: 'job-calculator.html' },
+      ],
+      en: [
+        { key: 'settings',   icon: '⚙️', label: 'Band Settings',    desc: 'Set band name, province & schedule',    href: 'band-settings.html' },
+        { key: 'members',    icon: '👥', label: 'Invite Members',    desc: 'Share the band code to let members join', href: 'band-info.html' },
+        { key: 'schedule',   icon: '📅', label: 'Set Schedule',      desc: 'Add venues and weekly time slots',       href: 'schedule.html' },
+        { key: 'songs',      icon: '🎵', label: 'Add Songs',         desc: 'Build your song library and setlists',   href: 'add-song.html' },
+        { key: 'calculator', icon: '🧮', label: 'Job Calculator',    desc: 'Estimate your first gig pricing',        href: 'job-calculator.html' },
+      ]
+    },
+    member: {
+      th: [
+        { key: 'profile',   icon: '👤', label: 'ตั้งค่าโปรไฟล์',    desc: 'ใส่ชื่อ เครื่องดนตรี และอัตราค่าตัว',  href: 'my-profile.html' },
+        { key: 'bandinfo',  icon: '🎸', label: 'ดูข้อมูลวง',         desc: 'รายชื่อสมาชิกและช่องทางติดต่อ',         href: 'band-info.html' },
+        { key: 'schedule',  icon: '📅', label: 'ดูตารางงาน',         desc: 'ตรวจสอบงานและวันซ้อมที่กำลังจะมา',     href: 'schedule.html' },
+        { key: 'checkin',   icon: '⏰', label: 'ลงเวลาประจำวัน',     desc: 'กดลงเวลาที่กล่องด้านล่างนี้ทุกวัน',     href: '#qciCard' },
+        { key: 'earnings',  icon: '📊', label: 'ดูรายได้ของฉัน',     desc: 'สรุปรายได้รายสัปดาห์ รายเดือน รายปี',  href: 'statistics.html' },
+      ],
+      en: [
+        { key: 'profile',   icon: '👤', label: 'Set Up Profile',     desc: 'Add your name, instrument & pay rate',   href: 'my-profile.html' },
+        { key: 'bandinfo',  icon: '🎸', label: 'View Band Info',      desc: 'Member list and contact details',        href: 'band-info.html' },
+        { key: 'schedule',  icon: '📅', label: 'Check Schedule',      desc: 'Upcoming gigs and rehearsal dates',      href: 'schedule.html' },
+        { key: 'checkin',   icon: '⏰', label: 'Daily Check-In',      desc: 'Clock in using the box below every day', href: '#qciCard' },
+        { key: 'earnings',  icon: '📊', label: 'View My Earnings',    desc: 'Weekly, monthly and yearly breakdown',   href: 'statistics.html' },
+      ]
+    }
+  };
+
+  var OB_TEXT = {
+    th: {
+      managerTitle: '🚀 เริ่มต้นสร้างวงของคุณ',
+      memberTitle:  '🎸 เริ่มต้นใช้งาน BandFlow',
+      subtitle: function(done, total) { return 'ทำตาม ' + total + ' ขั้นตอนนี้เพื่อเริ่มต้นได้สมบูรณ์ (' + done + '/' + total + ' เสร็จแล้ว)'; },
+      dismiss: 'ไม่ต้องแสดงอีก ✕'
+    },
+    en: {
+      managerTitle: '🚀 Set Up Your Band',
+      memberTitle:  '🎸 Get Started with BandFlow',
+      subtitle: function(done, total) { return 'Complete ' + total + ' steps to get fully set up (' + done + '/' + total + ' done)'; },
+      dismiss: 'Don\'t show again ✕'
+    }
+  };
 
   function initOnboarding() {
-    if (localStorage.getItem(OB_KEY)) return; // dismissed before
+    if (localStorage.getItem(OB_KEY)) return;
     var role = localStorage.getItem('userRole') || 'member';
     var isManager = role === 'manager' || role === 'admin';
-    var steps = isManager ? OB_MANAGER_STEPS : OB_MEMBER_STEPS;
+    var lang = typeof getLang === 'function' ? getLang() : 'th';
+    var langKey = (lang === 'en') ? 'en' : 'th';
+    var steps = isManager ? OB_STEPS.manager[langKey] : OB_STEPS.member[langKey];
+    var strings = OB_TEXT[langKey];
     var doneMap = {};
     try { doneMap = JSON.parse(localStorage.getItem(OB_DONE_KEY) || '{}'); } catch(e) {}
 
@@ -1236,8 +1274,9 @@
     var cont = document.getElementById('obSteps');
     if (!card || !cont) return;
 
-    document.getElementById('obTitle').textContent = isManager ? '🚀 เริ่มต้นสร้างวงของคุณ' : '🎸 เริ่มต้นใช้งาน BandFlow';
-    document.getElementById('obSubtitle').textContent = 'ทำตาม ' + steps.length + ' ขั้นตอนนี้เพื่อเริ่มต้นได้สมบูรณ์ (' + doneCount + '/' + steps.length + ' เสร็จแล้ว)';
+    document.getElementById('obTitle').textContent = isManager ? strings.managerTitle : strings.memberTitle;
+    document.getElementById('obSubtitle').textContent = strings.subtitle(doneCount, steps.length);
+    document.getElementById('obDismiss').textContent = strings.dismiss;
     fill.style.width = pct + '%';
 
     cont.innerHTML = steps.map(function(s) {
