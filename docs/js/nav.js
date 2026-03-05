@@ -54,11 +54,11 @@ function renderMainNav(containerId) {
   // ── เมนูสมาชิกวง (ทุกบทบาท) ─────────────────────────
   var memberLinks =
     navSection('🎸 สมาชิกวง') +
-    navLink('dashboard',     '📊 ' + _t('nav_dashboard'),    'ภาพรวมงาน & สถิติด่วน') +
+    navLink('dashboard',     '📊 ' + _t('nav_dashboard'),    'ภาพรวมงาน สถิติ และทางลัด') +
     navLink('songs',         '🎵 ' + _t('nav_songs'),        'คลังเพลงและเซ็ตลิสต์') +
-    navLink('song-insights', '🎙️ ' + _t('nav_songInsights'), 'สถิติการเล่นเพลง') +
+    navLink('song-insights', '🎙️ ' + _t('nav_songInsights'), 'เพลงที่เล่นบ่อย / ไม่เคยเล่น') +
     navLink('schedule',      '📅 ' + _t('nav_schedule'),     'ปฏิทินงานและตารางนัด') +
-    navLink('statistics',    '📈 ' + _t('nav_statistics'),   'รายได้ & สถิติรายเดือน') +
+    navLink('statistics',    '📈 ' + _t('nav_statistics'),   'สรุปรายได้ & สถิติรายเดือน') +
     navLink('equipment',     '🎸 ' + _t('nav_equipment'),    'อุปกรณ์วงและงบซ่อมบำรุง') +
     navLink('band-fund',     '💰 ' + _t('nav_bandFund'),     'บัญชีรายรับรายจ่ายกองกลาง') +
     navLink('band-info',     '👥 ' + _t('nav_bandInfo'),     'สมาชิก ช่องทางติดต่อ ร้านที่เล่น') +
@@ -78,11 +78,11 @@ function renderMainNav(containerId) {
   // ── เมนูผู้จัดการวง ───────────────────────────────────
   var managerLinks = isManager ? (
     navSection('👔 ผู้จัดการวง') +
-    navLink('attendance-payroll', '📋 ' + _t('nav_attendance'),    'บันทึกเข้างานและค่าตัว') +
-    navLink('job-calculator',     '🧮 ' + _t('nav_jobCalculator'), 'คำนวณราคารับงาน') +
+    navLink('attendance-payroll', '📋 ' + _t('nav_attendance'),    'เช็คชื่อเข้างาน & จ่ายค่าตัว') +
+    navLink('job-calculator',     '🧮 ' + _t('nav_jobCalculator'), 'ตั้งราคารับงานนอก') +
     navLink('quotation',          '📄 ' + _t('nav_quotation'),     'สร้างและส่งใบเสนอราคา') +
     navLink('contract',           '📜 สัญญาว่าจ้าง',               'สัญญาจ้างวงดนตรี') +
-    navLink('external-payout',    '💵 ' + _t('nav_externalPayout'),'จ่ายเงินให้บุคคลภายนอก') +
+    navLink('external-payout',    '💵 ' + _t('nav_externalPayout'),'จ่ายเงินให้คนนอกวง') +
     navLink('job-history',        '📁 ประวัติงานนอก',               'ประวัติและรายละเอียดงานนอกทั้งหมด') +
     navLink('band-settings',      '⚙️ ' + _t('nav_settings'),     'ตั้งค่าวง ร้าน และตาราง')
   ) : '';

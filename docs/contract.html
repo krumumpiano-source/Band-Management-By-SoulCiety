@@ -583,7 +583,7 @@
       if (r && r.success) {
         var jobId = (r.data && r.data.id) || '';
         localStorage.setItem('lastExternalJobId', jobId);
-        showToast('✅ สร้างงานนอกสำเร็จ! สมาชิกจะเห็นงานนี้ในแดชบอร์ด', 'success');
+        showToast('✅ สร้างงานนอกสำเร็จ! สมาชิกจะเห็นงานนี้ในหน้าหลัก', 'success');
         setTimeout(function() {
           window.location.href = 'external-payout.html' + (jobId ? '?jobId=' + jobId : '');
         }, 1800);
