@@ -517,7 +517,7 @@ html{scroll-behavior:smooth}
   <h3>📋 ลิสเพลงที่เลือก</h3>
 
   <!-- Badge: existing playlists for selected date -->
-  <div id="plExistingBadge" style="display:none;margin-bottom:12px;padding:10px;border-radius:var(--radius-md);background:#f0fff4;border:1.5px solid #c6f6d5"></div>
+  <div id="plExistingBadge" style="display:none;margin-bottom:12px;padding:12px 14px;border-radius:var(--radius-md);background:#f7fff9;border:1.5px solid #c6f6d5"></div>
 
   <div class="filters" style="margin-bottom:10px">
     <input type="date" id="useDate" onchange="onPlaylistDateChange()">
@@ -1004,16 +1004,38 @@ function refreshTimeSlotsLabels() {
 function renderExistingPlaylistsBadge() {
   var badge = document.getElementById('plExistingBadge');
   if (!badge) return;
-  if (_plExistingForDate.length === 0) {
-    badge.style.display = 'none';
-    return;
-  }
-  var html = _plExistingForDate.map(function(p, idx) {
-    var slot = p.timeSlot || '?';
-    var venue = p.venue || '';
+  var dateEl = document.getElementById('useDate');
+  if (!dateEl || !dateEl.value) { badge.style.display = 'none'; return; }
+
+  var plan      = getBandPlan();
+  var dayLimit  = getPlaylistDayLimit();
+  var used      = _plExistingForDate.length;
+  var pct       = dayLimit > 0 ? Math.min(100, Math.round(used / dayLimit * 100)) : 0;
+  var planLabel = plan === 'lite' ? 'Lite' : plan === 'pro' ? 'Pro' : 'Free';
+
+  // bar colour: green < 75%, orange 75-99%, red = full
+  var barColor = pct >= 100 ? '#e53e3e' : pct >= 75 ? '#dd6b20' : '#38a169';
+
+  var quotaHtml =
+    '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:' + (used > 0 ? '10px' : '0') + '">'
+    + '<span style="font-size:var(--text-xs);font-weight:700;color:' + (pct >= 100 ? '#e53e3e' : '#276749') + '">'
+    +   '📊 โควต้าลิสวันนี้ (' + planLabel + ')'
+    + '</span>'
+    + '<span style="font-size:var(--text-xs);font-weight:700;color:' + barColor + '">'
+    +   used + ' / ' + dayLimit + ' ลิส'
+    +   (pct >= 100 ? ' — เต็มแล้ว' : '')
+    + '</span>'
+    + '</div>'
+    + '<div style="height:6px;border-radius:99px;background:#c6f6d5;margin-bottom:' + (used > 0 ? '12px' : '4px') + ';overflow:hidden">'
+    +   '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:99px;transition:width .4s"></div>'
+    + '</div>';
+
+  var listHtml = _plExistingForDate.map(function(p, idx) {
+    var slot    = p.timeSlot || '?';
+    var venue   = p.venue || '';
     var creator = p.createdBy || '';
-    var count = (p.songs || []).length;
-    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f0fff4;border-radius:var(--radius-sm);border:1px solid #c6f6d5;flex-wrap:wrap">'
+    var count   = (p.songs || []).length;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border-radius:var(--radius-sm);border:1px solid #c6f6d5;flex-wrap:wrap;margin-bottom:6px">'
       + '<span style="font-size:14px">✅</span>'
       + '<span style="font-weight:600;font-size:var(--text-sm)">' + (venue ? venue + ' · ' : '') + slot + '</span>'
       + '<span style="color:var(--premium-text-muted);font-size:var(--text-xs)">' + count + ' เพลง' + (creator ? ' · โดย ' + creator : '') + '</span>'
@@ -1021,7 +1043,8 @@ function renderExistingPlaylistsBadge() {
       + '<button onclick="deleteExistingPlaylist(' + idx + ')" style="padding:4px 10px;font-size:12px;background:#e53e3e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">🗑 ลบ</button>'
       + '</div>';
   }).join('');
-  badge.innerHTML = '<div style="margin-bottom:8px;font-size:var(--text-xs);font-weight:600;color:#276749">📋 ลิสที่ทำแล้ววันนี้:</div>' + html;
+
+  badge.innerHTML = quotaHtml + listHtml;
   badge.style.display = 'block';
 }
 
