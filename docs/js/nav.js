@@ -194,6 +194,9 @@ function renderMainNav(containerId) {
   if (typeof getAdTimeRemaining === 'function') {
     startAdCountdown();
   }
+
+  // ── FAQ Chatbot ───────────────────────────────────────────────────
+  renderFaqBot();
 }
 
 function _renderNavLang(containerId) {
@@ -280,4 +283,219 @@ function _escHtml(text) {
   var d = document.createElement('div');
   d.textContent = text;
   return d.innerHTML;
+}
+
+// ── FAQ Chatbot ──────────────────────────────────────────────────────────────
+var FAQ_DATA = {
+  general: {
+    label: '📌 ทั่วไป',
+    items: [
+      {
+        q: 'วิธี Login เข้าระบบ',
+        a: 'เปิดแอป → ใส่ Email และ Password ที่สมัครไว้ → กด "เข้าสู่ระบบ"\n\nหากลืมรหัสผ่าน กดที่ "ลืมรหัสผ่าน?" ใต้ปุ่ม Login'
+      },
+      {
+        q: 'ลืมรหัสผ่านทำยังไง',
+        a: 'หน้า Login → กด "ลืมรหัสผ่าน?" → ใส่ Email → กดยืนยัน\nระบบจะส่งลิงก์ Reset ไปที่ Email ของคุณ'
+      },
+      {
+        q: 'วิธีแก้ไขโปรไฟล์ตัวเอง',
+        a: '📌 My Profile → กดแก้ไขข้อมูล\nเช่น ชื่อ เครื่องดนตรี อัตราค่าตัว เบอร์โทร รูปบัตรประชาชน'
+      },
+      {
+        q: 'วิธีเปลี่ยนภาษา (TH/EN)',
+        a: 'กดปุ่ม TH / EN ที่มุมซ้ายล่างของเมนู sidebar\nหรือที่ด้านขวาบนของหน้าจอ (มือถือ)'
+      },
+    ]
+  },
+  member: {
+    label: '🎸 สมาชิกวง',
+    items: [
+      {
+        q: 'วิธีลงเวลาประจำวัน (Check-In)',
+        a: '📍 หน้า Dashboard → กล่อง "ลงเวลาประจำวัน"\n1. เลือกวัน (ค่าเริ่มต้นคือวันนี้)\n2. เลือกร้าน (ถ้ามีหลายร้าน)\n3. เลือกรอบเวลาที่เล่น\n4. กด ✅ ยืนยันลงเวลา'
+      },
+      {
+        q: 'วิธีลา / แจ้งขาดงาน',
+        a: '📍 Dashboard → กล่องลงเวลา → กดปุ่ม "🚫 ลา"\n→ กรอกชื่อคนมาแทน หรือเลือก "ไม่มีคนแทน"\n→ กด ✅ ยืนยันลา'
+      },
+      {
+        q: 'ดูตารางงานได้ที่ไหน',
+        a: '📅 เมนู "ตารางงาน" (Schedule)\nจะแสดงงานและวันซ้อมทั้งหมด แบ่งตามสัปดาห์/เดือน'
+      },
+      {
+        q: 'ดูรายได้ของตัวเองได้ที่ไหน',
+        a: '📊 Dashboard → ดูกล่อง "สรุปรายได้ของฉัน"\nหรือไปที่เมนู 📈 สถิติ เพื่อดูรายละเอียดเพิ่มเติม'
+      },
+      {
+        q: 'วิธีดูรายชื่อสมาชิกวง',
+        a: '👥 เมนู "ข้อมูลวง" (Band Info)\nจะแสดงรายชื่อ เบอร์โทร เครื่องดนตรีของสมาชิกทุกคน'
+      },
+      {
+        q: 'วิธีดูเพลง / เซ็ตลิสต์',
+        a: '🎵 เมนู "รายการเพลง" (Songs)\nดูเพลงทั้งหมดในคลัง และเซ็ตลิสต์ประจำวัน'
+      },
+    ]
+  },
+  manager: {
+    label: '👔 ผู้จัดการวง',
+    items: [
+      {
+        q: 'วิธีเชิญสมาชิกเข้าวง',
+        a: '👥 เมนู "ข้อมูลวง" → ดูรหัสวง (Band Code)\nส่งรหัสนี้ให้สมาชิก → ให้เขาไปที่หน้า Register → กรอกรหัสวง\nหรือกด "คัดลอกลิงก์เชิญ" เพื่อแชร์ได้เลย'
+      },
+      {
+        q: 'วิธีตั้งค่าวง (ชื่อ ร้าน ตาราง)',
+        a: '⚙️ เมนู "ตั้งค่าวง" (Band Settings)\nตั้งได้: ชื่อวง จังหวัด ร้านที่เล่น รอบเวลา ค่าตัวสมาชิก'
+      },
+      {
+        q: 'วิธีสร้างใบเสนอราคา',
+        a: '📄 เมนู "ใบเสนอราคา" (Quotation)\nกรอกรายละเอียดงาน → ระบบสร้าง PDF ให้อัตโนมัติ\nสามารถส่ง หรือดาวน์โหลดได้ทันที'
+      },
+      {
+        q: 'วิธีบันทึกการเงิน / เบิกเงิน',
+        a: '📋 เมนู "บันทึกเข้างาน" (Attendance & Payroll)\nบันทึกการเข้างานของสมาชิก และคำนวณค่าตัวอัตโนมัติ'
+      },
+      {
+        q: 'วิธีคำนวณราคารับงาน',
+        a: '🧮 เมนู "คำนวณราคา" (Job Calculator)\nกรอก: จำนวนชั่วโมง จำนวนสมาชิก ค่าเดินทาง ค่าอุปกรณ์\nระบบจะคำนวณราคาแนะนำให้ทันที'
+      },
+      {
+        q: 'วิธีอนุมัติสมาชิกใหม่',
+        a: '📍 Dashboard → กล่อง "คำขอเข้าร่วมวง"\nกด ✅ อนุมัติ หรือ ❌ ปฏิเสธ ได้เลย'
+      },
+      {
+        q: 'วิธีดูประวัติงานนอก',
+        a: '📁 เมนู "ประวัติงานนอก" (Job History)\nดูรายละเอียดงานนอกทั้งหมด พร้อมสถานะและยอดเงิน'
+      },
+    ]
+  }
+};
+
+function renderFaqBot() {
+  if (document.getElementById('faqBotBtn')) return; // already rendered
+
+  // ── Floating button ──
+  var btn = document.createElement('button');
+  btn.id = 'faqBotBtn';
+  btn.setAttribute('aria-label', 'ช่วยเหลือ / FAQ');
+  btn.innerHTML = '💬<span class="faq-badge">?</span>';
+  document.body.appendChild(btn);
+
+  // ── Panel ──
+  var panel = document.createElement('div');
+  panel.id = 'faqBotPanel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', 'ช่วยเหลือการใช้งาน');
+  panel.innerHTML =
+    '<div class="faqbot-header">' +
+      '<div class="faqbot-avatar">🤖</div>' +
+      '<div><h4>BandFlow ช่วยเหลือ</h4><p>เลือกคำถามที่ต้องการ</p></div>' +
+      '<button class="faqbot-header-close" id="faqBotClose" aria-label="ปิด">✕</button>' +
+    '</div>' +
+    '<div class="faqbot-body" id="faqBotBody"></div>' +
+    '<div class="faqbot-footer">' +
+      '<button class="faqbot-back" id="faqBotBack">◀ กลับหมวดหมู่</button>' +
+    '</div>';
+  document.body.appendChild(panel);
+
+  var body    = document.getElementById('faqBotBody');
+  var backBtn = document.getElementById('faqBotBack');
+
+  function addBubble(text, type) {
+    var b = document.createElement('div');
+    b.className = 'faqbot-bubble ' + type;
+    b.style.whiteSpace = 'pre-line';
+    b.textContent = text;
+    body.appendChild(b);
+    body.scrollTop = body.scrollHeight;
+    return b;
+  }
+
+  function showCategories() {
+    body.innerHTML = '';
+    backBtn.style.display = 'none';
+    addBubble('สวัสดีครับ 👋 จะถามเรื่องอะไรดีครับ?', 'bot');
+    var role = localStorage.getItem('userRole') || 'member';
+    var isManager = role === 'manager' || role === 'admin';
+
+    var wrap = document.createElement('div');
+    wrap.className = 'faqbot-qs';
+
+    var cats = isManager
+      ? [FAQ_DATA.general, FAQ_DATA.manager, FAQ_DATA.member]
+      : [FAQ_DATA.general, FAQ_DATA.member, FAQ_DATA.manager];
+
+    cats.forEach(function(cat) {
+      var q = document.createElement('button');
+      q.className = 'faqbot-q';
+      q.textContent = cat.label;
+      q.addEventListener('click', function() { showCategory(cat); });
+      wrap.appendChild(q);
+    });
+    body.appendChild(wrap);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function showCategory(cat) {
+    body.innerHTML = '';
+    backBtn.style.display = 'flex';
+    addBubble(cat.label + ' — เลือกคำถามได้เลยครับ', 'bot');
+    var wrap = document.createElement('div');
+    wrap.className = 'faqbot-qs';
+    cat.items.forEach(function(item) {
+      var q = document.createElement('button');
+      q.className = 'faqbot-q';
+      q.textContent = item.q;
+      q.addEventListener('click', function() { showAnswer(item, cat); });
+      wrap.appendChild(q);
+    });
+    body.appendChild(wrap);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function showAnswer(item, cat) {
+    body.innerHTML = '';
+    backBtn.style.display = 'flex';
+    addBubble(item.q, 'user');
+    setTimeout(function() {
+      addBubble(item.a, 'bot');
+      // "More questions" in same category
+      var moreWrap = document.createElement('div');
+      moreWrap.className = 'faqbot-qs';
+      moreWrap.style.marginTop = '4px';
+      var moreLabel = document.createElement('div');
+      moreLabel.style.cssText = 'font-size:.72rem;color:#94a3b8;margin-bottom:4px';
+      moreLabel.textContent = 'คำถามอื่นในหมวดนี้:';
+      moreWrap.appendChild(moreLabel);
+      cat.items.filter(function(i){ return i.q !== item.q; }).slice(0,3).forEach(function(other) {
+        var q = document.createElement('button');
+        q.className = 'faqbot-q';
+        q.textContent = other.q;
+        q.addEventListener('click', function() { showAnswer(other, cat); });
+        moreWrap.appendChild(q);
+      });
+      body.appendChild(moreWrap);
+      body.scrollTop = body.scrollHeight;
+    }, 200);
+  }
+
+  // ── Toggle open/close ──
+  function openPanel() {
+    panel.classList.add('open');
+    btn.querySelector('.faq-badge').style.display = 'none';
+    if (!body.innerHTML) showCategories();
+  }
+  function closePanel() { panel.classList.remove('open'); }
+
+  btn.addEventListener('click', function() {
+    panel.classList.contains('open') ? closePanel() : openPanel();
+  });
+  document.getElementById('faqBotClose').addEventListener('click', closePanel);
+  backBtn.addEventListener('click', showCategories);
+
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    if (!panel.contains(e.target) && e.target !== btn) closePanel();
+  });
 }
