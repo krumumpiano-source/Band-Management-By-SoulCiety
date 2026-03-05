@@ -56,14 +56,15 @@
       localStorage.setItem('userRole',     profile.role       || 'member');
       localStorage.setItem('bandProvince',  profile.province   || '');
       // ระดับแผน: 'free' | 'lite' | 'pro'
-      localStorage.setItem('band_plan', profile.band_plan || 'free');
-      localStorage.setItem('plan_scope', profile.plan_scope || 'free');  // 'band'|'user'|'free'
+      localStorage.setItem('band_plan',    profile.band_plan    || 'free');
+      localStorage.setItem('plan_scope',   profile.plan_scope   || 'free');
+      localStorage.setItem('plan_override', profile.plan_override || '');
     }
 
     function clearSession() {
       ['auth_token','userId','bandId','bandName','bandManager','userRole','userName',
        'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail',
-       'bandProvince','band_plan','plan_scope','ad_gate_ts'].forEach(function (k) {
+       'bandProvince','band_plan','plan_scope','plan_override','ad_gate_ts'].forEach(function (k) {
         localStorage.removeItem(k);
       });
     }
@@ -230,10 +231,16 @@
         case 'changePassword':  return doChangePassword(d);
 
         // ── Admin ──────────────────────────────────────────────────
-        case 'getAllUsers':     return doAdminGetAllUsers();
-        case 'updateUserRole':  return doUpdate('profiles', d.userId, { role: d.role });
-        case 'deleteUser':      return doAdminDeleteUser(d.userId);
-        case 'getSystemInfo':   return doGetSystemInfo();
+        case 'getAllUsers':       return doAdminGetAllUsers();
+        case 'updateUserRole':    return doUpdate('profiles', d.userId, { role: d.role });
+        case 'setPlanOverride':   return doSetPlanOverride(d);
+        case 'deleteUser':        return doAdminDeleteUser(d.userId);
+        case 'getSystemInfo':     return doGetSystemInfo();
+        case 'getPromoCodes':     return doGetPromoCodes();
+        case 'savePromoCode':     return doSavePromoCode(d);
+        case 'deletePromoCode':   return doDeletePromoCode(d);
+        case 'validatePromoCode': return doValidatePromoCode(d);
+        case 'usePromoCode':      return doUsePromoCode(d);
 
         // ── Live Guest Tokens ──────────────────────────────────────
         case 'createGuestToken':  return doCreateGuestToken(d);
@@ -395,6 +402,14 @@
       if (profile && profile.band_id) {
         var { data: bandRow } = await sb.from('bands').select('band_plan').eq('id', profile.band_id).single();
         if (bandRow) profile.band_plan = bandRow.band_plan || 'free';
+      }
+      // plan_override รายคน (admin กำหนด) — เลือก rank สูงกว่า
+      if (profile && profile.plan_override) {
+        var _rank = { free: 0, lite: 1, pro: 2 };
+        if ((_rank[profile.plan_override] || 0) >= (_rank[profile.band_plan || 'free'] || 0)) {
+          profile.band_plan  = profile.plan_override;
+          profile.plan_scope = 'override';
+        }
       }
       saveSession(data.session, profile || {});
       var p = profile || {};
@@ -982,9 +997,65 @@
     }
 
     async function doAdminDeleteUser(userId) {
-      // ใช้ RPC admin_delete_user ซึ่งลบ auth.users (profiles cascade ตาม)
       var { error } = await sb.rpc('admin_delete_user', { p_user_id: userId });
       if (error) throw error;
+      return { success: true };
+    }
+
+    async function doSetPlanOverride(d) {
+      var val = d.planOverride || null;
+      var { error } = await sb.from('profiles').update({ plan_override: val }).eq('id', d.userId);
+      if (error) throw error;
+      return { success: true };
+    }
+
+    async function doGetPromoCodes() {
+      var { data, error } = await sb.from('promo_codes').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    }
+
+    async function doSavePromoCode(d) {
+      var payload = {
+        code:             (d.code || '').toUpperCase().trim(),
+        plan:             d.plan             || 'lite',
+        months:           parseInt(d.months) || 1,
+        discount_percent: parseInt(d.discount_percent) || 0,
+        max_uses:         d.max_uses ? parseInt(d.max_uses) : null,
+        expires_at:       d.expires_at || null,
+        active:           d.active !== false,
+        note:             d.note || ''
+      };
+      if (!payload.code) return { success: false, message: 'กรุณากรอก Code' };
+      var { error } = await sb.from('promo_codes').insert(payload);
+      if (error) return { success: false, message: error.message };
+      return { success: true };
+    }
+
+    async function doDeletePromoCode(d) {
+      var { error } = await sb.from('promo_codes').delete().eq('id', d.id);
+      if (error) throw error;
+      return { success: true };
+    }
+
+    async function doValidatePromoCode(d) {
+      var code = (d.code || '').toUpperCase().trim();
+      if (!code) return { success: false, message: 'กรุณากรอก Code' };
+      var { data, error } = await sb.from('promo_codes').select('*').eq('code', code).eq('active', true).maybeSingle();
+      if (error || !data) return { success: false, message: 'ไม่พบ Promo Code หรือหมดอายุแล้ว' };
+      if (data.expires_at && new Date(data.expires_at) < new Date()) return { success: false, message: 'Promo Code หมดอายุแล้ว' };
+      if (data.max_uses != null && data.used_count >= data.max_uses) return { success: false, message: 'Promo Code ถูกใช้ครบจำนวนแล้ว' };
+      return { success: true, data: data };
+    }
+
+    async function doUsePromoCode(d) {
+      // นับ used_count +1 หลังชำระสำเร็จ
+      var code = (d.code || '').toUpperCase().trim();
+      if (!code) return { success: false };
+      var { data: cur } = await sb.from('promo_codes').select('id,used_count').eq('code', code).maybeSingle();
+      if (cur) {
+        await sb.from('promo_codes').update({ used_count: (cur.used_count || 0) + 1 }).eq('id', cur.id);
+      }
       return { success: true };
     }
 

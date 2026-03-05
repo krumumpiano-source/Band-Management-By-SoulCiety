@@ -46,6 +46,7 @@
               <div class="a-nav-item" onclick="showPanel('users',this)">👥 ผู้ใช้งาน</div>
               <div class="a-nav-item" onclick="showPanel('subscriptions',this)">💳 Subscriptions</div>
               <div class="a-nav-item" onclick="showPanel('pricing',this)">💰 ตั้งราคา / Package</div>
+              <div class="a-nav-item" onclick="showPanel('promo',this)">🎟️ Promo Codes</div>
               <div class="a-nav-item" onclick="showPanel('sysinfo',this)">📊 ระบบ</div>
               <div class="a-nav-item" onclick="showPanel('backup',this)">💾 สำรองข้อมูล</div>
               <div class="a-nav-item" onclick="showPanel('danger',this)">⚠️ Danger Zone</div>
@@ -70,8 +71,8 @@
             </div>
             <div class="table-responsive">
               <table class="table">
-                <thead><tr><th>ชื่อ-นามสกุล</th><th>ชื่อเล่น</th><th>อีเมล</th><th>วง</th><th>ตำแหน่ง</th><th>Role</th><th>สถานะ</th><th></th></tr></thead>
-                <tbody id="userTbody"><tr><td colspan="8" class="text-center">กำลังโหลด...</td></tr></tbody>
+                <thead><tr><th>ชื่อ-นามสกุล</th><th>ชื่อเล่น</th><th>อีเมล</th><th>วง</th><th>ตำแหน่ง</th><th>Role</th><th style="min-width:110px">Plan Override</th><th>สถานะ</th><th></th></tr></thead>
+                <tbody id="userTbody"><tr><td colspan="9" class="text-center">กำลังโหลด...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -136,6 +137,37 @@
             </div>
             <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:16px">แก้ไขราคา/ฟีเจอร์ที่นี่ — มีผลทันทีสำหรับการสมัครครั้งถัดไป (ลูกค้าที่ชำระแล้วไม่ได้รับผลกระทบ)</p>
             <div id="pricingCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px"></div>
+          </div>
+
+          <!-- Promo Codes Panel -->
+          <div class="card a-panel" id="panel-promo">
+            <div class="card-header" style="justify-content:space-between">
+              <h3 class="card-title">🎟️ Promo Codes</h3>
+              <button class="btn btn-primary btn-sm" onclick="loadPromoCodes()">🔄 รีเฟรช</button>
+            </div>
+            <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:16px">สร้างโค้ดส่วนลดสำหรับผู้ใช้ — ผู้ใช้กรอก Code ตอน Upgrade เพื่อรับส่วนลด</p>
+            <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;padding:16px;margin-bottom:16px">
+              <div style="font-weight:700;font-size:.88rem;margin-bottom:12px">➕ สร้าง Promo Code ใหม่</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:10px">
+                <div><label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">Code *</label>
+                  <input id="newPromoCode" type="text" placeholder="SUMMER2026" style="width:100%;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);text-transform:uppercase;box-sizing:border-box" oninput="this.value=this.value.toUpperCase()"></div>
+                <div><label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">แพ็ก</label>
+                  <select id="newPromoPlan" style="width:100%;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary)">
+                    <option value="lite">🎵 Lite</option><option value="pro">👑 Pro</option></select></div>
+                <div><label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">เดือน</label>
+                  <input id="newPromoMonths" type="number" value="1" min="1" max="24" style="width:100%;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);box-sizing:border-box"></div>
+                <div><label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">ส่วนลด %</label>
+                  <input id="newPromoDiscount" type="number" value="0" min="0" max="100" style="width:100%;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);box-sizing:border-box"></div>
+                <div><label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">ใช้ได้ (ว่าง=ไม่จำกัด)</label>
+                  <input id="newPromoMaxUses" type="number" min="1" placeholder="ไม่จำกัด" style="width:100%;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);box-sizing:border-box"></div>
+                <div><label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">หมดอายุ (ว่าง=ไม่หมด)</label>
+                  <input id="newPromoExpires" type="date" style="width:100%;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);box-sizing:border-box"></div>
+              </div>
+              <div style="margin-bottom:10px"><label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">หมายเหตุ</label>
+                <input id="newPromoNote" type="text" placeholder="สำหรับลูกค้า VIP..." style="width:100%;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);box-sizing:border-box"></div>
+              <button class="btn btn-primary" onclick="createPromoCode()">💾 สร้าง Code</button>
+            </div>
+            <div id="promoList"><div style="color:var(--premium-text-muted)">กดรีเฟรชเพื่อโหลด</div></div>
           </div>
 
           <!-- Danger Zone Panel -->
@@ -225,13 +257,14 @@
     el.classList.add('active');
     if (id === 'subscriptions') setTimeout(loadSubscriptions, 100);
     if (id === 'pricing')       setTimeout(loadPricing, 100);
+    if (id === 'promo')         setTimeout(loadPromoCodes, 100);
   }
 
   function loadUsers() {
     apiCall('getAllUsers', {}, function(r) {
       var users = (r && r.data) || [];
       var tbody = document.getElementById('userTbody');
-      if (!users.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center">ไม่มีข้อมูล</td></tr>'; return; }
+      if (!users.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center">ไม่มีข้อมูล</td></tr>'; return; }
       tbody.innerHTML = users.map(function(u) {
         var title     = u.title     || '';
         var firstName = u.firstName || u.first_name || '';
@@ -250,6 +283,12 @@
           +'<option value="manager"'+(u.role==='manager'?' selected':'')+'>manager</option>'
           +'<option value="admin"'+(u.role==='admin'?' selected':'')+'>admin</option>'
           +'</select></td>'
+          +'<td><select class="role-select" style="font-size:.75rem" onchange="setUserPlanOverride(\''+escapeHtml(userId)+'\',this.value)">'
+          +'<option value=""'+( !(u.planOverride||u.plan_override)?' selected':'')+'> — ปกติ —</option>'
+          +'<option value="free"'+((u.planOverride||u.plan_override)==='free'?' selected':'')+'>\uD83C\uDD93 Free</option>'
+          +'<option value="lite"'+((u.planOverride||u.plan_override)==='lite'?' selected':'')+'>\uD83C\uDFB5 Lite</option>'
+          +'<option value="pro"'+((u.planOverride||u.plan_override)==='pro'?' selected':'')+'>\uD83D\uDC51 Pro</option>'
+          +'</select></td>'
           +'<td><span class="badge '+(u.status==='active'?'badge-success':'badge-danger')+'">'+(u.status==='active'?'ใช้งาน':u.status||'—')+'</span></td>'
           +'<td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+escapeHtml(userId)+'\')">🗑️</button></td>'
           +'</tr>';
@@ -260,6 +299,13 @@
   function updateUserRole(id, role) {
     apiCall('updateUserRole', { userId: id, role: role }, function(r) {
       if (r && r.success) showToast(t('msg_saved'), 'success');
+      else showToast((r && r.message) || t('msg_error'), 'error');
+    });
+  }
+
+  function setUserPlanOverride(id, plan) {
+    apiCall('setPlanOverride', { userId: id, planOverride: plan || null }, function(r) {
+      if (r && r.success) showToast('✅ Plan Override ' + (plan ? '→ ' + plan.toUpperCase() : '(ยกเลิก)') + ' สำเร็จ', 'success');
       else showToast((r && r.message) || t('msg_error'), 'error');
     });
   }
@@ -389,6 +435,66 @@
         + '<td style="font-size:.68rem;color:var(--premium-text-muted)">' + escapeHtml(r.omise_charge_id || '—') + '</td>'
         + '</tr>';
     }).join('');
+  }
+
+  // ── Promo Codes Panel ──────────────────────────────────────────────────────
+  function loadPromoCodes() {
+    var el = document.getElementById('promoList');
+    el.innerHTML = '<div style="color:var(--premium-text-muted)">กำลังโหลด...</div>';
+    apiCall('getPromoCodes', {}, function(r) {
+      var list = (r && r.data) || [];
+      if (!list.length) { el.innerHTML = '<div style="color:var(--premium-text-muted);padding:24px;text-align:center">ยังไม่มี Promo Code</div>'; return; }
+      el.innerHTML = '<div class="table-responsive"><table class="table" style="font-size:.82rem">'
+        + '<thead><tr style="background:var(--bg-secondary)"><th>Code</th><th>แพ็ก</th><th>เดือน</th><th>ลด%</th><th>ใช้/สูงสุด</th><th>หมดอายุ</th><th>สถานะ</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>'
+        + list.map(function(p) {
+            var exp = p.expires_at ? new Date(p.expires_at).toLocaleDateString('th-TH') : '∞';
+            var isExp  = p.expires_at && new Date(p.expires_at) < new Date();
+            var isFull = p.max_uses != null && p.used_count >= p.max_uses;
+            var sc = (!p.active || isExp || isFull) ? '#9ca3af' : '#22c55e';
+            var st = !p.active ? 'ปิด' : isExp ? 'หมดอายุ' : isFull ? 'ครบจำนวน' : 'ใช้งานได้';
+            return '<tr>'
+              + '<td><b style="font-family:monospace;letter-spacing:.06em;font-size:.9rem">' + escapeHtml(p.code) + '</b></td>'
+              + '<td>' + (p.plan === 'pro' ? '👑 Pro' : '🎵 Lite') + '</td>'
+              + '<td style="text-align:center">' + p.months + '</td>'
+              + '<td style="text-align:center;color:var(--premium-gold);font-weight:700">' + (p.discount_percent||0) + '%</td>'
+              + '<td style="text-align:center">' + p.used_count + ' / ' + (p.max_uses!=null?p.max_uses:'∞') + '</td>'
+              + '<td style="font-size:.78rem;color:' + (isExp?'#ef4444':'inherit') + '">' + exp + '</td>'
+              + '<td><span style="color:' + sc + ';font-weight:600;font-size:.78rem">' + st + '</span></td>'
+              + '<td style="font-size:.75rem;color:var(--premium-text-muted)">' + escapeHtml(p.note||'') + '</td>'
+              + '<td><button class="btn btn-danger btn-sm" style="padding:3px 10px;font-size:.72rem" onclick="deletePromoCode(' + p.id + ')">🗑️</button></td>'
+              + '</tr>';
+          }).join('')
+        + '</tbody></table></div>';
+    });
+  }
+
+  function createPromoCode() {
+    var code     = (document.getElementById('newPromoCode').value || '').toUpperCase().trim();
+    var plan     = document.getElementById('newPromoPlan').value;
+    var months   = document.getElementById('newPromoMonths').value;
+    var discount = document.getElementById('newPromoDiscount').value;
+    var maxUses  = document.getElementById('newPromoMaxUses').value;
+    var expires  = document.getElementById('newPromoExpires').value;
+    var note     = document.getElementById('newPromoNote').value;
+    if (!code) { showToast('กรุณากรอก Code', 'error'); return; }
+    apiCall('savePromoCode', { code: code, plan: plan, months: months, discount_percent: discount,
+      max_uses: maxUses || null, expires_at: expires ? new Date(expires).toISOString() : null, active: true, note: note },
+      function(r) {
+        if (r && r.success) {
+          showToast('✅ สร้าง Code "' + code + '" สำเร็จ', 'success');
+          document.getElementById('newPromoCode').value = '';
+          document.getElementById('newPromoNote').value = '';
+          loadPromoCodes();
+        } else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      });
+  }
+
+  function deletePromoCode(id) {
+    if (!confirm('ลบ Promo Code นี้?')) return;
+    apiCall('deletePromoCode', { id: id }, function(r) {
+      if (r && r.success) { showToast('ลบสำเร็จ', 'success'); loadPromoCodes(); }
+      else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    });
   }
 
   // ── Pricing Panel ─────────────────────────────────────────────────────────

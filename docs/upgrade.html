@@ -167,6 +167,19 @@
       <span id="summaryText" style="font-weight:600"></span>
       <span id="summaryPrice" style="color:var(--gold,#fbbf24);font-weight:700;font-size:1.1rem"></span>
     </div>
+    <div id="promoAppliedRow" style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-color);justify-content:space-between;align-items:center">
+      <span style="font-size:.82rem;color:#22c55e">🎟️ <span id="promoAppliedLabel"></span></span>
+      <span id="promoAppliedSaving" style="font-size:.82rem;color:#22c55e;font-weight:600"></span>
+    </div>
+  </div>
+
+  <!-- Promo Code Input -->
+  <div id="promoSection" style="display:none;margin-bottom:1rem">
+    <div style="display:flex;gap:8px">
+      <input id="promoInput" type="text" placeholder="🎟️ Promo Code (ถ้ามี)" style="flex:1;padding:10px 14px;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-card);color:var(--text-primary);font-size:.9rem;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      <button class="btn btn-secondary" id="promoBtn" onclick="applyPromo()" style="padding:10px 18px;white-space:nowrap">ใช้ Code</button>
+    </div>
+    <div id="promoMsg" style="display:none;margin-top:6px;font-size:.82rem;padding:6px 12px;border-radius:8px"></div>
   </div>
 
   <!-- Pay Button -->
@@ -330,6 +343,48 @@
     btn.textContent = '💳 ชำระ ฿' + amtThb.toLocaleString('th-TH');
   };
 
+  var appliedPromoCode = null;
+
+  function applyPromo() {
+    var code  = (document.getElementById('promoInput').value || '').toUpperCase().trim();
+    var msgEl = document.getElementById('promoMsg');
+    var btn   = document.getElementById('promoBtn');
+    if (!code) { msgEl.style.display='none'; return; }
+    if (!selectedPlan) { msgEl.textContent='⚠️ กรุณาเลือกแพ็กก่อน'; msgEl.style.display=''; msgEl.style.background='rgba(239,68,68,.12)'; msgEl.style.color='#ef4444'; return; }
+    btn.disabled=true; btn.textContent='⏳...';
+    apiCall('validatePromoCode', { code: code }, function(r) {
+      btn.disabled=false; btn.textContent='ใช้ Code';
+      msgEl.style.display='';
+      if (!r || !r.success) {
+        msgEl.textContent = '❌ ' + ((r&&r.message) || 'Code ไม่ถูกต้อง');
+        msgEl.style.background='rgba(239,68,68,.12)'; msgEl.style.color='#ef4444';
+        appliedPromoCode=null; return;
+      }
+      var promo = r.data;
+      if (promo.plan !== selectedPlan) {
+        msgEl.textContent = '❌ Code นี้ใช้ได้เฉพาะแพ็ก ' + promo.plan.toUpperCase() + ' เท่านั้น';
+        msgEl.style.background='rgba(239,68,68,.12)'; msgEl.style.color='#ef4444';
+        appliedPromoCode=null; return;
+      }
+      var disc     = promo.discount_percent || 0;
+      var origAmt  = selectedAmount;
+      var newAmt   = Math.round(origAmt * (1 - disc/100));
+      var saving   = origAmt - newAmt;
+      selectedAmount   = newAmt;
+      appliedPromoCode = promo.code;
+      msgEl.textContent = '✅ Code "' + promo.code + '" ลด ' + disc + '% สำเร็จ';
+      msgEl.style.background='rgba(34,197,94,.12)'; msgEl.style.color='#22c55e';
+      var row = document.getElementById('promoAppliedRow');
+      if (row) row.style.display='flex';
+      var lbl = document.getElementById('promoAppliedLabel');
+      if (lbl) lbl.textContent = promo.code + ' (-' + disc + '%)';
+      var sav = document.getElementById('promoAppliedSaving');
+      if (sav) sav.textContent = '-฿' + Math.round(saving/100).toLocaleString('th-TH');
+      document.getElementById('summaryPrice').textContent = '฿' + Math.round(newAmt/100).toLocaleString('th-TH');
+      document.getElementById('payBtn').textContent = '💳 ชำระ ฿' + Math.round(newAmt/100).toLocaleString('th-TH');
+    });
+  }
+
   // ── Payment ───────────────────────────────────────────────────────────────
   var omisePKey = (window._SB_CONFIG && window._SB_CONFIG.omisePKey) || '';
 
@@ -369,6 +424,7 @@
         localStorage.setItem('band_plan', data.plan);
         localStorage.setItem('plan_scope', data.scope || (data.plan !== 'free' ? 'user' : 'free'));
         localStorage.removeItem('ad_gate_ts');
+        if (appliedPromoCode) apiCall('usePromoCode', { code: appliedPromoCode }, function(){});
         var scopeMsg = data.scope === 'band' ? ' (อัปเกรดทั้งวง)' : ' (อัปเกรดเฉพาะคุณ)';
         showStatus('✅ ' + data.message + scopeMsg + ' กำลังพาไปยัง Dashboard...', 'success');
         setTimeout(function () { window.location.replace('dashboard.html'); }, 2000);
