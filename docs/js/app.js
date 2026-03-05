@@ -1,5 +1,5 @@
 /**
- * Band Management By SoulCiety — Core App (GitHub Pages + Supabase)
+ * BandFlow — Core App (GitHub Pages + Supabase)
  *
  * Load order:
  *   1. i18n.js

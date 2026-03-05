@@ -1,8 +1,8 @@
-﻿/**
+/**
  * Attendance & Payroll v2
  * เบิกจ่าย (ผู้จัดการวง) — สอดคล้องกับระบบลงเวลาและตารางงาน
  * Profile-based members + schedule slot rates + check-in pre-fill
- * Band Management By SoulCiety
+ * BandFlow
  */
 
 /* ── State ─────────────────────────────────────────── */
@@ -823,7 +823,7 @@ function apPrintVenueReceipt() {
     '</tr></thead>' +
     '<tbody>' + tableRows + subtotalRow + totalRow + '</tbody></table>' +
     '<div style="margin-top:20px;padding-top:12px;border-top:1px solid #ddd;text-align:center;font-size:11px;color:#aaa">' +
-      '&#9656;&nbsp;<strong style="color:#c9a227">Band Management By SoulCiety</strong>&nbsp;&#9656;&nbsp;—&nbsp;แพลตฟอร์มบริหารจัดการวงดนตรีระดับมืออาชีพ · ออกแบบมาเพื่อวงดนตรียุคใหม่โดยเฉพาะ' +
+      '&#9656;&nbsp;<strong style="color:#c9a227">BandFlow</strong>&nbsp;&#9656;&nbsp;—&nbsp;แพลตฟอร์มบริหารจัดการวงดนตรีระดับมืออาชีพ · ออกแบบมาเพื่อวงดนตรียุคใหม่โดยเฉพาะ' +
     '</div>';
 
   var safeVn = vn.replace(/[^a-zA-Z0-9ก-๙]/g, '_');
@@ -949,7 +949,7 @@ function apPrintMemberReceipt() {
     // ── Footer branding ──
     '<div style="margin-top:24px;padding-top:14px;border-top:1px solid #e5e7eb;text-align:center">' +
       '<div style="font-size:10px;color:#b0b0b0;letter-spacing:.07em">' +
-        '&#9656;&nbsp;<strong style="color:#c9a227;letter-spacing:.06em">Band Management By SoulCiety</strong>&nbsp;&#9656;&nbsp;—&nbsp;แพลตฟอร์มบริหารจัดการวงดนตรีระดับมืออาชีพ · ออกแบบมาเพื่อวงดนตรียุคใหม่โดยเฉพาะ' +
+        '&#9656;&nbsp;<strong style="color:#c9a227;letter-spacing:.06em">BandFlow</strong>&nbsp;&#9656;&nbsp;—&nbsp;แพลตฟอร์มบริหารจัดการวงดนตรีระดับมืออาชีพ · ออกแบบมาเพื่อวงดนตรียุคใหม่โดยเฉพาะ' +
       '</div>' +
     '</div>';
 

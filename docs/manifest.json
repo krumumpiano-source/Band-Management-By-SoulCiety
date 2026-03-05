@@ -1,7 +1,7 @@
 {
   "name": "Band Management by SoulCiety",
-  "short_name": "SoulCiety",
-  "description": "ระบบจัดการวงดนตรี — SoulCiety",
+  "short_name": "BandFlow",
+  "description": "à¸£à¸°à¸šà¸šà¸ˆà¸±à¸”à¸à¸²à¸£à¸§à¸‡à¸”à¸™à¸•à¸£à¸µà¸ªà¸³à¸«à¸£à¸±à¸šà¸¡à¸·à¸­à¸­à¸²à¸Šà¸µà¸ž",
   "start_url": "/Band-Management-By-SoulCiety/docs/dashboard.html",
   "scope": "/Band-Management-By-SoulCiety/docs/",
   "display": "standalone",

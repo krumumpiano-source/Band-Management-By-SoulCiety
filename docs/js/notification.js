@@ -1,6 +1,6 @@
 /**
  * notification.js — Web Push Notification Manager
- * Band Management By SoulCiety
+ * BandFlow
  *
  * ต้อง load หลัง supabase-api.js
  * ใช้งาน: initNotifications() เรียกจาก dashboard หลัง login

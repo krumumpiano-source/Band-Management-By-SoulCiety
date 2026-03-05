@@ -1,5 +1,5 @@
-﻿/**
- * Band Management By SoulCiety — Supabase API Wrapper
+/**
+ * BandFlow — Supabase API Wrapper
  * แทนที่ apiCall() ทุก action ด้วย Supabase REST SDK
  *
  * Load order ใน HTML:
@@ -390,6 +390,11 @@
 
       // ดึง profile
       var { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
+      // ดึง band_plan จาก bands table (free | lite | pro)
+      if (profile && profile.band_id) {
+        var { data: bandRow } = await sb.from('bands').select('band_plan').eq('id', profile.band_id).single();
+        if (bandRow) profile.band_plan = bandRow.band_plan || 'free';
+      }
       saveSession(data.session, profile || {});
       var p = profile || {};
       var displayName = p.nickname || p.first_name || p.user_name || d.email.split('@')[0];
@@ -1252,7 +1257,7 @@
         + '<p><strong>วันที่:</strong> ' + (q.date || '-') + '</p>'
         + '<p><strong>รายละเอียด:</strong> ' + (q.description || '-') + '</p>'
         + '<p class="total">รวมทั้งสิ้น: ฿' + (q.totalAmount || q.amount || 0).toLocaleString() + '</p>'
-        + '<p style="margin-top:40px;text-align:center;color:#888">Band Management By SoulCiety</p>'
+        + '<p style="margin-top:40px;text-align:center;color:#888">BandFlow</p>'
         + '</body></html>';
       var blob = new Blob([html], { type: 'text/html' });
       var url = URL.createObjectURL(blob);

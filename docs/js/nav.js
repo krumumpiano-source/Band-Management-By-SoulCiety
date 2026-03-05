@@ -1,5 +1,5 @@
 /**
- * Band Management By SoulCiety — Navigation (Sidebar)
+ * BandFlow — Navigation (Sidebar)
  * renderMainNav() — ไฟล์นี้เป็นที่เดียวที่ renderMainNav ถูกนิยาม
  */
 

@@ -1,5 +1,5 @@
 /**
- * Band Management By SoulCiety — i18n (Thai / English)
+ * BandFlow — i18n (Thai / English)
  * ทุก text ที่แสดงผลต้องมาจาก dictionary นี้เท่านั้น
  */
 (function(global){
@@ -8,7 +8,7 @@
 
   const i18n = {
     th: {
-      appTitle: 'Band Management', appCredit: 'Band Management By SoulCiety',
+      appTitle: 'Band Management', appCredit: 'BandFlow',
       langTh: 'ไทย', langEn: 'English',
       login: 'เข้าสู่ระบบ', logout: 'ออกจากระบบ', register: 'สมัครสมาชิก',
       email: 'อีเมล', password: 'รหัสผ่าน', rememberMe: 'จดจำการเข้าสู่ระบบ', forgotPassword: 'ลืมรหัสผ่าน?',
@@ -85,7 +85,7 @@
       client_contact: 'ผู้ติดต่อ', client_phone: 'เบอร์โทร', client_email: 'อีเมล',
       client_lineId: 'LINE ID', client_address: 'ที่อยู่', client_notes: 'หมายเหตุ',
       client_totalGigs: 'งานทั้งหมด', client_totalRevenue: 'รายรับรวม', client_noData: 'ยังไม่มีข้อมูลลูกค้า',
-      manual_title: 'คู่มือการใช้งาน', manual_subtitle: 'วิธีใช้งาน Band Management By SoulCiety',
+      manual_title: 'คู่มือการใช้งาน', manual_subtitle: 'วิธีใช้งาน BandFlow',
       admin_title: 'ตั้งค่าแอดมินระบบ', admin_denied: 'คุณไม่มีสิทธิ์เข้าหน้านี้',
       terms_title: 'ข้อกำหนดและเงื่อนไข', terms_link: 'ข้อกำหนดและเงื่อนไขการใช้งาน',
       msg_saveSuccess: 'บันทึกเรียบร้อยแล้ว ✓', msg_error: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
@@ -97,7 +97,7 @@
       placeholderSearch: 'ค้นหา...', placeholderSelect: 'เลือก...',
     },
     en: {
-      appTitle: 'Band Management', appCredit: 'Band Management By SoulCiety',
+      appTitle: 'Band Management', appCredit: 'BandFlow',
       langTh: 'Thai', langEn: 'English',
       login: 'Login', logout: 'Logout', register: 'Register',
       email: 'Email', password: 'Password', rememberMe: 'Remember me', forgotPassword: 'Forgot password?',
@@ -174,7 +174,7 @@
       client_contact: 'Contact Person', client_phone: 'Phone', client_email: 'Email',
       client_lineId: 'LINE ID', client_address: 'Address', client_notes: 'Notes',
       client_totalGigs: 'Total Gigs', client_totalRevenue: 'Total Revenue', client_noData: 'No clients yet',
-      manual_title: 'User Manual', manual_subtitle: 'How to use Band Management By SoulCiety',
+      manual_title: 'User Manual', manual_subtitle: 'How to use BandFlow',
       admin_title: 'Admin Settings', admin_denied: 'You do not have permission to access this page',
       terms_title: 'Terms and Conditions', terms_link: 'Terms and Conditions',
       msg_saveSuccess: 'Saved successfully ✓', msg_error: 'An error occurred. Please try again.',

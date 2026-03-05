@@ -1,7 +1,7 @@
-﻿/**
+/**
  * Member Self Check-In Page JavaScript
  * สมาชิกลงเวลาทำงานของตนเอง
- * Band Management By SoulCiety
+ * BandFlow
  */
 
 var ciCurrentBandId = null;
