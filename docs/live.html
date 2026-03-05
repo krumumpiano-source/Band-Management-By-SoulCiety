@@ -875,6 +875,7 @@ function removeSong(e, idx) {
   var name = _playlist[idx] ? _playlist[idx].name : '';
   if (!confirm('\u0e25บ \u201c' + name + '\u201d \u0e2dอกจากลิส?')) return;
   _playlist.splice(idx, 1);
+  _modified = true;
   if (_current >= _playlist.length) _current = Math.max(0, _playlist.length - 1);
   renderNowPlaying();
   renderSongList();
@@ -2153,6 +2154,7 @@ function removeSongDirect(idx) {
   var name = _playlist[idx] ? _playlist[idx].name : '';
   if (!confirm('ลบ "' + name + '" ออกจากลิส?')) return;
   _playlist.splice(idx, 1);
+  _modified = true;
   if (_current >= _playlist.length) _current = Math.max(0, _playlist.length - 1);
   renderNowPlaying();
   renderSongList();
