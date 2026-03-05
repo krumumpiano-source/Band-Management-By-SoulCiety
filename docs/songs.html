@@ -525,7 +525,7 @@ html{scroll-behavior:smooth}
       <option value="">เลือกร้าน</option>
     </select>
 
-    <select id="timeSlot">
+    <select id="timeSlot" onchange="autoLoadPlaylistForSlot()">
       <option value="">ช่วงเวลา</option>
     </select>
   </div>
@@ -1002,19 +1002,62 @@ function renderExistingPlaylistsBadge() {
     badge.style.display = 'none';
     return;
   }
-  var html = _plExistingForDate.map(function(p) {
+  var html = _plExistingForDate.map(function(p, idx) {
     var slot = p.timeSlot || '?';
     var venue = p.venue || '';
     var creator = p.createdBy || '';
     var count = (p.songs || []).length;
-    return '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#f0fff4;border-radius:var(--radius-sm);border:1px solid #c6f6d5">' +
-      '<span style="font-size:14px">✅</span>' +
-      '<span style="font-weight:600;font-size:var(--text-sm)">' + (venue ? venue + ' · ' : '') + slot + '</span>' +
-      '<span style="color:var(--premium-text-muted);font-size:var(--text-xs)">' + count + ' เพลง' + (creator ? ' · โดย ' + creator : '') + '</span>' +
-    '</div>';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f0fff4;border-radius:var(--radius-sm);border:1px solid #c6f6d5;flex-wrap:wrap">'
+      + '<span style="font-size:14px">✅</span>'
+      + '<span style="font-weight:600;font-size:var(--text-sm)">' + (venue ? venue + ' · ' : '') + slot + '</span>'
+      + '<span style="color:var(--premium-text-muted);font-size:var(--text-xs)">' + count + ' เพลง' + (creator ? ' · โดย ' + creator : '') + '</span>'
+      + '<button onclick="loadExistingPlaylist(' + idx + ')" style="margin-left:auto;padding:4px 12px;font-size:12px;background:#38a169;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">📂 โหลด/แก้ไข</button>'
+      + '</div>';
   }).join('');
   badge.innerHTML = '<div style="margin-bottom:8px;font-size:var(--text-xs);font-weight:600;color:#276749">📋 ลิสที่ทำแล้ววันนี้:</div>' + html;
   badge.style.display = 'block';
+}
+
+/* ── Load an existing playlist into the editable list ── */
+function loadExistingPlaylist(idx) {
+  var p = _plExistingForDate[idx];
+  if (!p) return;
+  if (playlistData.length > 0 && !confirm('แทนที่ลิสปัจจุบัน ' + playlistData.length + ' เพลง ด้วยลิสที่เลือก?')) return;
+  playlistData = (p.songs || []).map(function(s) {
+    return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0, transpose: 0, mode: 'major' };
+  });
+  renderPlaylist();
+  // sync venue + timeSlot dropdowns ถ้าทำได้
+  var venueEl = document.getElementById('venue');
+  var timeEl  = document.getElementById('timeSlot');
+  if (venueEl && p.venue) {
+    for (var i = 0; i < venueEl.options.length; i++) {
+      if (venueEl.options[i].value === p.venue) { venueEl.selectedIndex = i; break; }
+    }
+  }
+  if (timeEl && p.timeSlot) {
+    for (var j = 0; j < timeEl.options.length; j++) {
+      if (timeEl.options[j].value === p.timeSlot) { timeEl.selectedIndex = j; break; }
+    }
+  }
+  showSongsAlert('✅ โหลดลิส ' + (p.venue ? p.venue + ' · ' : '') + (p.timeSlot || '') + ' แล้ว (' + playlistData.length + ' เพลง)');
+}
+
+/* ── Auto-load when user picks a time slot that already has a saved playlist ── */
+function autoLoadPlaylistForSlot() {
+  var timeEl = document.getElementById('timeSlot');
+  if (!timeEl || !timeEl.value || !_plExistingForDate.length) return;
+  var slot = timeEl.value;
+  var idx = _plExistingForDate.findIndex(function(e){ return e.timeSlot === slot; });
+  if (idx === -1) return; // no existing playlist for this slot
+  if (playlistData.length > 0) return; // don't overwrite if user already has songs
+  // Auto-load silently
+  playlistData = (_plExistingForDate[idx].songs || []).map(function(s) {
+    return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0, transpose: 0, mode: 'major' };
+  });
+  renderPlaylist();
+  showSongsAlert('✅ โหลดลิสของสล็อตนี้อัตโนมัติ (' + playlistData.length + ' เพลง)');
+}
 }
 
 window.onload = function() {
