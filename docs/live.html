@@ -39,14 +39,14 @@
     #venueLabel{font-size:0.78rem;color:var(--text3);white-space:nowrap;order:10;width:100%;padding-top:2px}
     .font-btn{background:var(--bg3);border:none;color:var(--text);cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:0.8rem;font-weight:700;font-family:inherit;transition:background .15s}
     .font-btn:active{background:var(--bg4)}
-    /* ─── METRONOME CONTROLS (in Now Playing) ─── */
-    .met-controls{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
-    .met-btn{cursor:pointer;border-radius:20px;height:30px;font-size:0.76rem;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0 12px;white-space:nowrap;font-weight:600}
-    .met-btn:active{transform:scale(.95)}
-    #beatToggleBtn{background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.5);color:#22c55e}
-    #beatToggleBtn.off{background:rgba(100,100,100,.15);border-color:#555;color:#777}
-    #metSoundBtn{background:rgba(100,100,100,.15);border:1px solid #555;color:#777}
-    #metSoundBtn.on{background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.5);color:#60a5fa}
+    /* ─── METRONOME CONTROLS (top-right of Now Playing) ─── */
+    .met-controls{position:absolute;top:6px;right:8px;display:flex;gap:6px;z-index:2}
+    .met-btn{cursor:pointer;border-radius:50%;width:28px;height:28px;font-size:0.85rem;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:all .15s;line-height:1}
+    .met-btn:active{transform:scale(.9)}
+    #beatToggleBtn{background:rgba(34,197,94,.22);border:1px solid rgba(34,197,94,.5);color:#22c55e}
+    #beatToggleBtn.off{background:rgba(100,100,100,.12);border-color:#444;color:#555}
+    #metSoundBtn{background:rgba(100,100,100,.12);border:1px solid #444;color:#555}
+    #metSoundBtn.on{background:rgba(59,130,246,.22);border-color:rgba(59,130,246,.5);color:#60a5fa}
     #endBreakBtn{background:var(--bg3);border:1px solid #444;color:var(--text2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-family:inherit;white-space:nowrap;transition:background .15s}
     #endBreakBtn:active{background:var(--bg4)}
 
@@ -294,8 +294,8 @@
     </div>
     <div id="nowNote"></div>
     <div class="met-controls">
-      <button id="beatToggleBtn" class="met-btn" onclick="toggleBeatDot()" title="เปิด/ปิดไฟกระพริบ">💡 ไฟเปิด</button>
-      <button id="metSoundBtn" class="met-btn" onclick="toggleMetAudio()" title="เปิด/ปิดเสียงคลิก">🔇 เสียงปิด</button>
+      <button id="beatToggleBtn" class="met-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡</button>
+      <button id="metSoundBtn" class="met-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇</button>
     </div>
     <div id="nextPreview" class="hidden">
       <span class="np-label">NEXT ▸</span>
@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var _initSndBtn = document.getElementById('metSoundBtn');
   if (_initSndBtn) {
     _initSndBtn.classList.toggle('on', _metAudioOn);
-    _initSndBtn.innerHTML = _metAudioOn ? '🔊 เสียงเปิด' : '🔇 เสียงปิด';
+    _initSndBtn.innerHTML = _metAudioOn ? '🔊' : '🔇';
   }
 
   // ── Tap realtime indicator = manual resync ──
@@ -969,7 +969,7 @@ function toggleBeatDot() {
   var btn = document.getElementById('beatToggleBtn');
   if (btn) {
     btn.classList.toggle('off', !_metEnabled);
-    btn.innerHTML = _metEnabled ? '💡 ไฟเปิด' : '💡 ไฟปิด';
+    btn.innerHTML = '💡';
   }
   if (!_metEnabled) {
     var bd = document.getElementById('beatDot');
@@ -985,7 +985,7 @@ function toggleMetAudio() {
   var btn = document.getElementById('metSoundBtn');
   if (btn) {
     btn.classList.toggle('on', _metAudioOn);
-    btn.innerHTML = _metAudioOn ? '🔊 เสียงเปิด' : '🔇 เสียงปิด';
+    btn.innerHTML = _metAudioOn ? '🔊' : '🔇';
   }
   resumeAudio();
   showToast(_metAudioOn ? '🔊 เสียงเมโทรนอม: เปิด' : '🔇 เสียงเมโทรนอม: ปิด');
@@ -998,7 +998,7 @@ function toggleMetAudio() {
     var sndBtn = document.getElementById('metSoundBtn');
     if (sndBtn) {
       sndBtn.classList.toggle('on', _metAudioOn);
-      sndBtn.innerHTML = _metAudioOn ? '🔊 เสียงเปิด' : '🔇 เสียงปิด';
+      sndBtn.innerHTML = _metAudioOn ? '🔊' : '🔇';
     }
   });
 })();
