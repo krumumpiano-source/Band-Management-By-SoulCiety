@@ -414,17 +414,40 @@
     { key:'live',              label:'🔴 Live Mode' },
   ];
 
+  var _pricingActivePlan = null;
+
+  function switchPricingTab(planId) {
+    _pricingActivePlan = planId;
+    document.querySelectorAll('.ptab-btn').forEach(function(b) {
+      b.classList.toggle('ptab-active', b.dataset.plan === planId);
+    });
+    document.querySelectorAll('.ptab-pane').forEach(function(p) {
+      p.style.display = p.dataset.plan === planId ? '' : 'none';
+    });
+  }
+
+  function toggleSection(id, btn) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var open = el.style.display !== 'none';
+    el.style.display = open ? 'none' : '';
+    btn.textContent = open ? btn.dataset.closed : btn.dataset.open;
+  }
+
   async function loadPricing() {
     var el = document.getElementById('pricingCards');
-    el.innerHTML = '<div style="color:var(--premium-text-muted)">กำลังโหลด...</div>';
+    el.innerHTML = '<div style="color:var(--premium-text-muted);padding:16px">กำลังโหลด...</div>';
     var sb = window._sb;
-    if (!sb) { el.innerHTML = '<div style="color:#ef4444">กรุณารอให้โหลดเสร็จแล้วลองใหม่</div>'; return; }
+    if (!sb) { el.innerHTML = '<div style="color:#ef4444;padding:16px">กรุณารอให้โหลดเสร็จแล้วลองใหม่</div>'; return; }
 
     var [planRes, durRes] = await Promise.all([
       sb.from('plan_config').select('*').order('price'),
       sb.from('plan_durations').select('*').order('months'),
     ]);
-    if (planRes.error || !planRes.data) { el.innerHTML = '<div style="color:#ef4444">Error: ' + escapeHtml((planRes.error && planRes.error.message) || 'unknown') + '</div>'; return; }
+    if (planRes.error || !planRes.data) {
+      el.innerHTML = '<div style="color:#ef4444;padding:16px">Error: ' + escapeHtml((planRes.error && planRes.error.message) || 'unknown') + '</div>';
+      return;
+    }
 
     var dursByPlan = {};
     (durRes.data || []).forEach(function(d) {
@@ -432,89 +455,146 @@
       dursByPlan[d.plan_id].push(d);
     });
 
-    el.innerHTML = planRes.data.map(function(plan) {
+    // Tab bar
+    var planIcons = { free: '🆓', lite: '🎵', pro: '👑' };
+    var tabBar = '<div style="display:flex;gap:0;border-bottom:2px solid var(--border-color);margin-bottom:20px">'
+      + planRes.data.map(function(plan) {
+        var icon = planIcons[plan.id] || '📦';
+        return '<button class="ptab-btn" data-plan="' + plan.id + '" onclick="switchPricingTab(\'' + plan.id + '\')" style="flex:1;padding:10px 8px;border:none;background:transparent;cursor:pointer;font-size:.88rem;font-weight:600;color:var(--text-primary);border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s">'
+          + icon + ' ' + escapeHtml(plan.label || plan.id)
+          + (plan.active ? '' : ' <span style="font-size:.7rem;color:#9ca3af">(ปิด)</span>')
+          + '</button>';
+      }).join('')
+      + '</div>';
+
+    // Tab panes
+    var panes = planRes.data.map(function(plan) {
       var feats        = Array.isArray(plan.features) ? plan.features.join('\n') : '';
       var allowedPages = Array.isArray(plan.allowed_pages) ? plan.allowed_pages : [];
       var maxMembers   = (plan.max_members == null || plan.max_members === -1) ? -1 : plan.max_members;
       var durs         = dursByPlan[plan.id] || [];
+      var isFree       = plan.id === 'free';
 
-      // Page access checkboxes grid
-      var pageChecks = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px;margin-top:6px">'
+      // Page access checkboxes
+      var pageChecks = '<div id="pageSection_' + plan.id + '" style="display:none">'
+        + '<div style="display:flex;gap:6px;margin-bottom:8px">'
+        + '<button type="button" class="btn btn-secondary btn-sm" style="font-size:.75rem" onclick="setAllPages(\'' + plan.id + '\',true)">✅ ติ๊กทั้งหมด</button>'
+        + '<button type="button" class="btn btn-secondary btn-sm" style="font-size:.75rem" onclick="setAllPages(\'' + plan.id + '\',false)">☐ ล้างทั้งหมด</button>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:4px">'
         + ALL_PAGES.map(function(pg) {
-          var checked = allowedPages.length === 0 || allowedPages.indexOf(pg.key) !== -1;
-          return '<label style="display:flex;align-items:center;gap:6px;font-size:.78rem;cursor:pointer;padding:3px 6px;border-radius:6px;background:var(--bg-secondary)">'
-            + '<input type="checkbox" id="page_' + plan.id + '_' + pg.key + '"' + (checked ? ' checked' : '') + '> ' + pg.label + '</label>';
-        }).join('')
-        + '</div>';
+            var checked = allowedPages.length === 0 || allowedPages.indexOf(pg.key) !== -1;
+            return '<label style="display:flex;align-items:center;gap:6px;font-size:.78rem;cursor:pointer;padding:4px 8px;border-radius:6px;background:var(--bg-secondary);border:1px solid var(--border-color)">'
+              + '<input type="checkbox" id="page_' + plan.id + '_' + pg.key + '"' + (checked ? ' checked' : '') + '> ' + pg.label + '</label>';
+          }).join('')
+        + '</div></div>';
 
       // Duration rows
-      var durRows = durs.map(function(d) {
+      var makeDurRow = function(d) {
         return '<tr id="durrow_' + d.id + '">'
-          + '<td><input type="number" value="' + d.months + '" min="1" max="24" style="width:55px;padding:3px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + d.id + ',\'months\',this.value)"></td>'
-          + '<td><input type="number" value="' + (d.discount_percent || 0) + '" min="0" max="90" style="width:55px;padding:3px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + d.id + ',\'discount_percent\',this.value)">%</td>'
-          + '<td><input type="text" value="' + escapeHtml(d.label || '') + '" style="width:130px;padding:3px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + d.id + ',\'label\',this.value)"></td>'
-          + '<td><input type="checkbox"' + (d.active ? ' checked' : '') + ' onchange="patchDurField(' + d.id + ',\'active\',this.checked)"></td>'
-          + '<td><button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:.72rem" onclick="deleteDurRow(' + d.id + ')">🗑️</button></td>'
+          + '<td><input type="number" value="' + d.months + '" min="1" max="24" style="width:60px;padding:4px 8px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + d.id + ',\'months\',this.value)"></td>'
+          + '<td><div style="display:flex;align-items:center;gap:4px"><input type="number" value="' + (d.discount_percent || 0) + '" min="0" max="90" style="width:60px;padding:4px 8px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + d.id + ',\'discount_percent\',this.value)"><span style="font-size:.8rem;color:var(--premium-text-muted)">%</span></div></td>'
+          + '<td><input type="text" value="' + escapeHtml(d.label || '') + '" style="width:100%;min-width:100px;padding:4px 8px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + d.id + ',\'label\',this.value)"></td>'
+          + '<td style="text-align:center"><input type="checkbox"' + (d.active ? ' checked' : '') + ' onchange="patchDurField(' + d.id + ',\'active\',this.checked)"></td>'
+          + '<td><button class="btn btn-danger btn-sm" style="padding:3px 10px;font-size:.72rem" onclick="deleteDurRow(' + d.id + ')">🗑️</button></td>'
           + '</tr>';
-      }).join('');
+      };
+      var durRows = durs.map(makeDurRow).join('');
 
-      var isFree = plan.id === 'free';
-      var planIcon = isFree ? '🆓' : plan.id === 'pro' ? '👑' : '🎵';
+      var durSection = !isFree
+        ? '<div id="durSection_' + plan.id + '" style="display:none;margin-top:4px">'
+          + '<div class="table-responsive" style="margin-bottom:8px"><table class="table" style="font-size:.82rem;border-collapse:collapse">'
+          + '<thead><tr style="background:var(--bg-secondary)"><th style="padding:6px 8px;font-size:.75rem">เดือน</th><th style="padding:6px 8px;font-size:.75rem">ส่วนลด</th><th style="padding:6px 8px;font-size:.75rem">ชื่อแสดง</th><th style="padding:6px 8px;font-size:.75rem;text-align:center">เปิด</th><th></th></tr></thead>'
+          + '<tbody id="durTbody_' + plan.id + '">' + durRows + '</tbody>'
+          + '</table></div>'
+          + '<button class="btn btn-secondary btn-sm" style="font-size:.78rem" onclick="addDurationRow(\'' + plan.id + '\')">➕ เพิ่มแพ็กเกจ</button>'
+          + '</div>'
+        : '';
 
-      return '<div style="background:var(--bg-card);border:2px solid ' + (isFree ? 'var(--border-color)' : 'rgba(251,191,36,.4)') + ';border-radius:12px;padding:20px;margin-bottom:16px">'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
-        + '<h4 style="margin:0;font-size:1.15rem">' + planIcon + ' ' + escapeHtml(plan.label || plan.id) + '</h4>'
-        + '<label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer">'
+      return '<div class="ptab-pane" data-plan="' + plan.id + '" style="display:none">'
+        // Header row
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border-color)">'
+        + '<div>'
+        + '<span style="font-size:1.05rem;font-weight:700">' + (planIcons[plan.id]||'📦') + ' ' + escapeHtml(plan.label || plan.id) + '</span>'
+        + (isFree ? '<span style="margin-left:8px;background:rgba(34,197,94,.15);color:#22c55e;font-size:.72rem;padding:2px 8px;border-radius:20px;border:1px solid rgba(34,197,94,.4)">ฟรี</span>'
+                  : '<span style="margin-left:8px;font-size:.82rem;color:var(--premium-gold);font-weight:700">' + Math.round(plan.price/100) + '฿/เดือน</span>')
+        + '</div>'
+        + '<label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer;background:var(--bg-secondary);padding:5px 12px;border-radius:20px;border:1px solid var(--border-color)">'
         + '<input type="checkbox" id="active_' + plan.id + '"' + (plan.active ? ' checked' : '') + '> เปิดใช้งาน</label>'
         + '</div>'
 
-        // Price — hidden for free plan
+        // Price
         + (!isFree
-          ? '<div style="margin-bottom:12px">'
-            + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">ราคาต่อเดือน (satang) — 9900 = 99฿</label>'
-            + '<div style="display:flex;align-items:center;gap:8px">'
-            + '<input id="price_' + plan.id + '" type="number" min="0" step="100" value="' + plan.price + '" style="flex:1;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:var(--text-base)">'
-            + '<span id="priceDisplay_' + plan.id + '" style="font-size:.85rem;color:var(--premium-gold);font-weight:700;min-width:60px">' + Math.round(plan.price / 100) + '฿</span>'
+          ? '<div style="margin-bottom:16px;padding:14px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border-color)">'
+            + '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">'
+            + '<label style="font-size:.78rem;color:var(--premium-text-muted)">ราคาต่อเดือน (หน่วย: สตางค์ — 9900 = 99฿)</label>'
+            + '<span id="priceDisplay_' + plan.id + '" style="font-size:1.3rem;color:var(--premium-gold);font-weight:700">' + Math.round(plan.price/100) + '฿</span>'
             + '</div>'
-            + '<input type="range" min="0" max="99900" step="100" value="' + plan.price + '" oninput="document.getElementById(\'price_' + plan.id + '\').value=this.value;document.getElementById(\'priceDisplay_' + plan.id + '\').textContent=Math.round(this.value/100)+\'฿\'" style="width:100%;margin-top:6px;accent-color:var(--premium-gold)">'
+            + '<input type="range" min="0" max="99900" step="100" value="' + plan.price + '" oninput="document.getElementById(\'price_' + plan.id + '\').value=this.value;document.getElementById(\'priceDisplay_' + plan.id + '\').textContent=Math.round(this.value/100)+\'฿\'" style="width:100%;accent-color:var(--premium-gold);margin-bottom:8px">'
+            + '<input id="price_' + plan.id + '" type="number" min="0" step="100" value="' + plan.price + '" placeholder="สตางค์" style="width:100%;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:.9rem" oninput="document.getElementById(\'priceDisplay_' + plan.id + '\').textContent=Math.round(+this.value/100)+\'฿\'">'
             + '</div>'
           : '<input type="hidden" id="price_' + plan.id + '" value="0">'
-            + '<div style="margin-bottom:12px;padding:8px 14px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;font-size:.82rem;color:#22c55e">💚 ฟรี — ไม่มีค่าใช้จ่าย (ราคาถูกล็อกที่ 0)</div>'
+            + '<div style="margin-bottom:16px;padding:10px 14px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:8px;font-size:.82rem;color:#22c55e">💚 แพ็กเกจฟรี — ราคาถูกล็อกที่ 0 ฿</div>'
         )
 
-        // Max members
-        + '<div style="margin-bottom:12px">'
-        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">จำนวนสมาชิกสูงสุด (−1 = ไม่จำกัด)</label>'
-        + '<input id="maxmem_' + plan.id + '" type="number" min="-1" step="1" value="' + maxMembers + '" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary)">'
+        // 2-col row: max members + active toggle visual
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'
+        + '<div style="padding:12px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border-color)">'
+        + '<label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:6px">👥 สมาชิกสูงสุด</label>'
+        + '<div style="display:flex;align-items:center;gap:6px">'
+        + '<input id="maxmem_' + plan.id + '" type="number" min="-1" step="1" value="' + maxMembers + '" style="flex:1;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary)">'
+        + '<span style="font-size:.7rem;color:var(--premium-text-muted)">−1=ไม่จำกัด</span>'
+        + '</div>'
+        + '</div>'
+        + '<div style="padding:12px;background:var(--bg-secondary);border-radius:10px;border:1px solid var(--border-color)">'
+        + '<label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:6px">📊 แผนนี้</label>'
+        + '<div style="font-size:.82rem">' + (isFree ? 'ไม่มี Duration' : durs.length + ' แพ็กเกจเวลา') + '</div>'
+        + '<div style="font-size:.75rem;color:var(--premium-text-muted)">' + (isFree ? 'ฟรีไม่มีระยะเวลา' : 'เดือน: ' + durs.map(function(d){ return d.months; }).join(', ')) + '</div>'
+        + '</div>'
         + '</div>'
 
-        // Features
-        + '<div style="margin-bottom:12px">'
-        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">ฟีเจอร์แต่ละแพ็ก (แต่ละบรรทัด = 1 รายการ)</label>'
-        + '<textarea id="feats_' + plan.id + '" rows="4" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:var(--text-sm);resize:vertical;box-sizing:border-box">' + escapeHtml(feats) + '</textarea>'
-        + '</div>'
-
-        // Page access
+        // Features textarea
         + '<div style="margin-bottom:16px">'
-        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">🔒 หน้าที่เข้าถึงได้ (ติ๊กทั้งหมด = เข้าได้ทุกหน้า)</label>'
-        + pageChecks
+        + '<label style="font-size:.78rem;color:var(--premium-text-muted);display:block;margin-bottom:6px">✨ ฟีเจอร์ที่แสดงในหน้า Upgrade <span style="color:var(--premium-text-light)">(แต่ละบรรทัด = 1 รายการ)</span></label>'
+        + '<textarea id="feats_' + plan.id + '" rows="4" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:.82rem;resize:vertical;box-sizing:border-box;font-family:inherit">' + escapeHtml(feats) + '</textarea>'
         + '</div>'
 
-        // Duration packages — hidden for free plan
+        // Page access — collapsible
+        + '<div style="margin-bottom:16px;border:1px solid var(--border-color);border-radius:10px;overflow:hidden">'
+        + '<button type="button" onclick="toggleSection(\'pageSection_' + plan.id + '\',this)" data-open="🔼 ซ่อนการเข้าถึงหน้า" data-closed="🔽 กำหนดหน้าที่เข้าถึงได้ (' + ALL_PAGES.length + ' หน้า)" style="width:100%;padding:10px 14px;text-align:left;background:var(--bg-secondary);border:none;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text-primary)">🔽 กำหนดหน้าที่เข้าถึงได้ (' + ALL_PAGES.length + ' หน้า)</button>'
+        + '<div style="padding:12px">' + pageChecks + '</div>'
+        + '</div>'
+
+        // Duration packages — collapsible (not for free)
         + (!isFree
-          ? '<div style="margin-bottom:14px">'
-            + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:6px">⏱️ แพ็กเกจระยะเวลา</label>'
-            + '<div class="table-responsive" style="margin-bottom:8px"><table class="table" style="font-size:.82rem">'
-            + '<thead><tr><th>เดือน</th><th>ส่วนลด%</th><th>ชื่อแสดง</th><th>เปิด</th><th></th></tr></thead>'
-            + '<tbody id="durTbody_' + plan.id + '">' + durRows + '</tbody>'
-            + '</table></div>'
-            + '<button class="btn btn-secondary btn-sm" style="font-size:.78rem" onclick="addDurationRow(\'' + plan.id + '\')">➕ เพิ่มแพ็กเกจ</button>'
+          ? '<div style="margin-bottom:16px;border:1px solid var(--border-color);border-radius:10px;overflow:hidden">'
+            + '<button type="button" onclick="toggleSection(\'durSection_' + plan.id + '\',this)" data-open="🔼 ซ่อนแพ็กเกจระยะเวลา" data-closed="🔽 แพ็กเกจระยะเวลา (' + durs.length + ' แพ็ก)" style="width:100%;padding:10px 14px;text-align:left;background:var(--bg-secondary);border:none;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text-primary)">🔽 แพ็กเกจระยะเวลา (' + durs.length + ' แพ็ก)</button>'
+            + '<div style="padding:12px">' + durSection + '</div>'
             + '</div>'
           : '')
 
-        + '<button class="btn btn-primary" style="width:100%" onclick="savePlan(\'' + plan.id + '\')">💾 บันทึก ' + escapeHtml(plan.label || plan.id) + '</button>'
+        // Save button
+        + '<button class="btn btn-primary" style="width:100%;padding:12px;font-size:.95rem" onclick="savePlan(\'' + plan.id + '\')">💾 บันทึก ' + escapeHtml(plan.label || plan.id) + '</button>'
         + '</div>';
     }).join('');
+
+    el.innerHTML = '<style>'
+      + '.ptab-btn{transition:color .15s,border-color .15s,background .15s}'
+      + '.ptab-active{color:var(--premium-gold)!important;border-bottom-color:var(--premium-gold)!important;background:rgba(251,191,36,.06)}'
+      + '.ptab-btn:hover:not(.ptab-active){background:var(--bg-secondary)}'
+      + '</style>'
+      + tabBar + panes;
+
+    // Show first tab
+    var firstId = planRes.data[0] && planRes.data[0].id;
+    if (firstId) switchPricingTab(firstId);
+  }
+
+  function setAllPages(planId, checked) {
+    ALL_PAGES.forEach(function(pg) {
+      var cb = document.getElementById('page_' + planId + '_' + pg.key);
+      if (cb) cb.checked = checked;
+    });
   }
 
   async function savePlan(planId) {
