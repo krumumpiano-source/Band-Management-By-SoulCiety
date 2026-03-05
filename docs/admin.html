@@ -457,12 +457,12 @@
 
     // Tab bar
     var planIcons = { free: '🆓', lite: '🎵', pro: '👑' };
-    var tabBar = '<div style="display:flex;gap:0;border-bottom:2px solid var(--border-color);margin-bottom:20px">'
+    var tabBar = '<div style="display:flex;gap:8px;margin-bottom:20px;padding:6px;background:var(--bg-secondary);border-radius:12px;border:1px solid var(--border-color)">'
       + planRes.data.map(function(plan) {
         var icon = planIcons[plan.id] || '📦';
-        return '<button class="ptab-btn" data-plan="' + plan.id + '" onclick="switchPricingTab(\'' + plan.id + '\')" style="flex:1;padding:10px 8px;border:none;background:transparent;cursor:pointer;font-size:.88rem;font-weight:600;color:var(--text-primary);border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s">'
+        return '<button class="ptab-btn" data-plan="' + plan.id + '" onclick="switchPricingTab(\'' + plan.id + '\')" style="flex:1;padding:10px 16px;border:2px solid transparent;border-radius:8px;background:transparent;cursor:pointer;font-size:.9rem;font-weight:700;color:var(--premium-text-muted);transition:all .18s">'
           + icon + ' ' + escapeHtml(plan.label || plan.id)
-          + (plan.active ? '' : ' <span style="font-size:.7rem;color:#9ca3af">(ปิด)</span>')
+          + (plan.active ? '' : ' <span style="font-size:.7rem;opacity:.6">(ปิด)</span>')
           + '</button>';
       }).join('')
       + '</div>';
@@ -579,9 +579,9 @@
     }).join('');
 
     el.innerHTML = '<style>'
-      + '.ptab-btn{transition:color .15s,border-color .15s,background .15s}'
-      + '.ptab-active{color:var(--premium-gold)!important;border-bottom-color:var(--premium-gold)!important;background:rgba(251,191,36,.06)}'
-      + '.ptab-btn:hover:not(.ptab-active){background:var(--bg-secondary)}'
+      + '.ptab-btn{transition:all .18s}'
+      + '.ptab-active{color:var(--premium-gold)!important;background:var(--bg-card)!important;border-color:rgba(251,191,36,.5)!important;box-shadow:0 2px 8px rgba(0,0,0,.12)!important}'
+      + '.ptab-btn:hover:not(.ptab-active){background:rgba(255,255,255,.07);color:var(--text-primary)!important}'
       + '</style>'
       + tabBar + panes;
 
