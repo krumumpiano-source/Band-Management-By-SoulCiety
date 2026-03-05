@@ -1266,12 +1266,8 @@ function formatThaiDate(dateStr){
   return formatThaiDateFull(dateStr);
 }
 
-function copyPlaylist(){
+function _doCopyAndSave(){
   try {
-    if(playlistData.length === 0){
-      showSongsAlert('⚠️ ไม่มีเพลงในลิส');
-      return;
-    }
 
     const showSpeed = document.getElementById("copySpeed")?.checked;
     const showKey   = document.getElementById("copyKey")?.checked;
@@ -1337,6 +1333,7 @@ function copyPlaylist(){
 
     // บันทึกประวัติพร้อมกับคัดลอก
     saveHistory();
+    checkExistingPlaylists(); // refresh used-count after save
     const toast = document.getElementById("toast");
     if(toast){
       toast.textContent = '📋 คัดลอก & บันทึกลิสสำเร็จ!';
@@ -1353,6 +1350,11 @@ function copyPlaylist(){
   }
 }
 
+function copyPlaylist(){
+  if(playlistData.length === 0){ showSongsAlert('⚠️ ไม่มีเพลงในลิส'); return; }
+  checkPlaylistLimit(function() { _doCopyAndSave(); });
+}
+
 var _historyCache = [];
 var _savingHistory = false;
 
@@ -1366,7 +1368,10 @@ function goLiveMode() {
 
 function saveHistoryManual() {
   if (playlistData.length === 0) { showSongsAlert('⚠️ ยังไม่มีเพลงในลิส'); return; }
-  saveHistory();
+  checkPlaylistLimit(function() {
+    saveHistory();
+    checkExistingPlaylists();
+  });
   var toast = document.getElementById('toast');
   if (toast) {
     toast.textContent = '💾 บันทึกลิสเรียบร้อย!';
@@ -1670,5 +1675,100 @@ function doAddLiveReqToLibrary() {
   });
 }
 </script>
+
+<script>
+/* ═══════════════════════════════════════════════
+   Ad Gate — จำกัดลิสเพลงตามจำนวนเบรคของวัน
+   ═══════════════════════════════════════════════ */
+
+// ── Premium check ──
+function isPremiumBand() {
+  var plan = localStorage.getItem('bandPlan') || '';
+  return plan === 'pro' || plan === 'lite';
+}
+
+// ── Count free limit = slots for selected date (min 1) ──
+function getPlaylistFreeLimit() {
+  var slots = plGetSlotsForDate();
+  return slots.length > 0 ? slots.length : 1;
+}
+
+// ── Check limit then proceed ──
+function checkPlaylistLimit(thenDo) {
+  if (isPremiumBand()) { thenDo(); return; }
+  var freeLimit  = getPlaylistFreeLimit();
+  var usedToday  = _plExistingForDate.length;
+  if (usedToday < freeLimit) { thenDo(); return; }
+  showAdGate(thenDo);
+}
+
+// ── Ad Gate ──
+var _adGateCallback = null;
+var _adGateTimer    = null;
+
+function showAdGate(callback) {
+  _adGateCallback = callback;
+  var modal = document.getElementById('adGateModal');
+  if (!modal) { callback(); return; }
+  var countdown  = document.getElementById('adGateCountdown');
+  var confirmBtn = document.getElementById('adGateConfirmBtn');
+  var limitNote  = document.getElementById('adGateLimitNote');
+  if (limitNote) {
+    var limit = getPlaylistFreeLimit();
+    var used  = _plExistingForDate.length;
+    limitNote.textContent = 'คุณสร้างลิสไปแล้ว ' + used + '/' + limit + ' ลิส (ตามจำนวนเบรคของวันนี้)';
+  }
+  if (confirmBtn) { confirmBtn.style.display = 'none'; confirmBtn.onclick = null; }
+  if (countdown)  { countdown.textContent = '30'; countdown.style.display = 'block'; }
+  modal.style.display = 'flex';
+
+  var sec = 30;
+  clearInterval(_adGateTimer);
+  _adGateTimer = setInterval(function() {
+    sec--;
+    if (countdown) countdown.textContent = sec;
+    if (sec <= 0) {
+      clearInterval(_adGateTimer);
+      if (countdown)  countdown.style.display = 'none';
+      if (confirmBtn) {
+        confirmBtn.style.display = 'block';
+        confirmBtn.onclick = function() {
+          closeAdGate();
+          if (_adGateCallback) { _adGateCallback(); _adGateCallback = null; }
+        };
+      }
+    }
+  }, 1000);
+}
+
+function closeAdGate() {
+  clearInterval(_adGateTimer);
+  var modal = document.getElementById('adGateModal');
+  if (modal) modal.style.display = 'none';
+  _adGateCallback = null;
+}
+</script>
+
+<!-- Ad Gate Modal -->
+<div id="adGateModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#1a202c;border-radius:18px;padding:28px 24px;max-width:360px;width:100%;border:1.5px solid #f6ad55;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+    <div style="font-size:44px;margin-bottom:10px">📺</div>
+    <h3 style="color:#f6ad55;margin:0 0 6px;font-size:19px;font-weight:700">ดูโฆษณาสั้น 1 คลิป</h3>
+    <p id="adGateLimitNote" style="color:#a0aec0;font-size:13px;margin:0 0 16px;line-height:1.5"></p>
+    <div style="background:#2d3748;border-radius:10px;padding:20px 16px;margin-bottom:16px;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #4a5568">
+      <span style="font-size:28px;margin-bottom:6px">🎬</span>
+      <span style="color:#718096;font-size:12px">พื้นที่โฆษณา (รอ AdSense อนุมัติ)</span>
+    </div>
+    <div style="margin-bottom:16px">
+      <span style="color:#a0aec0;font-size:13px">รอ </span>
+      <span id="adGateCountdown" style="font-size:32px;font-weight:700;color:#f6ad55">30</span>
+      <span style="color:#a0aec0;font-size:13px"> วินาที</span>
+    </div>
+    <button id="adGateConfirmBtn" style="display:none;width:100%;padding:13px;background:#38a169;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit">✅ รับชมครบแล้ว — บันทึกลิส</button>
+    <button onclick="closeAdGate()" style="width:100%;padding:10px;background:transparent;color:#718096;border:1px solid #4a5568;border-radius:10px;font-size:13px;cursor:pointer;margin-top:10px;font-family:inherit">✕ ยกเลิก</button>
+    <p style="color:#4a5568;font-size:11px;margin-top:14px;line-height:1.5">ต้องการสร้างลิสไม่จำกัด?<br><a href="band-settings.html" style="color:#f6ad55;font-weight:600">อัพเกรด Pro Package</a></p>
+  </div>
+</div>
+
 </body>
 </html>
