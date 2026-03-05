@@ -458,22 +458,29 @@
           + '</tr>';
       }).join('');
 
-      return '<div style="background:var(--bg-card);border:2px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px">'
+      var isFree = plan.id === 'free';
+      var planIcon = isFree ? '🆓' : plan.id === 'pro' ? '👑' : '🎵';
+
+      return '<div style="background:var(--bg-card);border:2px solid ' + (isFree ? 'var(--border-color)' : 'rgba(251,191,36,.4)') + ';border-radius:12px;padding:20px;margin-bottom:16px">'
         + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
-        + '<h4 style="margin:0;font-size:1.15rem">⭐ ' + escapeHtml(plan.label || plan.id) + '</h4>'
+        + '<h4 style="margin:0;font-size:1.15rem">' + planIcon + ' ' + escapeHtml(plan.label || plan.id) + '</h4>'
         + '<label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer">'
         + '<input type="checkbox" id="active_' + plan.id + '"' + (plan.active ? ' checked' : '') + '> เปิดใช้งาน</label>'
         + '</div>'
 
-        // Price
-        + '<div style="margin-bottom:12px">'
-        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">ราคาต่อเดือน (satang) — 9900 = 99฿</label>'
-        + '<div style="display:flex;align-items:center;gap:8px">'
-        + '<input id="price_' + plan.id + '" type="number" min="0" step="100" value="' + plan.price + '" style="flex:1;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:var(--text-base)">'
-        + '<span id="priceDisplay_' + plan.id + '" style="font-size:.85rem;color:var(--premium-gold);font-weight:700;min-width:60px">' + Math.round(plan.price / 100) + '฿</span>'
-        + '</div>'
-        + '<input type="range" min="0" max="99900" step="100" value="' + plan.price + '" oninput="document.getElementById(\'price_' + plan.id + '\').value=this.value;document.getElementById(\'priceDisplay_' + plan.id + '\').textContent=Math.round(this.value/100)+\'฿\'" style="width:100%;margin-top:6px;accent-color:var(--premium-gold)">'
-        + '</div>'
+        // Price — hidden for free plan
+        + (!isFree
+          ? '<div style="margin-bottom:12px">'
+            + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">ราคาต่อเดือน (satang) — 9900 = 99฿</label>'
+            + '<div style="display:flex;align-items:center;gap:8px">'
+            + '<input id="price_' + plan.id + '" type="number" min="0" step="100" value="' + plan.price + '" style="flex:1;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:var(--text-base)">'
+            + '<span id="priceDisplay_' + plan.id + '" style="font-size:.85rem;color:var(--premium-gold);font-weight:700;min-width:60px">' + Math.round(plan.price / 100) + '฿</span>'
+            + '</div>'
+            + '<input type="range" min="0" max="99900" step="100" value="' + plan.price + '" oninput="document.getElementById(\'price_' + plan.id + '\').value=this.value;document.getElementById(\'priceDisplay_' + plan.id + '\').textContent=Math.round(this.value/100)+\'฿\'" style="width:100%;margin-top:6px;accent-color:var(--premium-gold)">'
+            + '</div>'
+          : '<input type="hidden" id="price_' + plan.id + '" value="0">'
+            + '<div style="margin-bottom:12px;padding:8px 14px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;font-size:.82rem;color:#22c55e">💚 ฟรี — ไม่มีค่าใช้จ่าย (ราคาถูกล็อกที่ 0)</div>'
+        )
 
         // Max members
         + '<div style="margin-bottom:12px">'
@@ -493,15 +500,17 @@
         + pageChecks
         + '</div>'
 
-        // Duration packages
-        + '<div style="margin-bottom:14px">'
-        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:6px">⏱️ แพ็กเกจระยะเวลา</label>'
-        + '<div class="table-responsive" style="margin-bottom:8px"><table class="table" style="font-size:.82rem">'
-        + '<thead><tr><th>เดือน</th><th>ส่วนลด%</th><th>ชื่อแสดง</th><th>เปิด</th><th></th></tr></thead>'
-        + '<tbody id="durTbody_' + plan.id + '">' + durRows + '</tbody>'
-        + '</table></div>'
-        + '<button class="btn btn-secondary btn-sm" style="font-size:.78rem" onclick="addDurationRow(\'' + plan.id + '\')">➕ เพิ่มแพ็กเกจ</button>'
-        + '</div>'
+        // Duration packages — hidden for free plan
+        + (!isFree
+          ? '<div style="margin-bottom:14px">'
+            + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:6px">⏱️ แพ็กเกจระยะเวลา</label>'
+            + '<div class="table-responsive" style="margin-bottom:8px"><table class="table" style="font-size:.82rem">'
+            + '<thead><tr><th>เดือน</th><th>ส่วนลด%</th><th>ชื่อแสดง</th><th>เปิด</th><th></th></tr></thead>'
+            + '<tbody id="durTbody_' + plan.id + '">' + durRows + '</tbody>'
+            + '</table></div>'
+            + '<button class="btn btn-secondary btn-sm" style="font-size:.78rem" onclick="addDurationRow(\'' + plan.id + '\')">➕ เพิ่มแพ็กเกจ</button>'
+            + '</div>'
+          : '')
 
         + '<button class="btn btn-primary" style="width:100%" onclick="savePlan(\'' + plan.id + '\')">💾 บันทึก ' + escapeHtml(plan.label || plan.id) + '</button>'
         + '</div>';
@@ -517,7 +526,7 @@
     var maxmemEl   = document.getElementById('maxmem_' + planId);
     if (!priceEl || !featsEl) return;
 
-    var price    = parseInt(priceEl.value);
+    var price    = planId === 'free' ? 0 : parseInt(priceEl.value);
     var features = featsEl.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
     var active   = activeEl ? activeEl.checked : true;
     var maxMembers = maxmemEl ? parseInt(maxmemEl.value) : -1;
@@ -546,8 +555,10 @@
       .eq('id', planId);
     if (error) { showToast('บันทึกไม่สำเร็จ: ' + error.message, 'error'); }
     else {
-      showToast('✅ บันทึก ' + planId.toUpperCase() + ' = ' + Math.round(price/100) + '฿ สำเร็จ', 'success');
-      document.getElementById('priceDisplay_' + planId).textContent = Math.round(price / 100) + '฿';
+      var priceLabel = planId === 'free' ? 'ฟรี' : Math.round(price/100) + '฿';
+      showToast('✅ บันทึก ' + planId.toUpperCase() + ' (' + priceLabel + ') สำเร็จ', 'success');
+      var dispEl = document.getElementById('priceDisplay_' + planId);
+      if (dispEl) dispEl.textContent = priceLabel;
     }
   }
 
