@@ -10,8 +10,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/compat.css">
+  <script src="js/config.js"></script>
   <script src="js/i18n.js"></script>
+  <script src="js/supabase-api.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
   <!-- Omise.js -->
   <script src="https://cdn.omise.co/omise.js"></script>
   <style>
@@ -54,10 +57,11 @@
   </style>
 </head>
 <body>
+<div id="mainNav"></div>
 <div class="page-container" style="max-width:760px;margin:0 auto;padding:1.5rem 1rem">
 
   <div style="margin-bottom:1.5rem">
-    <a href="band-settings.html" class="btn btn-ghost" style="font-size:.85rem">← กลับ</a>
+    <a href="javascript:history.back()" class="btn btn-ghost" style="font-size:.85rem">← กลับ</a>
   </div>
 
   <h1 style="margin-bottom:.25rem">🚀 อัปเกรดแพ็กเกจ</h1>
@@ -229,6 +233,10 @@
   }
   window.showStatus = showStatus;
 
+  // ── init nav + auth ──────────────────────────────────
+  if (typeof requireAuth === 'function') requireAuth();
+  if (typeof renderMainNav === 'function') renderMainNav('mainNav');
+  if (typeof applyTranslations === 'function') applyTranslations();
 })();
 </script>
 </body>

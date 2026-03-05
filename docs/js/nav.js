@@ -64,6 +64,17 @@ function renderMainNav(containerId) {
     navLink('band-info',     '👥 ' + _t('nav_bandInfo'),     'สมาชิก ช่องทางติดต่อ ร้านที่เล่น') +
     navLink('my-profile',    '👤 ' + _t('nav_myProfile'),    'ข้อมูลส่วนตัวและอัตราค่าตัว');
 
+  // ── ลิงก์อัปเกรด (แสดงเฉพาะ free/lite) ──────────────
+  var _plan = (localStorage.getItem('band_plan') || 'free').toLowerCase();
+  var upgradeLink = (_plan !== 'pro')
+    ? '<li><a href="upgrade.html" class="nav-link' + (currentPage === 'upgrade' ? ' active' : '') + '" style="color:#f59e0b;font-weight:700">'
+      + (_plan === 'lite' ? '⬆️ อัปเกรดเป็น Pro' : '🚀 อัปเกรดแผน') + '<span class="nav-link-desc">'
+      + (_plan === 'lite' ? 'ปลดล็อกฟีเจอร์ Pro ทั้งหมด' : 'ใช้งานไม่จำกัด เริ่มต้น 99฿/เดือน')
+      + '</span></a></li>'
+    : '';
+
+  memberLinks += upgradeLink;
+
   // ── เมนูผู้จัดการวง ───────────────────────────────────
   var managerLinks = isManager ? (
     navSection('👔 ผู้จัดการวง') +
