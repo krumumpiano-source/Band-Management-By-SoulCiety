@@ -945,6 +945,8 @@ var _metEnabled     = true;  // beat dot (light) toggle
 var _metAudioOn     = localStorage.getItem('liveMetAudioOn') === '1';  // sound OFF by default (opt-in)
 var _metVolume      = 0.3;   // click volume (0-1)
 var _beatOffTimer   = null;
+var _metWallOrigin  = 0;     // Date.now() at beat 0 (for wall-clock sync)
+var _metDeviceId    = Math.random().toString(36).slice(2,10); // unique per tab
 
 // Lookahead config
 var MET_LOOKAHEAD   = 0.1;  // seconds to look ahead
@@ -989,7 +991,18 @@ function toggleMetAudio() {
     btn.innerHTML = _metAudioOn ? '🔊' : '🔇';
   }
   resumeAudio();
-  showToast(_metAudioOn ? '🔊 เสียงเมโทรนอม: เปิด' : '🔇 เสียงเมโทรนอม: ปิด');
+  if (_metAudioOn) {
+    // Claim audio — tell all other devices to turn off their sound
+    broadcastEvent('met_audio_claim', { deviceId: _metDeviceId });
+  }
+  showToast(_metAudioOn ? '🔊 เสียงเมโทรนอม: เปิด (เครื่องอื่นจะปิดเสียงอัตโนมัติ)' : '🔇 เสียงเมโทรนอม: ปิด');
+}
+function _updateSoundBtn() {
+  var btn = document.getElementById('metSoundBtn');
+  if (btn) {
+    btn.classList.toggle('on', _metAudioOn);
+    btn.innerHTML = _metAudioOn ? '🔊' : '🔇';
+  }
 }
 
 // Init beat/sound button states on load
@@ -1011,6 +1024,7 @@ function startBeatDot(bpm) {
   _metBpm       = bpm;
   _metInterval  = 60.0 / bpm;  // seconds
   _metBeatCount = 0;
+  _metWallOrigin = Date.now();  // wall-clock origin for cross-device sync
   bd.style.display = 'block';
   var btn = document.getElementById('beatToggleBtn');
   if (btn) btn.classList.toggle('off', !_metEnabled);
@@ -1039,7 +1053,12 @@ function metScheduler() {
     scheduleDotFlash(_metNextTime - ctx.currentTime);
     // Broadcast sync (only every 4th beat to reduce network traffic)
     if (!_isGuest && _metBeatCount % _metTimeSig === 0) {
-      broadcastEvent('beat_sync', { bpm: _metBpm, t: _metNextTime, beat: _metBeatCount });
+      // Send wall-clock origin so receivers can phase-lock precisely
+      if (_metBeatCount === 0) _metWallOrigin = Date.now();
+      broadcastEvent('beat_sync', {
+        bpm: _metBpm, beat: _metBeatCount,
+        wallOrigin: _metWallOrigin
+      });
     }
     _metNextTime += _metInterval;
     _metBeatCount++;
@@ -1054,7 +1073,7 @@ function metSchedulerFallback() {
     var delay = Math.max(0, (_metNextTime - now) * 1000);
     scheduleDotFlash(delay / 1000);
     if (!_isGuest && _metBeatCount % _metTimeSig === 0) {
-      broadcastEvent('beat_sync', { bpm: _metBpm, beat: _metBeatCount });
+      broadcastEvent('beat_sync', { bpm: _metBpm, beat: _metBeatCount, wallOrigin: _metWallOrigin });
     }
     _metNextTime += _metInterval;
     _metBeatCount++;
@@ -1835,12 +1854,20 @@ function initRealtime() {
       bd.style.display = 'block';
       if (btn) btn.classList.toggle('off', !_metEnabled);
     })
+    .on('broadcast', { event: 'met_audio_claim' }, function(payload) {
+      // Another device claimed audio — disable ours
+      var d = payload.payload || {};
+      if (d.deviceId !== _metDeviceId && _metAudioOn) {
+        _metAudioOn = false;
+        localStorage.setItem('liveMetAudioOn', '0');
+        _updateSoundBtn();
+        showToast('🔇 เครื่องอื่นเปิดเสียง — ปิดเสียงเครื่องนี้อัตโนมัติ');
+      }
+    })
     .on('broadcast', { event: 'beat_sync' }, function(payload) {
-      // RECEIVER: Start local Web Audio metronome, phase-locked to broadcast
-      // On each beat_sync (every 4 beats from manager):
-      //   1) Flash + click immediately for this beat
-      //   2) Start/restart local AudioContext scheduler at received BPM
-      //   → Local scheduler runs precisely between sync signals
+      // RECEIVER: Wall-clock phase-locked metronome
+      // Manager sends wallOrigin (Date.now() at beat 0) + beat count + bpm
+      // Receiver calculates exact wall-clock time of each beat and schedules accordingly
       var d = payload.payload || {};
       if (d.bpm && d.bpm !== _metBpm) {
         _metBpm      = d.bpm;
@@ -1857,17 +1884,40 @@ function initRealtime() {
       var ctx = ensureAudioCtx();
       if (ctx) resumeAudio();
 
-      // Flash immediately for this beat (absorbs network latency)
-      flashBeatDot();
-      if (_metAudioOn && ctx) {
-        scheduleClick(ctx.currentTime);
+      // Wall-clock sync: calculate where we should be right now
+      var intervalMs = _metInterval * 1000;
+      var beatNum = d.beat || 0;
+      var wallOrigin = d.wallOrigin || 0;
+      // wallTime of this beat = wallOrigin + beatNum * intervalMs
+      var beatWallTime = wallOrigin + beatNum * intervalMs;
+      var now = Date.now();
+      var deltaMs = beatWallTime - now; // negative = beat was in the past
+
+      if (deltaMs > -intervalMs * 0.5 && deltaMs < intervalMs * 2) {
+        // Beat is within reasonable range — schedule precisely
+        var delaySec = Math.max(0, deltaMs / 1000);
+        if (ctx) {
+          var fireAt = ctx.currentTime + delaySec;
+          scheduleClick(fireAt);
+          scheduleDotFlash(delaySec);
+        } else {
+          setTimeout(function() { flashBeatDot(); }, Math.max(0, deltaMs));
+        }
+      } else {
+        // Too far off — flash immediately as fallback
+        flashBeatDot();
+        if (_metAudioOn && ctx) scheduleClick(ctx.currentTime);
       }
 
-      // Restart local scheduler, phased from NOW
-      _metBeatCount = (d.beat || 0) + 1;
+      // Start local scheduler phased from wall-clock origin
+      _metBeatCount = beatNum + 1;
+      _metWallOrigin = wallOrigin;
       if (ctx) {
-        _metNextTime = ctx.currentTime + _metInterval;
-        // Local scheduler (receiver mode — no broadcast)
+        // Calculate exact audioCtx time for next beat using wall-clock
+        var nextBeatWall = wallOrigin + _metBeatCount * intervalMs;
+        var nextDeltaSec = (nextBeatWall - Date.now()) / 1000;
+        _metNextTime = ctx.currentTime + Math.max(0.01, nextDeltaSec);
+        // Local scheduler (receiver mode — no broadcast, wall-clock aligned)
         function receiverScheduler() {
           while (_metNextTime < ctx.currentTime + MET_LOOKAHEAD) {
             scheduleClick(_metNextTime);
@@ -1879,8 +1929,7 @@ function initRealtime() {
         }
         receiverScheduler();
       } else {
-        // Fallback: performance.now scheduler
-        _metNextTime = performance.now() / 1000 + _metInterval;
+        _metNextTime = performance.now() / 1000 + Math.max(0.01, (wallOrigin + _metBeatCount * intervalMs - Date.now()) / 1000);
         metSchedulerFallback();
       }
     })
