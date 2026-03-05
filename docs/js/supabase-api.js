@@ -989,17 +989,19 @@
     }
 
     async function doGetSystemInfo() {
-      var [u, m, s, sg] = await Promise.all([
-        sb.from('profiles').select('id', { count: 'exact', head: true }),
-        sb.from('band_members').select('id', { count: 'exact', head: true }),
-        sb.from('schedule').select('id', { count: 'exact', head: true }),
-        sb.from('band_songs').select('id', { count: 'exact', head: true })
+      var [u, b, sg, s, sub] = await Promise.all([
+        sb.from('profiles').select('id',       { count: 'exact', head: true }),
+        sb.from('bands').select('id',          { count: 'exact', head: true }),
+        sb.from('band_songs').select('id',     { count: 'exact', head: true }),
+        sb.from('schedule').select('id',       { count: 'exact', head: true }),
+        sb.from('subscriptions').select('id',  { count: 'exact', head: true }),
       ]);
       return { success: true, data: {
-        userCount:     u.count || 0,
-        memberCount:   m.count || 0,
-        scheduleCount: s.count || 0,
-        songCount:     sg.count || 0,
+        userCount:     u.count   || 0,
+        bandCount:     b.count   || 0,
+        songCount:     sg.count  || 0,
+        scheduleCount: s.count   || 0,
+        subsCount:     sub.count || 0,
         serverTime:    new Date().toISOString()
       }};
     }

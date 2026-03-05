@@ -78,19 +78,19 @@
 
           <!-- System Info Panel -->
           <div class="card a-panel" id="panel-sysinfo">
-            <div class="card-header"><h3 class="card-title">ข้อมูลระบบ</h3></div>
+            <div class="card-header"><h3 class="card-title">ℹ️ ข้อมูลระบบ</h3></div>
             <div id="sysInfoContent">
-              <div class="system-info-row"><span>เวอร์ชัน</span><span>1.0.0</span></div>
-              <div class="system-info-row"><span>Platform</span><span>Google Apps Script (V8)</span></div>
-              <div class="system-info-row"><span>Database</span><span>Google Sheets</span></div>
-              <div class="system-info-row"><span>จำนวน Sheets</span><span id="sheetCount">กำลังตรวจสอบ...</span></div>
-              <div class="system-info-row"><span>บัญชีผู้ใช้</span><span id="userCount">กำลังตรวจสอบ...</span></div>
-              <div class="system-info-row"><span>ข้อมูลงาน</span><span id="jobCount">กำลังตรวจสอบ...</span></div>
-              <div class="system-info-row"><span>ข้อมูลเพลง</span><span id="songCount">กำลังตรวจสอบ...</span></div>
-              <div class="system-info-row"><span>เวลาเซิร์ฟเวอร์</span><span id="serverTime">กำลังตรวจสอบ...</span></div>
+              <div class="system-info-row"><span>Platform</span><span style="color:var(--premium-gold)">Supabase + GitHub Pages</span></div>
+              <div class="system-info-row"><span>Database</span><span style="color:var(--premium-gold)">PostgreSQL (Supabase)</span></div>
+              <div class="system-info-row"><span>👤 บัญชีผู้ใช้ทั้งหมด</span><span id="userCount">...</span></div>
+              <div class="system-info-row"><span>🎵 วงดนตรีทั้งหมด</span><span id="bandCount">...</span></div>
+              <div class="system-info-row"><span>🎶 เพลงทั้งหมด</span><span id="songCount">...</span></div>
+              <div class="system-info-row"><span>📅 ตารางงานทั้งหมด</span><span id="scheduleCount">...</span></div>
+              <div class="system-info-row"><span>💳 Subscriptions ทั้งหมด</span><span id="subsCount">...</span></div>
+              <div class="system-info-row"><span>🕐 เวลาเซิร์ฟเวอร์</span><span id="serverTime">...</span></div>
             </div>
             <div style="margin-top:var(--spacing-lg)">
-              <button class="btn btn-secondary" onclick="loadSysInfo()">🔄 ตรวจสอบระบบ</button>
+              <button class="btn btn-secondary" onclick="loadSysInfo()">🔄 รีเฟรชข้อมูล</button>
             </div>
           </div>
 
@@ -278,11 +278,12 @@
     apiCall('getSystemInfo', {}, function(r) {
       if (r && r.data) {
         var d = r.data;
-        document.getElementById('sheetCount').textContent = d.sheetCount || '—';
-        document.getElementById('userCount').textContent = d.userCount || '—';
-        document.getElementById('jobCount').textContent = d.jobCount || '—';
-        document.getElementById('songCount').textContent = d.songCount || '—';
-        document.getElementById('serverTime').textContent = d.serverTime || formatThaiDateFull(new Date(), {time:true});
+        document.getElementById('userCount').textContent     = d.userCount     != null ? d.userCount     : '—';
+        document.getElementById('bandCount').textContent     = d.bandCount     != null ? d.bandCount     : '—';
+        document.getElementById('songCount').textContent     = d.songCount     != null ? d.songCount     : '—';
+        document.getElementById('scheduleCount').textContent = d.scheduleCount != null ? d.scheduleCount : '—';
+        document.getElementById('subsCount').textContent     = d.subsCount     != null ? d.subsCount     : '—';
+        document.getElementById('serverTime').textContent    = d.serverTime    ? formatThaiDateFull(new Date(d.serverTime), {time:true}) : '—';
       }
     });
   }
