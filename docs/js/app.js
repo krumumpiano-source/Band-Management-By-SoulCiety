@@ -242,6 +242,87 @@
   }
   global.formatDate = formatDate;
 
+  // ======================================================
+  // App Config — maintenance banner & registration gate
+  // ======================================================
+  function loadAppConfig(callback) {
+    // Wait for apiCall/sbRun to be ready then fetch app_config
+    var tries = 0;
+    var wait = setInterval(function() {
+      tries++;
+      if (typeof window.sbRun === 'function') {
+        clearInterval(wait);
+        window.sbRun('getAppConfig', {}, function(r) {
+          if (!r || !r.map) { if (callback) callback({}); return; }
+          var cfg = r.map;
+          global._APP_CONFIG = cfg;
+          applyAppConfig(cfg);
+          if (callback) callback(cfg);
+        });
+      } else if (tries > 80) {
+        clearInterval(wait);
+        if (callback) callback({});
+      }
+    }, 100);
+  }
+  global.loadAppConfig = loadAppConfig;
+
+  function applyAppConfig(cfg) {
+    if (!cfg) return;
+
+    // Maintenance mode redirect
+    var isAdmin = (localStorage.getItem('userRole') || '') === 'admin';
+    var path = (global.location && global.location.pathname) || '';
+    var isAdminPage = /admin\.html/.test(path);
+    if (cfg.maintenance_mode === 'true' && !isAdmin && !isAdminPage) {
+      // Show overlay instead of hard redirect so user sees message
+      var overlay = document.getElementById('maintenanceOverlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'maintenanceOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#fff;text-align:center;padding:24px';
+        overlay.innerHTML = '<div style="font-size:3rem">🔧</div><h2 style="font-size:1.4rem;margin:0">ระบบปิดปรับปรุงชั่วคราว</h2><p style="color:rgba(255,255,255,.7);margin:0">กรุณากลับมาใหม่ในภายหลัง</p>';
+        document.body.appendChild(overlay);
+      }
+      return;
+    }
+
+    // Announce banner
+    var banner = cfg.announce_banner || '';
+    if (banner) {
+      var existing = document.getElementById('announceBanner');
+      if (!existing) {
+        var typeColors = { info: '#2563eb', warning: '#d97706', error: '#c53030' };
+        var typeColor = typeColors[cfg.announce_type || 'info'] || typeColors.info;
+        var bar = document.createElement('div');
+        bar.id = 'announceBanner';
+        bar.style.cssText = 'position:sticky;top:0;z-index:9999;background:' + typeColor + ';color:#fff;text-align:center;padding:8px 16px;font-size:.85rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px';
+        bar.innerHTML = escapeHtml(banner)
+          + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:1rem;padding:0 4px;line-height:1">✕</button>';
+        document.body.insertBefore(bar, document.body.firstChild);
+      }
+    }
+  }
+  global.applyAppConfig = applyAppConfig;
+
+  // Auto-load app config on pages that have a logged-in user
+  // (skip public/auth pages: index, register, terms, forgot, create-band)
+  (function() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', _autoLoadCfg);
+    } else {
+      setTimeout(_autoLoadCfg, 0);
+    }
+    function _autoLoadCfg() {
+      var path = (global.location && global.location.pathname) || '';
+      var isPublicPage = /\/(index|register|terms|forgot|create-band)/.test(path);
+      if (isPublicPage) return;
+      var token = localStorage.getItem('auth_token');
+      if (!token) return;
+      loadAppConfig();
+    }
+  })();
+
 })(window);
 
 /* ══════════════════════════════════════════════════════

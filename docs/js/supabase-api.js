@@ -242,6 +242,26 @@
         case 'validatePromoCode': return doValidatePromoCode(d);
         case 'usePromoCode':      return doUsePromoCode(d);
 
+        // ── App Config ─────────────────────────────────────────────
+        case 'getAppConfig':          return doGetAppConfig();
+        case 'setAppConfigKey':       return doSetAppConfigKey(d);
+
+        // ── Bands Management ───────────────────────────────────────
+        case 'getAllBands':            return doGetAllBands();
+        case 'setBandPlan':           return doSetBandPlan(d);
+        case 'adminDeleteBand':       return doAdminDeleteBand(d);
+
+        // ── Activity Log ───────────────────────────────────────────
+        case 'getActivityLog':        return doGetActivityLog(d);
+        case 'logActivity':           return doLogActivity(d);
+
+        // ── Notification Templates ─────────────────────────────────
+        case 'getNotifTemplates':     return doGetNotifTemplates();
+        case 'saveNotifTemplate':     return doSaveNotifTemplate(d);
+
+        // ── Broadcast ──────────────────────────────────────────────
+        case 'broadcastNotification': return doBroadcastNotification(d);
+
         // ── Live Guest Tokens ──────────────────────────────────────
         case 'createGuestToken':  return doCreateGuestToken(d);
         case 'verifyGuestToken':  return doVerifyGuestToken(d);
@@ -1529,6 +1549,141 @@
       }).eq('id', d.jobId);
       if (uErr) throw uErr;
       return { success: true, data: { payoutStatus: payoutStatus } };
+    }
+
+    // ── App Config ─────────────────────────────────────────────────
+    async function doGetAppConfig() {
+      var { data, error } = await sb.from('app_config').select('*').order('key');
+      if (error) throw error;
+      // Return as both array and key-value map
+      var map = {};
+      (data || []).forEach(function(row) { map[row.key] = row.value; });
+      return { success: true, data: data || [], map: map };
+    }
+
+    async function doSetAppConfigKey(d) {
+      if (!d.key) return { success: false, message: 'ไม่พบ key' };
+      var { error } = await sb.from('app_config')
+        .upsert({ key: d.key, value: String(d.value || ''), description: d.description || '', updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      if (error) throw error;
+      return { success: true };
+    }
+
+    // ── Bands Management ───────────────────────────────────────────
+    async function doGetAllBands() {
+      var { data, error } = await sb.from('bands')
+        .select('id, band_name, band_code, band_plan, province, created_at, profiles!profiles_band_id_fkey(count)')
+        .order('created_at', { ascending: false });
+      if (error) {
+        // Fallback: if join fails, get bands without member count
+        var res2 = await sb.from('bands').select('id, band_name, band_code, band_plan, province, created_at').order('created_at', { ascending: false });
+        if (res2.error) throw res2.error;
+        return { success: true, data: res2.data || [] };
+      }
+      return { success: true, data: data || [] };
+    }
+
+    async function doSetBandPlan(d) {
+      if (!d.bandId || !d.plan) return { success: false, message: 'ไม่พบ bandId หรือ plan' };
+      var { error } = await sb.from('bands').update({ band_plan: d.plan }).eq('id', d.bandId);
+      if (error) throw error;
+      return { success: true };
+    }
+
+    async function doAdminDeleteBand(d) {
+      if (!d.bandId) return { success: false, message: 'ไม่พบ bandId' };
+      var { error } = await sb.from('bands').delete().eq('id', d.bandId);
+      if (error) throw error;
+      return { success: true };
+    }
+
+    // ── Activity Log ───────────────────────────────────────────────
+    async function doGetActivityLog(d) {
+      d = d || {};
+      var limit  = d.limit  || 100;
+      var offset = d.offset || 0;
+      var query  = sb.from('activity_log').select('*').order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+      if (d.action)      query = query.eq('action', d.action);
+      if (d.target_type) query = query.eq('target_type', d.target_type);
+      if (d.from_date)   query = query.gte('created_at', d.from_date);
+      if (d.to_date)     query = query.lte('created_at', d.to_date);
+      var { data, error, count } = await query;
+      if (error) throw error;
+      return { success: true, data: data || [], total: count };
+    }
+
+    async function doLogActivity(d) {
+      if (!d.action) return { success: false, message: 'ไม่พบ action' };
+      var user = await sb.auth.getUser();
+      var uid  = (user && user.data && user.data.user) ? user.data.user.id   : null;
+      var email= (user && user.data && user.data.user) ? user.data.user.email : '';
+      var { error } = await sb.from('activity_log').insert({
+        admin_id:    uid,
+        admin_email: email,
+        action:      d.action,
+        target_type: d.target_type || '',
+        target_id:   String(d.target_id || ''),
+        details:     d.details || {},
+        created_at:  new Date().toISOString()
+      });
+      if (error) throw error;
+      return { success: true };
+    }
+
+    // ── Notification Templates ──────────────────────────────────────
+    async function doGetNotifTemplates() {
+      var { data, error } = await sb.from('notification_templates').select('*').order('id');
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    }
+
+    async function doSaveNotifTemplate(d) {
+      if (!d.id) return { success: false, message: 'ไม่พบ id' };
+      var { error } = await sb.from('notification_templates')
+        .upsert({
+          id:         d.id,
+          name:       d.name    || d.id,
+          subject:    d.subject || '',
+          body:       d.body    || '',
+          variables:  d.variables || [],
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+      if (error) throw error;
+      return { success: true };
+    }
+
+    // ── Broadcast Notification ─────────────────────────────────────
+    async function doBroadcastNotification(d) {
+      if (!d.title || !d.body) return { success: false, message: 'กรุณากรอก title และ body' };
+
+      // Build query for matching push subscriptions
+      var query = sb.from('push_subscriptions').select('endpoint, p256dh, auth, user_id');
+      if (d.plan && d.plan !== 'all') {
+        // Join with profiles to filter by plan
+        var { data: matching } = await sb.from('profiles').select('id').eq('plan_override', d.plan);
+        // Note: if plan_override is null fall back to band plan — simplified filter for broadcast
+        if (matching && matching.length > 0) {
+          var ids = matching.map(function(p){ return p.id; });
+          query = query.in('user_id', ids);
+        }
+      }
+
+      var { data: subs, error } = await query.limit(500);
+      if (error) throw error;
+      if (!subs || !subs.length) return { success: false, message: 'ไม่พบผู้รับ (ไม่มี Push Subscription)' };
+
+      // Fire-and-forget: call existing sendTestNotification for each or use Edge Function
+      // We use the existing edge function send-notifications via supabase functions.invoke
+      var result = await sb.functions.invoke('send-notifications', {
+        body: {
+          targets: subs.map(function(s){ return { endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth }; }),
+          title:   d.title,
+          body:    d.body,
+          url:     d.url || '/Band-Management-By-SoulCiety/docs/dashboard.html'
+        }
+      });
+      if (result.error) throw result.error;
+      return { success: true, sent: subs.length, data: result.data };
     }
 
     // ── Restore session จาก Supabase ─────────────────────────────

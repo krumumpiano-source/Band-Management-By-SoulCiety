@@ -49,6 +49,11 @@
               <div class="a-nav-item" onclick="showPanel('promo',this)">🎟️ Promo Codes</div>
               <div class="a-nav-item" onclick="showPanel('sysinfo',this)">📊 ระบบ</div>
               <div class="a-nav-item" onclick="showPanel('backup',this)">💾 สำรองข้อมูล</div>
+              <div class="a-nav-item" onclick="showPanel('appconfig',this)">⚙️ App Config</div>
+              <div class="a-nav-item" onclick="showPanel('bands',this)">🎼 จัดการวง</div>
+              <div class="a-nav-item" onclick="showPanel('broadcast',this)">📣 Broadcast</div>
+              <div class="a-nav-item" onclick="showPanel('activitylog',this)">📋 Activity Log</div>
+              <div class="a-nav-item" onclick="showPanel('templates',this)">📧 Templates</div>
               <div class="a-nav-item" onclick="showPanel('danger',this)">⚠️ Danger Zone</div>
             </div>
           </div>
@@ -170,6 +175,128 @@
             <div id="promoList"><div style="color:var(--premium-text-muted)">กดรีเฟรชเพื่อโหลด</div></div>
           </div>
 
+          <!-- App Config Panel -->
+          <div class="card a-panel" id="panel-appconfig">
+            <div class="card-header" style="justify-content:space-between">
+              <h3 class="card-title">⚙️ App Config / Feature Flags</h3>
+              <button class="btn btn-primary btn-sm" onclick="loadAppConfig()">🔄 รีเฟรช</button>
+            </div>
+            <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:16px">ตั้งค่าระดับแอปพลิเคชัน — มีผลทันทีสำหรับผู้ใช้ทุกคน</p>
+            <div id="appConfigList"><div style="color:var(--premium-text-muted);padding:24px;text-align:center">กดรีเฟรชเพื่อโหลด</div></div>
+          </div>
+
+          <!-- Bands Management Panel -->
+          <div class="card a-panel" id="panel-bands">
+            <div class="card-header" style="justify-content:space-between">
+              <h3 class="card-title">🎼 จัดการวงดนตรี</h3>
+              <button class="btn btn-primary btn-sm" onclick="loadAllBands()">🔄 รีเฟรช</button>
+            </div>
+            <div id="bandsFilterRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+              <input id="bandSearchInput" type="text" placeholder="🔍 ค้นหาชื่อวง..." oninput="filterBandsTable()" style="padding:6px 10px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);font-size:var(--text-sm);background:var(--premium-off-white);flex:1;min-width:160px">
+              <select id="bandPlanFilter" onchange="filterBandsTable()" style="font-size:var(--text-sm);padding:6px 10px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);background:var(--premium-off-white)">
+                <option value="">ทุกแพ็กเกจ</option><option value="free">Free</option><option value="lite">Lite</option><option value="pro">Pro</option>
+              </select>
+            </div>
+            <div class="table-responsive">
+              <table class="table">
+                <thead><tr><th>ชื่อวง</th><th>รหัสวง</th><th>จังหวัด</th><th>แพ็กเกจ</th><th>สมัครเมื่อ</th><th>เปลี่ยนแพ็ก</th><th></th></tr></thead>
+                <tbody id="bandsTbody"><tr><td colspan="7" class="text-center" style="color:var(--premium-text-muted)">กดรีเฟรชเพื่อโหลด</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Broadcast Notification Panel -->
+          <div class="card a-panel" id="panel-broadcast">
+            <div class="card-header"><h3 class="card-title">📣 ส่งการแจ้งเตือนหามวล</h3></div>
+            <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:16px">ส่ง Push Notification ไปยังผู้ใช้งานกลุ่มที่เลือก (ผู้ใช้ต้องเปิดรับการแจ้งเตือนก่อน)</p>
+            <div style="display:flex;flex-direction:column;gap:14px;max-width:540px">
+              <div>
+                <label style="font-size:.78rem;color:var(--premium-text-muted);display:block;margin-bottom:4px">กลุ่มเป้าหมาย</label>
+                <select id="broadcastTarget" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary)">
+                  <option value="all">👥 ผู้ใช้ทั้งหมด</option>
+                  <option value="pro">👑 เฉพาะ Pro</option>
+                  <option value="lite">🎵 เฉพาะ Lite</option>
+                  <option value="free">🆓 เฉพาะ Free</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:.78rem;color:var(--premium-text-muted);display:block;margin-bottom:4px">หัวข้อ *</label>
+                <input id="broadcastTitle" type="text" placeholder="เช่น ประกาศสำคัญ!" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box">
+              </div>
+              <div>
+                <label style="font-size:.78rem;color:var(--premium-text-muted);display:block;margin-bottom:4px">ข้อความ *</label>
+                <textarea id="broadcastBody" rows="4" placeholder="รายละเอียดการแจ้งเตือน..." style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);resize:vertical;font-family:inherit;box-sizing:border-box"></textarea>
+              </div>
+              <div>
+                <label style="font-size:.78rem;color:var(--premium-text-muted);display:block;margin-bottom:4px">URL (เปิดเมื่อกดแจ้งเตือน) ว่าง = dashboard</label>
+                <input id="broadcastUrl" type="text" placeholder="https://..." style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box">
+              </div>
+              <button class="btn btn-primary" style="padding:12px;font-size:.95rem" onclick="sendBroadcast()">📣 ส่งการแจ้งเตือน</button>
+            </div>
+            <div id="broadcastResult" style="margin-top:16px"></div>
+          </div>
+
+          <!-- Activity Log Panel -->
+          <div class="card a-panel" id="panel-activitylog">
+            <div class="card-header" style="justify-content:space-between">
+              <h3 class="card-title">📋 Activity Log</h3>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary btn-sm" onclick="exportActivityLogCsv()">📥 Export CSV</button>
+                <button class="btn btn-primary btn-sm" onclick="loadActivityLog()">🔄 รีเฟรช</button>
+              </div>
+            </div>
+            <div id="logFilterRow" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+              <select id="logFilterAction" onchange="loadActivityLog()" style="font-size:var(--text-sm);padding:5px 8px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);background:var(--premium-off-white)">
+                <option value="">ทุก Action</option>
+                <option value="set_plan_override">Set Plan Override</option>
+                <option value="delete_user">Delete User</option>
+                <option value="approve_band">Approve Band</option>
+                <option value="reject_band">Reject Band</option>
+                <option value="set_band_plan">Set Band Plan</option>
+                <option value="delete_band">Delete Band</option>
+                <option value="broadcast">Broadcast</option>
+                <option value="save_app_config">Save App Config</option>
+              </select>
+              <input id="logFromDate" type="date" onchange="loadActivityLog()" style="font-size:var(--text-sm);padding:5px 8px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);background:var(--premium-off-white)">
+              <input id="logToDate" type="date" onchange="loadActivityLog()" style="font-size:var(--text-sm);padding:5px 8px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);background:var(--premium-off-white)">
+            </div>
+            <div class="table-responsive">
+              <table class="table" style="font-size:.82rem">
+                <thead><tr><th>เวลา</th><th>Admin</th><th>Action</th><th>Target</th><th>รายละเอียด</th></tr></thead>
+                <tbody id="logTbody"><tr><td colspan="5" class="text-center" style="color:var(--premium-text-muted)">กดรีเฟรชเพื่อโหลด</td></tr></tbody>
+              </table>
+            </div>
+            <div id="logPagerRow" style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px"></div>
+          </div>
+
+          <!-- Notification Templates Panel -->
+          <div class="card a-panel" id="panel-templates">
+            <div class="card-header" style="justify-content:space-between">
+              <h3 class="card-title">📧 Notification Templates</h3>
+              <button class="btn btn-primary btn-sm" onclick="loadNotifTemplates()">🔄 รีเฟรช</button>
+            </div>
+            <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:16px">แก้ไขเทมเพลตข้อความสำหรับการแจ้งเตือนต่าง ๆ — ใช้ {{variable}} สำหรับตัวแปร</p>
+            <div style="display:grid;grid-template-columns:220px 1fr;gap:16px" id="templatesLayout">
+              <div id="templateListSide" style="display:flex;flex-direction:column;gap:4px">
+                <div style="color:var(--premium-text-muted);font-size:.78rem;padding:8px">กดรีเฟรชเพื่อโหลด</div>
+              </div>
+              <div id="templateEditor" style="display:none">
+                <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;padding:16px">
+                  <div style="font-weight:700;font-size:.9rem;margin-bottom:12px" id="tplEditorTitle">—</div>
+                  <div style="margin-bottom:10px">
+                    <label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">หัวข้อ</label>
+                    <input id="tplSubject" type="text" style="width:100%;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);box-sizing:border-box">
+                  </div>
+                  <div style="margin-bottom:10px">
+                    <label style="font-size:.75rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">ข้อความ <span id="tplVarHint" style="color:var(--premium-gold)"></span></label>
+                    <textarea id="tplBody" rows="8" style="width:100%;padding:7px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);resize:vertical;font-family:monospace;font-size:.82rem;box-sizing:border-box"></textarea>
+                  </div>
+                  <button class="btn btn-primary" onclick="saveNotifTemplate()">💾 บันทึก Template</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Danger Zone Panel -->
           <div class="card a-panel" id="panel-danger">
             <div class="card-header"><h3 class="card-title" style="color:#c53030">⚠️ Danger Zone</h3></div>
@@ -258,6 +385,10 @@
     if (id === 'subscriptions') setTimeout(loadSubscriptions, 100);
     if (id === 'pricing')       setTimeout(loadPricing, 100);
     if (id === 'promo')         setTimeout(loadPromoCodes, 100);
+    if (id === 'appconfig')     setTimeout(loadAppConfig, 100);
+    if (id === 'bands')         setTimeout(loadAllBands, 100);
+    if (id === 'activitylog')   setTimeout(loadActivityLog, 100);
+    if (id === 'templates')     setTimeout(loadNotifTemplates, 100);
   }
 
   function loadUsers() {
@@ -790,6 +921,247 @@
       tbody.appendChild(tr);
       showToast('เพิ่มแพ็กเกจใหม่แล้ว — แก้ไขค่าได้เลย', 'success');
     }
+  }
+  // ── App Config Panel ──────────────────────────────────────────────────────
+  function loadAppConfig() {
+    var el = document.getElementById('appConfigList');
+    el.innerHTML = '<div style="color:var(--premium-text-muted)">กำลังโหลด...</div>';
+    apiCall('getAppConfig', {}, function(r) {
+      var list = (r && r.data) || [];
+      if (!list.length) { el.innerHTML = '<div style="color:var(--premium-text-muted);padding:24px;text-align:center">ไม่มีข้อมูล Config</div>'; return; }
+      el.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">'
+        + list.map(function(row) {
+            var isBool = row.value === 'true' || row.value === 'false';
+            var isLong = row.value.length > 30;
+            var inputEl;
+            if (isBool) {
+              inputEl = '<select id="cfgval_' + row.key + '" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary)">'
+                + '<option value="true"' + (row.value==='true'?' selected':'') + '>✅ เปิด (true)</option>'
+                + '<option value="false"' + (row.value==='false'?' selected':'') + '>❌ ปิด (false)</option>'
+                + '</select>';
+            } else if (isLong) {
+              inputEl = '<textarea id="cfgval_' + row.key + '" rows="2" style="width:100%;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-family:inherit;resize:vertical;box-sizing:border-box">' + escapeHtml(row.value) + '</textarea>';
+            } else {
+              inputEl = '<input id="cfgval_' + row.key + '" type="text" value="' + escapeHtml(row.value) + '" style="flex:1;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary)">';
+            }
+            return '<div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;padding:14px">'
+              + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+              + '<div><code style="font-size:.82rem;color:var(--premium-gold)">' + escapeHtml(row.key) + '</code>'
+              + '<span style="font-size:.73rem;color:var(--premium-text-muted);margin-left:8px">' + escapeHtml(row.description || '') + '</span></div>'
+              + '<button class="btn btn-primary btn-sm" style="font-size:.78rem;padding:4px 12px" onclick="saveAppConfigKey(\'' + row.key + '\',\'' + escapeHtml(row.description||'') + '\')">💾 บันทึก</button>'
+              + '</div>'
+              + '<div style="display:flex;align-items:center;gap:8px">' + inputEl + '</div>'
+              + '</div>';
+          }).join('')
+        + '</div>';
+    });
+  }
+
+  function saveAppConfigKey(key, description) {
+    var el = document.getElementById('cfgval_' + key);
+    if (!el) return;
+    var value = el.tagName === 'SELECT' || el.tagName === 'INPUT' ? el.value : el.value;
+    apiCall('setAppConfigKey', { key: key, value: value, description: description }, function(r) {
+      if (r && r.success) {
+        showToast('✅ บันทึก ' + key + ' = ' + value + ' สำเร็จ', 'success');
+        apiCall('logActivity', { action: 'save_app_config', target_type: 'app_config', target_id: key, details: { value: value } }, function(){});
+      } else showToast((r && r.message) || t('msg_error'), 'error');
+    });
+  }
+
+  // ── Bands Management Panel ──────────────────────────────────────────────────
+  var _allBandsData = [];
+
+  function loadAllBands() {
+    var tbody = document.getElementById('bandsTbody');
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--premium-text-muted)">กำลังโหลด...</td></tr>';
+    apiCall('getAllBands', {}, function(r) {
+      _allBandsData = (r && r.data) || [];
+      renderBandsTable(_allBandsData);
+    });
+  }
+
+  function renderBandsTable(data) {
+    var tbody = document.getElementById('bandsTbody');
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--premium-text-muted)">ไม่มีวงดนตรี</td></tr>'; return; }
+    var planColors = { free: '#22c55e', lite: '#2563eb', pro: '#d97706' };
+    tbody.innerHTML = data.map(function(b) {
+      var created = b.created_at ? new Date(b.created_at).toLocaleDateString('th-TH') : '—';
+      var plan = b.band_plan || 'free';
+      var memberCount = b.profiles ? (Array.isArray(b.profiles) ? b.profiles.length : b.profiles) : '—';
+      return '<tr>'
+        + '<td><b>' + escapeHtml(b.band_name || '—') + '</b></td>'
+        + '<td><code style="font-size:.8rem">' + escapeHtml(b.band_code || '—') + '</code></td>'
+        + '<td style="font-size:.78rem">' + escapeHtml(b.province || '—') + '</td>'
+        + '<td><span style="background:' + (planColors[plan]||'#6b7280') + ';color:#fff;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700">' + plan.toUpperCase() + '</span></td>'
+        + '<td style="font-size:.78rem">' + created + '</td>'
+        + '<td><select class="role-select" style="font-size:.75rem" onchange="setBandPlan(\'' + b.id + '\',this.value)">'
+        + '<option value="free"'+(plan==='free'?' selected':'')+'>🆓 Free</option>'
+        + '<option value="lite"'+(plan==='lite'?' selected':'')+'>🎵 Lite</option>'
+        + '<option value="pro"'+(plan==='pro'?' selected':'')+'>👑 Pro</option>'
+        + '</select></td>'
+        + '<td><button class="btn btn-danger btn-sm" onclick="adminDeleteBand(\'' + b.id + '\',\'' + escapeHtml(b.band_name||'') + '\')">🗑️</button></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function filterBandsTable() {
+    var search = (document.getElementById('bandSearchInput').value || '').toLowerCase();
+    var planF  = document.getElementById('bandPlanFilter').value;
+    var filtered = _allBandsData.filter(function(b) {
+      var name = (b.band_name || '').toLowerCase();
+      var plan = b.band_plan || 'free';
+      return (!search || name.includes(search)) && (!planF || plan === planF);
+    });
+    renderBandsTable(filtered);
+  }
+
+  function setBandPlan(bandId, plan) {
+    apiCall('setBandPlan', { bandId: bandId, plan: plan }, function(r) {
+      if (r && r.success) {
+        showToast('✅ เปลี่ยนแพ็กเกจวงเป็น ' + plan.toUpperCase() + ' สำเร็จ', 'success');
+        apiCall('logActivity', { action: 'set_band_plan', target_type: 'band', target_id: bandId, details: { plan: plan } }, function(){});
+        var b = _allBandsData.find(function(x){ return x.id === bandId; });
+        if (b) b.band_plan = plan;
+      } else showToast((r && r.message) || t('msg_error'), 'error');
+    });
+  }
+
+  function adminDeleteBand(bandId, bandName) {
+    showConfirm('ลบวง "' + bandName + '"?', 'ข้อมูลวง สมาชิก เพลง ตารางงานทั้งหมดในวงนี้จะถูกลบ ดำเนินการต่อ?').then(function(ok) {
+      if (!ok) return;
+      apiCall('adminDeleteBand', { bandId: bandId }, function(r) {
+        if (r && r.success) {
+          showToast('ลบวง "' + bandName + '" สำเร็จ', 'success');
+          apiCall('logActivity', { action: 'delete_band', target_type: 'band', target_id: bandId, details: { band_name: bandName } }, function(){});
+          loadAllBands();
+        } else showToast((r && r.message) || t('msg_error'), 'error');
+      });
+    });
+  }
+
+  // ── Broadcast Panel ────────────────────────────────────────────────────────
+  function sendBroadcast() {
+    var title  = (document.getElementById('broadcastTitle').value || '').trim();
+    var body   = (document.getElementById('broadcastBody').value  || '').trim();
+    var target = document.getElementById('broadcastTarget').value;
+    var url    = (document.getElementById('broadcastUrl').value   || '').trim();
+    if (!title || !body) { showToast('กรุณากรอก หัวข้อ และ ข้อความ', 'error'); return; }
+    var resEl = document.getElementById('broadcastResult');
+    resEl.innerHTML = '<div style="color:var(--premium-text-muted);font-size:.85rem">กำลังส่ง...</div>';
+    apiCall('broadcastNotification', { title: title, body: body, plan: target, url: url || undefined }, function(r) {
+      if (r && r.success) {
+        resEl.innerHTML = '<div style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:12px;color:#22c55e">✅ ส่งสำเร็จ — ' + (r.sent || 0) + ' เครื่อง</div>';
+        apiCall('logActivity', { action: 'broadcast', target_type: 'all', target_id: target, details: { title: title, sent: r.sent } }, function(){});
+      } else {
+        var msg = (r && r.message) || 'เกิดข้อผิดพลาด';
+        resEl.innerHTML = '<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px;color:#ef4444">❌ ' + escapeHtml(msg) + '</div>';
+      }
+    });
+  }
+
+  // ── Activity Log Panel ─────────────────────────────────────────────────────
+  var _logOffset = 0;
+  var _logLimit  = 50;
+
+  function loadActivityLog(offset) {
+    _logOffset = offset || 0;
+    var tbody   = document.getElementById('logTbody');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="color:var(--premium-text-muted)">กำลังโหลด...</td></tr>';
+    var action   = document.getElementById('logFilterAction').value;
+    var fromDate = document.getElementById('logFromDate').value;
+    var toDate   = document.getElementById('logToDate').value;
+    apiCall('getActivityLog', { action: action, from_date: fromDate ? fromDate + 'T00:00:00Z' : '', to_date: toDate ? toDate + 'T23:59:59Z' : '', limit: _logLimit, offset: _logOffset }, function(r) {
+      var list = (r && r.data) || [];
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="color:var(--premium-text-muted)">ไม่มี Log</td></tr>'; return; }
+      var actionColors = { delete_user:'#ef4444', delete_band:'#ef4444', broadcast:'#8b5cf6', set_plan_override:'#f59e0b', set_band_plan:'#3b82f6', save_app_config:'#22c55e', approve_band:'#22c55e', reject_band:'#9ca3af' };
+      tbody.innerHTML = list.map(function(log) {
+        var dt = log.created_at ? new Date(log.created_at).toLocaleString('th-TH') : '—';
+        var clr = actionColors[log.action] || '#6b7280';
+        var details = '';
+        try { details = JSON.stringify(log.details || {}); } catch(e){ details = ''; }
+        return '<tr>'
+          + '<td style="font-size:.75rem;white-space:nowrap">' + dt + '</td>'
+          + '<td style="font-size:.75rem">' + escapeHtml(log.admin_email || '—') + '</td>'
+          + '<td><span style="color:' + clr + ';font-weight:600;font-size:.78rem">' + escapeHtml(log.action || '—') + '</span></td>'
+          + '<td style="font-size:.75rem">' + escapeHtml((log.target_type ? log.target_type + ':' : '') + (log.target_id || '')) + '</td>'
+          + '<td style="font-size:.72rem;color:var(--premium-text-muted);font-family:monospace;max-width:200px;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(details) + '</td>'
+          + '</tr>';
+      }).join('');
+      // Pager
+      var pager = document.getElementById('logPagerRow');
+      if (pager) {
+        pager.innerHTML =
+          (_logOffset > 0 ? '<button class="btn btn-secondary btn-sm" onclick="loadActivityLog(' + (_logOffset - _logLimit) + ')">◀ ก่อนหน้า</button>' : '') +
+          (list.length >= _logLimit ? '<button class="btn btn-secondary btn-sm" onclick="loadActivityLog(' + (_logOffset + _logLimit) + ')">ถัดไป ▶</button>' : '');
+      }
+    });
+  }
+
+  function exportActivityLogCsv() {
+    apiCall('getActivityLog', { limit: 1000, offset: 0 }, function(r) {
+      var list = (r && r.data) || [];
+      if (!list.length) { showToast('ไม่มีข้อมูล', 'error'); return; }
+      var rows = [['เวลา','Admin','Action','Target Type','Target ID','Details']].concat(
+        list.map(function(log) {
+          return [log.created_at, log.admin_email, log.action, log.target_type, log.target_id, JSON.stringify(log.details || {})];
+        })
+      );
+      var csv = rows.map(function(r) {
+        return r.map(function(cell) { return '"' + String(cell||'').replace(/"/g,'""') + '"'; }).join(',');
+      }).join('\r\n');
+      var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = url; a.download = 'activity_log.csv'; a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  // ── Notification Templates Panel ───────────────────────────────────────────
+  var _tplList = [];
+  var _currentTpl = null;
+
+  function loadNotifTemplates() {
+    var side = document.getElementById('templateListSide');
+    side.innerHTML = '<div style="color:var(--premium-text-muted);font-size:.78rem;padding:8px">กำลังโหลด...</div>';
+    apiCall('getNotifTemplates', {}, function(r) {
+      _tplList = (r && r.data) || [];
+      if (!_tplList.length) { side.innerHTML = '<div style="color:var(--premium-text-muted);font-size:.78rem;padding:8px">ไม่มี Template</div>'; return; }
+      side.innerHTML = _tplList.map(function(tpl) {
+        return '<div class="a-nav-item" id="tplbtn_' + tpl.id + '" onclick="selectTemplate(\'' + tpl.id + '\')" style="font-size:.8rem;text-align:left">'
+          + '📧 ' + escapeHtml(tpl.name || tpl.id)
+          + '</div>';
+      }).join('');
+      if (_tplList.length) selectTemplate(_tplList[0].id);
+    });
+  }
+
+  function selectTemplate(id) {
+    var tpl = _tplList.find(function(t){ return t.id === id; });
+    if (!tpl) return;
+    _currentTpl = tpl;
+    document.querySelectorAll('[id^="tplbtn_"]').forEach(function(b){ b.classList.remove('active'); });
+    var btn = document.getElementById('tplbtn_' + id);
+    if (btn) btn.classList.add('active');
+    document.getElementById('templateEditor').style.display = '';
+    document.getElementById('tplEditorTitle').textContent = '📧 ' + (tpl.name || tpl.id);
+    document.getElementById('tplSubject').value = tpl.subject || '';
+    document.getElementById('tplBody').value    = tpl.body    || '';
+    var vars = Array.isArray(tpl.variables) ? tpl.variables : [];
+    document.getElementById('tplVarHint').textContent = vars.length ? '(ตัวแปร: ' + vars.map(function(v){ return '{{'+v+'}}'; }).join(', ') + ')' : '';
+  }
+
+  function saveNotifTemplate() {
+    if (!_currentTpl) return;
+    var subject = document.getElementById('tplSubject').value;
+    var body    = document.getElementById('tplBody').value;
+    apiCall('saveNotifTemplate', { id: _currentTpl.id, name: _currentTpl.name, subject: subject, body: body, variables: _currentTpl.variables || [] }, function(r) {
+      if (r && r.success) {
+        showToast('✅ บันทึก Template "' + _currentTpl.name + '" สำเร็จ', 'success');
+        _currentTpl.subject = subject;
+        _currentTpl.body    = body;
+      } else showToast((r && r.message) || t('msg_error'), 'error');
+    });
   }
   </script>
 </body>
