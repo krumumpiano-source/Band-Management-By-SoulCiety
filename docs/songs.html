@@ -687,7 +687,7 @@ var _currentSource = 'global'; // 'global' or 'band'
 // ── Select mode state ──────────────────────────────────────────────
 var _selectMode = false;
 var _selectedIds = {};
-var _bandLibraryNames = {}; // lowercase song names already in band library
+var _bandLibraryIds = {}; // song_id => true for songs already in band library (refs + owned)
 var _bandLibraryLoaded = false;
 
 var domCache = {};
@@ -822,10 +822,10 @@ function loadBandLibrary() {
   if (!bandId && !bandName) { _bandLibraryLoaded = true; return; }
   apiCall('getAllSongs', { source: 'band', bandId: bandId, bandName: bandName }, function(r) {
     _bandLibraryLoaded = true;
-    _bandLibraryNames = {};
+    _bandLibraryIds = {};
     if (r && r.success && r.data) {
       r.data.forEach(function(s) {
-        _bandLibraryNames[(s.name || '').toLowerCase().trim()] = true;
+        _bandLibraryIds[s.id || s.songId || ''] = true;
       });
     }
     if (_selectMode) renderPage();
@@ -924,16 +924,33 @@ function switchLibrary(source) {
   loadPage(1);
 }
 
-function deleteBandSong(songId, songName) {
-  if (!confirm('ลบ "' + songName + '" ออกจากคลังวง?')) return;
-  apiCall('deleteSong', { songId: songId }, function(r) {
-    if (r && r.success) {
-      showSongsAlert('🗑️ ลบ "' + songName + '" แล้ว');
-      loadPage(currentPage);
-    } else {
-      showSongsAlert('❌ ' + ((r && r.message) || 'ลบไม่สำเร็จ'));
-    }
-  });
+function deleteBandSong(songId, songName, libType) {
+  var isRef = (libType === 'ref');
+  var msg = isRef
+    ? 'นำ "' + songName + '" ออกจากคลังวง?'
+    : 'ลบ "' + songName + '" ออกจากคลังวง?';
+  if (!confirm(msg)) return;
+
+  if (isRef) {
+    apiCall('removeFromBandLibrary', { songId: songId }, function(r) {
+      if (r && r.success) {
+        showSongsAlert('✅ นำ "' + songName + '" ออกแล้ว');
+        _bandLibraryLoaded = false;
+        loadPage(currentPage);
+      } else {
+        showSongsAlert('❌ ' + ((r && r.message) || 'ลบไม่สำเร็จ'));
+      }
+    });
+  } else {
+    apiCall('deleteSong', { songId: songId }, function(r) {
+      if (r && r.success) {
+        showSongsAlert('🗑️ ลบ "' + songName + '" แล้ว');
+        loadPage(currentPage);
+      } else {
+        showSongsAlert('❌ ' + ((r && r.message) || 'ลบไม่สำเร็จ'));
+      }
+    });
+  }
 }
 
 function escapeHtml(text) {
@@ -978,8 +995,7 @@ function renderPage() {
       var metaHtml = meta.length ? '<div class="song-meta">' + meta.join(' &nbsp;·&nbsp; ') + '</div>' : '';
 
       if (_selectMode) {
-        var nameKey = (s.name || '').toLowerCase().trim();
-        var isInLib = !!_bandLibraryNames[nameKey];
+        var isInLib = !!_bandLibraryIds[songId];
         var isSelected = !!_selectedIds[songId];
         if (isInLib) {
           buf.push(
@@ -1003,18 +1019,34 @@ function renderPage() {
         }
       } else {
       if (_currentSource === 'band') {
-        // Band library: edit + delete + add to playlist
-        buf.push(
-          '<div class="result-item" data-index="' + idx + '">' +
-          '<div class="result-item-left">' +
-          '<div class="song-title">' + nameEscaped + newTag + '</div>' +
-          metaHtml +
-          '</div>' +
-          '<span class="edit-band-btn" data-songid="' + songId + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02">\u270F\uFE0F</span>' +
-          '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + nameEscaped.replace(/"/g,'&quot;') + '" title="\u0e25\u0e1a">\u2715</span>' +
-          '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
-          '</div>'
-        );
+        var libType = s.libType || 'owned';
+        if (libType === 'ref') {
+          // Referenced global song: suggest + remove from library + add to playlist
+          buf.push(
+            '<div class="result-item" data-index="' + idx + '">' +
+            '<div class="result-item-left">' +
+            '<div class="song-title">' + nameEscaped + newTag + '</div>' +
+            metaHtml +
+            '</div>' +
+            '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="แนะนำการแก้ไข">💡</span>' +
+            '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + nameEscaped.replace(/"/g,'&quot;') + '" data-libtype="ref" title="นำออกจากคลังวง">✕</span>' +
+            '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
+            '</div>'
+          );
+        } else {
+          // Band-owned song: edit + delete + add to playlist
+          buf.push(
+            '<div class="result-item" data-index="' + idx + '">' +
+            '<div class="result-item-left">' +
+            '<div class="song-title">' + nameEscaped + newTag + '</div>' +
+            metaHtml +
+            '</div>' +
+            '<span class="edit-band-btn" data-songid="' + songId + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02">\u270F\uFE0F</span>' +
+            '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + nameEscaped.replace(/"/g,'&quot;') + '" data-libtype="owned" title="\u0e25\u0e1a">\u2715</span>' +
+            '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
+            '</div>'
+          );
+        }
       } else {
       // Global library: suggest + add to playlist
       buf.push(
@@ -1076,7 +1108,8 @@ document.addEventListener("click", function (e) {
   if (e.target && e.target.classList && e.target.classList.contains("del-band-btn")) {
     var did = e.target.getAttribute("data-songid");
     var dname = e.target.getAttribute("data-name") || '';
-    if (did) deleteBandSong(did, dname);
+    var dlibtype = e.target.getAttribute("data-libtype") || 'owned';
+    if (did) deleteBandSong(did, dname, dlibtype);
   }
 });
 

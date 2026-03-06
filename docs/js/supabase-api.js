@@ -138,6 +138,7 @@
         case 'getRequestedSongsFromHistory': return doGetRequestedSongsFromHistory(d);
         case 'bulkAddSongsToLibrary': return doBulkAddSongsToLibrary(d);
         case 'cloneSongsToBand':   return doCloneSongsToBand(d);
+        case 'removeFromBandLibrary': return doRemoveFromBandLibrary(d);
         case 'getBandSongStats':   return doGetBandSongStats(d);
 
         // ── Song Suggestions ───────────────────────────────────────
@@ -540,15 +541,38 @@
     async function doGetAllSongs(d) {
       var source = d.source || 'global';
       var PAGE = 500;
+
+      if (source === 'band') {
+        // Reference-based: get refs joined with global songs + band-owned songs
+        var bandId = d.bandId || getBandId();
+        var all = [];
+
+        // 1. Referenced global songs
+        var { data: refs, error: refErr } = await sb.from('band_song_refs')
+          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, mood, tags, notes, source, created_at, updated_at)')
+          .eq('band_id', bandId);
+        if (refErr) throw refErr;
+        (refs || []).forEach(function(r) {
+          var s = r.band_songs;
+          if (s) { s.lib_type = 'ref'; all.push(s); }
+        });
+
+        // 2. Band-owned songs
+        var { data: owned, error: ownErr } = await sb.from('band_songs')
+          .select('*').eq('band_id', bandId);
+        if (ownErr) throw ownErr;
+        (owned || []).forEach(function(s) { s.lib_type = 'owned'; all.push(s); });
+
+        all.sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
+        return { success: true, data: toCamelList(all) };
+      }
+
+      // Global songs (unchanged)
       var all = [];
       var from = 0;
       while (true) {
         var q = sb.from('band_songs').select('*').order('name').range(from, from + PAGE - 1);
-        if (source === 'band') {
-          q = q.eq('band_id', getBandId());
-        } else {
-          q = q.is('band_id', null);
-        }
+        q = q.is('band_id', null);
         var { data, error } = await q;
         if (error) throw error;
         if (!data || data.length === 0) break;
@@ -577,16 +601,60 @@
       var from = (page - 1) * perPage;
       var to   = from + perPage - 1;
 
+      if (source === 'band') {
+        // Reference-based: get refs + owned, then filter/sort/paginate client-side
+        var bandId = getBandId();
+        var all = [];
+
+        // 1. Referenced global songs
+        var { data: refs, error: refErr } = await sb.from('band_song_refs')
+          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, mood, tags, notes, source, created_at, updated_at)')
+          .eq('band_id', bandId);
+        if (refErr) throw refErr;
+        (refs || []).forEach(function(r) {
+          var s = r.band_songs;
+          if (s) { s.lib_type = 'ref'; all.push(s); }
+        });
+
+        // 2. Band-owned songs
+        var { data: owned, error: ownErr } = await sb.from('band_songs')
+          .select('*').eq('band_id', bandId);
+        if (ownErr) throw ownErr;
+        (owned || []).forEach(function(s) { s.lib_type = 'owned'; all.push(s); });
+
+        // Apply filters client-side
+        if (search) {
+          var sl = search.toLowerCase();
+          all = all.filter(function(s) {
+            return (s.name || '').toLowerCase().indexOf(sl) >= 0 ||
+                   (s.artist || '').toLowerCase().indexOf(sl) >= 0 ||
+                   (s.key || '').toLowerCase().indexOf(sl) >= 0;
+          });
+        }
+        if (singer) {
+          var singerMap = { 'ชาย': ['ชาย','male'], 'หญิง': ['หญิง','female'], 'คู่': ['คู่','duet','ชาย/หญิง'] };
+          var vals = singerMap[singer] || [singer];
+          all = all.filter(function(s) { return vals.indexOf(s.singer) >= 0; });
+        }
+        if (era)   all = all.filter(function(s) { return s.era === era; });
+        if (genre) all = all.filter(function(s) { return s.tags === genre; });
+        if (mood)  all = all.filter(function(s) { return (s.mood || '').indexOf(mood) >= 0; });
+
+        // Sort
+        all.sort(function(a, b) { return (a[sortKey] || '').toString().localeCompare((b[sortKey] || '').toString()); });
+        if (!sortAsc) all.reverse();
+
+        var total = all.length;
+        var sliced = all.slice(from, from + perPage);
+        return { success: true, data: toCamelList(sliced), total: total };
+      }
+
+      // Global songs (server-side pagination)
       var q = sb.from('band_songs')
         .select('*', { count: 'exact' })
         .order(sortKey, { ascending: sortAsc })
-        .range(from, to);
-
-      if (source === 'band') {
-        q = q.eq('band_id', getBandId());
-      } else {
-        q = q.is('band_id', null);
-      }
+        .range(from, to)
+        .is('band_id', null);
 
       if (search) {
         var s = search.replace(/[,.()'"\\]/g, '');
@@ -612,14 +680,32 @@
 
     async function doSearchSongs(d) {
       var term = (d.query || '').trim();
-      var { data, error } = await sb.from('band_songs')
+      var bandId = getBandId();
+      var all = [];
+
+      // 1. Referenced global songs matching term
+      var { data: refs } = await sb.from('band_song_refs')
+        .select('song_id, band_songs!inner(name, key, bpm, singer, artist)')
+        .eq('band_id', bandId);
+      (refs || []).forEach(function(r) {
+        var s = r.band_songs;
+        if (s && (s.name || '').toLowerCase().indexOf(term.toLowerCase()) >= 0) all.push(s);
+      });
+
+      // 2. Band-owned songs
+      var { data: owned, error } = await sb.from('band_songs')
         .select('name, key, bpm, singer, artist')
-        .eq('band_id', getBandId())
+        .eq('band_id', bandId)
         .ilike('name', '%' + term + '%')
         .order('name')
         .limit(10);
       if (error) throw error;
-      return { success: true, data: toCamelList(data) };
+      all = all.concat(owned || []);
+
+      // Sort + limit
+      all.sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
+      if (all.length > 10) all = all.slice(0, 10);
+      return { success: true, data: toCamelList(all) };
     }
 
     // ── Band Members ──────────────────────────────────────────────
@@ -1388,40 +1474,40 @@
       var bandId = d.bandId || getBandId();
       if (!ids.length || !bandId) return { success: false, message: 'ต้องระบุ ids และ bandId' };
 
-      // Fetch source songs
-      var { data: sourceSongs, error: fetchErr } = await sb.from('band_songs')
-        .select('*').in('id', ids);
-      if (fetchErr) throw fetchErr;
-
-      // Fetch existing band songs (by name) to deduplicate
-      var { data: existing } = await sb.from('band_songs')
-        .select('name').eq('band_id', bandId);
-      var existingNames = {};
-      (existing || []).forEach(function(s) {
-        existingNames[(s.name || '').toLowerCase().trim()] = true;
-      });
+      // Fetch existing refs to deduplicate
+      var { data: existRefs } = await sb.from('band_song_refs')
+        .select('song_id').eq('band_id', bandId);
+      var refSet = {};
+      (existRefs || []).forEach(function(r) { refSet[r.song_id] = true; });
 
       var toInsert = [];
-      var skipped  = [];
-      (sourceSongs || []).forEach(function(s) {
-        var key = (s.name || '').toLowerCase().trim();
-        if (existingNames[key]) { skipped.push(s.name); return; }
-        toInsert.push({
-          band_id: bandId, source: 'band',
-          name: s.name, artist: s.artist || '', key: s.key || '',
-          bpm: s.bpm || 0, singer: s.singer || '', era: s.era || '',
-          mood: s.mood || '', tags: s.tags || '', notes: s.notes || ''
-        });
+      var skipped  = 0;
+      ids.forEach(function(songId) {
+        if (refSet[songId]) { skipped++; return; }
+        toInsert.push({ band_id: bandId, song_id: songId });
       });
 
       var added = 0;
       if (toInsert.length) {
-        var { data: inserted, error: insErr } = await sb.from('band_songs').insert(toInsert).select('id');
+        var { data: inserted, error: insErr } = await sb.from('band_song_refs').insert(toInsert).select('id');
         if (insErr) throw insErr;
         added = (inserted || []).length;
       }
 
-      return { success: true, added: added, skipped: skipped.length, skippedNames: skipped };
+      return { success: true, added: added, skipped: skipped };
+    }
+
+    async function doRemoveFromBandLibrary(d) {
+      var songId = d.songId;
+      var bandId = d.bandId || getBandId();
+      if (!songId || !bandId) return { success: false, message: 'ต้องระบุ songId และ bandId' };
+
+      var { error } = await sb.from('band_song_refs')
+        .delete()
+        .eq('band_id', bandId)
+        .eq('song_id', songId);
+      if (error) throw error;
+      return { success: true };
     }
 
     // Admin: get per-band song stats
