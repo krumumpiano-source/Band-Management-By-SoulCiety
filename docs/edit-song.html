@@ -137,7 +137,9 @@
           if (s.era) Array.from(eraEl.options).forEach(function(o){ if (o.value && s.era.indexOf(o.value) >= 0) eraEl.value = o.value; });
           var moodEl = document.getElementById('mood');
           moodEl.value = '';
-          if (s.mood) Array.from(moodEl.options).forEach(function(o){ if (o.value && s.mood.indexOf(o.value) >= 0) moodEl.value = o.value; });
+          var MOOD_COMPAT = {'สุข / สนุก':'มัน / สนุก','เศร้า / เหงา':'เศร้า / อกหัก','หวาน / อบอุ่น':'หวาน / โรแมนติก','มัน / ฮึกเหิม':'ฮึกเหิม / ยิ่งใหญ่'};
+          var moodVal = MOOD_COMPAT[s.mood] || s.mood || '';
+          if (moodVal) Array.from(moodEl.options).forEach(function(o){ if (o.value && moodVal.indexOf(o.value) >= 0) moodEl.value = o.value; });
           updateMoodHint('mood','moodHint');
           // genre (tags column)
           var genreEl = document.getElementById('genre');
