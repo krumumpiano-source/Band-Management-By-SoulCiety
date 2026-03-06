@@ -245,6 +245,25 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .suggest-song-btn:hover{background:#c4b5fd;color:#fff}
 .suggest-song-btn:active{transform:scale(.92)}
 
+.edit-band-btn{
+  flex-shrink:0;width:32px;height:32px;border-radius:50%;
+  background:#dbeafe;display:flex;align-items:center;justify-content:center;
+  font-size:14px;cursor:pointer;user-select:none;transition:background .15s;
+  -webkit-tap-highlight-color:transparent;
+  min-width:32px;min-height:32px;padding:0;border:1.5px solid #93c5fd;color:#1e40af;
+}
+.edit-band-btn:hover{background:#93c5fd;color:#fff}
+.edit-band-btn:active{transform:scale(.92)}
+.del-band-btn{
+  flex-shrink:0;width:32px;height:32px;border-radius:50%;
+  background:#fee2e2;display:flex;align-items:center;justify-content:center;
+  font-size:14px;cursor:pointer;user-select:none;transition:background .15s;
+  -webkit-tap-highlight-color:transparent;
+  min-width:32px;min-height:32px;padding:0;border:1.5px solid #fca5a5;color:#991b1b;
+}
+.del-band-btn:hover{background:#fca5a5;color:#fff}
+.del-band-btn:active{transform:scale(.92)}
+
 .sug-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;overflow-y:auto;padding:16px}
 .sug-card{max-width:560px;margin:40px auto;background:#fff;border-radius:16px;padding:24px;position:relative}
 .sug-field{margin-bottom:14px}
@@ -905,6 +924,18 @@ function switchLibrary(source) {
   loadPage(1);
 }
 
+function deleteBandSong(songId, songName) {
+  if (!confirm('ลบ "' + songName + '" ออกจากคลังวง?')) return;
+  apiCall('deleteSong', { songId: songId }, function(r) {
+    if (r && r.success) {
+      showSongsAlert('🗑️ ลบ "' + songName + '" แล้ว');
+      loadPage(currentPage);
+    } else {
+      showSongsAlert('❌ ' + ((r && r.message) || 'ลบไม่สำเร็จ'));
+    }
+  });
+}
+
 function escapeHtml(text) {
   var div = document.createElement("div");
   div.textContent = text;
@@ -971,6 +1002,21 @@ function renderPage() {
           );
         }
       } else {
+      if (_currentSource === 'band') {
+        // Band library: edit + delete + add to playlist
+        buf.push(
+          '<div class="result-item" data-index="' + idx + '">' +
+          '<div class="result-item-left">' +
+          '<div class="song-title">' + nameEscaped + newTag + '</div>' +
+          metaHtml +
+          '</div>' +
+          '<span class="edit-band-btn" data-songid="' + songId + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02">\u270F\uFE0F</span>' +
+          '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + nameEscaped.replace(/"/g,'&quot;') + '" title="\u0e25\u0e1a">\u2715</span>' +
+          '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
+          '</div>'
+        );
+      } else {
+      // Global library: suggest + add to playlist
       buf.push(
         '<div class="result-item" data-index="' + idx + '">' +
         '<div class="result-item-left">' +
@@ -981,6 +1027,7 @@ function renderPage() {
         '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
         '</div>'
       );
+      }
       } // end _selectMode else
     }
     html = '<div class="result-columns">' + buf.join('') + '</div>';
@@ -1021,6 +1068,15 @@ document.addEventListener("click", function (e) {
     var sid = e.target.getAttribute("data-songid");
     var sidx = parseInt(e.target.getAttribute("data-index"), 10);
     if (sid) openSuggestModal(sid, sidx);
+  }
+  if (e.target && e.target.classList && e.target.classList.contains("edit-band-btn")) {
+    var eid = e.target.getAttribute("data-songid");
+    if (eid) window.location.href = 'edit-song.html?songId=' + eid;
+  }
+  if (e.target && e.target.classList && e.target.classList.contains("del-band-btn")) {
+    var did = e.target.getAttribute("data-songid");
+    var dname = e.target.getAttribute("data-name") || '';
+    if (did) deleteBandSong(did, dname);
   }
 });
 
