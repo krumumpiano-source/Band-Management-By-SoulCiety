@@ -295,37 +295,28 @@ function loadSongs() {
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
   var _done = 0;
-  var _globalSongs = [];
-  var _bandSongs   = [];
-  var _histRows    = [];
+  var _libSongs = [];
+  var _histRows = [];
 
   function _merge() {
     _done++;
-    if (_done < 3) return;
+    if (_done < 2) return;
     setBodyLoading(false);
 
-    // Merge global + band songs, deduplicate by ID then by name
+    // Build ID + name lookup from library
     var libById   = {};
     var libByName = {};
-    function addLib(s) {
-      if (s.id) { libById[s.id] = s; libByName[(s.name || '').toLowerCase().trim()] = s; }
-    }
-    _globalSongs.forEach(addLib);
-    _bandSongs.forEach(function(s) {
-      // Include band-only songs not already in global results
-      if (!libById[s.id]) addLib(s);
+    _libSongs.forEach(function(s) {
+      if (s.id) libById[s.id] = s;
+      libByName[(s.name || '').toLowerCase().trim()] = true;
     });
-    var libSongs = Object.values(libById);
-
-    // Build name lookup for history dedup
-    var libNames = libByName;
 
     // Extract unique songs from history NOT already in library
     var histMap = {};
     _histRows.forEach(function(row) {
       (row.songs || []).forEach(function(s) {
         var key = (s.name || '').toLowerCase().trim();
-        if (!key || libNames[key] || histMap[key]) return;
+        if (!key || libByName[key] || histMap[key]) return;
         histMap[key] = {
           id: '_hist_' + key,
           name: s.name || '',
@@ -339,26 +330,20 @@ function loadSongs() {
       });
     });
 
-    _allSongs = libSongs.concat(Object.values(histMap));
+    _allSongs = _libSongs.concat(Object.values(histMap));
     _allSongs.sort(function(a, b) {
       return (a.name || '').localeCompare(b.name || '', 'th');
     });
     filterTable();
   }
 
-  // Same as songs.html: source:'global' + bandName + bandId
+  // เหมือน songs.html: source:'global' ดึงทุกเพลงในคลังทั้งหมด (ไม่กรอง band)
   apiCall('getAllSongs', { source: 'global', bandName: bandName, bandId: bandId }, function(r) {
-    _globalSongs = (r && r.success) ? (r.data || []) : [];
+    _libSongs = (r && r.success) ? (r.data || []) : [];
     _merge();
   });
 
-  // Band-specific songs (same query songs.html uses internally for band library)
-  apiCall('getAllSongs', { source: 'band', bandId: bandId }, function(r) {
-    _bandSongs = (r && r.success) ? (r.data || []) : [];
-    _merge();
-  });
-
-  // Playlist history songs
+  // เพลงที่เคยเล่นใน playlist history แต่ยังไม่อยู่ในคลัง
   apiCall('getPlaylistHistory', { bandId: bandId }, function(r) {
     _histRows = (r && r.success) ? (r.data || []) : [];
     _merge();
@@ -640,9 +625,7 @@ function deleteSong(songId, songName) {
 function addToLibrary(songId) {
   var song = _allSongs.find(function(s){ return s.id === songId; });
   if (!song) { showToast('ไม่พบข้อมูลเพลง', 'error'); return; }
-  var bandId = localStorage.getItem('bandId') || '';
-  if (!bandId) { showToast('ไม่พบ Band ID', 'error'); return; }
-  if (!confirm('เพิ่ม "' + song.name + '" เข้าคลังเพลงของวงนี้?')) return;
+  if (!confirm('เพิ่ม "' + song.name + '" เข้าคลังเพลง?')) return;
 
   apiCall('addSong', {
     name:   song.name,
@@ -650,7 +633,7 @@ function addToLibrary(songId) {
     key:    song.key || '',
     bpm:    song.bpm || 0,
     singer: song.singer || '',
-    bandId: bandId
+    bandId: localStorage.getItem('bandId') || ''
   }, function(r) {
     if (r && r.success) {
       showToast('✅ เพิ่ม "' + song.name + '" เข้าคลังแล้ว', 'success');
