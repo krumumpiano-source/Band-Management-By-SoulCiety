@@ -1021,14 +1021,14 @@ function renderPage() {
       if (_currentSource === 'band') {
         var libType = s.libType || 'owned';
         if (libType === 'ref') {
-          // Referenced global song: suggest + remove from library + add to playlist
+          // Referenced global song: edit (detach) + remove from library + add to playlist
           buf.push(
             '<div class="result-item" data-index="' + idx + '">' +
             '<div class="result-item-left">' +
             '<div class="song-title">' + nameEscaped + newTag + '</div>' +
             metaHtml +
             '</div>' +
-            '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="แนะนำการแก้ไข">💡</span>' +
+            '<span class="edit-band-btn" data-songid="' + songId + '" data-libtype="ref" title="\u0e41\u0e01\u0e49\u0e44\u0e02">\u270F\uFE0F</span>' +
             '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + nameEscaped.replace(/"/g,'&quot;') + '" data-libtype="ref" title="นำออกจากคลังวง">✕</span>' +
             '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
             '</div>'
@@ -1103,7 +1103,25 @@ document.addEventListener("click", function (e) {
   }
   if (e.target && e.target.classList && e.target.classList.contains("edit-band-btn")) {
     var eid = e.target.getAttribute("data-songid");
-    if (eid) window.location.href = 'edit-song.html?songId=' + eid;
+    var elib = e.target.getAttribute("data-libtype") || 'owned';
+    if (eid) {
+      if (elib === 'ref') {
+        // Detach ref → create band-owned copy → edit
+        e.target.style.opacity = '0.5';
+        e.target.style.pointerEvents = 'none';
+        apiCall('detachRefSong', { songId: eid }, function(r) {
+          if (r && r.success && r.newSongId) {
+            window.location.href = 'edit-song.html?songId=' + r.newSongId;
+          } else {
+            e.target.style.opacity = '';
+            e.target.style.pointerEvents = '';
+            showSongsAlert('❌ ' + ((r && r.message) || 'เกิดข้อผิดพลาด'));
+          }
+        });
+      } else {
+        window.location.href = 'edit-song.html?songId=' + eid;
+      }
+    }
   }
   if (e.target && e.target.classList && e.target.classList.contains("del-band-btn")) {
     var did = e.target.getAttribute("data-songid");

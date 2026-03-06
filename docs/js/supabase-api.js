@@ -139,6 +139,7 @@
         case 'bulkAddSongsToLibrary': return doBulkAddSongsToLibrary(d);
         case 'cloneSongsToBand':   return doCloneSongsToBand(d);
         case 'removeFromBandLibrary': return doRemoveFromBandLibrary(d);
+        case 'detachRefSong':      return doDetachRefSong(d);
         case 'getBandSongStats':   return doGetBandSongStats(d);
 
         // ── Song Suggestions ───────────────────────────────────────
@@ -1508,6 +1509,33 @@
         .eq('song_id', songId);
       if (error) throw error;
       return { success: true };
+    }
+
+    // Detach a ref song: copy global data → band-owned row, remove ref, return new ID
+    async function doDetachRefSong(d) {
+      var songId = d.songId;
+      var bandId = d.bandId || getBandId();
+      if (!songId || !bandId) return { success: false, message: 'ต้องระบุ songId และ bandId' };
+
+      // Fetch global song data
+      var { data: src, error: fetchErr } = await sb.from('band_songs')
+        .select('*').eq('id', songId).single();
+      if (fetchErr) throw fetchErr;
+
+      // Insert as band-owned copy
+      var { data: newRow, error: insErr } = await sb.from('band_songs').insert({
+        band_id: bandId, source: 'band',
+        name: src.name, artist: src.artist || '', key: src.key || '',
+        bpm: src.bpm || '', singer: src.singer || '', era: src.era || '',
+        mood: src.mood || '', tags: src.tags || '', notes: src.notes || ''
+      }).select('id').single();
+      if (insErr) throw insErr;
+
+      // Remove the ref
+      await sb.from('band_song_refs').delete()
+        .eq('band_id', bandId).eq('song_id', songId);
+
+      return { success: true, newSongId: newRow.id };
     }
 
     // Admin: get per-band song stats
