@@ -88,7 +88,12 @@ select:focus,input:focus{
   line-height:1;
 }
 .song-search-wrap:focus-within .song-search-icon{
-  opacity:.85;
+  opacity:0;
+  pointer-events:none;
+}
+.song-search-icon.hidden{
+  opacity:0 !important;
+  pointer-events:none;
 }
 .song-search-input{
   width:100%;
@@ -542,7 +547,7 @@ html{scroll-behavior:smooth}
   <div class="song-search-wrap">
     <span class="song-search-icon">🔍</span>
     <input id="searchText" type="text" placeholder="ค้นหาเพลง ชื่อศิลปิน หรือคีย์..." oninput="applyTextFilter()" class="song-search-input">
-    <button type="button" id="searchClearBtn" class="song-search-clear" onclick="document.getElementById('searchText').value='';applyTextFilter();this.style.display='none'" style="display:none">✕</button>
+    <button type="button" id="searchClearBtn" class="song-search-clear" onclick="document.getElementById('searchText').value='';applyTextFilter();this.style.display='none';var _i=document.querySelector('.song-search-icon');if(_i)_i.classList.remove('hidden')" style="display:none">✕</button>
   </div>
 </div>
 
@@ -717,6 +722,8 @@ function applyTextFilter() {
   var btn = document.getElementById('searchClearBtn');
   var val = document.getElementById('searchText').value;
   if (btn) btn.style.display = val ? 'flex' : 'none';
+  var ico = document.querySelector('.song-search-icon');
+  if (ico) ico.classList.toggle('hidden', !!val);
   applyFiltersAndRenderDebounced();
 }
 
