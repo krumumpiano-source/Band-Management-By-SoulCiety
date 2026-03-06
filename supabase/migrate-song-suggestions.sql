@@ -36,3 +36,10 @@ create policy "song_suggestions: authenticated update"
 
 create index if not exists idx_song_suggestions_status on public.song_suggestions(status);
 create index if not exists idx_song_suggestions_song on public.song_suggestions(song_id);
+
+-- ═══ RLS: ให้ admin แก้ไขเพลงคลังกลาง (band_id IS NULL) ═══
+-- เดิม policy "songs: แก้ไข/ลบเฉพาะวงตัวเอง" ใช้ band_id = get_my_band_id()
+-- ทำให้ admin ไม่สามารถ update เพลงคลังกลาง (band_id IS NULL) ได้
+create policy "songs: admin edit global"
+  on public.band_songs for update
+  using (band_id is null and public.get_my_role() = 'admin');
