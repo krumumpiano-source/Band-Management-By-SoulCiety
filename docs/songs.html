@@ -76,28 +76,9 @@ select:focus,input:focus{
   position:relative;
   margin-top:12px;
 }
-.song-search-icon{
-  position:absolute;
-  left:10px;
-  top:50%;
-  transform:translateY(-50%);
-  font-size:13px;
-  pointer-events:none;
-  opacity:.4;
-  transition:opacity .2s;
-  line-height:1;
-}
-.song-search-wrap:focus-within .song-search-icon{
-  opacity:0;
-  pointer-events:none;
-}
-.song-search-icon.hidden{
-  opacity:0 !important;
-  pointer-events:none;
-}
 .song-search-input{
   width:100%;
-  padding:13px 44px 13px 34px;
+  padding:13px 44px 13px 16px;
   border-radius:var(--radius-xl);
   border:2px solid var(--premium-border);
   background:var(--premium-white);
@@ -545,9 +526,8 @@ html{scroll-behavior:smooth}
 
   <!-- Search Box -->
   <div class="song-search-wrap">
-    <span class="song-search-icon">🔍</span>
     <input id="searchText" type="text" placeholder="ค้นหาเพลง ชื่อศิลปิน หรือคีย์..." oninput="applyTextFilter()" class="song-search-input">
-    <button type="button" id="searchClearBtn" class="song-search-clear" onclick="document.getElementById('searchText').value='';applyTextFilter();this.style.display='none';var _i=document.querySelector('.song-search-icon');if(_i)_i.classList.remove('hidden')" style="display:none">✕</button>
+    <button type="button" id="searchClearBtn" class="song-search-clear" onclick="document.getElementById('searchText').value='';applyTextFilter();this.style.display='none'" style="display:none">✕</button>
   </div>
 </div>
 
@@ -722,8 +702,7 @@ function applyTextFilter() {
   var btn = document.getElementById('searchClearBtn');
   var val = document.getElementById('searchText').value;
   if (btn) btn.style.display = val ? 'flex' : 'none';
-  var ico = document.querySelector('.song-search-icon');
-  if (ico) ico.classList.toggle('hidden', !!val);
+
   applyFiltersAndRenderDebounced();
 }
 
