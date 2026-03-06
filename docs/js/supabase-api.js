@@ -140,6 +140,11 @@
         case 'cloneSongsToBand':   return doCloneSongsToBand(d);
         case 'getBandSongStats':   return doGetBandSongStats(d);
 
+        // ── Song Suggestions ───────────────────────────────────────
+        case 'addSongSuggestion':      return doAddSongSuggestion(d);
+        case 'getSongSuggestions':     return doGetSongSuggestions(d);
+        case 'reviewSongSuggestion':   return doReviewSongSuggestion(d);
+
         // ── Band Members ───────────────────────────────────────────
         case 'getAllBandMembers':   return doGetBandMembers();
         case 'getBandProfiles':    return doGetBandProfiles(d);
@@ -1432,6 +1437,46 @@
         stats[bid]++;
       });
       return { success: true, data: stats };
+    }
+
+    // ── Song Suggestions (แนะนำแก้ไขเพลง) ───────────────────────
+    async function doAddSongSuggestion(d) {
+      var user = sb.auth ? (await sb.auth.getUser()).data.user : null;
+      var row = {
+        song_id: d.songId,
+        suggested_by: user ? user.id : null,
+        suggested_name: d.suggestedName || (localStorage ? localStorage.getItem('userNickname') || localStorage.getItem('userFirstName') || '' : ''),
+        suggested_data: d.suggestedData || {},
+        note: d.note || '',
+        status: 'pending'
+      };
+      var { data, error } = await sb.from('song_suggestions').insert(row).select().single();
+      if (error) throw error;
+      return { success: true, data: toCamel(data) };
+    }
+
+    async function doGetSongSuggestions(d) {
+      var q = sb.from('song_suggestions').select('*');
+      if (d.status) q = q.eq('status', d.status);
+      if (d.songId) q = q.eq('song_id', d.songId);
+      q = q.order('created_at', { ascending: false });
+      if (d.limit) q = q.limit(d.limit);
+      var { data, error } = await q;
+      if (error) throw error;
+      return { success: true, data: toCamelList(data || []) };
+    }
+
+    async function doReviewSongSuggestion(d) {
+      var user = sb.auth ? (await sb.auth.getUser()).data.user : null;
+      var update = {
+        status: d.status,
+        admin_note: d.adminNote || '',
+        reviewed_by: user ? user.id : null,
+        reviewed_at: new Date().toISOString()
+      };
+      var { data, error } = await sb.from('song_suggestions').update(update).eq('id', d.id).select().single();
+      if (error) throw error;
+      return { success: true, data: toCamel(data) };
     }
 
     // ── Band Fund (กองกลาง) ──────────────────────────────────────

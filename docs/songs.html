@@ -248,6 +248,31 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .add-song-btn:hover{background:var(--premium-gold);color:#fff}
 .add-song-btn:active{transform:scale(.92)}
 
+.suggest-song-btn{
+  flex-shrink:0;width:36px;height:36px;border-radius:50%;
+  background:#ede9fe;display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;user-select:none;transition:background .15s;
+  -webkit-tap-highlight-color:transparent;
+  min-width:36px;min-height:36px;padding:0;border:1.5px solid #c4b5fd;color:#5b21b6;
+}
+.suggest-song-btn:hover{background:#c4b5fd;color:#fff}
+.suggest-song-btn:active{transform:scale(.92)}
+
+.sug-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;overflow-y:auto;padding:16px}
+.sug-card{max-width:560px;margin:40px auto;background:#fff;border-radius:16px;padding:24px;position:relative}
+.sug-field{margin-bottom:14px}
+.sug-field label{display:block;font-size:13px;font-weight:600;color:#4a5568;margin-bottom:4px}
+.sug-field input,.sug-field select,.sug-field textarea{width:100%;padding:10px 14px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:15px;font-family:inherit}
+.sug-field textarea{resize:vertical;min-height:60px}
+.sug-field .sug-current{font-size:12px;color:#94a3b8;margin-top:2px}
+.sug-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.sug-row{grid-template-columns:1fr}}
+.sug-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.sug-actions button{padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+.sug-btn-send{background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff}
+.sug-btn-send:disabled{opacity:.5;cursor:not-allowed}
+.sug-btn-cancel{background:#e5e7eb;color:#374151}
+
 .new-tag{
   color:var(--accent-primary);
   font-size:10px;
@@ -896,7 +921,7 @@ function renderPage() {
         '<div class="song-title">' + nameEscaped + newTag + '</div>' +
         metaHtml +
         '</div>' +
-        '<span class="edit-song-btn" data-songid="' + songId + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e40\u0e1e\u0e25\u0e07">\u270f\ufe0f</span>' +
+        '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="แนะนำการแก้ไข">💡</span>' +
         '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
         '</div>'
       );
@@ -936,9 +961,10 @@ document.addEventListener("click", function (e) {
     var idx = parseInt(e.target.getAttribute("data-index"), 10);
     if (!isNaN(idx) && _pageData[idx]) addSong(_pageData[idx]);
   }
-  if (e.target && e.target.classList && e.target.classList.contains("edit-song-btn")) {
+  if (e.target && e.target.classList && e.target.classList.contains("suggest-song-btn")) {
     var sid = e.target.getAttribute("data-songid");
-    if (sid) window.location.href = 'edit-song.html?songId=' + encodeURIComponent(sid);
+    var sidx = parseInt(e.target.getAttribute("data-index"), 10);
+    if (sid) openSuggestModal(sid, sidx);
   }
 });
 
@@ -1691,6 +1717,157 @@ function loadHistoryEntry(idx) {
 
 function closeHistory() {
   document.getElementById('historyModal').style.display = 'none';
+}
+</script>
+
+<!-- ══ SUGGEST EDIT MODAL ══ -->
+<div id="suggestModal" class="sug-overlay">
+<div class="sug-card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <h3 style="margin:0">💡 แนะนำการแก้ไข</h3>
+    <button onclick="closeSuggestModal()" style="background:none;border:1.5px solid #cbd5e0;color:#4a5568;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;min-height:unset;padding:0;flex-shrink:0">✕</button>
+  </div>
+  <p style="font-size:13px;color:#64748b;margin:0 0 16px;line-height:1.5">📌 การแนะนำจะถูกส่งให้แอดมินตรวจสอบก่อนแก้ไขจริง เปลี่ยนเฉพาะช่องที่ต้องการแก้ไข</p>
+  <input type="hidden" id="sugSongId">
+  <div class="sug-field">
+    <label>ชื่อเพลง</label>
+    <input type="text" id="sugName" placeholder="ชื่อเพลง">
+    <div class="sug-current" id="sugNameCur"></div>
+  </div>
+  <div class="sug-field">
+    <label>ศิลปิน</label>
+    <input type="text" id="sugArtist" placeholder="ศิลปิน">
+    <div class="sug-current" id="sugArtistCur"></div>
+  </div>
+  <div class="sug-row">
+    <div class="sug-field">
+      <label>คีย์</label>
+      <select id="sugKey"><option value="">— ไม่เปลี่ยน —</option><option value="C">C / Am</option><optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup><optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup></select>
+      <div class="sug-current" id="sugKeyCur"></div>
+    </div>
+    <div class="sug-field">
+      <label>BPM</label>
+      <input type="number" id="sugBpm" min="0" max="300" placeholder="0">
+      <div class="sug-current" id="sugBpmCur"></div>
+    </div>
+  </div>
+  <div class="sug-row">
+    <div class="sug-field">
+      <label>แนวเพลง</label>
+      <select id="sugGenre"><option value="">— ไม่เปลี่ยน —</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="ฮิปฮอป">ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="สากลเก่า">สากลเก่า</option><option value="สากลปัจจุบัน">สากลปัจจุบัน</option></select>
+      <div class="sug-current" id="sugGenreCur"></div>
+    </div>
+    <div class="sug-field">
+      <label>นักร้อง</label>
+      <select id="sugSinger"><option value="">— ไม่เปลี่ยน —</option><option value="ชาย">🎤 ชาย</option><option value="หญิง">🎤 หญิง</option><option value="ชาย/หญิง">🎤🎤 คู่</option></select>
+      <div class="sug-current" id="sugSingerCur"></div>
+    </div>
+  </div>
+  <div class="sug-row">
+    <div class="sug-field">
+      <label>ยุค</label>
+      <select id="sugEra"><option value="">— ไม่เปลี่ยน —</option><option value="80s">80s</option><option value="90s">90s</option><option value="2000s">00s</option><option value="2010s">10s</option><option value="2020s">20s</option></select>
+      <div class="sug-current" id="sugEraCur"></div>
+    </div>
+    <div class="sug-field">
+      <label>อารมณ์</label>
+      <select id="sugMood"><option value="">— ไม่เปลี่ยน —</option><option value="มัน / สนุก">มัน / สนุก</option><option value="หวาน / โรแมนติก">หวาน / โรแมนติก</option><option value="เศร้า / อกหัก">เศร้า / อกหัก</option><option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option><option value="ฮึกเหิม / ยิ่งใหญ่">ฮึกเหิม / ยิ่งใหญ่</option></select>
+      <div class="sug-current" id="sugMoodCur"></div>
+    </div>
+  </div>
+  <div class="sug-field">
+    <label>หมายเหตุ (ไม่บังคับ)</label>
+    <textarea id="sugNote" placeholder="เช่น ชื่อศิลปินสะกดผิด, คีย์ไม่ตรง ฯลฯ"></textarea>
+  </div>
+  <div class="sug-actions">
+    <button class="sug-btn-cancel" onclick="closeSuggestModal()">ยกเลิก</button>
+    <button class="sug-btn-send" id="sugSendBtn" onclick="submitSuggestion()">📤 ส่งแนะนำ</button>
+  </div>
+</div>
+</div>
+<script>
+var _sugOriginal = {};
+
+function openSuggestModal(songId, idx) {
+  var song = _pageData[idx];
+  if (!song) return;
+  _sugOriginal = song;
+  document.getElementById('sugSongId').value = songId;
+  document.getElementById('sugName').value = song.name || '';
+  document.getElementById('sugArtist').value = song.artist || '';
+  document.getElementById('sugKey').value = song.key || '';
+  document.getElementById('sugBpm').value = (song.bpm > 0) ? song.bpm : '';
+  document.getElementById('sugGenre').value = song.tags || '';
+  document.getElementById('sugSinger').value = song.singer || '';
+  document.getElementById('sugEra').value = song.era || '';
+  document.getElementById('sugMood').value = song.mood || '';
+  document.getElementById('sugNote').value = '';
+
+  document.getElementById('sugNameCur').textContent = 'ปัจจุบัน: ' + (song.name || '—');
+  document.getElementById('sugArtistCur').textContent = 'ปัจจุบัน: ' + (song.artist || '—');
+  document.getElementById('sugKeyCur').textContent = 'ปัจจุบัน: ' + (song.key || '—');
+  document.getElementById('sugBpmCur').textContent = 'ปัจจุบัน: ' + ((song.bpm > 0) ? song.bpm : '—');
+  document.getElementById('sugGenreCur').textContent = 'ปัจจุบัน: ' + (song.tags || '—');
+  document.getElementById('sugSingerCur').textContent = 'ปัจจุบัน: ' + (song.singer || '—');
+  document.getElementById('sugEraCur').textContent = 'ปัจจุบัน: ' + (song.era || '—');
+  document.getElementById('sugMoodCur').textContent = 'ปัจจุบัน: ' + (song.mood || '—');
+
+  document.getElementById('suggestModal').style.display = 'block';
+}
+
+function closeSuggestModal() {
+  document.getElementById('suggestModal').style.display = 'none';
+}
+
+document.getElementById('suggestModal').addEventListener('click', function(e) {
+  if (e.target === this) closeSuggestModal();
+});
+
+function submitSuggestion() {
+  var songId = document.getElementById('sugSongId').value;
+  if (!songId) return;
+  var btn = document.getElementById('sugSendBtn');
+  btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+
+  // Collect only changed fields
+  var changes = {};
+  var newName = document.getElementById('sugName').value.trim();
+  var newArtist = document.getElementById('sugArtist').value.trim();
+  var newKey = document.getElementById('sugKey').value;
+  var newBpm = document.getElementById('sugBpm').value;
+  var newGenre = document.getElementById('sugGenre').value;
+  var newSinger = document.getElementById('sugSinger').value;
+  var newEra = document.getElementById('sugEra').value;
+  var newMood = document.getElementById('sugMood').value;
+
+  if (newName && newName !== (_sugOriginal.name || '')) changes.name = newName;
+  if (newArtist !== (_sugOriginal.artist || '')) changes.artist = newArtist;
+  if (newKey && newKey !== (_sugOriginal.key || '')) changes.key = newKey;
+  if (newBpm && parseInt(newBpm) !== (_sugOriginal.bpm || 0)) changes.bpm = parseInt(newBpm);
+  if (newGenre && newGenre !== (_sugOriginal.tags || '')) changes.tags = newGenre;
+  if (newSinger && newSinger !== (_sugOriginal.singer || '')) changes.singer = newSinger;
+  if (newEra && newEra !== (_sugOriginal.era || '')) changes.era = newEra;
+  if (newMood && newMood !== (_sugOriginal.mood || '')) changes.mood = newMood;
+
+  if (Object.keys(changes).length === 0) {
+    showToast('ไม่มีข้อมูลที่เปลี่ยนแปลง', 'error');
+    btn.disabled = false; btn.textContent = '📤 ส่งแนะนำ';
+    return;
+  }
+
+  apiCall('addSongSuggestion', {
+    songId: songId,
+    suggestedData: changes,
+    note: document.getElementById('sugNote').value.trim()
+  }, function(r) {
+    btn.disabled = false; btn.textContent = '📤 ส่งแนะนำ';
+    if (r && r.success) {
+      showToast('ส่งแนะนำเรียบร้อย แอดมินจะตรวจสอบ', 'success');
+      closeSuggestModal();
+    } else {
+      showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    }
+  });
 }
 </script>
 
