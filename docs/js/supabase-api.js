@@ -134,6 +134,7 @@
         case 'deletePlaylistHistory': return doDeletePlaylistHistory(d);
         case 'getSongInsights':    return doGetSongInsights(d);
         case 'searchSongs':        return doSearchSongs(d);
+        case 'getSongsPage':       return doGetSongsPage(d);
         case 'getRequestedSongsFromHistory': return doGetRequestedSongsFromHistory(d);
         case 'bulkAddSongsToLibrary': return doBulkAddSongsToLibrary(d);
         case 'cloneSongsToBand':   return doCloneSongsToBand(d);
@@ -551,6 +552,57 @@
         from += PAGE;
       }
       return { success: true, data: toCamelList(all) };
+    }
+
+    async function doGetSongsPage(d) {
+      var page    = d.page || 1;
+      var perPage = Math.min(d.perPage || 30, 500);
+      var search  = (d.search || '').trim();
+      var source  = d.source || 'global';
+      var singer  = d.singer || '';
+      var era     = d.era    || '';
+      var genre   = d.genre  || '';
+      var mood    = d.mood   || '';
+      var sortKey = d.sortKey || 'name';
+      var sortAsc = d.sortAsc !== false;
+
+      var SORT_OK = ['name','artist','bpm','singer','era','tags','mood','key','created_at','updated_at'];
+      if (SORT_OK.indexOf(sortKey) < 0) sortKey = 'name';
+
+      var from = (page - 1) * perPage;
+      var to   = from + perPage - 1;
+
+      var q = sb.from('band_songs')
+        .select('*', { count: 'exact' })
+        .order(sortKey, { ascending: sortAsc })
+        .range(from, to);
+
+      if (source === 'band') {
+        q = q.eq('band_id', getBandId());
+      } else {
+        q = q.is('band_id', null);
+      }
+
+      if (search) {
+        var s = search.replace(/[,.()'"\\]/g, '');
+        if (s) q = q.or('name.ilike.%' + s + '%,artist.ilike.%' + s + '%,key.ilike.%' + s + '%');
+      }
+
+      if (singer) {
+        if (singer === 'ชาย')       q = q.in('singer', ['ชาย', 'male']);
+        else if (singer === 'หญิง') q = q.in('singer', ['หญิง', 'female']);
+        else if (singer === 'คู่')  q = q.in('singer', ['คู่', 'duet', 'ชาย/หญิง']);
+        else q = q.eq('singer', singer);
+      }
+
+      if (era)   q = q.eq('era', era);
+      if (genre) q = q.eq('tags', genre);
+      if (mood)  q = q.ilike('mood', '%' + mood + '%');
+
+      var { data, error, count } = await q;
+      if (error) throw error;
+
+      return { success: true, data: toCamelList(data || []), total: count || 0 };
     }
 
     async function doSearchSongs(d) {

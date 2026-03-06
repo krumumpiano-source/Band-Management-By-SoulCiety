@@ -612,8 +612,9 @@ function showSongsAlert(msg) {
   setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.style.display='none'; t.textContent='📋 คัดลอก & บันทึกลิสสำเร็จ!'; }, 300); }, 3000);
 }
 
-let allResults = [];
-let filteredResults = [];
+let _pageData = [];
+let _totalCount = 0;
+let _totalPages = 1;
 let currentPage = 1;
 const PER_PAGE = 15;
 
@@ -677,44 +678,14 @@ function getFilterValues() {
 }
 
 function getDropdownFiltered() {
-  var f = getFilterValues();
-  return allResults.filter(function (s) {
-    // Singer — รองรับทั้ง TH (ชาย/หญิง/ชาย·หญิง) และ EN (male/female/duet) ใน DB
-    if (f.singer) {
-      var sv = s.singer || '';
-      var ok = false;
-      if (f.singer === 'ชาย')  ok = (sv === 'ชาย'  || sv === 'male');
-      if (f.singer === 'หญิง') ok = (sv === 'หญิง' || sv === 'female');
-      if (f.singer === 'คู่')  ok = (sv === 'คู่'   || sv === 'duet' || sv === 'ชาย/หญิง');
-      if (!ok) return false;
-    }
-    // Era — exact match; indexOf as fallback for backward compat with old DB values
-    if (f.era && (!s.era || (s.era !== f.era && s.era.indexOf(f.era) < 0))) return false;
-    // Genre (tags column) — exact match
-    if (f.genre && (!s.tags || s.tags !== f.genre)) return false;
-    // Mood — indexOf สำหรับ partial match เช่น "สุข / สนุก" ตรงกับ "สุข / สนุก (Happy)"
-    if (f.mood && (!s.mood || s.mood.indexOf(f.mood) < 0)) return false;
-    return true;
-  });
+  return getFilterValues();
 }
 
 function applyFiltersAndRender() {
-  var byDropdown = getDropdownFiltered();
-  var q = "";
-  var searchEl = getEl("searchText");
-  if (searchEl && searchEl.value) q = searchEl.value.trim().toLowerCase();
-  filteredResults = q
-    ? byDropdown.filter(function (s) {
-        return s.name.toLowerCase().indexOf(q) >= 0
-          || (s.artist && s.artist.toLowerCase().indexOf(q) >= 0)
-          || (s.key && s.key.toLowerCase().indexOf(q) >= 0);
-      })
-    : byDropdown;
-  currentPage = 1;
-  renderPage();
+  loadPage(1);
 }
 
-var applyFiltersAndRenderDebounced = debounce(applyFiltersAndRender, 150);
+var applyFiltersAndRenderDebounced = debounce(applyFiltersAndRender, 300);
 
 function applyTextFilter() {
   var btn = document.getElementById('searchClearBtn');
@@ -813,45 +784,44 @@ function cloneSelectedToBand() {
 }
 
 
-function loadInitial(forceRefresh) {
+function loadPage(page) {
+  currentPage = page || 1;
   setLoading(true);
+
   var bandName = localStorage.getItem('bandName') || '';
-  var bandId   = localStorage.getItem('bandId')   || '';
   var bnEl = document.getElementById('songPageBandName');
   if (bnEl && bandName) bnEl.textContent = 'วง ' + bandName;
 
-  // ── browser cache (sessionStorage) ──
-  var CACHE_KEY = 'songs_cache_' + (bandId || bandName);
-  var CACHE_TTL = 5 * 60 * 1000; // 5 นาที
-  if (!forceRefresh) {
-    try {
-      var cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
-      // ใช้ cache เฉพาะถ้ายังไม่หมดอายุและมีข้อมูลจริง (length > 0)
-      if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.data && cached.data.length > 0) {
-        allResults = cached.data;
-        setLoading(false);
-        applyFiltersAndRender();
-        return;
-      }
-    } catch(e) {}
-  }
+  var filters = getFilterValues();
+  var searchEl = getEl('searchText');
+  var search = (searchEl && searchEl.value) ? searchEl.value.trim() : '';
 
-  apiCall('getAllSongs', { source: 'global', bandName: bandName, bandId: bandId }, function(result) {
-    if (result && result.success && result.data) {
-      allResults = result.data;
-      // เก็บ cache เฉพาะกรณีมีเพลง — ไม่เก็บ empty array
-      if (allResults.length > 0) {
-        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: allResults })); } catch(e) {}
-      }
-      setLoading(false);
-      applyFiltersAndRender();
+  apiCall('getSongsPage', {
+    source: 'global',
+    page: currentPage,
+    perPage: PER_PAGE,
+    search: search,
+    singer: filters.singer,
+    era: filters.era,
+    genre: filters.genre,
+    mood: filters.mood
+  }, function(result) {
+    setLoading(false);
+    if (result && result.success) {
+      _pageData = result.data || [];
+      _totalCount = result.total || 0;
+      _totalPages = Math.max(1, Math.ceil(_totalCount / PER_PAGE));
+      renderPage();
     } else {
-      setLoading(false);
-      var msg = (result && result.message) ? result.message : "error";
-      var resultEl = getEl("result");
+      var msg = (result && result.message) ? result.message : 'error';
+      var resultEl = getEl('result');
       if (resultEl) resultEl.innerHTML = '<div class="result-loading result-error">โหลดข้อมูลไม่ได้: ' + msg + '</div>';
     }
   });
+}
+
+function loadInitial(forceRefresh) {
+  loadPage(1);
 }
 
 function escapeHtml(text) {
@@ -868,9 +838,8 @@ function renderPage() {
   if (!resultEl) return;
   if (resultEl.classList.contains("is-loading")) return;
 
-  var start = (currentPage - 1) * PER_PAGE;
-  var pageItems = filteredResults.slice(start, start + PER_PAGE);
-  var totalPages = Math.max(1, Math.ceil(filteredResults.length / PER_PAGE));
+  var pageItems = _pageData;
+  var totalPages = _totalPages;
 
   var html = "";
   if (pageItems.length === 0) {
@@ -879,7 +848,7 @@ function renderPage() {
     var buf = [];
     for (var i = 0; i < pageItems.length; i++) {
       var s = pageItems[i];
-      var idx = start + i;
+      var idx = i;
       var nameEscaped = escapeHtml(s.name);
       var newTag = s.isNew ? '<span class="new-tag">New</span>' : '';
       var songId = escapeHtml(s.id || s.songId || '');
@@ -939,26 +908,23 @@ function renderPage() {
   resultEl.innerHTML = html;
 
   if (pageInfoEl) {
-    pageInfoEl.textContent = filteredResults.length === 0
+    pageInfoEl.textContent = _totalCount === 0
       ? "ไม่มีผลลัพธ์"
-      : "หน้า " + currentPage + " / " + totalPages;
+      : "หน้า " + currentPage + " / " + totalPages + "  (" + _totalCount + " เพลง)";
   }
   if (prevBtn) prevBtn.disabled = currentPage <= 1;
-  if (nextBtn) nextBtn.disabled = currentPage >= totalPages || filteredResults.length === 0;
+  if (nextBtn) nextBtn.disabled = currentPage >= totalPages || _totalCount === 0;
 }
 
 var nextPageThrottled = throttle(function () {
-  var totalPages = Math.max(1, Math.ceil(filteredResults.length / PER_PAGE));
-  if (currentPage < totalPages) {
-    currentPage++;
-    renderPage();
+  if (currentPage < _totalPages) {
+    loadPage(currentPage + 1);
   }
 }, 200);
 
 var prevPageThrottled = throttle(function () {
   if (currentPage > 1) {
-    currentPage--;
-    renderPage();
+    loadPage(currentPage - 1);
   }
 }, 200);
 
@@ -968,7 +934,7 @@ function prevPage() { prevPageThrottled(); }
 document.addEventListener("click", function (e) {
   if (e.target && e.target.classList && e.target.classList.contains("add-song-btn")) {
     var idx = parseInt(e.target.getAttribute("data-index"), 10);
-    if (!isNaN(idx) && filteredResults[idx]) addSong(filteredResults[idx]);
+    if (!isNaN(idx) && _pageData[idx]) addSong(_pageData[idx]);
   }
   if (e.target && e.target.classList && e.target.classList.contains("edit-song-btn")) {
     var sid = e.target.getAttribute("data-songid");
