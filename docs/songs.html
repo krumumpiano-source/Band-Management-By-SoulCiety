@@ -813,6 +813,7 @@ function cloneSelectedToBand() {
 }
 
 
+function loadInitial(forceRefresh) {
   setLoading(true);
   var bandName = localStorage.getItem('bandName') || '';
   var bandId   = localStorage.getItem('bandId')   || '';
