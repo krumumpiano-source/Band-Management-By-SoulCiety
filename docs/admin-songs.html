@@ -23,8 +23,9 @@
     .btn-edit:hover{background:#DBEAFE}
     .btn-del{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}
     .btn-del:hover{background:#FEE2E2}
-    .btn-add-lib{background:#FFFBEB;color:#92400E;border:1px solid #FCD34D;white-space:nowrap}
-    .btn-add-lib:hover{background:#FEF3C7}
+    .btn-add{background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0}
+    .btn-add:hover{background:#DCFCE7}
+    .pill-hist{background:#FEF9C3;color:#854D0E;border:1px solid #FDE68A;border-radius:12px;padding:1px 8px;font-size:10px;vertical-align:middle;margin-left:4px}
 
     /* ── Table ── */
     .song-table{width:100%;border-collapse:collapse;font-size:14px}
@@ -117,6 +118,7 @@
     <div class="stat-box"><div class="stat-num" id="statMale">—</div><div class="stat-lbl">ชาย</div></div>
     <div class="stat-box"><div class="stat-num" id="statFemale">—</div><div class="stat-lbl">หญิง</div></div>
     <div class="stat-box"><div class="stat-num" id="statDuet">—</div><div class="stat-lbl">คู่</div></div>
+    <div class="stat-box"><div class="stat-num" id="statHistory">—</div><div class="stat-lbl">จาก History</div></div>
   </div>
 
   <!-- Toolbar -->
@@ -290,54 +292,58 @@ document.addEventListener('DOMContentLoaded', function() {
 // ─── Load ─────────────────────────────────────────────────────────
 function loadSongs() {
   setBodyLoading(true);
-  var done = 0;
-  var libSongs     = [];
-  var historySongs = [];
+  var bandId = localStorage.getItem('bandId') || '';
+  var _done = 0;
+  var _libSongs = [];
+  var _histRows = [];
 
-  function mergeAndRender() {
-    // Index library songs by normalised name for dedup
-    var libIndex = {};
-    libSongs.forEach(function(s) {
-      if (s.name) libIndex[s.name.trim().toLowerCase()] = true;
-    });
-
-    // Songs that appear in history but NOT already in library
-    var histOnly = historySongs.filter(function(s) {
-      return s.name && !libIndex[s.name.trim().toLowerCase()];
-    }).map(function(s) {
-      return { name: s.name, artist: s.artist || '', key: s.key || '', bpm: s.bpm || 0,
-               singer: s.singer || '', era: s.era || '', mood: s.mood || '', _fromHistory: true };
-    });
-
-    _allSongs = libSongs.concat(histOnly).sort(function(a,b){
-      return (a.name||'').localeCompare(b.name||'','th');
-    });
+  function _merge() {
+    _done++;
+    if (_done < 2) return;
     setBodyLoading(false);
+
+    // Build lookup of library song names (lowercase)
+    var libNames = {};
+    _libSongs.forEach(function(s) {
+      libNames[(s.name || '').toLowerCase().trim()] = true;
+    });
+
+    // Extract unique songs from history NOT already in library
+    var histMap = {};
+    _histRows.forEach(function(row) {
+      (row.songs || []).forEach(function(s) {
+        var key = (s.name || '').toLowerCase().trim();
+        if (!key || libNames[key]) return;
+        if (!histMap[key]) {
+          histMap[key] = {
+            id: '_hist_' + key,
+            name: s.name || '',
+            artist: s.artist || '',
+            key: s.key || '',
+            bpm: s.bpm || 0,
+            singer: s.singer || '',
+            era: '', mood: '',
+            _fromHistory: true
+          };
+        }
+      });
+    });
+
+    _allSongs = _libSongs.concat(Object.values(histMap));
+    _allSongs.sort(function(a, b) {
+      return (a.name || '').localeCompare(b.name || '', 'th');
+    });
     filterTable();
   }
 
-  // 1️⃣ band_songs library
   apiCall('getAllSongs', { source: 'global' }, function(r) {
-    libSongs = (r && r.success && r.data) ? r.data : [];
-    done++;
-    if (done === 2) mergeAndRender();
+    _libSongs = (r && r.success) ? (r.data || []) : [];
+    _merge();
   });
 
-  // 2️⃣ playlist_history → extract unique songs from JSONB arrays
-  var bandId = localStorage.getItem('bandId') || '';
   apiCall('getPlaylistHistory', { bandId: bandId }, function(r) {
-    if (r && r.success && r.data) {
-      var seen = {};
-      r.data.forEach(function(pl) {
-        (pl.songs || []).forEach(function(s) {
-          if (!s || !s.name) return;
-          var key = s.name.trim().toLowerCase();
-          if (!seen[key]) { seen[key] = true; historySongs.push(s); }
-        });
-      });
-    }
-    done++;
-    if (done === 2) mergeAndRender();
+    _histRows = (r && r.success) ? (r.data || []) : [];
+    _merge();
   });
 }
 
@@ -430,64 +436,42 @@ function renderTable() {
     else if (sv === 'หญิง' || sv === 'female')                singerPill = '<span class="pill pill-female">🎤 หญิง</span>';
     else if (sv === 'คู่' || sv === 'duet' || sv === 'ชาย/หญิง') singerPill = '<span class="pill pill-duet">🎤 คู่</span>';
 
-    html += '<tr data-id="' + esc(s.id||'') + '"' + (s._fromHistory ? ' style="opacity:.82;background:#fffdf0"' : '') + '>' +
-      '<td class="td-name" title="' + esc(s.name) + '">' + esc(s.name) + (s._fromHistory ? ' <span style="font-size:10px;color:#b45309;background:#fef3c7;border-radius:4px;padding:1px 5px">ประวัติ</span>' : '') + '</td>' +
+    html += '<tr data-id="' + esc(s.id) + '">' +
+      '<td class="td-name" title="' + esc(s.name) + '">' + esc(s.name) + (s._fromHistory ? ' <span class="pill-hist">📋 History</span>' : '') + '</td>' +
       '<td class="td-artist" title="' + esc(s.artist||'') + '">' + esc(s.artist||'—') + '</td>' +
       '<td>' + (s.key ? '<span class="pill pill-key">' + esc(s.key) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
       '<td style="text-align:center;color:' + (s.bpm ? '#374151' : '#ccc') + '">' + (s.bpm || '—') + '</td>' +
       '<td>' + (singerPill || '<span style="color:#ccc">—</span>') + '</td>' +
       '<td>' + (s.era ? '<span class="pill pill-era">' + esc(s.era) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
       '<td>' + (s.mood ? '<span class="pill pill-mood" style="font-size:10px">' + esc(s.mood) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
-      '<td><div class="td-actions">' +
-        (s._fromHistory
-          ? '<button class="btn-sm btn-add-lib" onclick="addToLibraryFromHistory(this)" ' +
-              'data-name="' + esc(s.name) + '" data-artist="' + esc(s.artist||'') + '" ' +
-              'data-key="' + esc(s.key||'') + '" data-bpm="' + esc(String(s.bpm||'')) + '" ' +
-              'data-singer="' + esc(s.singer||'') + '" data-era="' + esc(s.era||'') + '" data-mood="' + esc(s.mood||'') + '">' +
-              '➕ เพิ่มในคลัง</button>'
+      '<td><div class="td-actions">' + (
+        s._fromHistory
+          ? '<button class="btn-sm btn-add" onclick="addToLibrary(\'' + esc(s.id) + '\')">➕ เพิ่มในคลัง</button>'
           : '<button class="btn-sm btn-edit" onclick="openEditModal(\'' + esc(s.id) + '\')">✏️ แก้ไข</button>' +
             '<button class="btn-sm btn-del"  onclick="deleteSong(\'' + esc(s.id) + '\',\'' + esc(s.name) + '\')">🗑️</button>'
-        ) +
-      '</div></td>' +
+      ) + '</div></td>' +
     '</tr>';
   });
   tb.innerHTML = html;
 }
 
-// ─── Add from History ───────────────────────────────────────────
-function addToLibraryFromHistory(btn) {
-  var d = btn.dataset;
-  document.getElementById('mName').value   = d.name   || '';
-  document.getElementById('mArtist').value = d.artist || '';
-  setSelectValue(document.getElementById('mKey'),  d.key  || '');
-  document.getElementById('mBpm').value    = d.bpm    || '';
-  setSelectValue(document.getElementById('mEra'),  d.era  || '');
-  setSelectValue(document.getElementById('mMood'), d.mood || '');
-  var sr = d.singer || '';
-  var srl = sr.toLowerCase();
-  if (srl === 'ชาย'||srl === 'male')                         document.getElementById('ms-male').checked   = true;
-  else if (srl === 'หญิง'||srl === 'female')                 document.getElementById('ms-female').checked = true;
-  else if (srl === 'คู่'||srl === 'duet'||srl === 'ชาย/หญิง') document.getElementById('ms-duet').checked   = true;
-  document.getElementById('addModal').style.display = 'flex';
-  setTimeout(function(){ document.getElementById('mName').focus(); }, 100);
-}
-
 function updateStats() {
   var all = _allSongs;
   var flt = _filtered;
-  var libCount = all.filter(function(s){ return !s._fromHistory; }).length;
-  document.getElementById('statTotal').textContent    = all.length + (all.length !== libCount ? ' (' + libCount + ' คลัง)' : '');
+  document.getElementById('statTotal').textContent    = all.length;
   document.getElementById('statFiltered').textContent = flt.length;
-  var male = 0, female = 0, duet = 0;
+  var male = 0, female = 0, duet = 0, hist = 0;
   all.forEach(function(s) {
+    if (s._fromHistory) { hist++; return; }
     var sv = (s.singer||'').toLowerCase();
     if (sv === 'ชาย'||sv === 'male') male++;
     else if (sv === 'หญิง'||sv === 'female') female++;
     else if (sv === 'คู่'||sv === 'duet'||sv === 'ชาย/หญิง') duet++;
   });
-  document.getElementById('statMale').textContent   = male;
-  document.getElementById('statFemale').textContent = female;
-  document.getElementById('statDuet').textContent   = duet;
+  document.getElementById('statMale').textContent    = male;
+  document.getElementById('statFemale').textContent  = female;
+  document.getElementById('statDuet').textContent    = duet;
+  document.getElementById('statHistory').textContent = hist;
 }
 
 function esc(str) {
@@ -630,6 +614,32 @@ function deleteSong(songId, songName) {
       filterTable();
     } else {
       showToast((r && r.message) || 'ลบไม่สำเร็จ', 'error');
+    }
+  });
+}
+
+// ─── Add to Library (history songs) ──────────────────────────────
+function addToLibrary(songId) {
+  var song = _allSongs.find(function(s){ return s.id === songId; });
+  if (!song) { showToast('ไม่พบข้อมูลเพลง', 'error'); return; }
+  var bandId = localStorage.getItem('bandId') || '';
+  if (!bandId) { showToast('ไม่พบ Band ID', 'error'); return; }
+  if (!confirm('เพิ่ม "' + song.name + '" เข้าคลังเพลงของวงนี้?')) return;
+
+  apiCall('addSong', {
+    name:   song.name,
+    artist: song.artist || '',
+    key:    song.key || '',
+    bpm:    song.bpm || 0,
+    singer: song.singer || '',
+    bandId: bandId
+  }, function(r) {
+    if (r && r.success) {
+      showToast('✅ เพิ่ม "' + song.name + '" เข้าคลังแล้ว', 'success');
+      clearSongsCache();
+      loadSongs();
+    } else {
+      showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
     }
   });
 }
