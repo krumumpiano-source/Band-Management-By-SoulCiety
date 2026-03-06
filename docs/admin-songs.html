@@ -23,6 +23,8 @@
     .btn-edit:hover{background:#DBEAFE}
     .btn-del{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}
     .btn-del:hover{background:#FEE2E2}
+    .btn-add-lib{background:#FFFBEB;color:#92400E;border:1px solid #FCD34D;white-space:nowrap}
+    .btn-add-lib:hover{background:#FEF3C7}
 
     /* ── Table ── */
     .song-table{width:100%;border-collapse:collapse;font-size:14px}
@@ -288,11 +290,54 @@ document.addEventListener('DOMContentLoaded', function() {
 // ─── Load ─────────────────────────────────────────────────────────
 function loadSongs() {
   setBodyLoading(true);
-  apiCall('getAllSongs', { source: 'global' }, function(r) {
+  var done = 0;
+  var libSongs     = [];
+  var historySongs = [];
+
+  function mergeAndRender() {
+    // Index library songs by normalised name for dedup
+    var libIndex = {};
+    libSongs.forEach(function(s) {
+      if (s.name) libIndex[s.name.trim().toLowerCase()] = true;
+    });
+
+    // Songs that appear in history but NOT already in library
+    var histOnly = historySongs.filter(function(s) {
+      return s.name && !libIndex[s.name.trim().toLowerCase()];
+    }).map(function(s) {
+      return { name: s.name, artist: s.artist || '', key: s.key || '', bpm: s.bpm || 0,
+               singer: s.singer || '', era: s.era || '', mood: s.mood || '', _fromHistory: true };
+    });
+
+    _allSongs = libSongs.concat(histOnly).sort(function(a,b){
+      return (a.name||'').localeCompare(b.name||'','th');
+    });
     setBodyLoading(false);
-    if (!r || !r.success) { showToast('โหลดข้อมูลล้มเหลว', 'error'); return; }
-    _allSongs = (r.data || []).slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','th'); });
     filterTable();
+  }
+
+  // 1️⃣ band_songs library
+  apiCall('getAllSongs', { source: 'global' }, function(r) {
+    libSongs = (r && r.success && r.data) ? r.data : [];
+    done++;
+    if (done === 2) mergeAndRender();
+  });
+
+  // 2️⃣ playlist_history → extract unique songs from JSONB arrays
+  var bandId = localStorage.getItem('bandId') || '';
+  apiCall('getPlaylistHistory', { bandId: bandId }, function(r) {
+    if (r && r.success && r.data) {
+      var seen = {};
+      r.data.forEach(function(pl) {
+        (pl.songs || []).forEach(function(s) {
+          if (!s || !s.name) return;
+          var key = s.name.trim().toLowerCase();
+          if (!seen[key]) { seen[key] = true; historySongs.push(s); }
+        });
+      });
+    }
+    done++;
+    if (done === 2) mergeAndRender();
   });
 }
 
@@ -385,8 +430,8 @@ function renderTable() {
     else if (sv === 'หญิง' || sv === 'female')                singerPill = '<span class="pill pill-female">🎤 หญิง</span>';
     else if (sv === 'คู่' || sv === 'duet' || sv === 'ชาย/หญิง') singerPill = '<span class="pill pill-duet">🎤 คู่</span>';
 
-    html += '<tr data-id="' + esc(s.id) + '">' +
-      '<td class="td-name" title="' + esc(s.name) + '">' + esc(s.name) + '</td>' +
+    html += '<tr data-id="' + esc(s.id||'') + '"' + (s._fromHistory ? ' style="opacity:.82;background:#fffdf0"' : '') + '>' +
+      '<td class="td-name" title="' + esc(s.name) + '">' + esc(s.name) + (s._fromHistory ? ' <span style="font-size:10px;color:#b45309;background:#fef3c7;border-radius:4px;padding:1px 5px">ประวัติ</span>' : '') + '</td>' +
       '<td class="td-artist" title="' + esc(s.artist||'') + '">' + esc(s.artist||'—') + '</td>' +
       '<td>' + (s.key ? '<span class="pill pill-key">' + esc(s.key) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
       '<td style="text-align:center;color:' + (s.bpm ? '#374151' : '#ccc') + '">' + (s.bpm || '—') + '</td>' +
@@ -394,18 +439,44 @@ function renderTable() {
       '<td>' + (s.era ? '<span class="pill pill-era">' + esc(s.era) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
       '<td>' + (s.mood ? '<span class="pill pill-mood" style="font-size:10px">' + esc(s.mood) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
       '<td><div class="td-actions">' +
-        '<button class="btn-sm btn-edit" onclick="openEditModal(\'' + esc(s.id) + '\')">✏️ แก้ไข</button>' +
-        '<button class="btn-sm btn-del"  onclick="deleteSong(\'' + esc(s.id) + '\',\'' + esc(s.name) + '\')">🗑️</button>' +
+        (s._fromHistory
+          ? '<button class="btn-sm btn-add-lib" onclick="addToLibraryFromHistory(this)" ' +
+              'data-name="' + esc(s.name) + '" data-artist="' + esc(s.artist||'') + '" ' +
+              'data-key="' + esc(s.key||'') + '" data-bpm="' + esc(String(s.bpm||'')) + '" ' +
+              'data-singer="' + esc(s.singer||'') + '" data-era="' + esc(s.era||'') + '" data-mood="' + esc(s.mood||'') + '">' +
+              '➕ เพิ่มในคลัง</button>'
+          : '<button class="btn-sm btn-edit" onclick="openEditModal(\'' + esc(s.id) + '\')">✏️ แก้ไข</button>' +
+            '<button class="btn-sm btn-del"  onclick="deleteSong(\'' + esc(s.id) + '\',\'' + esc(s.name) + '\')">🗑️</button>'
+        ) +
       '</div></td>' +
     '</tr>';
   });
   tb.innerHTML = html;
 }
 
+// ─── Add from History ───────────────────────────────────────────
+function addToLibraryFromHistory(btn) {
+  var d = btn.dataset;
+  document.getElementById('mName').value   = d.name   || '';
+  document.getElementById('mArtist').value = d.artist || '';
+  setSelectValue(document.getElementById('mKey'),  d.key  || '');
+  document.getElementById('mBpm').value    = d.bpm    || '';
+  setSelectValue(document.getElementById('mEra'),  d.era  || '');
+  setSelectValue(document.getElementById('mMood'), d.mood || '');
+  var sr = d.singer || '';
+  var srl = sr.toLowerCase();
+  if (srl === 'ชาย'||srl === 'male')                         document.getElementById('ms-male').checked   = true;
+  else if (srl === 'หญิง'||srl === 'female')                 document.getElementById('ms-female').checked = true;
+  else if (srl === 'คู่'||srl === 'duet'||srl === 'ชาย/หญิง') document.getElementById('ms-duet').checked   = true;
+  document.getElementById('addModal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('mName').focus(); }, 100);
+}
+
 function updateStats() {
   var all = _allSongs;
   var flt = _filtered;
-  document.getElementById('statTotal').textContent    = all.length;
+  var libCount = all.filter(function(s){ return !s._fromHistory; }).length;
+  document.getElementById('statTotal').textContent    = all.length + (all.length !== libCount ? ' (' + libCount + ' คลัง)' : '');
   document.getElementById('statFiltered').textContent = flt.length;
   var male = 0, female = 0, duet = 0;
   all.forEach(function(s) {
