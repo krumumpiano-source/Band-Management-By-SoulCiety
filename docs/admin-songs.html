@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ─── Load ─────────────────────────────────────────────────────────
 function loadSongs() {
   setBodyLoading(true);
-  apiCall('getAllSongs', { source: 'band' }, function(r) {
+  apiCall('getAllSongs', { source: 'global' }, function(r) {
     setBodyLoading(false);
     if (!r || !r.success) { showToast('โหลดข้อมูลล้มเหลว', 'error'); return; }
     _allSongs = (r.data || []).slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','th'); });
