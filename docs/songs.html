@@ -424,6 +424,19 @@ html{scroll-behavior:smooth}
   button:hover{background:var(--premium-gold)}
   .tp-btn:active,.move-btn:active,.del:active{opacity:.7}
 }
+
+/* ── Select mode ── */
+.result-item.selected{background:#fffbeb;border-color:var(--premium-gold)}
+.sel-cb{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:36px;height:36px}
+.sel-cb input[type=checkbox]{width:20px;height:20px;cursor:pointer;accent-color:var(--premium-gold);margin:0}
+.in-lib-tag{font-size:10px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;white-space:nowrap;margin-left:6px}
+/* Floating select bar */
+#selectBar{position:fixed;bottom:0;left:0;right:0;background:#1a1a1a;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:3000;box-shadow:0 -4px 20px rgba(0,0,0,.4);flex-wrap:wrap}
+#selectBar .sb-count{font-size:14px;font-weight:600;flex:1}
+#selectBar .sb-btn{border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:600;cursor:pointer;border:none;min-height:unset}
+#selectBar .sb-add{background:var(--premium-gold);color:#fff}
+#selectBar .sb-add:disabled{opacity:.6;cursor:not-allowed}
+#selectBar .sb-cancel{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
   </style>
 </head>
 
@@ -446,6 +459,7 @@ html{scroll-behavior:smooth}
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px">
       <button onclick="loadInitial(true)" title="โหลดเพลงใหม่" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:50%;width:36px;height:36px;min-height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">🔄</button>
       <a href="add-song.html" style="display:flex;align-items:center;gap:6px;background:var(--premium-gold,#d4a843);color:#fff;border:none;border-radius:24px;padding:0 16px;height:36px;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap;cursor:pointer">➕ เพิ่มเพลง</a>
+      <button id="selectModeBtn" onclick="toggleSelectMode()" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:24px;padding:0 16px;height:36px;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer">☑️ เลือก</button>
       <!-- เพลงขอจาก Live -->
       <button id="liveReqBtn" onclick="openLiveRequestModal()" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;border:none;border-radius:24px;padding:0 16px;height:36px;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer">📥 เพลงขอ Live</button>
       <!-- Live Button -->
@@ -469,19 +483,23 @@ html{scroll-behavior:smooth}
 
     <select id="era" onchange="onFilterChange()">
       <option value="">ยุคเพลง</option>
-      <option value="2523-2532">2523-2532</option>
-      <option value="2533-2542">2533-2542</option>
-      <option value="2543-2553">2543-2553</option>
-      <option value="2554-ปัจจุบัน">2554-ปัจจุบัน</option>
-      <option value="สากล">สากล</option>
-      <option value="ลูกทุ่ง/อีสาน/เพื่อชีวิต">ลูกทุ่ง/อีสาน/เพื่อชีวิต</option>
+      <option value="80s">80s</option>
+      <option value="90s">90s</option>
+      <option value="2000s">2000s</option>
+      <option value="2010s">2010s</option>
+      <option value="2020s">2020s</option>
     </select>
 
-    <select id="speed" onchange="onFilterChange()">
-      <option value="">ความเร็ว</option>
-      <option value="ช้า">ช้า</option>
-      <option value="กลาง">กลาง</option>
-      <option value="เร็ว">เร็ว</option>
+    <select id="genre" onchange="onFilterChange()">
+      <option value="">แนวเพลง</option>
+      <option value="ป๊อป">ป๊อป</option>
+      <option value="ร็อค">ร็อค</option>
+      <option value="ดิสโก้">ดิสโก้</option>
+      <option value="ฮิปฮอป">ฮิปฮอป</option>
+      <option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option>
+      <option value="เพื่อชีวิต">เพื่อชีวิต</option>
+      <option value="สากลเก่า">สากลเก่า</option>
+      <option value="สากลปัจจุบัน">สากลปัจจุบัน</option>
     </select>
 
     <select id="mood" onchange="onFilterChange()">
@@ -555,6 +573,15 @@ html{scroll-behavior:smooth}
 </div>
 </main>
 
+<!-- Select Mode Floating Bar -->
+<div id="selectBar" style="display:none">
+  <div class="sb-count" id="sbCount">เลือกแล้ว 0 เพลง</div>
+  <div style="display:flex;gap:8px">
+    <button class="sb-btn sb-add" id="sbAddBtn" onclick="cloneSelectedToBand()" disabled>➕ เพิ่มในคลังวง</button>
+    <button class="sb-btn sb-cancel" onclick="exitSelectMode()">✕ ยกเลิก</button>
+  </div>
+</div>
+
 
 <div id="toast" class="toast">📋 คัดลอก & บันทึกลิสสำเร็จ!</div>
 
@@ -589,6 +616,12 @@ let allResults = [];
 let filteredResults = [];
 let currentPage = 1;
 const PER_PAGE = 15;
+
+// ── Select mode state ──────────────────────────────────────────────
+var _selectMode = false;
+var _selectedIds = {};
+var _bandLibraryNames = {}; // lowercase song names already in band library
+var _bandLibraryLoaded = false;
 
 var domCache = {};
 function getEl(id) {
@@ -633,12 +666,12 @@ function setLoading(loading) {
 function getFilterValues() {
   var singerEl = getEl("singer");
   var eraEl = getEl("era");
-  var speedEl = getEl("speed");
+  var genreEl = getEl("genre");
   var moodEl = getEl("mood");
   return {
     singer: singerEl ? singerEl.value : "",
     era: eraEl ? eraEl.value : "",
-    speed: speedEl ? speedEl.value : "",
+    genre: genreEl ? genreEl.value : "",
     mood: moodEl ? moodEl.value : ""
   };
 }
@@ -655,16 +688,10 @@ function getDropdownFiltered() {
       if (f.singer === 'คู่')  ok = (sv === 'คู่'   || sv === 'duet' || sv === 'ชาย/หญิง');
       if (!ok) return false;
     }
-    // Era — indexOf สำหรับ partial match เช่น "2523-2532" ตรงกับ "2523-2532 ('80s)"
-    if (f.era && (!s.era || s.era.indexOf(f.era) < 0)) return false;
-    // Speed — ถ้าเลือกความเร็วแต่เพลงไม่มี BPM ให้ซ่อน
-    if (f.speed) {
-      var bpm = Number(s.bpm) || 0;
-      if (bpm <= 0) return false;
-      if (f.speed === 'ช้า'  && bpm > 75) return false;
-      if (f.speed === 'กลาง' && (bpm <= 75 || bpm > 115)) return false;
-      if (f.speed === 'เร็ว' && bpm <= 115) return false;
-    }
+    // Era — exact match; indexOf as fallback for backward compat with old DB values
+    if (f.era && (!s.era || (s.era !== f.era && s.era.indexOf(f.era) < 0))) return false;
+    // Genre (tags column) — exact match
+    if (f.genre && (!s.tags || s.tags !== f.genre)) return false;
     // Mood — indexOf สำหรับ partial match เช่น "สุข / สนุก" ตรงกับ "สุข / สนุก (Happy)"
     if (f.mood && (!s.mood || s.mood.indexOf(f.mood) < 0)) return false;
     return true;
@@ -700,7 +727,92 @@ function onFilterChange() {
   applyFiltersAndRender();
 }
 
-function loadInitial(forceRefresh) {
+// ── Select Mode ────────────────────────────────────────────────────
+function toggleSelectMode() {
+  if (_selectMode) { exitSelectMode(); } else { enterSelectMode(); }
+}
+
+function enterSelectMode() {
+  _selectMode = true;
+  _selectedIds = {};
+  var btn = document.getElementById('selectModeBtn');
+  if (btn) { btn.style.background = 'var(--premium-gold)'; btn.style.borderColor = 'var(--premium-gold)'; }
+  var bar = document.getElementById('selectBar');
+  if (bar) bar.style.display = 'flex';
+  if (!_bandLibraryLoaded) loadBandLibrary();
+  renderPage();
+  updateSelectBar();
+}
+
+function exitSelectMode() {
+  _selectMode = false;
+  _selectedIds = {};
+  var btn = document.getElementById('selectModeBtn');
+  if (btn) { btn.style.background = ''; btn.style.borderColor = ''; }
+  var bar = document.getElementById('selectBar');
+  if (bar) bar.style.display = 'none';
+  renderPage();
+}
+
+function toggleSelection(songId, el) {
+  if (!songId) return;
+  if (_selectedIds[songId]) {
+    delete _selectedIds[songId];
+    if (el) el.classList.remove('selected');
+    var cb = el && el.querySelector('input[type=checkbox]');
+    if (cb) cb.checked = false;
+  } else {
+    _selectedIds[songId] = true;
+    if (el) el.classList.add('selected');
+    var cb2 = el && el.querySelector('input[type=checkbox]');
+    if (cb2) cb2.checked = true;
+  }
+  updateSelectBar();
+}
+
+function updateSelectBar() {
+  var count = Object.keys(_selectedIds).length;
+  var countEl = document.getElementById('sbCount');
+  var addBtn  = document.getElementById('sbAddBtn');
+  if (countEl) countEl.textContent = '\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e41\u0e25\u0e49\u0e27 ' + count + ' \u0e40\u0e1e\u0e25\u0e07';
+  if (addBtn)  addBtn.disabled = count === 0;
+}
+
+function loadBandLibrary() {
+  var bandId   = localStorage.getItem('bandId')   || '';
+  var bandName = localStorage.getItem('bandName') || '';
+  if (!bandId && !bandName) { _bandLibraryLoaded = true; return; }
+  apiCall('getAllSongs', { source: 'band', bandId: bandId, bandName: bandName }, function(r) {
+    _bandLibraryLoaded = true;
+    _bandLibraryNames = {};
+    if (r && r.success && r.data) {
+      r.data.forEach(function(s) {
+        _bandLibraryNames[(s.name || '').toLowerCase().trim()] = true;
+      });
+    }
+    if (_selectMode) renderPage();
+  });
+}
+
+function cloneSelectedToBand() {
+  var ids = Object.keys(_selectedIds);
+  if (!ids.length) { showSongsAlert('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e40\u0e1e\u0e25\u0e07\u0e01\u0e48\u0e2d\u0e19'); return; }
+  var btn = document.getElementById('sbAddBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '\u0e01\u0e33\u0e25\u0e31\u0e07\u0e40\u0e1e\u0e34\u0e48\u0e21...'; }
+  apiCall('cloneSongsToBand', { ids: ids }, function(r) {
+    if (btn) { btn.disabled = false; btn.textContent = '\u2795 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07'; }
+    if (r && r.success) {
+      showSongsAlert('\u2705 \u0e40\u0e1e\u0e34\u0e48\u0e21 ' + r.added + ' \u0e40\u0e1e\u0e25\u0e07\u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07\u0e41\u0e25\u0e49\u0e27' + (r.skipped ? ' (' + r.skipped + ' \u0e0b\u0e49\u0e33)' : ''));
+      _bandLibraryLoaded = false;
+      exitSelectMode();
+      loadBandLibrary();
+    } else {
+      showSongsAlert((r && r.message) || '\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14');
+    }
+  });
+}
+
+
   setLoading(true);
   var bandName = localStorage.getItem('bandName') || '';
   var bandId   = localStorage.getItem('bandId')   || '';
@@ -782,16 +894,43 @@ function renderPage() {
         meta.push('<span style="color:' + singerColor + '">🎤 ' + singerLabel + '</span>');
       }
       var metaHtml = meta.length ? '<div class="song-meta">' + meta.join(' &nbsp;·&nbsp; ') + '</div>' : '';
+
+      if (_selectMode) {
+        var nameKey = (s.name || '').toLowerCase().trim();
+        var isInLib = !!_bandLibraryNames[nameKey];
+        var isSelected = !!_selectedIds[songId];
+        if (isInLib) {
+          buf.push(
+            '<div class="result-item" data-index="' + idx + '" style="opacity:.55">' +
+            '<div class="result-item-left">' +
+            '<div class="song-title">' + nameEscaped + newTag + '<span class="in-lib-tag">\u2705 \u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07</span></div>' +
+            metaHtml +
+            '</div>' +
+            '</div>'
+          );
+        } else {
+          buf.push(
+            '<div class="result-item' + (isSelected ? ' selected' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="toggleSelection(\'' + songId + '\',this)" style="cursor:pointer">' +
+            '<div class="sel-cb"><input type="checkbox"' + (isSelected ? ' checked' : '') + ' onclick="event.stopPropagation()" onchange="toggleSelection(\'' + songId + '\',this.closest(\'.result-item\'))"></div>' +
+            '<div class="result-item-left">' +
+            '<div class="song-title">' + nameEscaped + newTag + '</div>' +
+            metaHtml +
+            '</div>' +
+            '</div>'
+          );
+        }
+      } else {
       buf.push(
         '<div class="result-item" data-index="' + idx + '">' +
         '<div class="result-item-left">' +
         '<div class="song-title">' + nameEscaped + newTag + '</div>' +
         metaHtml +
         '</div>' +
-        '<span class="edit-song-btn" data-songid="' + songId + '" title="แก้ไขเพลง">✏️</span>' +
-        '<span class="add-song-btn" data-index="' + idx + '" title="เพิ่มในลิส">➕</span>' +
+        '<span class="edit-song-btn" data-songid="' + songId + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e40\u0e1e\u0e25\u0e07">\u270f\ufe0f</span>' +
+        '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
         '</div>'
       );
+      } // end _selectMode else
     }
     html = '<div class="result-columns">' + buf.join('') + '</div>';
   }
@@ -1125,6 +1264,11 @@ window.onload = function() {
 
   loadInitial();
   loadBandSettings();
+
+  // Show select-mode button when user has a band
+  var _smBandId = localStorage.getItem('bandId') || '';
+  var _smBtn = document.getElementById('selectModeBtn');
+  if (_smBtn && _smBandId) _smBtn.style.display = 'flex';
 };
 </script>
 

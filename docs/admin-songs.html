@@ -137,6 +137,8 @@
   <div class="stats-bar" id="statsBar">
     <div class="stat-box"><div class="stat-num" id="statTotal">—</div><div class="stat-lbl">เพลงทั้งหมด</div></div>
     <div class="stat-box"><div class="stat-num" id="statFiltered">—</div><div class="stat-lbl">กรองแล้ว</div></div>
+    <div class="stat-box" style="cursor:pointer" onclick="document.getElementById('asSource').value='global';filterTable()" title="คลิกเพื่อดูคลังกลาง"><div class="stat-num" id="statGlobal">—</div><div class="stat-lbl">คลังกลาง</div></div>
+    <div class="stat-box" style="cursor:pointer" onclick="document.getElementById('asSource').value='band';filterTable()" title="คลิกเพื่อดูคลังวง"><div class="stat-num" id="statBand">—</div><div class="stat-lbl">คลังวง</div></div>
     <div class="stat-box"><div class="stat-num" id="statMale">—</div><div class="stat-lbl">ชาย</div></div>
     <div class="stat-box"><div class="stat-num" id="statFemale">—</div><div class="stat-lbl">หญิง</div></div>
     <div class="stat-box"><div class="stat-num" id="statDuet">—</div><div class="stat-lbl">คู่</div></div>
@@ -146,6 +148,12 @@
   <!-- Toolbar -->
   <div class="as-toolbar">
     <input type="text" id="asSearch" class="as-search" placeholder="🔍 ค้นหาชื่อเพลง ศิลปิน คีย์..." oninput="filterTable()">
+    <select id="asSource" class="as-filter" onchange="filterTable()">
+      <option value="">ทุกแหล่ง</option>
+      <option value="global">คลังกลาง</option>
+      <option value="band">คลังวง</option>
+      <option value="history">History</option>
+    </select>
     <select id="asSinger" class="as-filter" onchange="filterTable()">
       <option value="">นักร้องทั้งหมด</option>
       <option value="ชาย">🎤 ชาย</option>
@@ -154,12 +162,22 @@
     </select>
     <select id="asEra" class="as-filter" onchange="filterTable()">
       <option value="">ทุกยุค</option>
-      <option>2523-2532</option>
-      <option>2533-2542</option>
-      <option>2543-2553</option>
-      <option>2554-ปัจจุบัน</option>
-      <option>สากล</option>
-      <option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option>
+      <option value="80s">80s</option>
+      <option value="90s">90s</option>
+      <option value="2000s">2000s</option>
+      <option value="2010s">2010s</option>
+      <option value="2020s">2020s</option>
+    </select>
+    <select id="asGenre" class="as-filter" onchange="filterTable()">
+      <option value="">ทุกแนว</option>
+      <option value="ป๊อป">ป๊อป</option>
+      <option value="ร็อค">ร็อค</option>
+      <option value="ดิสโก้">ดิสโก้</option>
+      <option value="ฮิปฮอป">ฮิปฮอป</option>
+      <option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option>
+      <option value="เพื่อชีวิต">เพื่อชีวิต</option>
+      <option value="สากลเก่า">สากลเก่า</option>
+      <option value="สากลปัจจุบัน">สากลปัจจุบัน</option>
     </select>
     <select id="asMood" class="as-filter" onchange="filterTable()">
       <option value="">ทุกอารมณ์</option>
@@ -187,12 +205,13 @@
             <th onclick="sortBy('bpm')" style="cursor:pointer" title="คลิกเพื่อเรียง">BPM ↕</th>
             <th>นักร้อง</th>
             <th>ยุค</th>
+            <th>แนวเพลง</th>
             <th>อารมณ์</th>
             <th style="text-align:center">จัดการ</th>
           </tr>
         </thead>
         <tbody id="songTbody">
-          <tr><td colspan="8"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>
+          <tr><td colspan="9"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -214,7 +233,7 @@
   <div class="modal-box" style="max-width:700px">
     <h3>📥 นำเข้าเพลง</h3>
 
-    <p style="font-size:13px;color:#6B7280;margin:-6px 0 14px">รองรับไฟล์ <strong>CSV</strong> และ <strong>JSON</strong> — คอลัมน์ที่รู้จัก: <code>name, artist, key, bpm, singer, era, mood</code></p>
+    <p style="font-size:13px;color:#6B7280;margin:-6px 0 14px">รองรับไฟล์ <strong>CSV</strong> และ <strong>JSON</strong> — คอลัมน์ที่รู้จัก: <code>name, artist, key, bpm, singer, era, mood, tags</code></p>
 
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('importFile').click()">
       <input type="file" id="importFile" accept=".csv,.json" onchange="handleImportFile(this.files[0])">
@@ -257,12 +276,16 @@
     <div class="m-row">
       <div class="m-group">
         <label>ยุคเพลง</label>
-        <select id="mEra" class="m-select"><option value="">—</option><option>2523-2532</option><option>2533-2542</option><option>2543-2553</option><option>2554-ปัจจุบัน</option><option>สากล</option><option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option></select>
+        <select id="mEra" class="m-select"><option value="">—</option><option value="80s">ยุค 80s (พ.ศ. 2523-2532)</option><option value="90s">ยุค 90s (พ.ศ. 2533-2542)</option><option value="2000s">ยุค 2000s (พ.ศ. 2543-2553)</option><option value="2010s">ยุค 2010s (พ.ศ. 2554-2562)</option><option value="2020s">ยุค 2020s (พ.ศ. 2563-ปัจจุบัน)</option></select>
       </div>
       <div class="m-group">
         <label>อารมณ์</label>
         <select id="mMood" class="m-select"><option value="">—</option><option>สุข / สนุก</option><option>เศร้า / เหงา</option><option>นิ่ง / ผ่อนคลาย</option><option>หวาน / อบอุ่น</option><option>มัน / ฮึกเหิม</option></select>
       </div>
+    </div>
+    <div class="m-group">
+      <label>แนวเพลง (ประเภท)</label>
+      <select id="mGenre" class="m-select"><option value="">—</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="ฮิปฮอป">ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="สากลเก่า">สากลเก่า</option><option value="สากลปัจจุบัน">สากลปัจจุบัน</option></select>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeAddModal()">ยกเลิก</button>
@@ -296,12 +319,16 @@
     <div class="m-row">
       <div class="m-group">
         <label>ยุคเพลง</label>
-        <select id="eEra" class="m-select"><option value="">—</option><option>2523-2532</option><option>2533-2542</option><option>2543-2553</option><option>2554-ปัจจุบัน</option><option>สากล</option><option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option></select>
+        <select id="eEra" class="m-select"><option value="">—</option><option value="80s">ยุค 80s (พ.ศ. 2523-2532)</option><option value="90s">ยุค 90s (พ.ศ. 2533-2542)</option><option value="2000s">ยุค 2000s (พ.ศ. 2543-2553)</option><option value="2010s">ยุค 2010s (พ.ศ. 2554-2562)</option><option value="2020s">ยุค 2020s (พ.ศ. 2563-ปัจจุบัน)</option></select>
       </div>
       <div class="m-group">
         <label>อารมณ์</label>
         <select id="eMood" class="m-select"><option value="">—</option><option>สุข / สนุก</option><option>เศร้า / เหงา</option><option>นิ่ง / ผ่อนคลาย</option><option>หวาน / อบอุ่น</option><option>มัน / ฮึกเหิม</option></select>
       </div>
+    </div>
+    <div class="m-group">
+      <label>แนวเพลง (ประเภท)</label>
+      <select id="eGenre" class="m-select"><option value="">—</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="ฮิปฮอป">ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="สากลเก่า">สากลเก่า</option><option value="สากลปัจจุบัน">สากลปัจจุบัน</option></select>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeEditModal()">ยกเลิก</button>
@@ -408,11 +435,17 @@ function setBodyLoading(on) {
 // ─── Filter + Sort + Paginate ─────────────────────────────────────
 function filterTable() {
   var q       = (document.getElementById('asSearch').value || '').toLowerCase().trim();
+  var source  = document.getElementById('asSource').value;
   var singer  = document.getElementById('asSinger').value;
   var era     = document.getElementById('asEra').value;
+  var genre   = document.getElementById('asGenre').value;
   var mood    = document.getElementById('asMood').value;
 
   _filtered = _allSongs.filter(function(s) {
+    // Source filter
+    if (source === 'global'  && (s._fromHistory || s.source === 'band')) return false;
+    if (source === 'band'    && (s._fromHistory || s.source !== 'band')) return false;
+    if (source === 'history' && !s._fromHistory) return false;
     if (q) {
       var haystack = (s.name + ' ' + (s.artist||'') + ' ' + (s.key||'')).toLowerCase();
       if (haystack.indexOf(q) < 0) return false;
@@ -423,6 +456,7 @@ function filterTable() {
       if (!ok) return false;
     }
     if (era && s.era !== era) return false;
+    if (genre && (s.tags || '') !== genre) return false;
     if (mood && (s.mood || '').indexOf(mood) < 0) return false;
     return true;
   });
@@ -476,7 +510,7 @@ function renderTable() {
   document.getElementById('nextBtn').disabled = _page >= maxPage;
 
   if (pageRows.length === 0) {
-    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:#aaa">ไม่พบเพลงที่ตรงกัน</td></tr>';
+    tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:#aaa">ไม่พบเพลงที่ตรงกัน</td></tr>';
     return;
   }
 
@@ -495,6 +529,7 @@ function renderTable() {
       '<td style="text-align:center;color:' + (s.bpm ? '#374151' : '#ccc') + '">' + (s.bpm || '—') + '</td>' +
       '<td>' + (singerPill || '<span style="color:#ccc">—</span>') + '</td>' +
       '<td>' + (s.era ? '<span class="pill pill-era">' + esc(s.era) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
+      '<td>' + (s.tags ? '<span class="pill pill-era" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd">' + esc(s.tags) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
       '<td>' + (s.mood ? '<span class="pill pill-mood" style="font-size:10px">' + esc(s.mood) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
       '<td><div class="td-actions">' + (
         s._fromHistory
@@ -512,9 +547,10 @@ function updateStats() {
   var flt = _filtered;
   document.getElementById('statTotal').textContent    = all.length;
   document.getElementById('statFiltered').textContent = flt.length;
-  var male = 0, female = 0, duet = 0, hist = 0;
+  var male = 0, female = 0, duet = 0, hist = 0, globalCnt = 0, bandCnt = 0;
   all.forEach(function(s) {
     if (s._fromHistory) { hist++; return; }
+    if (s.source === 'band') bandCnt++; else globalCnt++;
     var sv = (s.singer||'').toLowerCase();
     if (sv === 'ชาย'||sv === 'male') male++;
     else if (sv === 'หญิง'||sv === 'female') female++;
@@ -524,6 +560,8 @@ function updateStats() {
   document.getElementById('statFemale').textContent  = female;
   document.getElementById('statDuet').textContent    = duet;
   document.getElementById('statHistory').textContent = hist;
+  document.getElementById('statGlobal').textContent  = globalCnt;
+  document.getElementById('statBand').textContent    = bandCnt;
 }
 
 function esc(str) {
@@ -538,6 +576,7 @@ function openAddModal() {
   document.getElementById('mBpm').value    = '';
   document.getElementById('mEra').value    = '';
   document.getElementById('mMood').value   = '';
+  document.getElementById('mGenre').value  = '';
   document.querySelectorAll('input[name="ms"]').forEach(function(r){ r.checked = false; });
   document.getElementById('addModal').style.display = 'flex';
   setTimeout(function(){ document.getElementById('mName').focus(); }, 100);
@@ -558,6 +597,7 @@ function submitAddSong() {
     bpm:     parseInt(document.getElementById('mBpm').value) || 0,
     era:     document.getElementById('mEra').value,
     mood:    document.getElementById('mMood').value,
+    tags:    document.getElementById('mGenre').value,
     singer:  singerRadio ? singerRadio.value : '',
     bandId:  localStorage.getItem('bandId') || ''
   }, function(r) {
@@ -584,6 +624,7 @@ function openEditModal(songId) {
   document.getElementById('eBpm').value     = song.bpm    || '';
   document.getElementById('eEra').value     = song.era    || '';
   document.getElementById('eMood').value    = song.mood   || '';
+  document.getElementById('eGenre').value   = song.tags   || '';
 
   // Key select
   var keyEl = document.getElementById('eKey');
@@ -626,6 +667,7 @@ function submitEditSong() {
     bpm:    parseInt(document.getElementById('eBpm').value) || 0,
     era:    document.getElementById('eEra').value,
     mood:   document.getElementById('eMood').value,
+    tags:   document.getElementById('eGenre').value,
     singer: singerRadio ? singerRadio.value : ''
   }, function(r) {
     btn.disabled = false; btn.textContent = '💾 บันทึก';
@@ -643,6 +685,7 @@ function submitEditSong() {
           bpm:    parseInt(document.getElementById('eBpm').value) || 0,
           era:    document.getElementById('eEra').value,
           mood:   document.getElementById('eMood').value,
+          tags:   document.getElementById('eGenre').value,
           singer: singerRadio ? singerRadio.value : ''
         });
         filterTable();
@@ -711,7 +754,7 @@ function exportSongs(format) {
   if (format === 'json') {
     var json = JSON.stringify(libSongs.map(function(s){ return {
       name: s.name, artist: s.artist||'', key: s.key||'', bpm: s.bpm||0,
-      singer: s.singer||'', era: s.era||'', mood: s.mood||''
+      singer: s.singer||'', era: s.era||'', mood: s.mood||'', tags: s.tags||''
     }; }), null, 2);
     _downloadFile(filename + '.json', json, 'application/json');
     showToast('📤 Export JSON สำเร็จ (' + libSongs.length + ' เพลง)', 'success');
@@ -719,9 +762,9 @@ function exportSongs(format) {
   }
 
   // CSV
-  var rows = [['name','artist','key','bpm','singer','era','mood']];
+  var rows = [['name','artist','key','bpm','singer','era','mood','tags']];
   libSongs.forEach(function(s){
-    rows.push([s.name, s.artist||'', s.key||'', s.bpm||'', s.singer||'', s.era||'', s.mood||'']);
+    rows.push([s.name, s.artist||'', s.key||'', s.bpm||'', s.singer||'', s.era||'', s.mood||'', s.tags||'']);
   });
   var csv = rows.map(function(r){
     return r.map(function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',');
@@ -834,6 +877,7 @@ function _normalizeRow(raw) {
     singer: g(['singer','นักร้อง','vocal']),
     era:    g(['era','ยุค','period']),
     mood:   g(['mood','อารมณ์']),
+    tags:   g(['tags','genre','แนวเพลง','ประเภท']),
   };
 }
 
@@ -915,7 +959,7 @@ function submitImport() {
     var r = _importRows[idx];
     apiCall('addSong', {
       name: r.name, artist: r.artist, key: r.key, bpm: r.bpm,
-      singer: r.singer, era: r.era, mood: r.mood, bandId: bandId
+      singer: r.singer, era: r.era, mood: r.mood, tags: r.tags || '', bandId: bandId
     }, function(res) {
       if (!res || !res.success) failed++;
       done++;

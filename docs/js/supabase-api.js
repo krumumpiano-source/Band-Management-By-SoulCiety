@@ -136,6 +136,8 @@
         case 'searchSongs':        return doSearchSongs(d);
         case 'getRequestedSongsFromHistory': return doGetRequestedSongsFromHistory(d);
         case 'bulkAddSongsToLibrary': return doBulkAddSongsToLibrary(d);
+        case 'cloneSongsToBand':   return doCloneSongsToBand(d);
+        case 'getBandSongStats':   return doGetBandSongStats(d);
 
         // ── Band Members ───────────────────────────────────────────
         case 'getAllBandMembers':   return doGetBandMembers();
@@ -1308,6 +1310,63 @@
       var { data, error } = await sb.from('band_songs').insert(rows).select('id');
       if (error) throw error;
       return { success: true, added: (data || []).length };
+    }
+
+    // Clone global songs into band library (batch)
+    async function doCloneSongsToBand(d) {
+      var ids    = d.ids    || d.songIds || [];
+      var bandId = d.bandId || getBandId();
+      if (!ids.length || !bandId) return { success: false, message: 'ต้องระบุ ids และ bandId' };
+
+      // Fetch source songs
+      var { data: sourceSongs, error: fetchErr } = await sb.from('band_songs')
+        .select('*').in('id', ids);
+      if (fetchErr) throw fetchErr;
+
+      // Fetch existing band songs (by name) to deduplicate
+      var { data: existing } = await sb.from('band_songs')
+        .select('name').eq('band_id', bandId);
+      var existingNames = {};
+      (existing || []).forEach(function(s) {
+        existingNames[(s.name || '').toLowerCase().trim()] = true;
+      });
+
+      var toInsert = [];
+      var skipped  = [];
+      (sourceSongs || []).forEach(function(s) {
+        var key = (s.name || '').toLowerCase().trim();
+        if (existingNames[key]) { skipped.push(s.name); return; }
+        toInsert.push({
+          band_id: bandId, source: 'band',
+          name: s.name, artist: s.artist || '', key: s.key || '',
+          bpm: s.bpm || 0, singer: s.singer || '', era: s.era || '',
+          mood: s.mood || '', tags: s.tags || '', notes: s.notes || ''
+        });
+      });
+
+      var added = 0;
+      if (toInsert.length) {
+        var { data: inserted, error: insErr } = await sb.from('band_songs').insert(toInsert).select('id');
+        if (insErr) throw insErr;
+        added = (inserted || []).length;
+      }
+
+      return { success: true, added: added, skipped: skipped.length, skippedNames: skipped };
+    }
+
+    // Admin: get per-band song stats
+    async function doGetBandSongStats(d) {
+      var { data, error } = await sb.from('band_songs')
+        .select('band_id, source, id')
+        .eq('source', 'band');
+      if (error) throw error;
+      var stats = {};
+      (data || []).forEach(function(r) {
+        var bid = r.band_id || 'unknown';
+        if (!stats[bid]) stats[bid] = 0;
+        stats[bid]++;
+      });
+      return { success: true, data: stats };
     }
 
     // ── Band Fund (กองกลาง) ──────────────────────────────────────

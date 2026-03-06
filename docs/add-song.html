@@ -70,9 +70,10 @@
             <div class="form-group"><label>ความเร็ว (BPM)</label><input type="number" id="bpm" min="0" max="300" placeholder="0"></div>
           </div>
           <div class="form-r">
-            <div class="form-group"><label>ยุคของเพลง</label><select id="era"><option value="">— เลือกยุค —</option><option>2523-2532</option><option>2533-2542</option><option>2543-2553</option><option>2554-ปัจจุบัน</option><option>สากล</option><option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option></select></div>
+            <div class="form-group"><label>ยุคของเพลง</label><select id="era"><option value="">— เลือกยุค —</option><option value="80s">ยุค 80s (พ.ศ. 2523-2532)</option><option value="90s">ยุค 90s (พ.ศ. 2533-2542)</option><option value="2000s">ยุค 2000s (พ.ศ. 2543-2553)</option><option value="2010s">ยุค 2010s (พ.ศ. 2554-2562)</option><option value="2020s">ยุค 2020s (พ.ศ. 2563-ปัจจุบัน)</option></select></div>
             <div class="form-group"><label>อารมณ์เพลง</label><select id="mood"><option value="">— เลือกอารมณ์ —</option><option>สุข / สนุก</option><option>เศร้า / เหงา</option><option>นิ่ง / ผ่อนคลาย</option><option>หวาน / อบอุ่น</option><option>มัน / ฮึกเหิม</option></select></div>
           </div>
+          <div class="form-group"><label>แนวเพลง (ประเภท)</label><select id="genre"><option value="">— เลือกแนวเพลง —</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="ฮิปฮอป">ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="สากลเก่า">สากลเก่า</option><option value="สากลปัจจุบัน">สากลปัจจุบัน</option></select></div>
           <div class="form-group">
             <label>นักร้อง</label>
             <div class="singer-pills">
@@ -109,6 +110,7 @@
         key:      document.getElementById('key').value,
         bpm:      parseInt(document.getElementById('bpm').value) || 0,
         era:      document.getElementById('era').value.trim(),
+        tags:     document.getElementById('genre').value.trim(),
         singer:   singerRadio ? singerRadio.value : '',
         mood:     document.getElementById('mood').value.trim(),
         bandId:   bandId,
