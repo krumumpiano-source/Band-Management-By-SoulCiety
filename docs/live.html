@@ -253,15 +253,25 @@
     #nudgeSettingsList{flex:1;overflow-y:auto;padding:2px 0 8px;display:flex;flex-direction:column;gap:8px;margin-top:10px}
     .nse-row{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:var(--radius-sm);padding:8px 10px;border:1px solid #383838}
     .nse-row.nse-first{border-color:rgba(212,168,67,.35);background:rgba(212,168,67,.08)}
-    .nse-emoji{width:52px;background:var(--bg4);border:1px solid #555;color:var(--text);border-radius:6px;padding:6px 4px;font-size:1.15rem;text-align:center;font-family:inherit;flex-shrink:0}
+    .nse-emoji{width:52px;background:var(--bg4);border:1px solid #555;color:var(--text);border-radius:6px;padding:6px 4px;font-size:1.15rem;text-align:center;font-family:inherit;flex-shrink:0;cursor:pointer;transition:border-color .15s}
+    .nse-emoji:active,.nse-emoji.picking{border-color:var(--gold);background:rgba(212,168,67,.1)}
     .nse-text{flex:1;background:var(--bg4);border:1px solid #555;color:var(--text);border-radius:6px;padding:7px 10px;font-size:0.9rem;font-family:inherit}
     .nse-emoji:focus,.nse-text:focus{outline:none;border-color:var(--gold)}
+    /* Emoji Picker */
+    #emojiPickerOverlay{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)}
+    #emojiPickerOverlay.show{display:flex}
+    #emojiPicker{background:var(--bg2);border:1px solid #444;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:14px 12px calc(14px + env(safe-area-inset-bottom,0));width:100%;max-width:420px;max-height:50vh;display:flex;flex-direction:column}
+    #emojiPicker h4{font-size:.9rem;color:var(--text2);margin-bottom:8px;flex-shrink:0}
+    .emoji-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;overflow-y:auto;flex:1}
+    .emoji-opt{background:var(--bg3);border:1px solid transparent;border-radius:8px;font-size:1.5rem;padding:8px 0;cursor:pointer;text-align:center;transition:background .12s,border-color .12s}
+    .emoji-opt:active{background:var(--bg4);border-color:var(--gold)}
     .nse-del{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#ef4444;border-radius:6px;width:34px;height:34px;font-size:1rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .15s}
     .nse-del:active{background:rgba(239,68,68,.35)}
     #nudgeAddRow{display:flex;gap:8px;margin-top:4px;flex-shrink:0}
-    #nudgeAddEmojiInput{width:52px;background:var(--bg4);border:1px solid #555;color:var(--text);border-radius:6px;padding:6px 4px;font-size:1.15rem;text-align:center;font-family:inherit}
+    #nudgeAddEmojiInput{width:52px;background:var(--bg4);border:1px solid #555;color:var(--text);border-radius:6px;padding:6px 4px;font-size:1.15rem;text-align:center;font-family:inherit;cursor:pointer;transition:border-color .15s}
+    #nudgeAddEmojiInput:active,#nudgeAddEmojiInput.picking{border-color:var(--gold);background:rgba(212,168,67,.1)}
     #nudgeAddTextInput{flex:1;background:var(--bg4);border:1px solid #555;color:var(--text);border-radius:6px;padding:7px 10px;font-size:0.9rem;font-family:inherit}
-    #nudgeAddEmojiInput:focus,#nudgeAddTextInput:focus{outline:none;border-color:var(--gold)}
+    #nudgeAddTextInput:focus{outline:none;border-color:var(--gold)}
     #nudgeAddBtn{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#10b981;border-radius:6px;padding:0 14px;font-size:1.1rem;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s}
     #nudgeAddBtn:active{background:rgba(16,185,129,.35)}
     .nudge-settings-hint{font-size:.78rem;color:var(--text3);margin-top:6px;flex-shrink:0}
@@ -470,7 +480,7 @@
     <p style="font-size:.82rem;color:var(--text2);margin-bottom:2px;flex-shrink:0">แก้ไขอีโมจิและข้อความของแต่ละปุ่มได้ตามต้องการ</p>
     <div id="nudgeSettingsList"></div>
     <div id="nudgeAddRow">
-      <input id="nudgeAddEmojiInput" type="text" placeholder="😊" maxlength="4">
+      <button id="nudgeAddEmojiInput" type="button" onclick="openEmojiPicker(this)">😊</button>
       <input id="nudgeAddTextInput" type="text" placeholder="พิมพ์ข้อความใหม่..." maxlength="30">
       <button id="nudgeAddBtn" onclick="addNudgePresetRow()">+</button>
     </div>
@@ -482,6 +492,14 @@
         <button class="modal-btn primary" onclick="saveNudgeSettings()">บันทึก</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ── EMOJI PICKER ── -->
+<div id="emojiPickerOverlay" onclick="if(event.target===this)closeEmojiPicker()">
+  <div id="emojiPicker">
+    <h4>เลือกอีโมจิ</h4>
+    <div class="emoji-grid" id="emojiGrid"></div>
   </div>
 </div>
 
@@ -2148,12 +2166,11 @@ function renderNudgeSettingsEditor() {
     row.className = 'nse-row' + (p.isAll ? ' nse-first' : '');
     row.dataset.index = i;
 
-    var emojiInput = document.createElement('input');
-    emojiInput.type = 'text';
-    emojiInput.className = 'nse-emoji';
-    emojiInput.value = p.emoji;
-    emojiInput.maxLength = 4;
-    emojiInput.placeholder = '😊';
+    var emojiBtn = document.createElement('button');
+    emojiBtn.type = 'button';
+    emojiBtn.className = 'nse-emoji';
+    emojiBtn.textContent = p.emoji;
+    emojiBtn.onclick = function() { openEmojiPicker(emojiBtn); };
 
     var textInput = document.createElement('input');
     textInput.type = 'text';
@@ -2162,7 +2179,7 @@ function renderNudgeSettingsEditor() {
     textInput.maxLength = 30;
     textInput.placeholder = 'ข้อความ...';
 
-    row.appendChild(emojiInput);
+    row.appendChild(emojiBtn);
     row.appendChild(textInput);
 
     if (!p.isAll) {
@@ -2176,15 +2193,15 @@ function renderNudgeSettingsEditor() {
 
     list.appendChild(row);
   });
-  // Clear add-row inputs
+  // Clear add-row
   var addEmoji = document.getElementById('nudgeAddEmojiInput');
   var addText  = document.getElementById('nudgeAddTextInput');
-  if (addEmoji) addEmoji.value = '';
+  if (addEmoji) addEmoji.textContent = '😊';
   if (addText)  addText.value  = '';
 }
 
 function addNudgePresetRow() {
-  var emoji = (document.getElementById('nudgeAddEmojiInput').value.trim()) || '✨';
+  var emoji = (document.getElementById('nudgeAddEmojiInput').textContent.trim()) || '✨';
   var text  = document.getElementById('nudgeAddTextInput').value.trim();
   if (!text) { showToast('กรุณาพิมพ์ข้อความ'); return; }
 
@@ -2192,11 +2209,11 @@ function addNudgePresetRow() {
   var row = document.createElement('div');
   row.className = 'nse-row';
 
-  var emojiInput = document.createElement('input');
-  emojiInput.type = 'text';
-  emojiInput.className = 'nse-emoji';
-  emojiInput.value = emoji;
-  emojiInput.maxLength = 4;
+  var emojiBtn = document.createElement('button');
+  emojiBtn.type = 'button';
+  emojiBtn.className = 'nse-emoji';
+  emojiBtn.textContent = emoji;
+  emojiBtn.onclick = function() { openEmojiPicker(emojiBtn); };
 
   var textInput = document.createElement('input');
   textInput.type = 'text';
@@ -2210,12 +2227,12 @@ function addNudgePresetRow() {
   delBtn.title = 'ลบ';
   delBtn.onclick = (function(r) { return function() { r.remove(); }; })(row);
 
-  row.appendChild(emojiInput);
+  row.appendChild(emojiBtn);
   row.appendChild(textInput);
   row.appendChild(delBtn);
   list.appendChild(row);
 
-  document.getElementById('nudgeAddEmojiInput').value = '';
+  document.getElementById('nudgeAddEmojiInput').textContent = '😊';
   document.getElementById('nudgeAddTextInput').value  = '';
   document.getElementById('nudgeAddTextInput').focus();
 }
@@ -2224,7 +2241,7 @@ function saveNudgeSettings() {
   var rows = document.querySelectorAll('#nudgeSettingsList .nse-row');
   var newPresets = [];
   rows.forEach(function(row, i) {
-    var emoji = row.querySelector('.nse-emoji').value.trim() || '👋';
+    var emoji = row.querySelector('.nse-emoji').textContent.trim() || '👋';
     var text  = row.querySelector('.nse-text').value.trim();
     if (!text) return;
     var p = { emoji: emoji, text: text };
@@ -2246,6 +2263,46 @@ function resetNudgePresets() {
   _saveNudgePresetsToStorage();
   renderNudgeSettingsEditor();
   showToast('รีเซ็ตแล้ว');
+}
+
+// ── Emoji Picker ──────────────────────────────────────────────────
+var EMOJI_OPTIONS = [
+  '👋','🎤','⏩','⏪','🔉','🔊','🎸','⏭','☕','👏','💃',
+  '🎵','🎶','🎹','🥁','🎷','🎺','🪗','🎻','🪘','🎧',
+  '🔥','⚡','💥','✨','🌟','❤️','💪','🙏','😎','🤩',
+  '😍','🥳','😂','🤣','😱','😤','🤔','👍','👎','🤘',
+  '✅','❌','⭐','🏆','🎯','💬','📢','⏰','🔔','🚀'
+];
+var _emojiPickerTarget = null;
+
+function openEmojiPicker(targetEl) {
+  _emojiPickerTarget = targetEl;
+  targetEl.classList.add('picking');
+  var grid = document.getElementById('emojiGrid');
+  grid.innerHTML = '';
+  EMOJI_OPTIONS.forEach(function(em) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'emoji-opt';
+    btn.textContent = em;
+    btn.onclick = function() { selectEmoji(em); };
+    grid.appendChild(btn);
+  });
+  document.getElementById('emojiPickerOverlay').classList.add('show');
+}
+
+function selectEmoji(em) {
+  if (_emojiPickerTarget) {
+    _emojiPickerTarget.textContent = em;
+    _emojiPickerTarget.classList.remove('picking');
+  }
+  closeEmojiPicker();
+}
+
+function closeEmojiPicker() {
+  document.getElementById('emojiPickerOverlay').classList.remove('show');
+  if (_emojiPickerTarget) _emojiPickerTarget.classList.remove('picking');
+  _emojiPickerTarget = null;
 }
 
 function sendNudge(msg) {
