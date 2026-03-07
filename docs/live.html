@@ -693,8 +693,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // ─────────────────────────────────────────────────────────────────
 function loadPlaylist() {
   if (!_date) { showEmpty(); initRealtime(); return; }
-  apiCall('getPlaylistHistoryByDate', { date: _date }, function(r) {
+  console.log('[Live] loadPlaylist:', { bandId: _bandId, date: _date, venue: _venue, timeSlot: _timeSlot });
+  apiCall('getPlaylistHistoryByDate', { bandId: _bandId, date: _date }, function(r) {
+    if (r && !r.success) console.warn('[Live] API error:', r.message);
     var rows = (r && r.success && r.data) ? r.data : [];
+    console.log('[Live] playlist rows found:', rows.length);
     // filter by venue+timeSlot if provided
     var row = null;
     if (_venue || _timeSlot) {
@@ -706,6 +709,7 @@ function loadPlaylist() {
     }
     if (!row || !row.songs || row.songs.length === 0) {
       // ไม่พบใน DB — แสดง loading และรอรับ state จากสมาชิกผ่าน realtime
+      console.log('[Live] No playlist in DB, waiting for realtime sync');
       showWaitingForSync();
       initRealtime();
       return;
