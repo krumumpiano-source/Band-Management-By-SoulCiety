@@ -242,6 +242,7 @@
         case 'updateMyProfile': return doUpdateMyProfile(d);
         case 'changeEmail':     return doChangeEmail(d);
         case 'changePassword':  return doChangePassword(d);
+        case 'syncBandPlan':    return doSyncBandPlan();
 
         // ── Admin ──────────────────────────────────────────────────
         case 'getAllUsers':       return doAdminGetAllUsers();
@@ -1120,6 +1121,32 @@
       var { data, error } = await sb.from('profiles').select('*').eq('id', user.user.id).single();
       if (error) throw error;
       return { success: true, data: toCamel(data) };
+    }
+
+    // ── Sync Band Plan — ดึง band_plan ล่าสุดจาก DB แล้วอัปเดต localStorage ──
+    async function doSyncBandPlan() {
+      var bandId = getBandId();
+      if (!bandId) return { success: false, message: 'no band' };
+      var { data: bandRow, error } = await sb.from('bands').select('band_plan').eq('id', bandId).single();
+      if (error || !bandRow) return { success: false };
+      var bandPlan = bandRow.band_plan || 'free';
+
+      // Check plan_override (per-user override from admin)
+      var override = localStorage.getItem('plan_override') || '';
+      var finalPlan = bandPlan;
+      if (override) {
+        var _rank = { free: 0, lite: 1, pro: 2 };
+        if ((_rank[override] || 0) >= (_rank[bandPlan] || 0)) {
+          finalPlan = override;
+        }
+      }
+
+      var oldPlan = localStorage.getItem('band_plan') || 'free';
+      if (oldPlan !== finalPlan) {
+        localStorage.setItem('band_plan', finalPlan);
+        if (finalPlan !== 'free') localStorage.removeItem('ad_gate_ts');
+      }
+      return { success: true, plan: finalPlan, changed: oldPlan !== finalPlan };
     }
 
     async function doUpdateMyProfile(d) {

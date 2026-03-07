@@ -46,6 +46,26 @@
   }
   global.requireAuth = requireAuth;
 
+  // ── Sync Band Plan on every page load ───────────────────────────
+  // ดึง band_plan ล่าสุดจาก DB เมื่อเปิดหน้าใดก็ตาม
+  // เพื่อให้สมาชิกทุกคนได้แพ็กเกจเดียวกับวงทันที เมื่อผู้จัดการอัปเกรด
+  function syncBandPlan() {
+    if (!localStorage.getItem('auth_token') || !localStorage.getItem('bandId')) return;
+    if (typeof global.apiCall === 'function') {
+      global.apiCall('syncBandPlan', {}, function(r) {
+        if (r && r.success && r.changed) {
+          // plan changed — update UI elements that depend on plan
+          if (typeof global.checkAdGate === 'function') global.checkAdGate();
+        }
+      });
+    }
+  }
+  // Run after DOM ready so supabase-api.js has time to load
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(syncBandPlan, 1500);
+  });
+  global.syncBandPlan = syncBandPlan;
+
   // ── Ad Gate ─────────────────────────────────────────────────────────
   function checkAdGate() {
     var cfg = global._AD_CONFIG || {};
