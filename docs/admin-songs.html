@@ -274,6 +274,7 @@
       <option>นิ่ง / ผ่อนคลาย</option>
       <option>ฮึกเหิม / ยิ่งใหญ่</option>
     </select>
+    <button id="keyModeToggle" class="btn-add" onclick="toggleKeyMode()" title="สลับการแสดงคีย์ระหว่างตัวเลขและอักษร">🔤 อักษร</button>
     <button class="btn-add" onclick="openAddModal()">➕ เพิ่มเพลง</button>
     <button class="btn-import-main" onclick="openImportModal()">📥 นำเข้า</button>
     <button class="btn-export" onclick="exportSongs('csv')" title="ส่งออกเป็น Excel/CSV">📤 CSV</button>
@@ -395,6 +396,7 @@ var _page         = 1;
 var _perPage      = 30;
 var _editingId    = null;
 var _dirty        = {}; // songId → draft data object (preserves edits across page turns)
+var _keyDisplayMode = localStorage.getItem('keyDisplayMode') || 'number'; // 'number' | 'letter'
 
 // ─── Init ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
@@ -408,6 +410,11 @@ document.addEventListener('DOMContentLoaded', function() {
   checkAdGate();
   renderMainNav('mainNav');
   applyTranslations();
+  // Initialize key mode toggle button text
+  if (document.getElementById('keyModeToggle')) {
+    document.getElementById('keyModeToggle').textContent = _keyDisplayMode === 'number' ? '🔤 อักษร' : '🔢 ตัวเลข';
+  }
+  updateModalKeyOptions();
   loadSongs();
   loadSuggestions();
 });
@@ -667,6 +674,73 @@ function changePage(dir) {
 
 // ─── Render Table (Inline Edit) ──────────────────────────────────
 var _KEY_OPTS   = ['','C / Am','1#','2#','3#','4#','5#','6#','7#','1b','2b','3b','4b','5b','6b','7b'];
+
+// Key notation mapping (number → letter)
+var _KEY_MAP = {
+  '': '—',
+  'C / Am': 'C / Am',
+  '1': 'C',
+  '1#': 'C# / A#m',
+  '1b': 'B / G#m',
+  '2': 'D / Bm',
+  '2#': 'D# / Cm',
+  '2b': 'Db / Bbm',
+  '3': 'E / C#m',
+  '3#': 'F / Dm',
+  '3b': 'Eb / Cm',
+  '4': 'F / Dm',
+  '4#': 'F# / D#m',
+  '4b': 'E / C#m',
+  '5': 'G / Em',
+  '5#': 'G# / Fm',
+  '5b': 'Gb / Ebm',
+  '6': 'A / F#m',
+  '6#': 'A# / Gm',
+  '6b': 'Ab / Fm',
+  '7': 'B / G#m',
+  '7#': 'C / Am',
+  '7b': 'Bb / Gm'
+};
+
+function formatKey(key, mode) {
+  if (!key) return '—';
+  if (mode === 'letter' && _KEY_MAP[key]) return _KEY_MAP[key];
+  return key;
+}
+
+function toggleKeyMode() {
+  _keyDisplayMode = _keyDisplayMode === 'number' ? 'letter' : 'number';
+  localStorage.setItem('keyDisplayMode', _keyDisplayMode);
+  document.getElementById('keyModeToggle').textContent = _keyDisplayMode === 'number' ? '🔤 อักษร' : '🔢 ตัวเลข';
+  updateModalKeyOptions();
+  renderTable();
+}
+
+function updateModalKeyOptions() {
+  var mKey = document.getElementById('mKey');
+  if (!mKey) return;
+  var currentValue = mKey.value;
+  var html = '<option value="">—</option>';
+  if (_keyDisplayMode === 'number') {
+    html += '<option>C / Am</option>' +
+      '<optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup>' +
+      '<optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup>';
+  } else {
+    html += '<option value="C / Am">' + esc(_KEY_MAP['C / Am'] || 'C / Am') + '</option>';
+    html += '<optgroup label="# Sharp">';
+    ['1#','2#','3#','4#','5#','6#','7#'].forEach(function(k) {
+      html += '<option value="' + esc(k) + '">' + esc(_KEY_MAP[k] || k) + '</option>';
+    });
+    html += '</optgroup><optgroup label="b Flat">';
+    ['1b','2b','3b','4b','5b','6b','7b'].forEach(function(k) {
+      html += '<option value="' + esc(k) + '">' + esc(_KEY_MAP[k] || k) + '</option>';
+    });
+    html += '</optgroup>';
+  }
+  mKey.innerHTML = html;
+  mKey.value = currentValue;
+}
+
 var _ERA_OPTS   = ['','80s','90s','2000s','2010s','2020s'];
 var _ERA_LABELS = {'':'—','80s':'2523-2532 (80s)','90s':'2533-2542 (90s)','2000s':'2543-2553 (00s)','2010s':'2554-2562 (10s)','2020s':'2563-ปัจจุบัน (20s)'};
 var _MOOD_OPTS  = ['','มัน / สนุก','หวาน / โรแมนติก','เศร้า / อกหัก','นิ่ง / ผ่อนคลาย','ฮึกเหิม / ยิ่งใหญ่'];
@@ -677,6 +751,10 @@ function _buildSel(field, opts, cur, cls, labelMap, strict) {
   var h = '<select class="il-select' + (cls ? ' ' + cls : '') + '" data-field="' + esc(field) + '" onchange="markDirty(this)">';
   opts.forEach(function(o) {
     var lbl = (labelMap && labelMap[o] !== undefined) ? labelMap[o] : (o || '—');
+    // Apply key formatting if this is the key field
+    if (field === 'key' && _keyDisplayMode === 'letter' && _KEY_MAP[o]) {
+      lbl = _KEY_MAP[o];
+    }
     h += '<option value="' + esc(o) + '"' + (o === val ? ' selected' : '') + '>' + esc(lbl) + '</option>';
   });
   return h + '</select>';

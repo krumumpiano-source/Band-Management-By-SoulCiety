@@ -19,6 +19,7 @@
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/i18n.js"></script>
+  <script src="js/key-utils.js"></script>
   <style>
 /* ── หน้าลิสเพลง — ใช้ธีม Premium Gold ของแอพ ── */
 
@@ -619,6 +620,7 @@ html{scroll-behavior:smooth}
     <button onclick="copyPlaylist()">📋 คัดลอก &amp; บันทึกลิส</button>
     <button onclick="showHistory()" style="background:#4a5568">📗 ประวัติ</button>
     <button onclick="refreshPlaylist()" style="background:var(--danger)">🔄 รีเฟรชลิส</button>
+    <button id="keyModeBtn" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff" title="สลับการแสดงคีย์ระหว่างตัวเลขและอักษร">🔤 อักษร</button>
   </div>
 
   <div class="copy-options" style="display:flex;gap:24px;font-size:13px;margin-bottom:10px">
@@ -982,7 +984,7 @@ function renderPage() {
       var newTag = s.isNew ? '<span class="new-tag">New</span>' : '';
       var songId = escapeHtml(s.id || s.songId || '');
       var meta = [];
-      if (s.key) meta.push('🎵 ' + escapeHtml(s.key));
+      if (s.key) meta.push('🎵 ' + escapeHtml(formatKey(s.key)));
       if (s.bpm > 0) meta.push('⏱ ' + s.bpm + ' BPM');
       if (s.singer) {
         var singerLabel = s.singer;
@@ -1559,7 +1561,7 @@ function renderPlaylist(){
         return;
       }
 
-      const transposedKey = transposeKey(s.key, s.transpose, s.mode);
+      const transposedKey = formatKey(transposeKey(s.key, s.transpose, s.mode));
       const nameEscaped = escapeHtml(s.name);
 
       li.innerHTML = `
@@ -1612,7 +1614,7 @@ function transposeSong(i,step){
   if(!el) return;
 
   requestAnimationFrame(() => {
-    el.textContent = transposeKey(s.key, s.transpose, s.mode);
+    el.textContent = formatKey(transposeKey(s.key, s.transpose, s.mode));
     el.classList.toggle("transposed", s.transpose!==0);
     el.classList.add("flash");
     setTimeout(()=>el.classList.remove("flash"),120);
@@ -1692,7 +1694,7 @@ function _doCopyAndSave(){
         showSpeed && s.bpm ? ` ${s.bpm}` : "";
 
       const keyTxt =
-        showKey ? ` [${transposeKey(s.key, s.transpose, s.mode)}]` : "";
+        showKey ? ` [${formatKey(transposeKey(s.key, s.transpose, s.mode))}]` : "";
 
       return `${n}. ${s.name}${bpmTxt}${keyTxt}`;
     }).join("\n");
@@ -2076,6 +2078,22 @@ function checkPlaylistLimit(thenDo) {
   // Free: ต้องดูโฆษณา
   showAdGate(thenDo);
 }
+
+// ── Key Display Mode Toggle ──
+function toggleKeyMode() {
+  toggleKeyDisplayMode();
+  var newMode = getKeyDisplayMode();
+  var btn = document.getElementById('keyModeBtn');
+  if (btn) btn.textContent = newMode === 'number' ? '🔤 อักษร' : '🔢 ตัวเลข';
+  renderPlaylist();
+  applyTextFilter();
+}
+
+// Initialize key button text
+(function() {
+  var btn = document.getElementById('keyModeBtn');
+  if (btn) btn.textContent = getKeyDisplayMode() === 'number' ? '🔤 อักษร' : '🔢 ตัวเลข';
+})();
 
 // ── Ad Gate ──
 var _adGateCallback = null;
