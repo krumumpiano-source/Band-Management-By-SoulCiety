@@ -750,8 +750,8 @@ function singerClass(singer) {
 function renderNowPlaying() {
   var s = _playlist[_current];
   if (!s) return;
-  document.getElementById('nowTitle').textContent formatKey(s._key || s.key)me;
-  document.getElementById('nowKey').textContent = s._key || '—';
+  document.getElementById('nowTitle').textContent = s.name;
+  document.getElementById('nowKey').textContent = formatKey(s._key || s.key) || '—';
   document.getElementById('nowBpm').textContent = s.bpm ? s.bpm + ' BPM' : '';
   var sc = singerClass(s.singer);
   var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
