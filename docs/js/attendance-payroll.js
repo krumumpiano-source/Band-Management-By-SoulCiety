@@ -21,6 +21,7 @@ var _apInited     = false;
 var apWeekStart   = 1;  // default Monday (0=Sun..6=Sat)
 var apWeekEnd     = 0;  // default Sunday
 var _apUserEditedDates = false; // true once user manually changes startDate
+var apIsAdmin     = (localStorage.getItem('userRole') || '') === 'admin';
 
 /* ── Helpers ────────────────────────────────────────── */
 function apEl(id) { return document.getElementById(id); }
@@ -395,7 +396,7 @@ function apRenderAttendance() {
         else if (!hasCheckIn && ri.assigned) tdCls += ';background:rgba(255,193,7,0.08)';  // assigned but no check-in → faint warning
         b += '<td style="' + tdCls + '">';
         b += '<input type="checkbox" class="ap-cb" data-m="' + apEsc(m.id) +
-          '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '"' + (checked ? ' checked' : '') + '>';
+          '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '"' + (checked ? ' checked' : '') + (!apIsAdmin ? ' disabled' : '') + '>';
         // Status badge — only show leave badge for slots actually on leave
         if (isLeaveSlot) {
           b += '<span class="ap-ci-badge" style="color:#e53e3e;font-size:9px;display:block" title="ลางาน">🚫 ลา</span>';
@@ -428,6 +429,7 @@ function apRenderAttendance() {
   tbody.innerHTML = b;
 
   tbody.querySelectorAll('.ap-cb').forEach(function(cb) {
+    if (!apIsAdmin) return; // only admin can toggle checkboxes
     cb.addEventListener('change', function() {
       var mid = this.dataset.m, d = this.dataset.d, s = this.dataset.s;
       if (!apChecked[mid]) apChecked[mid] = {};
@@ -632,6 +634,7 @@ function apBuildSubSummary() {
 
 /* ═══ SAVE ══════════════════════════════════════════ */
 function apDoSave() {
+  if (!apIsAdmin) { apToast('เฉพาะแอดมินเท่านั้นที่สามารถบันทึกได้', 'error'); return; }
   var venue = (apEl('venue')||{}).value;
   if (!venue) { apToast('กรุณาเลือกร้าน', 'error'); return; }
   var breakdown = [];
@@ -1207,6 +1210,14 @@ function apApplyWeekRange() {
 function apInitPage() {
   if (_apInited) return;
   _apInited = true;
+  // Show read-only notice for non-admin
+  if (!apIsAdmin) {
+    var notice = document.createElement('div');
+    notice.style.cssText = 'background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);color:#f59e0b;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:0.88rem;text-align:center';
+    notice.textContent = '👁️ ดูได้อย่างเดียว — การลงเวลาต้องทำโดยสมาชิกเอง (เฉพาะแอดมินที่แก้ไขแทนได้)';
+    var container = document.querySelector('.container') || document.querySelector('.page-content');
+    if (container) container.insertBefore(notice, container.firstChild);
+  }
   var today = new Date(), todayStr = today.toISOString().split('T')[0];
   var wd = apEl('workDate'); if (wd) wd.value = todayStr;
   // Pre-select record type from manager's payroll settings
@@ -1225,7 +1236,7 @@ function apInitPage() {
     apUpdateDateRange();
     apLoadCheckIns(function() { apRenderAttendance(); apRenderPayout(); apRenderPaymentInfo(); });
   });
-  var sb = apEl('saveBtn'); if (sb) sb.addEventListener('click', apDoSave);
+  var sb = apEl('saveBtn'); if (sb) { sb.addEventListener('click', apDoSave); if (!apIsAdmin) { sb.disabled = true; sb.title = 'เฉพาะแอดมินที่บันทึกได้'; } }
   var hb = apEl('historyBtn'); if (hb) hb.addEventListener('click', apOpenHistoryModal);
   var vr = apEl('generateVenueReceiptBtn'); if (vr) vr.addEventListener('click', apPrintVenueReceipt);
   var mr = apEl('generateMemberReceiptBtn'); if (mr) mr.addEventListener('click', apPrintMemberReceipt);
