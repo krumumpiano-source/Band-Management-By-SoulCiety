@@ -2299,6 +2299,7 @@ function openChat() {
   _updateChatBadge();
   _renderChatMessages();
   panel.classList.add('open');
+  document.getElementById('chatBarInner').style.display = 'none';
   var inp = document.getElementById('chatMsgInput');
   if (inp) {
     inp.value = '';
@@ -2309,6 +2310,7 @@ function openChat() {
 function closeChat() {
   _chatOpen = false;
   document.getElementById('chatPanel').classList.remove('open');
+  document.getElementById('chatBarInner').style.display = 'flex';
 }
 
 // No backdrop listener needed for mini panel;
