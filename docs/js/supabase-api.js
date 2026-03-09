@@ -821,13 +821,34 @@
         var meta = authUser.user.user_metadata || {};
         memberName = meta.nickname || meta.first_name || authUser.user.email || '';
       }
+      // Parse and validate slots — if empty, try to infer from band schedule
+      var _rawSlots = d.slots || '[]';
+      var _parsedSlots = [];
+      try { _parsedSlots = typeof _rawSlots === 'string' ? JSON.parse(_rawSlots) : (_rawSlots || []); } catch(e) {}
+      if (!_parsedSlots.length) {
+        // Infer from band_settings schedule for this date's day-of-week
+        try {
+          var _bId = d.bandId || getBandId();
+          var _bsRes = await sb.from('band_settings').select('settings').eq('band_id', _bId).single();
+          if (_bsRes.data && _bsRes.data.settings) {
+            var _sch = _bsRes.data.settings.scheduleData || _bsRes.data.settings.schedule || {};
+            var _dow = new Date(d.date || new Date().toISOString().slice(0, 10)).getDay();
+            var _dayData = _sch[_dow] || _sch[String(_dow)];
+            if (Array.isArray(_dayData)) {
+              _parsedSlots = _dayData.map(function(s) { return (s.startTime||'') + '-' + (s.endTime||''); });
+            } else if (_dayData && _dayData.timeSlots) {
+              _parsedSlots = _dayData.timeSlots.map(function(s) { return (s.startTime||'') + '-' + (s.endTime||''); });
+            }
+          }
+        } catch(e) { /* schedule lookup failed, proceed with empty */ }
+      }
       var row = {
         band_id: d.bandId || getBandId(),
         member_id: memberId,
         member_name: memberName,
         date: d.date || new Date().toISOString().slice(0, 10),
         venue: d.venue || '',
-        slots: d.slots || '[]',
+        slots: _parsedSlots.length ? JSON.stringify(_parsedSlots) : (d.slots || '[]'),
         reason: d.reason || 'ลางาน',
         substitute_name: d.substituteName || '',
         substitute_contact: d.substituteContact || '',

@@ -603,8 +603,8 @@
 
     var dateStr = qciLocalDateStr(qciSelectedDate);
     var venue = qciSelectedVenue || '';
-    // ไม่มีคนแทน = ไม่ต้องเลือกรอบเวลา แค่บันทึกว่าลาเฉยๆ
-    var slots = noSub ? [] : (qciSelectedSlots.length ? qciSelectedSlots : []);
+    // Get leave slots — use selected slots if any, otherwise infer all slots for the day
+    var slots = qciSelectedSlots.length ? qciSelectedSlots : qciGetSlotsForDate().map(function(s) { return s.key; });
     var reason = noSub ? 'ลางาน (ไม่มีคนแทน)' : 'ลางาน';
 
     var btn = document.getElementById('qciLeaveSubmit');
