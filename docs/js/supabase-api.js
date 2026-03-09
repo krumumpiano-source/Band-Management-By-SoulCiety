@@ -1097,12 +1097,10 @@
       delete settings.bandId; delete settings.action; delete settings._token;
       var { error } = await sb.from('band_settings').upsert({ band_id: bandId, settings: settings, updated_at: new Date().toISOString() }, { onConflict: 'band_id' });
       if (error) throw error;
-      // Sync band_name to profiles so dashboard shows correct name after next login
+      // Sync band_name to bands table + profiles
       if (d.bandName) {
-        var { data: authUser } = await sb.auth.getUser();
-        if (authUser && authUser.user) {
-          await sb.from('profiles').update({ band_name: d.bandName }).eq('id', authUser.user.id);
-        }
+        await sb.from('bands').update({ band_name: d.bandName }).eq('id', bandId);
+        await sb.from('profiles').update({ band_name: d.bandName }).eq('band_id', bandId);
         localStorage.setItem('bandName', d.bandName);
       }
       return { success: true };
@@ -2040,57 +2038,42 @@
 
     // ── Bands Management ───────────────────────────────────────────
     async function doGetAllBands() {
-      // 1. ดึงจากตาราง bands (source of truth)
+      // ดึงจากตาราง bands (source of truth)
       var { data, error } = await sb.from('bands')
-        .select('id, band_name, band_code, band_plan, province, created_at')
+        .select('id, band_name, band_plan, province, manager_id, created_at')
         .order('created_at', { ascending: false });
-      if (error) data = [];
+      if (error) throw error;
+      if (!data) data = [];
 
-      // 2. ถ้า bands ว่าง → derive จาก profiles (backward-compat กับวงที่สร้างก่อนระบบ band_requests)
-      if (!data || !data.length) {
-        var { data: profiles, error: pErr } = await sb.from('profiles')
-          .select('band_id, band_name, province, role, created_at')
-          .not('band_name', 'is', null)
-          .neq('band_name', '');
-        if (pErr || !profiles || !profiles.length) return { success: true, data: [] };
+      // เสริมจำนวนสมาชิก + band_code
+      if (data.length) {
+        var bandIds = data.map(function(b) { return b.id; });
 
-        var bandMap = {};
-        profiles.forEach(function(p) {
-          var key = p.band_id || p.band_name;
-          if (!bandMap[key]) {
-            bandMap[key] = {
-              id: p.band_id || null,
-              band_name: p.band_name,
-              band_code: '',
-              band_plan: 'free',
-              province: p.province || '',
-              created_at: p.created_at,
-              member_count: 0,
-              _from_profiles: true
-            };
-          }
-          bandMap[key].member_count++;
-          if (p.created_at && p.created_at < bandMap[key].created_at) {
-            bandMap[key].created_at = p.created_at;
-          }
-        });
-        data = Object.values(bandMap);
-        data.sort(function(a, b) { return (b.created_at || '').localeCompare(a.created_at || ''); });
-      } else {
-        // เสริมจำนวนสมาชิก
+        // นับสมาชิกจาก profiles
         var { data: profiles } = await sb.from('profiles')
           .select('band_id')
           .not('band_id', 'is', null)
           .neq('band_id', '');
-        if (profiles) {
-          var countMap = {};
-          profiles.forEach(function(p) {
-            countMap[p.band_id] = (countMap[p.band_id] || 0) + 1;
-          });
-          data.forEach(function(b) { b.member_count = countMap[b.id] || 0; });
-        }
+        var countMap = {};
+        if (profiles) profiles.forEach(function(p) {
+          countMap[p.band_id] = (countMap[p.band_id] || 0) + 1;
+        });
+
+        // ดึง band code จาก invite_codes
+        var { data: codes } = await sb.from('invite_codes')
+          .select('band_id, code')
+          .in('band_id', bandIds.map(String))
+          .eq('status', 'permanent');
+        var codeMap = {};
+        if (codes) codes.forEach(function(c) { codeMap[c.band_id] = c.code; });
+
+        data.forEach(function(b) {
+          b.member_count = countMap[b.id] || 0;
+          b.band_code = codeMap[b.id] || '';
+        });
       }
-      return { success: true, data: data || [] };
+
+      return { success: true, data: data };
     }
 
     async function doSetBandPlan(d) {

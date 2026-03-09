@@ -1172,26 +1172,19 @@
       var created = b.created_at ? new Date(b.created_at).toLocaleDateString('th-TH') : '—';
       var plan = b.band_plan || 'free';
       var members = b.member_count != null ? b.member_count : '—';
-      var hasId = b.id && !b._from_profiles;
-      var planSelect = hasId
-        ? '<select class="role-select" style="font-size:.75rem" onchange="setBandPlan(\'' + b.id + '\',this.value)">'
-          + '<option value="free"'+(plan==='free'?' selected':'')+'>🆓 Free</option>'
-          + '<option value="lite"'+(plan==='lite'?' selected':'')+'>🎵 Lite</option>'
-          + '<option value="pro"'+(plan==='pro'?' selected':'')+'>👑 Pro</option>'
-          + '</select>'
-        : '<span style="font-size:.75rem;color:var(--premium-text-muted)" title="วงนี้ยังไม่ได้สร้างผ่านระบบคำขอ">—</span>';
-      var deleteBtn = hasId
-        ? '<button class="btn btn-danger btn-sm" onclick="adminDeleteBand(\'' + b.id + '\',\'' + escapeHtml(b.band_name||'') + '\')">🗑️</button>'
-        : '';
       return '<tr>'
-        + '<td><b>' + escapeHtml(b.band_name || '—') + '</b>' + (b._from_profiles ? '<br><span style="font-size:.65rem;color:#f59e0b" title="วงนี้ยังไม่ได้อยู่ในตาราง bands อาจต้องอนุมัติใหม่">(ไม่มีในระบบวง)</span>' : '') + '</td>'
+        + '<td><b>' + escapeHtml(b.band_name || '—') + '</b></td>'
         + '<td><code style="font-size:.8rem">' + escapeHtml(b.band_code || '—') + '</code></td>'
         + '<td style="font-size:.78rem">' + escapeHtml(b.province || '—') + '</td>'
         + '<td style="text-align:center">' + members + '</td>'
         + '<td><span style="background:' + (planColors[plan]||'#6b7280') + ';color:#fff;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700">' + plan.toUpperCase() + '</span></td>'
         + '<td style="font-size:.78rem">' + created + '</td>'
-        + '<td>' + planSelect + '</td>'
-        + '<td>' + deleteBtn + '</td>'
+        + '<td><select class="role-select" style="font-size:.75rem" onchange="setBandPlan(\'' + b.id + '\',this.value)">'
+        + '<option value="free"'+(plan==='free'?' selected':'')+'>🆓 Free</option>'
+        + '<option value="lite"'+(plan==='lite'?' selected':'')+'>🎵 Lite</option>'
+        + '<option value="pro"'+(plan==='pro'?' selected':'')+'>👑 Pro</option>'
+        + '</select></td>'
+        + '<td><button class="btn btn-danger btn-sm" onclick="adminDeleteBand(\'' + b.id + '\',\'' + escapeHtml(b.band_name||'') + '\')">🗑️</button></td>'
         + '</tr>';
     }).join('');
   }
