@@ -656,9 +656,20 @@ function filterTable() {
   });
 
   applySortToFiltered();
-  _page = 1;
+  if (filterTable.__keepPage) {
+    var maxPage = Math.ceil(_filtered.length / _perPage) || 1;
+    _page = Math.max(1, Math.min(_page, maxPage));
+    delete filterTable.__keepPage;
+  } else {
+    _page = 1;
+  }
   updateStats();
   renderTable();
+}
+
+function refilterKeepPage() {
+  filterTable.__keepPage = true;
+  filterTable();
 }
 
 function applySortToFiltered() {
@@ -1006,7 +1017,7 @@ function deleteSong(songId, songName) {
       showToast('🗑️ ลบเพลง "' + songName + '" แล้ว', 'success');
       clearSongsCache();
       _allSongs = _allSongs.filter(function(s){ return s.id !== songId; });
-      filterTable();
+      refilterKeepPage();
     } else {
       showToast((r && r.message) || 'ลบไม่สำเร็จ', 'error');
     }
