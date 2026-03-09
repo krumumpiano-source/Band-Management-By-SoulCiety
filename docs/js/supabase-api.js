@@ -723,10 +723,17 @@
     // ── Band Profiles (registered members) ─────────────────────────
     async function doGetBandProfiles(d) {
       var bandId = d.bandId || getBandId();
+      // ใช้ RPC (SECURITY DEFINER) เพื่อ bypass RLS — แก้ปัญหาสมาชิกไม่แสดง
+      try {
+        var { data: rpcData, error: rpcErr } = await sb.rpc('get_band_profiles', { p_band_id: bandId });
+        if (!rpcErr && rpcData) return { success: true, data: rpcData };
+      } catch(e) { /* fallback to direct query */ }
+      // Fallback: direct query (ต้องมี RLS policy สำหรับวงเดียวกัน)
       var { data, error } = await sb.from('profiles')
         .select('id, email, user_name, nickname, first_name, last_name, instrument, phone, role, status, title, band_id, band_name, payment_method, payment_account, created_at')
         .eq('band_id', bandId)
         .eq('status', 'active')
+        .neq('role', 'pending')
         .order('role')
         .order('nickname');
       if (error) throw error;
