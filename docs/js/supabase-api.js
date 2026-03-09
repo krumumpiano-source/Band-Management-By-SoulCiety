@@ -142,6 +142,13 @@
         case 'detachRefSong':      return doDetachRefSong(d);
         case 'getBandSongStats':   return doGetBandSongStats(d);
 
+        // ── Artists (Master) ───────────────────────────────────────
+        case 'getArtists':         return doGetArtists();
+        case 'addArtist':          return doAddArtist(d);
+        case 'updateArtist':       return doUpdateArtist(d);
+        case 'deleteArtist':       return doDeleteArtist(d);
+        case 'searchArtists':      return doSearchArtists(d);
+
         // ── Song Suggestions ───────────────────────────────────────
         case 'addSongSuggestion':      return doAddSongSuggestion(d);
         case 'getSongSuggestions':     return doGetSongSuggestions(d);
@@ -538,6 +545,37 @@
       await sb.auth.signOut();
       clearSession();
       return { success: true };
+    }
+
+    // ── Artists (Master) ──────────────────────────────────────────
+    async function doGetArtists() {
+      var { data, error } = await sb.from('artists').select('id, name').order('name');
+      if (error) throw error;
+      return { success: true, data: data || [] };
+    }
+
+    async function doAddArtist(d) {
+      var { data, error } = await sb.rpc('add_artist', { p_name: (d.name || '').trim() });
+      if (error) throw error;
+      return data || { success: false, message: 'ไม่มีผลลัพธ์' };
+    }
+
+    async function doUpdateArtist(d) {
+      var { error } = await sb.from('artists').update({ name: (d.name || '').trim() }).eq('id', d.artistId);
+      if (error) throw error;
+      return { success: true };
+    }
+
+    async function doDeleteArtist(d) {
+      var { error } = await sb.from('artists').delete().eq('id', d.artistId);
+      if (error) throw error;
+      return { success: true };
+    }
+
+    async function doSearchArtists(d) {
+      var { data, error } = await sb.rpc('search_artists', { p_query: d.query || '', p_limit: d.limit || 20 });
+      if (error) throw error;
+      return data || { success: true, data: [] };
     }
 
     // ── Songs ─────────────────────────────────────────────────────
