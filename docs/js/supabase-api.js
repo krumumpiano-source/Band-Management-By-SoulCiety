@@ -2040,7 +2040,7 @@
           targets: subs.map(function(s){ return { endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth }; }),
           title:   d.title,
           body:    d.body,
-          url:     d.url || '/Band-Management-By-SoulCiety/docs/dashboard.html'
+          url:     d.url || '/BandThai/docs/dashboard.html'
         }
       });
       if (result.error) throw result.error;

@@ -6,7 +6,7 @@
 
 'use strict';
 
-var APP_BASE = '/Band-Management-By-SoulCiety/docs/';
+var APP_BASE = '/BandThai/docs/';
 
 // ── Install & Activate (skip waiting → ใช้ทันที) ──────────────────
 self.addEventListener('install', function () {
