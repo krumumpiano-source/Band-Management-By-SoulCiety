@@ -1,5 +1,5 @@
-/**
- * BandFlow — Core App (GitHub Pages + Supabase)
+﻿/**
+ * BandThai — Core App (GitHub Pages + Supabase)
  *
  * Load order:
  *   1. i18n.js

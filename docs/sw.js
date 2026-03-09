@@ -1,5 +1,5 @@
 /**
- * sw.js — Service Worker สำหรับ Band Management By SoulCiety
+ * sw.js — Service Worker สำหรับ BandThai
  * Handle: Web Push Notifications + notification click
  * ไม่ทำ offline cache ในเฟสนี้
  */
@@ -23,15 +23,15 @@ self.addEventListener('push', function (event) {
   try {
     data = event.data ? event.data.json() : {};
   } catch (e) {
-    data = { title: 'SoulCiety', body: event.data ? event.data.text() : '' };
+    data = { title: 'BandThai', body: event.data ? event.data.text() : '' };
   }
 
-  var title   = data.title || 'Band Management By SoulCiety';
+  var title   = data.title || 'BandThai';
   var options = {
     body:    data.body    || '',
     icon:    APP_BASE + 'icons/icon-192.png',
     badge:   APP_BASE + 'icons/badge-72.png',
-    tag:     data.tag     || 'soulciety-notification',
+    tag:     data.tag     || 'bandthai-notification',
     renotify: true,
     data: {
       url:  data.url  || APP_BASE + 'dashboard.html',

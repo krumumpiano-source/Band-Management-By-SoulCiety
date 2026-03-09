@@ -1,6 +1,6 @@
-/* ============================================
+﻿/* ============================================
    Browser Compatibility + Mobile Polish
-   BandFlow
+   BandThai
    ============================================ */
 input::-webkit-input-placeholder,
 textarea::-webkit-input-placeholder { color:var(--premium-text-muted);opacity:.6 }

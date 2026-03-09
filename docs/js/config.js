@@ -1,5 +1,5 @@
-/**
- * BandFlow — Supabase Config
+﻿/**
+ * BandThai — Supabase Config
  * ────────────────────────────────────────────────
  * วิธีดูค่าเหล่านี้:
  *   1. เข้า https://app.supabase.com → เลือก project

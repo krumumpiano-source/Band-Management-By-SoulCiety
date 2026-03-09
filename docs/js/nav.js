@@ -1,5 +1,5 @@
-/**
- * BandFlow — Navigation (Sidebar)
+﻿/**
+ * BandThai — Navigation (Sidebar)
  * renderMainNav() — ไฟล์นี้เป็นที่เดียวที่ renderMainNav ถูกนิยาม
  */
 
@@ -356,7 +356,7 @@ function renderFaqBot() {
   panel.innerHTML =
     '<div class="faqbot-header">' +
       '<div class="faqbot-avatar">🤖</div>' +
-      '<div><h4>BandFlow Help</h4><p id="faqBotHeaderSub">' + _ld0.headerSub + '</p></div>' +
+      '<div><h4>BandThai Help</h4><p id="faqBotHeaderSub">' + _ld0.headerSub + '</p></div>' +
       '<button class="faqbot-header-close" id="faqBotClose" aria-label="Close">✕</button>' +
     '</div>' +
     '<div class="faqbot-body" id="faqBotBody"></div>' +

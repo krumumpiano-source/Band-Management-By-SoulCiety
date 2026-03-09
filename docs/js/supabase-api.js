@@ -1,5 +1,5 @@
-/**
- * BandFlow — Supabase API Wrapper
+﻿/**
+ * BandThai — Supabase API Wrapper
  * แทนที่ apiCall() ทุก action ด้วย Supabase REST SDK
  *
  * Load order ใน HTML:
@@ -1712,7 +1712,7 @@
         + '<p><strong>วันที่:</strong> ' + (q.date || '-') + '</p>'
         + '<p><strong>รายละเอียด:</strong> ' + (q.description || '-') + '</p>'
         + '<p class="total">รวมทั้งสิ้น: ฿' + (q.totalAmount || q.amount || 0).toLocaleString() + '</p>'
-        + '<p style="margin-top:40px;text-align:center;color:#888">BandFlow</p>'
+        + '<p style="margin-top:40px;text-align:center;color:#888">BandThai</p>'
         + '</body></html>';
       var blob = new Blob([html], { type: 'text/html' });
       var url = URL.createObjectURL(blob);
@@ -2060,7 +2060,7 @@
       }
     });
 
-    console.log('[SoulCiety] Supabase API พร้อมใช้งาน');
+    console.log('[BandThai] Supabase API พร้อมใช้งาน');
   }); // end waitForSDK
 
 })(window);

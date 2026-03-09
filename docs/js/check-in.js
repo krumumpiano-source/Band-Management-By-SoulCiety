@@ -1,7 +1,7 @@
-/**
+﻿/**
  * Member Self Check-In Page JavaScript
  * สมาชิกลงเวลาทำงานของตนเอง
- * BandFlow
+ * BandThai
  */
 
 var ciCurrentBandId = null;
