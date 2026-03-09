@@ -917,18 +917,20 @@ function loadInitial(forceRefresh) {
 }
 
 function populateArtistFilter() {
-  apiCall('getArtists', {}, function(r) {
+  apiCall('getSongArtists', { source: _currentSource }, function(r) {
     var sel = document.getElementById('artist');
     if (!sel) return;
+    var prev = sel.value;
     sel.innerHTML = '<option value="">ทุกศิลปิน</option>';
     if (r && r.success && r.data) {
-      r.data.forEach(function(a) {
+      r.data.forEach(function(name) {
         var opt = document.createElement('option');
-        opt.value = a.name;
-        opt.textContent = a.name;
+        opt.value = name;
+        opt.textContent = name;
         sel.appendChild(opt);
       });
     }
+    sel.value = prev;
   });
 }
 

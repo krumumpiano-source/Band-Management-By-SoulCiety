@@ -144,6 +144,7 @@
 
         // ── Artists (Master) ───────────────────────────────────────
         case 'getArtists':         return doGetArtists();
+        case 'getSongArtists':     return doGetSongArtists(d);
         case 'addArtist':          return doAddArtist(d);
         case 'ensureArtist':       return doEnsureArtist(d);
         case 'updateArtist':       return doUpdateArtist(d);
@@ -553,6 +554,40 @@
       var { data, error } = await sb.from('artists').select('id, name').order('name');
       if (error) throw error;
       return { success: true, data: data || [] };
+    }
+
+    async function doGetSongArtists(d) {
+      var source = d.source || 'global';
+      if (source === 'band') {
+        var bandId = getBandId();
+        var all = [];
+        var { data: refs } = await sb.from('band_song_refs')
+          .select('band_songs!inner(artist)').eq('band_id', bandId);
+        (refs || []).forEach(function(r) { if (r.band_songs && r.band_songs.artist) all.push(r.band_songs.artist); });
+        var { data: owned } = await sb.from('band_songs')
+          .select('artist').eq('band_id', bandId);
+        (owned || []).forEach(function(s) { if (s.artist) all.push(s.artist); });
+        var unique = Array.from(new Set(all)).sort();
+        return { success: true, data: unique };
+      }
+      // global: collect distinct artists from global songs
+      var artists = [];
+      var gFrom = 0;
+      var BATCH = 1000;
+      while (true) {
+        var { data: chunk, error: cErr } = await sb.from('band_songs')
+          .select('artist').is('band_id', null)
+          .not('artist', 'is', null)
+          .order('artist')
+          .range(gFrom, gFrom + BATCH - 1);
+        if (cErr) throw cErr;
+        if (!chunk || chunk.length === 0) break;
+        chunk.forEach(function(s) { if (s.artist) artists.push(s.artist); });
+        if (chunk.length < BATCH) break;
+        gFrom += BATCH;
+      }
+      var unique = Array.from(new Set(artists)).sort();
+      return { success: true, data: unique };
     }
 
     async function doAddArtist(d) {
