@@ -6,7 +6,7 @@
 
 'use strict';
 
-var APP_BASE = '/BandThai/docs/';
+var APP_BASE = '/BandThai/';
 
 // ── Install & Activate (skip waiting → ใช้ทันที) ──────────────────
 self.addEventListener('install', function () {

@@ -399,7 +399,7 @@
   var path = location.pathname;
   if (/\/(index|register|create-band|terms|forgot)/.test(path)) return;
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/BandThai/docs/sw.js')
+    navigator.serviceWorker.register('/BandThai/sw.js')
       .then(function (reg) {
         window._swReg = reg;
         // รับฟัง subscription changed จาก SW
