@@ -642,6 +642,7 @@
       var era     = d.era    || '';
       var genre   = d.genre  || '';
       var mood    = d.mood   || '';
+      var artist = d.artist || '';
       var sortKey = d.sortKey || 'name';
       var sortAsc = d.sortAsc !== false;
 
@@ -689,6 +690,7 @@
         if (era)   all = all.filter(function(s) { return s.era === era; });
         if (genre) all = all.filter(function(s) { return s.tags === genre; });
         if (mood)  all = all.filter(function(s) { return (s.mood || '').indexOf(mood) >= 0; });
+        if (artist) all = all.filter(function(s) { return s.artist === artist; });
 
         // Sort
         all.sort(function(a, b) { return (a[sortKey] || '').toString().localeCompare((b[sortKey] || '').toString()); });
@@ -721,6 +723,7 @@
       if (era)   q = q.eq('era', era);
       if (genre) q = q.eq('tags', genre);
       if (mood)  q = q.ilike('mood', '%' + mood + '%');
+      if (artist) q = q.eq('artist', artist);
 
       var { data, error, count } = await q;
       if (error) throw error;
