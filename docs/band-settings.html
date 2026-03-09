@@ -247,7 +247,7 @@
             <div>
               <div style="color:#fff;font-weight:700;font-size:var(--text-sm)">🤖 การแจ้งเตือนอัตโนมัติ</div>
               <div style="color:rgba(255,255,255,.7);font-size:var(--text-xs);margin-top:3px">
-                ระบบจะแจ้งเตือนสมาชิกอัตโนมัติก่อนถึงเวลางาน + งานนอก (ล่วงหน้า 1 วัน)
+                ระบบจะแจ้งเตือนสมาชิกล่วงหน้าก่อนถึงเวลางาน + เตือนลงเวลาทุกครั้งที่เข้าแอป
               </div>
             </div>
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
@@ -264,29 +264,31 @@
           </div>
           <!-- Timing Config -->
           <div id="notifTimingConfig" style="display:none;border-top:1px solid rgba(255,255,255,.15);padding-top:12px">
-            <div style="color:rgba(255,255,255,.85);font-weight:600;font-size:var(--text-xs);margin-bottom:8px">⏱️ ตั้งเวลาแจ้งเตือนล่วงหน้า</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div>
-                <label style="color:rgba(255,255,255,.7);font-size:11px;display:block;margin-bottom:4px">🎵 เบรคแรกของวัน</label>
-                <select id="notifFirstSlot" onchange="saveNotifTiming()"
-                  style="width:100%;padding:7px 10px;border:1px solid rgba(255,255,255,.25);border-radius:8px;background:rgba(255,255,255,.12);color:#fff;font-size:var(--text-xs);font-family:inherit">
-                  <option value="15">15 นาทีก่อน</option>
-                  <option value="30">30 นาทีก่อน</option>
-                  <option value="60" selected>1 ชั่วโมงก่อน</option>
-                  <option value="90">1 ชั่วโมงครึ่งก่อน</option>
-                  <option value="120">2 ชั่วโมงก่อน</option>
-                </select>
+            <div style="color:rgba(255,255,255,.85);font-weight:600;font-size:var(--text-xs);margin-bottom:10px">⏱️ ตั้งเวลาแจ้งเตือนล่วงหน้า</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <!-- งานนอก -->
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="color:rgba(255,255,255,.8);font-size:11px;min-width:100px">🎤 งานนอก</span>
+                <input type="number" id="notifExtHr" min="0" max="48" value="24" onchange="saveNotifTiming()" style="width:52px;padding:5px 6px;border:1px solid rgba(255,255,255,.25);border-radius:6px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;text-align:center;font-family:inherit">
+                <span style="color:rgba(255,255,255,.6);font-size:11px">ชั่วโมง</span>
+                <input type="number" id="notifExtMin" min="0" max="59" value="0" onchange="saveNotifTiming()" style="width:52px;padding:5px 6px;border:1px solid rgba(255,255,255,.25);border-radius:6px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;text-align:center;font-family:inherit">
+                <span style="color:rgba(255,255,255,.6);font-size:11px">นาที ก่อน</span>
               </div>
-              <div>
-                <label style="color:rgba(255,255,255,.7);font-size:11px;display:block;margin-bottom:4px">🔄 เบรคถัดไปของวัน</label>
-                <select id="notifNextSlot" onchange="saveNotifTiming()"
-                  style="width:100%;padding:7px 10px;border:1px solid rgba(255,255,255,.25);border-radius:8px;background:rgba(255,255,255,.12);color:#fff;font-size:var(--text-xs);font-family:inherit">
-                  <option value="5" selected>5 นาทีก่อน</option>
-                  <option value="10">10 นาทีก่อน</option>
-                  <option value="15">15 นาทีก่อน</option>
-                  <option value="30">30 นาทีก่อน</option>
-                  <option value="60">1 ชั่วโมงก่อน</option>
-                </select>
+              <!-- เบรคแรก -->
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="color:rgba(255,255,255,.8);font-size:11px;min-width:100px">🎵 เบรคแรกของวัน</span>
+                <input type="number" id="notifFirstHr" min="0" max="12" value="1" onchange="saveNotifTiming()" style="width:52px;padding:5px 6px;border:1px solid rgba(255,255,255,.25);border-radius:6px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;text-align:center;font-family:inherit">
+                <span style="color:rgba(255,255,255,.6);font-size:11px">ชั่วโมง</span>
+                <input type="number" id="notifFirstMin" min="0" max="59" value="0" onchange="saveNotifTiming()" style="width:52px;padding:5px 6px;border:1px solid rgba(255,255,255,.25);border-radius:6px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;text-align:center;font-family:inherit">
+                <span style="color:rgba(255,255,255,.6);font-size:11px">นาที ก่อน</span>
+              </div>
+              <!-- เบรคถัดไป -->
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="color:rgba(255,255,255,.8);font-size:11px;min-width:100px">🔄 เบรคถัดไปของวัน</span>
+                <input type="number" id="notifNextHr" min="0" max="12" value="0" onchange="saveNotifTiming()" style="width:52px;padding:5px 6px;border:1px solid rgba(255,255,255,.25);border-radius:6px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;text-align:center;font-family:inherit">
+                <span style="color:rgba(255,255,255,.6);font-size:11px">ชั่วโมง</span>
+                <input type="number" id="notifNextMin" min="0" max="59" value="5" onchange="saveNotifTiming()" style="width:52px;padding:5px 6px;border:1px solid rgba(255,255,255,.25);border-radius:6px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;text-align:center;font-family:inherit">
+                <span style="color:rgba(255,255,255,.6);font-size:11px">นาที ก่อน</span>
               </div>
             </div>
           </div>
@@ -426,13 +428,28 @@
         if (r && r.success && r.data) {
           var enabled = !!r.data.notifications_enabled;
           setAutoNotifUI(enabled);
-          // Load timing values
-          var fs = document.getElementById('notifFirstSlot');
-          var ns = document.getElementById('notifNextSlot');
-          if (fs && r.data.notif_first_slot_mins) fs.value = String(r.data.notif_first_slot_mins);
-          if (ns && r.data.notif_next_slot_mins) ns.value = String(r.data.notif_next_slot_mins);
+          // Load timing values (stored as total minutes)
+          var extMins   = r.data.notif_external_mins || 1440;
+          var firstMins = r.data.notif_first_slot_mins || 60;
+          var nextMins  = r.data.notif_next_slot_mins || 5;
+          _setTimingInputs('notifExtHr', 'notifExtMin', extMins);
+          _setTimingInputs('notifFirstHr', 'notifFirstMin', firstMins);
+          _setTimingInputs('notifNextHr', 'notifNextMin', nextMins);
         }
       });
+    }
+    function _setTimingInputs(hrId, minId, totalMins) {
+      var hr = document.getElementById(hrId);
+      var mn = document.getElementById(minId);
+      if (hr) hr.value = Math.floor(totalMins / 60);
+      if (mn) mn.value = totalMins % 60;
+    }
+    function _getTimingMins(hrId, minId, fallback) {
+      var hr = document.getElementById(hrId);
+      var mn = document.getElementById(minId);
+      var h = parseInt(hr ? hr.value : '0', 10) || 0;
+      var m = parseInt(mn ? mn.value : '0', 10) || 0;
+      return (h * 60 + m) || fallback;
     }
     function setAutoNotifUI(enabled) {
       var cb    = document.getElementById('autoNotifToggle');
@@ -452,14 +469,12 @@
       _saveNotifSettings({ notifications_enabled: enabled });
     }
     function saveNotifTiming() {
-      // Debounce so changing both selects quickly only saves once
       clearTimeout(_notifSaveTimeout);
       _notifSaveTimeout = setTimeout(function() {
-        var fs = document.getElementById('notifFirstSlot');
-        var ns = document.getElementById('notifNextSlot');
         _saveNotifSettings({
-          notif_first_slot_mins: parseInt(fs ? fs.value : '60', 10),
-          notif_next_slot_mins:  parseInt(ns ? ns.value : '5', 10)
+          notif_external_mins:   _getTimingMins('notifExtHr', 'notifExtMin', 1440),
+          notif_first_slot_mins: _getTimingMins('notifFirstHr', 'notifFirstMin', 60),
+          notif_next_slot_mins:  _getTimingMins('notifNextHr', 'notifNextMin', 5)
         });
       }, 400);
     }

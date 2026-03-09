@@ -131,6 +131,7 @@ function thaiDateStr(d: Date): string {
 /** Get band notification settings from band_settings */
 interface BandNotifConfig {
   enabled: boolean;
+  externalMins: number;    // minutes before external gig (default 1440 = 24h)
   firstSlotMins: number;   // minutes before first slot of day (default 60)
   nextSlotMins: number;    // minutes before subsequent slots (default 5)
 }
@@ -141,6 +142,7 @@ async function getBandNotifConfig(bandId: string): Promise<BandNotifConfig> {
   const s = data?.settings;
   const cfg: BandNotifConfig = {
     enabled: !!(s?.notifications_enabled),
+    externalMins:  Number(s?.notif_external_mins) || 1440,
     firstSlotMins: Number(s?.notif_first_slot_mins) || 60,
     nextSlotMins:  Number(s?.notif_next_slot_mins)  || 5,
   };
@@ -179,33 +181,52 @@ async function logNotification(bandId: string, type: string, key: string): Promi
   return !error;   // false = already logged (unique constraint violation)
 }
 
-// ── Notification Type 1: External job 1-day notice ──────────────────────────
+// ── Notification Type 1: External job reminder (custom timing per band) ──────
+// Each band can configure how far ahead to remind about external gigs.
+// We fetch ALL external gigs with start_time for today or tomorrow,
+// then check if any falls within the band's configured reminder window.
 async function notifyExternalJobs(thai: Date) {
-  // Target date = tomorrow Thai time
+  const todayDate = thaiDateStr(thai);
   const tomorrow = new Date(thai);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const targetDate = thaiDateStr(tomorrow);
+  const tomorrowDate = thaiDateStr(tomorrow);
 
-  // Fetch external-type schedule items for tomorrow
+  // Fetch external gigs for today and tomorrow (covers up to 48h ahead)
   const { data: jobs, error } = await sb
     .from('schedule')
-    .select('id, band_id, date, venue_name, time_slots, notes')
-    .eq('date', targetDate)
+    .select('id, band_id, date, venue_name, time_slots, notes, start_time')
     .eq('type', 'external')
+    .in('date', [todayDate, tomorrowDate])
     .not('band_id', 'is', null);
 
   if (error || !jobs || jobs.length === 0) return;
 
+  const nowHHMM = thai.toISOString().substring(11, 16);
+  const nowTotalMin = timeToMinutes(nowHHMM) ?? 0;
+
   for (const job of jobs) {
-    // Check if band has notifications enabled
     const cfg = await getBandNotifConfig(job.band_id);
     if (!cfg.enabled) continue;
 
-    const refKey = `external_job_1d:${job.id}:${targetDate}`;
-    const logged = await logNotification(job.band_id, 'external_job_1d', refKey);
-    if (!logged) continue;   // already sent
+    // Calculate minutes until the gig starts
+    const gigStartMin = timeToMinutes(job.start_time || '00:00') ?? 0;
+    let minutesUntilGig: number;
 
-    // Get all subscriptions in this band (all members)
+    if (job.date === todayDate) {
+      minutesUntilGig = gigStartMin - nowTotalMin;
+    } else {
+      // Tomorrow: add 1440 minutes (24h)
+      minutesUntilGig = (1440 - nowTotalMin) + gigStartMin;
+    }
+
+    // Check if we're within ±3 min of the configured reminder time
+    const diff = minutesUntilGig - cfg.externalMins;
+    if (diff < -3 || diff > 3) continue;
+
+    const refKey = `external_${cfg.externalMins}m:${job.id}:${job.date}`;
+    const logged = await logNotification(job.band_id, 'external_job', refKey);
+    if (!logged) continue;
+
     const { data: subs } = await sb
       .from('push_subscriptions')
       .select('endpoint, p256dh, auth_key')
@@ -216,10 +237,19 @@ async function notifyExternalJobs(thai: Date) {
     const slotLabel = Array.isArray(job.time_slots)
       ? job.time_slots.map((s: Record<string, string>) => s.name || s.label || '').filter(Boolean).join(', ')
       : '';
-    const label = [job.venue_name, slotLabel].filter(Boolean).join(' · ') || 'งานพรุ่งนี้';
+    const label = [job.venue_name, slotLabel].filter(Boolean).join(' · ') || 'งานนอก';
+
+    // Build human-readable time label
+    const hrs = Math.floor(cfg.externalMins / 60);
+    const mins = cfg.externalMins % 60;
+    let timeLabel = '';
+    if (hrs > 0 && mins > 0) timeLabel = `${hrs} ชม. ${mins} นาที`;
+    else if (hrs > 0) timeLabel = `${hrs} ชั่วโมง`;
+    else timeLabel = `${mins} นาที`;
+
     const payload = {
-      title: '🎵 งานนอกพรุ่งนี้ — ' + label,
-      body:  job.notes ? job.notes.slice(0, 100) : 'อย่าลืมเตรียมตัวสำหรับงานพรุ่งนี้!',
+      title: `🎤 งานนอกอีก ${timeLabel} — ${label}`,
+      body:  job.notes ? job.notes.slice(0, 100) : 'อย่าลืมเตรียมตัว!',
       type:  'external_1day',
       url:   APP_BASE + 'schedule.html'
     };

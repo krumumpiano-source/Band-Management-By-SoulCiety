@@ -15,8 +15,9 @@ var profileMembers  = [];   // profiles with band_id + status=active
 var currentInviteCode   = null;
 var currentInviteExpires = null;
 var notificationsEnabled = false;
-var notifFirstSlotMins  = 60;
-var notifNextSlotMins   = 5;
+var notifExternalMins    = 1440;
+var notifFirstSlotMins   = 60;
+var notifNextSlotMins    = 5;
 
 var _editDay    = -1;
 var _editSlotId = null;
@@ -117,6 +118,7 @@ function _buildFullPayload() {
     hourlyRates: hourlyRates,
     inviteCode: currentInviteCode, inviteExpires: currentInviteExpires,
     notifications_enabled: notificationsEnabled,
+    notif_external_mins:   notifExternalMins,
     notif_first_slot_mins: notifFirstSlotMins,
     notif_next_slot_mins:  notifNextSlotMins,
     updatedAt: new Date().toISOString()
@@ -265,6 +267,7 @@ function loadBandSettings() {
         if (d.members) bandMembersData = d.members;
         if (d.inviteCode) { currentInviteCode = d.inviteCode; currentInviteExpires = d.inviteExpires || null; }
         notificationsEnabled = !!d.notifications_enabled;
+        notifExternalMins  = d.notif_external_mins || 1440;
         notifFirstSlotMins = d.notif_first_slot_mins || 60;
         notifNextSlotMins  = d.notif_next_slot_mins || 5;
         // ถ้า server ไม่ส่ง inviteCode กลับมา ให้ดึงจาก invite_codes table

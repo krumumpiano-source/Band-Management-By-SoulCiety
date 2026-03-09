@@ -237,6 +237,20 @@
       <!-- ===== Notification Prompt ===== -->
       <div id="notifPromptWrap" style="margin-bottom:var(--spacing-md)"></div>
 
+      <!-- ===== Check-in Reminder Banner ===== -->
+      <div id="checkinReminderBanner" style="display:none;margin-bottom:var(--spacing-md);padding:14px 18px;border-radius:var(--radius-lg);background:linear-gradient(135deg,#ff6b35,#f7931e);color:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(255,107,53,0.3);animation:checkinPulse 2s infinite" onclick="document.getElementById('qciCard').scrollIntoView({behavior:'smooth'})">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:1.5rem">📋</span>
+          <div>
+            <strong style="font-size:var(--text-base)">วันนี้ยังไม่ได้ลงเวลา!</strong>
+            <p style="margin:2px 0 0;font-size:var(--text-sm);opacity:0.9">กดที่นี่เพื่อลงเวลาเลย</p>
+          </div>
+        </div>
+      </div>
+      <style>
+        @keyframes checkinPulse { 0%,100%{box-shadow:0 2px 8px rgba(255,107,53,0.3)} 50%{box-shadow:0 4px 16px rgba(255,107,53,0.5)} }
+      </style>
+
       <!-- ===== งานนอกที่กำลังจะมา ===== -->
       <div class="card" id="extJobsCard" style="margin-bottom:var(--spacing-xl);display:none">
         <div class="card-header" style="background:linear-gradient(135deg,#1a202c,#2d3748);flex-wrap:wrap;gap:8px">
@@ -554,7 +568,21 @@
           qciShowDone(ci.slots, ci.venue, ci.status, subName);
         }
       }
+      // Check-in reminder: show banner if today + no check-in
+      _updateCheckinReminder();
     });
+  }
+
+  function _updateCheckinReminder() {
+    var banner = document.getElementById('checkinReminderBanner');
+    if (!banner) return;
+    var today = new Date();
+    var isToday = qciLocalDateStr(qciSelectedDate) === qciLocalDateStr(today);
+    if (isToday && !qciExistingCheckIn) {
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
   }
 
   function qciConfirm() {
@@ -566,8 +594,10 @@
     apiCall('memberCheckIn', { bandId: qciBandId, date: dateStr, venue: qciSelectedVenue, slots: qciSelectedSlots, notes: '' }, function(r) {
       btn.disabled = false; btn.textContent = '✅ ยืนยันลงเวลา';
       if (r && r.success) {
+        qciExistingCheckIn = { status: 'pending', slots: qciSelectedSlots, venue: qciSelectedVenue };
         qciShowDone(qciSelectedSlots, qciSelectedVenue, 'pending');
         showDashToast('ลงเวลาเรียบร้อย — รอผู้จัดการยืนยัน', 'success');
+        _updateCheckinReminder();
       } else {
         alert((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
       }
@@ -629,7 +659,9 @@
           showDashToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
           document.getElementById('qciLeaveForm').classList.remove('show');
           document.getElementById('qciLeaveSubName').value = '';
+          qciExistingCheckIn = { status: 'leave' };
           qciShowDone(slots, venue, 'leave', subName);
+          _updateCheckinReminder();
         } else {
           showDashToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
         }
