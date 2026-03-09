@@ -240,6 +240,33 @@
           <h3 class="card-title">🔔 จัดการการแจ้งเตือน</h3>
           <span id="notifSubCountBadge" style="font-size:var(--text-sm);color:var(--premium-text-muted);font-weight:600"></span>
         </div>
+
+        <!-- Auto-Notification Toggle -->
+        <div style="background:linear-gradient(135deg,#1e3a5f,#1e3a8a);border-radius:10px;padding:16px;margin-bottom:var(--spacing-md)">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div>
+              <div style="color:#fff;font-weight:700;font-size:var(--text-sm)">🤖 การแจ้งเตือนอัตโนมัติ</div>
+              <div style="color:rgba(255,255,255,.7);font-size:var(--text-xs);margin-top:3px">
+                ระบบจะแจ้งเตือนสมาชิกอัตโนมัติเมื่อ:<br>
+                • งานนอก (ล่วงหน้า 1 วัน)<br>
+                • ก่อนเริ่มงานตามตาราง (ล่วงหน้า 1 ชม.)<br>
+                • เตือนให้เช็คอิน (5 นาทีก่อนเริ่มงาน)
+              </div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+              <span id="autoNotifLabel" style="color:#fff;font-size:var(--text-xs);font-weight:600">ปิด</span>
+              <div style="position:relative;width:44px;height:24px">
+                <input type="checkbox" id="autoNotifToggle" onchange="toggleAutoNotif(this.checked)"
+                  style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;z-index:2;margin:0">
+                <div id="autoNotifTrack"
+                  style="position:absolute;top:0;left:0;width:44px;height:24px;border-radius:12px;background:#475569;transition:.2s"></div>
+                <div id="autoNotifThumb"
+                  style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+              </div>
+            </label>
+          </div>
+        </div>
+
         <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">
           ดูสถานะการรับการแจ้งเตือนของสมาชิกในวง และส่งการแจ้งเตือนทดสอบ
         </p>
@@ -361,8 +388,52 @@
         var card = document.getElementById('notifAdminCard');
         if (card) card.style.display = '';
         loadNotifAdminPanel();
+        loadAutoNotifState();
       }
     });
+
+    /* ── Auto-Notification Toggle ── */
+    function loadAutoNotifState() {
+      var bandId = localStorage.getItem('bandId') || '';
+      if (!bandId) return;
+      apiCall('getBandSettings', { bandId: bandId }, function(r) {
+        if (r && r.success && r.data) {
+          var enabled = !!r.data.notifications_enabled;
+          setAutoNotifUI(enabled);
+        }
+      });
+    }
+    function setAutoNotifUI(enabled) {
+      var cb    = document.getElementById('autoNotifToggle');
+      var track = document.getElementById('autoNotifTrack');
+      var thumb = document.getElementById('autoNotifThumb');
+      var label = document.getElementById('autoNotifLabel');
+      if (cb) cb.checked = enabled;
+      if (track) track.style.background = enabled ? '#16a34a' : '#475569';
+      if (thumb) thumb.style.left = enabled ? '22px' : '2px';
+      if (label) { label.textContent = enabled ? 'เปิด' : 'ปิด'; label.style.color = enabled ? '#4ade80' : '#fff'; }
+    }
+    function toggleAutoNotif(enabled) {
+      setAutoNotifUI(enabled);
+      if (typeof notificationsEnabled !== 'undefined') notificationsEnabled = enabled;
+      var bandId = localStorage.getItem('bandId') || '';
+      if (!bandId) return;
+      // Load current settings, merge notifications_enabled, save back
+      apiCall('getBandSettings', { bandId: bandId }, function(r) {
+        var current = (r && r.success && r.data) ? r.data : {};
+        current.bandId = bandId;
+        current.notifications_enabled = enabled;
+        apiCall('saveBandSettings', current, function(r2) {
+          var msgEl = document.getElementById('notifAdminMsg');
+          if (r2 && r2.success) {
+            if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = enabled ? '✅ เปิดการแจ้งเตือนอัตโนมัติแล้ว' : '⏸️ ปิดการแจ้งเตือนอัตโนมัติแล้ว'; }
+          } else {
+            setAutoNotifUI(!enabled); // revert
+            if (msgEl) { msgEl.style.color = '#e53e3e'; msgEl.textContent = '❌ บันทึกไม่สำเร็จ'; }
+          }
+        });
+      });
+    }
 
     function loadNotifAdminPanel() {
       var bandId = localStorage.getItem('bandId') || '';

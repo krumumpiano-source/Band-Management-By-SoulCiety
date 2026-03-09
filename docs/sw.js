@@ -39,12 +39,17 @@ self.addEventListener('push', function (event) {
     }
   };
 
-  // vibration pattern สำหรับ Android
-  if (data.type === 'external_1day' || data.type === 'regular_1hr') {
+  // vibration pattern สำหรับ Android — เตือนแรงสำหรับเรื่องเร่งด่วน
+  if (data.type === 'checkin_5min') {
+    options.vibrate = [200, 100, 200, 100, 200];  // urgent
+  } else if (data.type === 'external_1day' || data.type === 'regular_1hr') {
     options.vibrate = [200, 100, 200];
   } else {
     options.vibrate = [200];
   }
+
+  // ใช้ tag แยกตาม type เพื่อไม่ให้แจ้งเตือนทับกัน
+  options.tag = data.tag || ('bandthai-' + (data.type || 'notif'));
 
   event.waitUntil(
     self.registration.showNotification(title, options)
@@ -60,8 +65,10 @@ self.addEventListener('notificationclick', function (event) {
   var notifType = notifData.type || '';
 
   // เปิดหน้าที่เหมาะสมตาม type
-  if (notifType === 'external_1day' || notifType === 'ext_5min') {
+  if (notifType === 'external_1day' || notifType === 'regular_1hr') {
     targetUrl = APP_BASE + 'schedule.html';
+  } else if (notifType === 'checkin_5min') {
+    targetUrl = APP_BASE + 'check-in.html';
   } else {
     targetUrl = APP_BASE + 'dashboard.html';
   }

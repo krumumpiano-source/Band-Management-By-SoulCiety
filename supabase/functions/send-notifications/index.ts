@@ -1,6 +1,10 @@
 // Supabase Edge Function — send-notifications
-// Deno runtime. Called every minute by pg_cron.
-// Sends Web Push for: upcoming external jobs (1-day notice), upcoming schedules (1-hr check-in reminder)
+// Deno runtime. Called every 5 minutes by pg_cron.
+// Sends Web Push for:
+//   Type 1: upcoming external jobs (1-day notice)
+//   Type 2: schedule start reminder (1 hour before)
+//   Type 3: check-in reminder (5 minutes before)
+// Respects band manager's notifications_enabled toggle in band_settings.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
@@ -111,6 +115,8 @@ const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false }
 });
 
+const APP_BASE = '/BandThai/';
+
 // Thai time = UTC+7
 function thaiNow(): Date {
   const now = new Date();
@@ -120,6 +126,13 @@ function thaiNow(): Date {
 
 function thaiDateStr(d: Date): string {
   return d.toISOString().split('T')[0];
+}
+
+/** Check if a band has auto-notifications enabled in band_settings */
+async function isBandNotifEnabled(bandId: string): Promise<boolean> {
+  const { data } = await sb.from('band_settings').select('settings').eq('band_id', bandId).maybeSingle();
+  if (!data || !data.settings) return false;
+  return !!data.settings.notifications_enabled;
 }
 
 async function sendPush(sub: { endpoint: string; p256dh: string; auth_key: string }, payload: object): Promise<boolean> {
@@ -171,6 +184,9 @@ async function notifyExternalJobs(thai: Date) {
   if (error || !jobs || jobs.length === 0) return;
 
   for (const job of jobs) {
+    // Check if band has notifications enabled
+    if (!(await isBandNotifEnabled(job.band_id))) continue;
+
     const refKey = `external_job_1d:${job.id}:${targetDate}`;
     const logged = await logNotification(job.band_id, 'external_job_1d', refKey);
     if (!logged) continue;   // already sent
@@ -188,10 +204,10 @@ async function notifyExternalJobs(thai: Date) {
       : '';
     const label = [job.venue_name, slotLabel].filter(Boolean).join(' · ') || 'งานพรุ่งนี้';
     const payload = {
-      title: '🎵 งานพรุ่งนี้ — ' + label,
+      title: '🎵 งานนอกพรุ่งนี้ — ' + label,
       body:  job.notes ? job.notes.slice(0, 100) : 'อย่าลืมเตรียมตัวสำหรับงานพรุ่งนี้!',
-      type:  'external_job',
-      url:   '/Band-Management-By-SoulCiety/docs/schedule.html'
+      type:  'external_1day',
+      url:   APP_BASE + 'schedule.html'
     };
 
     for (const sub of subs) {
@@ -200,8 +216,8 @@ async function notifyExternalJobs(thai: Date) {
   }
 }
 
-// ── Notification Type 2: Check-in reminder 1 hour before schedule ────────────
-async function notifyCheckinReminder(thai: Date) {
+// ── Notification Type 2: Schedule start reminder 1 hour before ───────────────
+async function notifyScheduleReminder(thai: Date) {
   // Find schedules starting between now+55min and now+65min (Thai time)
   const lo = new Date(thai); lo.setMinutes(lo.getMinutes() + 55);
   const hi = new Date(thai); hi.setMinutes(hi.getMinutes() + 65);
@@ -221,8 +237,10 @@ async function notifyCheckinReminder(thai: Date) {
   if (error || !slots || slots.length === 0) return;
 
   for (const slot of slots) {
-    const refKey = `checkin_reminder:${slot.id}:${todayDate}`;
-    const logged = await logNotification(slot.band_id, 'checkin_reminder', refKey);
+    if (!(await isBandNotifEnabled(slot.band_id))) continue;
+
+    const refKey = `schedule_1hr:${slot.id}:${todayDate}`;
+    const logged = await logNotification(slot.band_id, 'schedule_1hr', refKey);
     if (!logged) continue;
 
     const { data: subs } = await sb
@@ -237,10 +255,57 @@ async function notifyCheckinReminder(thai: Date) {
       : '';
     const label = [slot.venue_name, slotLabel].filter(Boolean).join(' · ') || 'รอบถัดไป';
     const payload = {
-      title: '⏰ เตือนเช็คอิน — อีก 1 ชั่วโมง',
+      title: '⏰ อีก 1 ชั่วโมงถึงเวลางาน!',
       body:  label + ' · เวลา ' + (slot.start_time || ''),
-      type:  'checkin_reminder',
-      url:   '/Band-Management-By-SoulCiety/docs/check-in.html'
+      type:  'regular_1hr',
+      url:   APP_BASE + 'schedule.html'
+    };
+
+    for (const sub of subs) {
+      await sendPush(sub, payload);
+    }
+  }
+}
+
+// ── Notification Type 3: Check-in reminder 5 minutes before ─────────────────
+async function notifyCheckinReminder(thai: Date) {
+  // Find schedules starting between now+2min and now+8min
+  const lo = new Date(thai); lo.setMinutes(lo.getMinutes() + 2);
+  const hi = new Date(thai); hi.setMinutes(hi.getMinutes() + 8);
+
+  const todayDate = thaiDateStr(thai);
+  const loTime = lo.toISOString().substring(11, 16);
+  const hiTime = hi.toISOString().substring(11, 16);
+
+  const { data: slots, error } = await sb
+    .from('schedule')
+    .select('id, band_id, date, venue_name, start_time')
+    .eq('date', todayDate)
+    .gte('start_time', loTime)
+    .lte('start_time', hiTime)
+    .not('band_id', 'is', null);
+
+  if (error || !slots || slots.length === 0) return;
+
+  for (const slot of slots) {
+    if (!(await isBandNotifEnabled(slot.band_id))) continue;
+
+    const refKey = `checkin_5min:${slot.id}:${todayDate}`;
+    const logged = await logNotification(slot.band_id, 'checkin_5min', refKey);
+    if (!logged) continue;
+
+    const { data: subs } = await sb
+      .from('push_subscriptions')
+      .select('endpoint, p256dh, auth_key')
+      .eq('band_id', slot.band_id);
+
+    if (!subs || subs.length === 0) continue;
+
+    const payload = {
+      title: '📋 อย่าลืมเช็คอิน!',
+      body:  (slot.venue_name || 'งาน') + ' เริ่มในอีก 5 นาที — กดเช็คอินได้เลย',
+      type:  'checkin_5min',
+      url:   APP_BASE + 'check-in.html'
     };
 
     for (const sub of subs) {
@@ -278,7 +343,7 @@ async function handleTestPush(bandId: string, jwt: string, title: string, body: 
     title: title || '🔔 การแจ้งเตือนทดสอบ',
     body:  body  || 'ระบบการแจ้งเตือนของวงทำงานปกติ ✅',
     type:  'test',
-    url:   '/Band-Management-By-SoulCiety/docs/dashboard.html'
+    url:   APP_BASE + 'dashboard.html'
   };
 
   let sent = 0;
@@ -330,6 +395,7 @@ Deno.serve(async (req: Request) => {
 
     await Promise.all([
       notifyExternalJobs(thai),
+      notifyScheduleReminder(thai),
       notifyCheckinReminder(thai)
     ]);
 

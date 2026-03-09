@@ -14,6 +14,7 @@ var bandMembersData = [];
 var profileMembers  = [];   // profiles with band_id + status=active
 var currentInviteCode   = null;
 var currentInviteExpires = null;
+var notificationsEnabled = false;
 
 var _editDay    = -1;
 var _editSlotId = null;
@@ -113,6 +114,7 @@ function _buildFullPayload() {
     schedule: schedule, payroll: payroll,
     hourlyRates: hourlyRates,
     inviteCode: currentInviteCode, inviteExpires: currentInviteExpires,
+    notifications_enabled: notificationsEnabled,
     updatedAt: new Date().toISOString()
   };
 }
@@ -258,6 +260,7 @@ function loadBandSettings() {
         if (d.payroll) payroll = Object.assign({ period: 'daily', weekStart: 1, weekEnd: 0 }, d.payroll);
         if (d.members) bandMembersData = d.members;
         if (d.inviteCode) { currentInviteCode = d.inviteCode; currentInviteExpires = d.inviteExpires || null; }
+        notificationsEnabled = !!d.notifications_enabled;
         // ถ้า server ไม่ส่ง inviteCode กลับมา ให้ดึงจาก invite_codes table
         if (!currentInviteCode) {
           apiCall('getBandCode', { bandId: currentBandId }, function(r2) {
