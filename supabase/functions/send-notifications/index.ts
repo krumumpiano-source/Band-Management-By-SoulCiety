@@ -128,11 +128,24 @@ function thaiDateStr(d: Date): string {
   return d.toISOString().split('T')[0];
 }
 
-/** Check if a band has auto-notifications enabled in band_settings */
-async function isBandNotifEnabled(bandId: string): Promise<boolean> {
+/** Get band notification settings from band_settings */
+interface BandNotifConfig {
+  enabled: boolean;
+  firstSlotMins: number;   // minutes before first slot of day (default 60)
+  nextSlotMins: number;    // minutes before subsequent slots (default 5)
+}
+const _bandConfigCache: Record<string, BandNotifConfig> = {};
+async function getBandNotifConfig(bandId: string): Promise<BandNotifConfig> {
+  if (_bandConfigCache[bandId]) return _bandConfigCache[bandId];
   const { data } = await sb.from('band_settings').select('settings').eq('band_id', bandId).maybeSingle();
-  if (!data || !data.settings) return false;
-  return !!data.settings.notifications_enabled;
+  const s = data?.settings;
+  const cfg: BandNotifConfig = {
+    enabled: !!(s?.notifications_enabled),
+    firstSlotMins: Number(s?.notif_first_slot_mins) || 60,
+    nextSlotMins:  Number(s?.notif_next_slot_mins)  || 5,
+  };
+  _bandConfigCache[bandId] = cfg;
+  return cfg;
 }
 
 async function sendPush(sub: { endpoint: string; p256dh: string; auth_key: string }, payload: object): Promise<boolean> {
@@ -185,7 +198,8 @@ async function notifyExternalJobs(thai: Date) {
 
   for (const job of jobs) {
     // Check if band has notifications enabled
-    if (!(await isBandNotifEnabled(job.band_id))) continue;
+    const cfg = await getBandNotifConfig(job.band_id);
+    if (!cfg.enabled) continue;
 
     const refKey = `external_job_1d:${job.id}:${targetDate}`;
     const logged = await logNotification(job.band_id, 'external_job_1d', refKey);
@@ -216,102 +230,106 @@ async function notifyExternalJobs(thai: Date) {
   }
 }
 
-// ── Notification Type 2: Schedule start reminder 1 hour before ───────────────
-async function notifyScheduleReminder(thai: Date) {
-  // Find schedules starting between now+55min and now+65min (Thai time)
-  const lo = new Date(thai); lo.setMinutes(lo.getMinutes() + 55);
-  const hi = new Date(thai); hi.setMinutes(hi.getMinutes() + 65);
-
+// ── Notification Type 2+3: Schedule reminders with custom timing ─────────────
+// Each band configures:
+//   firstSlotMins — minutes before the FIRST slot of the day (e.g. 60)
+//   nextSlotMins  — minutes before SUBSEQUENT slots (e.g. 5)
+// We fetch ALL today's schedules, group by band, sort by start_time,
+// then check if any slot falls within the reminder window for each band.
+async function notifyScheduleReminders(thai: Date) {
   const todayDate = thaiDateStr(thai);
-  const loTime = lo.toISOString().substring(11, 16);   // HH:MM
-  const hiTime = hi.toISOString().substring(11, 16);
+  const nowHHMM = thai.toISOString().substring(11, 16);
 
-  const { data: slots, error } = await sb
+  // Fetch all today's schedule items
+  const { data: allSlots, error } = await sb
     .from('schedule')
     .select('id, band_id, date, venue_name, time_slots, start_time')
     .eq('date', todayDate)
-    .gte('start_time', loTime)
-    .lte('start_time', hiTime)
-    .not('band_id', 'is', null);
+    .not('band_id', 'is', null)
+    .not('start_time', 'is', null)
+    .order('start_time', { ascending: true });
 
-  if (error || !slots || slots.length === 0) return;
+  if (error || !allSlots || allSlots.length === 0) return;
 
-  for (const slot of slots) {
-    if (!(await isBandNotifEnabled(slot.band_id))) continue;
+  // Group by band_id
+  const byBand: Record<string, typeof allSlots> = {};
+  for (const s of allSlots) {
+    if (!byBand[s.band_id]) byBand[s.band_id] = [];
+    byBand[s.band_id].push(s);
+  }
 
-    const refKey = `schedule_1hr:${slot.id}:${todayDate}`;
-    const logged = await logNotification(slot.band_id, 'schedule_1hr', refKey);
-    if (!logged) continue;
+  for (const [bandId, slots] of Object.entries(byBand)) {
+    const cfg = await getBandNotifConfig(bandId);
+    if (!cfg.enabled) continue;
 
-    const { data: subs } = await sb
-      .from('push_subscriptions')
-      .select('endpoint, p256dh, auth_key')
-      .eq('band_id', slot.band_id);
+    // Slots are already sorted by start_time (from query ORDER BY)
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
+      const isFirstSlot = (i === 0);
+      const reminderMins = isFirstSlot ? cfg.firstSlotMins : cfg.nextSlotMins;
+      const label = isFirstSlot ? 'first' : 'next';
 
-    if (!subs || subs.length === 0) continue;
+      // Calculate if NOW is within the reminder window for this slot
+      // Window: (start_time - reminderMins - 3min) to (start_time - reminderMins + 3min)
+      // The ±3 min tolerance accounts for the 5-min cron interval
+      const slotMin = timeToMinutes(slot.start_time);
+      if (slotMin === null) continue;
 
-    const slotLabel = Array.isArray(slot.time_slots)
-      ? slot.time_slots.map((s: Record<string, string>) => s.name || s.label || '').filter(Boolean).join(', ')
-      : '';
-    const label = [slot.venue_name, slotLabel].filter(Boolean).join(' · ') || 'รอบถัดไป';
-    const payload = {
-      title: '⏰ อีก 1 ชั่วโมงถึงเวลางาน!',
-      body:  label + ' · เวลา ' + (slot.start_time || ''),
-      type:  'regular_1hr',
-      url:   APP_BASE + 'schedule.html'
-    };
+      const nowMin = timeToMinutes(nowHHMM);
+      if (nowMin === null) continue;
 
-    for (const sub of subs) {
-      await sendPush(sub, payload);
+      const targetMin = slotMin - reminderMins;
+      const diff = nowMin - targetMin;  // positive = we're past the ideal notify time
+
+      // Only send if we're within ±3 minutes of the target
+      if (diff < -3 || diff > 3) continue;
+
+      const refKey = `sched_${label}_${reminderMins}m:${slot.id}:${todayDate}`;
+      const logged = await logNotification(bandId, 'schedule_reminder', refKey);
+      if (!logged) continue;  // already sent
+
+      const { data: subs } = await sb
+        .from('push_subscriptions')
+        .select('endpoint, p256dh, auth_key')
+        .eq('band_id', bandId);
+
+      if (!subs || subs.length === 0) continue;
+
+      const slotLabel = Array.isArray(slot.time_slots)
+        ? slot.time_slots.map((s: Record<string, string>) => s.name || s.label || '').filter(Boolean).join(', ')
+        : '';
+      const venueName = [slot.venue_name, slotLabel].filter(Boolean).join(' · ') || 'งาน';
+
+      // Craft message based on timing
+      let title: string, body: string, type: string, url: string;
+      if (reminderMins >= 60) {
+        const hrs = Math.floor(reminderMins / 60);
+        const mins = reminderMins % 60;
+        const timeLabel = mins > 0 ? `${hrs} ชม. ${mins} นาที` : `${hrs} ชั่วโมง`;
+        title = `⏰ อีก ${timeLabel}ถึงเวลางาน!`;
+        body = venueName + ' · เวลา ' + (slot.start_time || '');
+        type = 'regular_1hr';
+        url = APP_BASE + 'schedule.html';
+      } else {
+        title = `📋 อีก ${reminderMins} นาทีถึงเวลางาน!`;
+        body = venueName + ' · กดเช็คอินได้เลย';
+        type = 'checkin_5min';
+        url = APP_BASE + 'check-in.html';
+      }
+
+      const payload = { title, body, type, url };
+      for (const sub of subs) {
+        await sendPush(sub, payload);
+      }
     }
   }
 }
 
-// ── Notification Type 3: Check-in reminder 5 minutes before ─────────────────
-async function notifyCheckinReminder(thai: Date) {
-  // Find schedules starting between now+2min and now+8min
-  const lo = new Date(thai); lo.setMinutes(lo.getMinutes() + 2);
-  const hi = new Date(thai); hi.setMinutes(hi.getMinutes() + 8);
-
-  const todayDate = thaiDateStr(thai);
-  const loTime = lo.toISOString().substring(11, 16);
-  const hiTime = hi.toISOString().substring(11, 16);
-
-  const { data: slots, error } = await sb
-    .from('schedule')
-    .select('id, band_id, date, venue_name, start_time')
-    .eq('date', todayDate)
-    .gte('start_time', loTime)
-    .lte('start_time', hiTime)
-    .not('band_id', 'is', null);
-
-  if (error || !slots || slots.length === 0) return;
-
-  for (const slot of slots) {
-    if (!(await isBandNotifEnabled(slot.band_id))) continue;
-
-    const refKey = `checkin_5min:${slot.id}:${todayDate}`;
-    const logged = await logNotification(slot.band_id, 'checkin_5min', refKey);
-    if (!logged) continue;
-
-    const { data: subs } = await sb
-      .from('push_subscriptions')
-      .select('endpoint, p256dh, auth_key')
-      .eq('band_id', slot.band_id);
-
-    if (!subs || subs.length === 0) continue;
-
-    const payload = {
-      title: '📋 อย่าลืมเช็คอิน!',
-      body:  (slot.venue_name || 'งาน') + ' เริ่มในอีก 5 นาที — กดเช็คอินได้เลย',
-      type:  'checkin_5min',
-      url:   APP_BASE + 'check-in.html'
-    };
-
-    for (const sub of subs) {
-      await sendPush(sub, payload);
-    }
-  }
+function timeToMinutes(hhmm: string): number | null {
+  if (!hhmm || hhmm.length < 5) return null;
+  const [h, m] = hhmm.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
 }
 
 // ── Admin: Test push to all band subscribers ────────────────────────────────
@@ -395,8 +413,7 @@ Deno.serve(async (req: Request) => {
 
     await Promise.all([
       notifyExternalJobs(thai),
-      notifyScheduleReminder(thai),
-      notifyCheckinReminder(thai)
+      notifyScheduleReminders(thai)
     ]);
 
     return new Response(JSON.stringify({ ok: true }), {
