@@ -333,6 +333,7 @@ function ciSubmitLeaveSimple() {
     var allSlots = ciGetSlotsForDate(date);
     leaveSlots = allSlots.map(function(s) { return s.key; });
   }
+  if (!leaveSlots.length) { ciShowToast('ไม่พบรอบเวลาสำหรับวันนี้ กรุณาลองใหม่อีกครั้ง', 'error'); return; }
   var reason = ciLeaveType === 'some' ? 'ลาบางรอบ' : 'ลางาน (ทั้งวัน)';
 
   var btn = ciGetEl('ciLeaveSubmitSimple');

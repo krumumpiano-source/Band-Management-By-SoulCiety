@@ -866,9 +866,11 @@
         .select('id').eq('band_id', ciRow.band_id)
         .eq('member_id', ciRow.member_id).eq('date', ciRow.date).limit(1);
       if (existCI && existCI.length > 0) {
-        await sb.from('member_check_ins').update(ciRow).eq('id', existCI[0].id);
+        var { error: ciUpErr } = await sb.from('member_check_ins').update(ciRow).eq('id', existCI[0].id);
+        if (ciUpErr) console.warn('[doRequestLeave] auto check-in update error:', ciUpErr.message);
       } else {
-        await sb.from('member_check_ins').insert(ciRow);
+        var { error: ciInsErr } = await sb.from('member_check_ins').insert(ciRow);
+        if (ciInsErr) console.warn('[doRequestLeave] auto check-in insert error:', ciInsErr.message);
       }
 
       return { success: true, data: toCamel(data) };

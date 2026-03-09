@@ -246,10 +246,17 @@ function apLoadCheckIns(cb) {
     if (!ciDone || !leaveDone) return;
     // Process check-ins
     all.forEach(function(ci) {
-      var slots = ci.slots || []; if (!slots.length) return;
+      var slots = ci.slots || [];
+      // If leave record has empty slots, infer from schedule so it still shows
+      if (!slots.length && ci.status === 'leave' && ci.date) {
+        var dow = new Date(ci.date).getDay();
+        slots = apSlotsForDay(dow).map(function(s) { return s.start + '-' + s.end; });
+      }
+      if (!slots.length) return;
       var mem = null;
       if (ci.memberId) mem = apMembers.find(function(m) { return m.id === ci.memberId; });
       if (!mem && ci.memberName) mem = apMembers.find(function(m) { return m.name === ci.memberName; });
+      if (!mem && ci.memberName) mem = apMembers.find(function(m) { return m.name.trim() === (ci.memberName||'').trim(); });
       if (!mem) return;
       if (!apChecked[mem.id]) apChecked[mem.id] = {};
       if (!apChecked[mem.id][ci.date]) apChecked[mem.id][ci.date] = [];
@@ -282,6 +289,11 @@ function apLoadCheckIns(cb) {
       // Store which specific slots have leave (slot-aware)
       var lvSlots = lv.slots || [];
       if (typeof lvSlots === 'string') { try { lvSlots = JSON.parse(lvSlots); } catch(e) { lvSlots = []; } }
+      // If leave has empty slots, infer from schedule (covers leaves submitted before schedule loaded)
+      if (!lvSlots.length && lv.date) {
+        var lvDow = new Date(lv.date).getDay();
+        lvSlots = apSlotsForDay(lvDow).map(function(s) { return s.start + '-' + s.end; });
+      }
       if (!apLeaveSlots[mem.id]) apLeaveSlots[mem.id] = {};
       if (!apLeaveSlots[mem.id][lv.date]) apLeaveSlots[mem.id][lv.date] = [];
       lvSlots.forEach(function(s) {
