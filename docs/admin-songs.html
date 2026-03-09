@@ -781,6 +781,7 @@ function renderTable() {
   var html = '';
   pageRows.forEach(function(s) {
     var id    = esc(s.id);
+    var jsId  = String(s.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     var draft = _dirty[s.id]; // draft values preserved across page turns
     var isDirty = !!draft;
 
@@ -790,7 +791,7 @@ function renderTable() {
         '<td style="color:var(--premium-text-muted);font-size:13px">' + esc(s.artist||'—') + '</td>' +
         '<td class="hide-md">—</td><td class="hide-md">—</td><td class="hide-md">—</td>' +
         '<td class="hide-sm">—</td><td class="hide-lg">—</td><td class="hide-lg">—</td>' +
-        '<td><div class="td-actions"><button class="btn-sm btn-add" onclick="addToLibrary(\'' + id + '\')">➕ เพิ่มในคลัง</button></div></td>' +
+        '<td><div class="td-actions"><button class="btn-sm btn-add" onclick="addToLibrary(\'' + jsId + '\')">➕ เพิ่มในคลัง</button></div></td>' +
         '</tr>';
       return;
     }
@@ -883,12 +884,12 @@ function submitAddSong() {
     name:    name,
     artist:  document.getElementById('mArtist').value.trim(),
     key:     document.getElementById('mKey').value,
-    bpm:     parseInt(document.getElementById('mBpm').value) || 0,
+    bpm:     String(parseInt(document.getElementById('mBpm').value) || ''),
     era:     document.getElementById('mEra').value,
     mood:    document.getElementById('mMood').value,
     tags:    document.getElementById('mGenre').value,
     singer:  singerRadio ? singerRadio.value : '',
-    bandId:  localStorage.getItem('bandId') || ''
+    bandId:  null
   }, function(r) {
     btn.disabled = false; btn.textContent = '💾 บันทึก';
     if (r && r.success) {
@@ -1022,9 +1023,9 @@ function addToLibrary(songId) {
     name:   song.name,
     artist: song.artist || '',
     key:    song.key || '',
-    bpm:    song.bpm || 0,
+    bpm:    String(song.bpm || ''),
     singer: song.singer || '',
-    bandId: localStorage.getItem('bandId') || ''
+    bandId: null
   }, function(r) {
     if (r && r.success) {
       showToast('✅ เพิ่ม "' + song.name + '" เข้าคลังแล้ว', 'success');
