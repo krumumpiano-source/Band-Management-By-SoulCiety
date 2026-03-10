@@ -36,6 +36,7 @@
     .song-table th.sortable:hover .sort-icon{opacity:0.65}
     .song-table th.sort-active{color:var(--premium-accent,#f0a500) !important}
     .song-table th.sort-active .sort-icon{opacity:1 !important;font-size:12px}
+    .song-table th.sort-active:not(:first-of-type) .sort-icon{color:inherit;opacity:0.75}
     .song-table td{padding:9px 12px;border-bottom:1px solid var(--premium-light-gray);vertical-align:middle}
     .song-table tr:hover td{background:var(--premium-off-white)}
     .td-name{font-weight:700;color:var(--premium-text);max-width:250px;overflow:hidden;text-overflow:ellipsis}
@@ -358,14 +359,14 @@
       <table class="song-table">
         <thead>
           <tr>
-            <th id="th-name" class="sortable" onclick="sortBy('name')" title="เรียงตามชื่อเพลง">ชื่อเพลง<i class="sort-icon">↕</i></th>
-            <th id="th-artist" class="sortable" onclick="sortBy('artist')" title="เรียงตามศิลปิน">ศิลปิน<i class="sort-icon">↕</i></th>
+            <th id="th-name" class="sortable" onclick="sortBy('name',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ชื่อเพลง<i class="sort-icon">↕</i></th>
+            <th id="th-artist" class="sortable" onclick="sortBy('artist',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ศิลปิน<i class="sort-icon">↕</i></th>
             <th class="hide-md">คีย์</th>
-            <th id="th-bpm" class="sortable hide-md" onclick="sortBy('bpm')" title="เรียงตาม BPM">BPM<i class="sort-icon">↕</i></th>
-            <th id="th-singer" class="sortable hide-md" onclick="sortBy('singer')" title="เรียงตามนักร้อง">นักร้อง<i class="sort-icon">↕</i></th>
-            <th id="th-era" class="sortable hide-sm" onclick="sortBy('era')" title="เรียงตามยุค">ยุค<i class="sort-icon">↕</i></th>
-            <th class="hide-lg">แนวเพลง</th>
-            <th class="hide-lg">อารมณ์</th>
+            <th id="th-bpm" class="sortable hide-md" onclick="sortBy('bpm',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">BPM<i class="sort-icon">↕</i></th>
+            <th id="th-singer" class="sortable hide-md" onclick="sortBy('singer',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">นักร้อง<i class="sort-icon">↕</i></th>
+            <th id="th-era" class="sortable hide-sm" onclick="sortBy('era',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ยุค<i class="sort-icon">↕</i></th>
+            <th id="th-tags" class="sortable hide-lg" onclick="sortBy('tags',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">แนวเพลง<i class="sort-icon">↕</i></th>
+            <th id="th-mood" class="sortable hide-lg" onclick="sortBy('mood',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">อารมณ์<i class="sort-icon">↕</i></th>
             <th style="text-align:center">จัดการ</th>
           </tr>
         </thead>
@@ -460,8 +461,10 @@
 // ─── State ───────────────────────────────────────────────────────
 var _allSongs     = [];
 var _filtered     = [];
-var _sortKey      = 'name';
+var _sortKey      = 'name';   // kept for legacy compat
 var _sortAsc      = true;
+// Multi-column sort: [{key, asc}, ...] — index 0 = primary
+var _sortLevels   = [{ key: 'name', asc: true }];
 var _page         = 1;
 var _savedPageBeforeSearch = null;
 var _perPage      = 30;
@@ -740,49 +743,79 @@ function searchInputChanged() {
 }
 
 function applySortToFiltered() {
-  var k = _sortKey;
-  var asc = _sortAsc;
-  // Collator: numeric=true handles embedded numbers (e.g. "Song 2" < "Song 10")
-  // ['th','en'] handles both Thai and English scripts properly
   var collator = new Intl.Collator(['th', 'en'], { numeric: true, sensitivity: 'base' });
+  function valOf(song, key) {
+    var v = (song[key] !== undefined && song[key] !== null) ? song[key] : '';
+    return key === 'bpm' ? (parseFloat(v) || 0) : String(v);
+  }
   _filtered.sort(function(a, b) {
-    var av = (a[k] !== undefined && a[k] !== null) ? a[k] : '';
-    var bv = (b[k] !== undefined && b[k] !== null) ? b[k] : '';
-    if (k === 'bpm') {
-      av = parseFloat(av) || 0;
-      bv = parseFloat(bv) || 0;
-      return asc ? av - bv : bv - av;
+    for (var i = 0; i < _sortLevels.length; i++) {
+      var lv = _sortLevels[i];
+      if (lv.key === 'bpm') {
+        var diff = valOf(a, 'bpm') - valOf(b, 'bpm');
+        if (diff !== 0) return lv.asc ? diff : -diff;
+      } else {
+        var av = valOf(a, lv.key), bv = valOf(b, lv.key);
+        if (!av && bv) return 1;
+        if (av && !bv) return -1;
+        var cmp = collator.compare(av, bv);
+        if (cmp !== 0) return lv.asc ? cmp : -cmp;
+      }
     }
-    av = String(av); bv = String(bv);
-    // Empty values always go last
-    if (!av && bv) return 1;
-    if (av && !bv) return -1;
-    var cmp = collator.compare(av, bv);
-    return asc ? cmp : -cmp;
+    return 0;
   });
   renderSortHeaders();
 }
 
 function renderSortHeaders() {
-  var cols = ['name', 'artist', 'bpm', 'singer', 'era'];
+  var superNums = ['¹','²','³','⁴','⁵'];
+  var cols = ['name','artist','bpm','singer','era','tags','mood'];
   cols.forEach(function(col) {
     var th = document.getElementById('th-' + col);
     if (!th) return;
     var icon = th.querySelector('.sort-icon');
     if (!icon) return;
-    if (_sortKey === col) {
-      icon.textContent = _sortAsc ? '▲' : '▼';
+    var idx = _sortLevels.findIndex(function(lv){ return lv.key === col; });
+    if (idx >= 0) {
+      var lv = _sortLevels[idx];
+      var sup = _sortLevels.length > 1 ? (superNums[idx] || '') : '';
+      icon.textContent = (lv.asc ? '▲' : '▼') + sup;
       th.classList.add('sort-active');
+      th.title = 'คลิก = สลับ | Shift+คลิก = ยกเลิก';
     } else {
       icon.textContent = '↕';
       th.classList.remove('sort-active');
+      th.title = 'คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง';
     }
   });
 }
 
-function sortBy(key) {
-  if (_sortKey === key) _sortAsc = !_sortAsc;
-  else { _sortKey = key; _sortAsc = true; }
+function sortBy(key, evt) {
+  var shift = evt && evt.shiftKey;
+  var idx = _sortLevels.findIndex(function(lv){ return lv.key === key; });
+  if (shift) {
+    if (idx >= 0) {
+      // Shift+click on active: toggle direction; if already desc, remove it
+      if (_sortLevels[idx].asc === false) {
+        _sortLevels.splice(idx, 1); // remove from sort
+      } else {
+        _sortLevels[idx].asc = false;
+      }
+    } else {
+      _sortLevels.push({ key: key, asc: true }); // add as secondary
+    }
+  } else {
+    if (idx === 0 && _sortLevels.length === 1) {
+      _sortLevels[0].asc = !_sortLevels[0].asc; // toggle primary
+    } else if (idx === 0) {
+      _sortLevels[0].asc = !_sortLevels[0].asc; // toggle, keep secondaries
+    } else {
+      _sortLevels = [{ key: key, asc: true }]; // new primary, reset all
+    }
+  }
+  // sync legacy vars
+  _sortKey = _sortLevels[0] ? _sortLevels[0].key : 'name';
+  _sortAsc = _sortLevels[0] ? _sortLevels[0].asc : true;
   applySortToFiltered();
   _page = 1;
   renderTable();
