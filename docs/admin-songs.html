@@ -651,6 +651,10 @@ function loadSongs() {
     });
     populateArtistFilter();
     filterTable();
+    // Clean up orphan artists from DB (silently, on every load)
+    apiCall('cleanupOrphanArtists', {}, function(r) {
+      if (r && r.deleted > 0) loadArtists(); // refresh datalist if anything was removed
+    });
   });
 }
 
@@ -1482,7 +1486,12 @@ function loadArtists() {
 function updateArtistDatalist() {
   var dl = document.getElementById('artistDatalist');
   if (!dl) return;
-  dl.innerHTML = _artistList.map(function(a) {
+  // Only show artists that have at least one song in library (prevents orphan entries)
+  var usedNames = new Set(_allSongs.map(function(s){ return (s.artist||'').trim().toLowerCase(); }).filter(Boolean));
+  var filtered = usedNames.size > 0
+    ? _artistList.filter(function(a){ return usedNames.has((a.name||'').trim().toLowerCase()); })
+    : _artistList;
+  dl.innerHTML = filtered.map(function(a) {
     return '<option value="' + esc(a.name) + '">';
   }).join('');
   // Note: filter autocomplete (buildArtistACList) uses _allSongs, not _artistList
