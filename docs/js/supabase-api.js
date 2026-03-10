@@ -1481,12 +1481,17 @@
         playlist:   d.songs || [],
         created_by: localStorage.getItem('userName') || ''
       };
-      // ถ้ามีลิสเดิมอยู่ (band+date+venue+time_slot เดิม) ให้ update แทน insert
+      // ดึงทุก row ที่ match key เดียวกัน (handle race condition ที่อาจมี duplicate อยู่แล้ว)
       var { data: existing } = await sb.from('playlist_history')
         .select('id').eq('band_id', bandId)
         .eq('date', row.date).eq('venue', row.venue).eq('time_slot', row.time_slot)
-        .limit(1);
+        .order('created_at', { ascending: false });
       if (existing && existing.length > 0) {
+        // ถ้ามี duplicate อยู่แล้ว (race condition จากก่อนหน้า) ลบออกเหลือแค่ตัวล่าสุด
+        if (existing.length > 1) {
+          var oldIds = existing.slice(1).map(function(r) { return r.id; });
+          await sb.from('playlist_history').delete().in('id', oldIds).eq('band_id', bandId);
+        }
         var { data, error } = await sb.from('playlist_history')
           .update({ playlist: row.playlist, created_by: row.created_by })
           .eq('id', existing[0].id).select().single();
@@ -1495,6 +1500,15 @@
       }
       var { data, error } = await sb.from('playlist_history').insert(row).select().single();
       if (error) throw error;
+      // หลัง INSERT: ตรวจและลบ duplicate ที่เกิดจาก race condition (กรณีสองคนกดพร้อมกัน)
+      var { data: dupes } = await sb.from('playlist_history')
+        .select('id').eq('band_id', bandId)
+        .eq('date', row.date).eq('venue', row.venue).eq('time_slot', row.time_slot)
+        .neq('id', data.id);
+      if (dupes && dupes.length > 0) {
+        var dupeIds = dupes.map(function(r) { return r.id; });
+        await sb.from('playlist_history').delete().in('id', dupeIds).eq('band_id', bandId);
+      }
       return { success: true, data: toCamel(data) };
     }
 
