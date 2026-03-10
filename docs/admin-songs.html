@@ -277,7 +277,7 @@
     <div class="stat-box"><div class="stat-num" id="statMale">—</div><div class="stat-lbl">ชาย</div></div>
     <div class="stat-box"><div class="stat-num" id="statFemale">—</div><div class="stat-lbl">หญิง</div></div>
     <div class="stat-box"><div class="stat-num" id="statDuet">—</div><div class="stat-lbl">คู่</div></div>
-    <div class="stat-box"><div class="stat-num" id="statHistory">—</div><div class="stat-lbl">จาก History</div></div>
+    <div class="stat-box" style="cursor:pointer" onclick="location.href='song-insights.html'" title="ดูสถิติเพลงจากประวัติ"><div class="stat-num">📋</div><div class="stat-lbl">สถิติ History</div></div>
   </div>
 
   <!-- Toolbar -->
@@ -287,7 +287,7 @@
       <option value="">ทุกแหล่ง</option>
       <option value="global">คลังกลาง</option>
       <option value="band">คลังวง</option>
-      <option value="history">History</option>
+
     </select>
     <select id="asSinger" class="as-filter" onchange="filterTable()">
       <option value="">นักร้องทั้งหมด</option>
@@ -506,11 +506,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('smToggleBtn').style.display = '';
   }
   updateModalKeyOptions();
-  loadHiddenHistSongs(function() {
-    loadArtists();
-    loadSongs();
-    loadSuggestions();
-  });
+  loadArtists();
+  loadSongs();
+  loadSuggestions();
   initPresence();
   } // end initAdminSongs
 });
@@ -643,62 +641,16 @@ function loadSongs() {
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
   var reqId = ++_loadSongsReqId;
-  var _done = 0;
-  var _libSongs = [];
-  var _histRows = [];
 
-  function _merge() {
-    _done++;
-    if (_done < 2) return;
+  apiCall('getAllSongs', { source: 'global', bandName: bandName, bandId: bandId }, function(r) {
     if (reqId !== _loadSongsReqId) return;
     setBodyLoading(false);
-
-    // Build ID + name lookup from library
-    var libById   = {};
-    var libByName = {};
-    _libSongs.forEach(function(s) {
-      if (s.id) libById[s.id] = s;
-      libByName[(s.name || '').toLowerCase().trim()] = true;
-    });
-
-    // Extract unique songs from history NOT already in library
-    var histMap = {};
-    _histRows.forEach(function(row) {
-      (row.songs || []).forEach(function(s) {
-        var key = (s.name || '').toLowerCase().trim();
-        if (!key || libByName[key] || histMap[key]) return;
-        if (_hiddenHistSongs[key]) return; // skip hidden history songs
-        histMap[key] = {
-          id: '_hist_' + key,
-          name: s.name || '',
-          artist: s.artist || '',
-          key: s.key || '',
-          bpm: s.bpm || 0,
-          singer: s.singer || '',
-          era: '', mood: '',
-          _fromHistory: true
-        };
-      });
-    });
-
-    _allSongs = _libSongs.concat(Object.values(histMap));
+    _allSongs = (r && r.success) ? (r.data || []) : [];
     _allSongs.sort(function(a, b) {
       return (a.name || '').localeCompare(b.name || '', 'th');
     });
     populateArtistFilter();
     filterTable();
-  }
-
-  // เหมือน songs.html: source:'global' ดึงทุกเพลงในคลังทั้งหมด (ไม่กรอง band)
-  apiCall('getAllSongs', { source: 'global', bandName: bandName, bandId: bandId }, function(r) {
-    _libSongs = (r && r.success) ? (r.data || []) : [];
-    _merge();
-  });
-
-  // เพลงที่เคยเล่นใน playlist history แต่ยังไม่อยู่ในคลัง
-  apiCall('getPlaylistHistory', { bandId: bandId }, function(r) {
-    _histRows = (r && r.success) ? (r.data || []) : [];
-    _merge();
   });
 }
 
@@ -726,9 +678,8 @@ function filterTable() {
 
   _filtered = _allSongs.filter(function(s) {
     // Source filter
-    if (source === 'global'  && (s._fromHistory || s.source === 'band')) return false;
-    if (source === 'band'    && (s._fromHistory || s.source !== 'band')) return false;
-    if (source === 'history' && !s._fromHistory) return false;
+    if (source === 'global'  && s.source === 'band') return false;
+    if (source === 'band'    && s.source !== 'band') return false;
     if (q) {
       var haystack = (s.name + ' ' + (s.artist||'') + ' ' + (s.key||'')).toLowerCase();
       if (haystack.indexOf(q) < 0) return false;
@@ -902,17 +853,6 @@ function renderTable() {
     var draft = _dirty[s.id]; // draft values preserved across page turns
     var isDirty = !!draft;
 
-    if (s._fromHistory) {
-      html += '<tr data-id="' + id + '">' +
-        '<td class="td-name">' + esc(s.name) + ' <span class="pill-hist">📋 History</span></td>' +
-        '<td style="color:var(--premium-text-muted);font-size:13px">' + esc(s.artist||'—') + '</td>' +
-        '<td class="hide-md">—</td><td class="hide-md">—</td><td class="hide-md">—</td>' +
-        '<td class="hide-sm">—</td><td class="hide-lg">—</td><td class="hide-lg">—</td>' +
-        '<td><div class="td-actions"><button class="btn-sm btn-add" onclick="addToLibrary(\'' + jsId + '\')">➕ เพิ่มในคลัง</button>' +
-        '<button class="btn-sm btn-del" onclick="deleteHistorySong(\'' + jsId + '\')" title="ลบออกจากประวัติ">🗑️ ลบออก</button></div></td>' +
-        '</tr>';
-      return;
-    }
 
     // Use draft values if row is dirty (preserves edits across page turns)
     var dName   = draft ? draft.name   : s.name;
@@ -955,9 +895,8 @@ function updateStats() {
   var flt = _filtered;
   document.getElementById('statTotal').textContent    = all.length;
   document.getElementById('statFiltered').textContent = flt.length;
-  var male = 0, female = 0, duet = 0, hist = 0, globalCnt = 0, bandCnt = 0;
+  var male = 0, female = 0, duet = 0, globalCnt = 0, bandCnt = 0;
   all.forEach(function(s) {
-    if (s._fromHistory) { hist++; return; }
     if (s.source === 'band') bandCnt++; else globalCnt++;
     var sv = (s.singer||'').toLowerCase();
     if (sv === 'ชาย'||sv === 'male') male++;
@@ -967,21 +906,6 @@ function updateStats() {
   document.getElementById('statMale').textContent    = male;
   document.getElementById('statFemale').textContent  = female;
   document.getElementById('statDuet').textContent    = duet;
-  document.getElementById('statHistory').textContent = hist;
-  var hiddenCount = Object.keys(_hiddenHistSongs).length;
-  var histEl = document.getElementById('statHistory');
-  if (hiddenCount > 0) {
-    histEl.textContent = hist + ' (ซ่อน ' + hiddenCount + ')';
-    histEl.parentNode.title = 'คลิกเพื่อยกเลิกซ่อนทั้งหมด';
-    histEl.parentNode.style.cursor = 'pointer';
-    histEl.parentNode.onclick = function() {
-      if (confirm('ยกเลิกซ่อนเพลง History ทั้ง ' + hiddenCount + ' เพลง?')) unhideAllHistSongs();
-    };
-  } else {
-    histEl.parentNode.title = '';
-    histEl.parentNode.style.cursor = '';
-    histEl.parentNode.onclick = null;
-  }
   document.getElementById('statGlobal').textContent  = globalCnt;
   document.getElementById('statBand').textContent    = bandCnt;
 }
