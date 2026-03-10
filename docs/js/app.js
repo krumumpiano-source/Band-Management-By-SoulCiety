@@ -609,6 +609,9 @@
     if (b) b.remove();
   });
 })();
+
+// ── Service Worker Registration ───────────────────────────────────────
+(function () {
   if (!('serviceWorker' in navigator)) return;
   // ไม่ register บนหน้า index/register/create-band (ไม่ต้องการ push)
   var path = location.pathname;
