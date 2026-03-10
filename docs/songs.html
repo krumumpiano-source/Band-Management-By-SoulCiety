@@ -154,40 +154,71 @@ button:disabled{opacity:.45;cursor:not-allowed}
   grid-template-columns:repeat(3,1fr);
   gap:0;
   contain:layout;
+  opacity:1;
+  transition:opacity .12s ease;
 }
+.result-columns.fade-out{opacity:0}
 
 .result-item{
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:10px 12px;
+  gap:8px;
+  padding:8px 10px;
   border-bottom:1px solid var(--premium-light-gray);
   border-right:1px solid var(--premium-light-gray);
-  transition:background .15s;
+  transition:background .12s;
   cursor:default;
+  min-height:0;
 }
 .result-item:nth-child(3n){border-right:none}
-.result-item:hover{background:var(--premium-off-white)}
+.result-item:hover{background:#fafaf9}
 .result-item-left{flex:1;min-width:0}
 
 .song-title{
-  font-size:14px;
+  font-size:13px;
   font-weight:700;
   font-family:var(--font-family-display);
   color:var(--premium-text);
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  margin-bottom:2px;
-  line-height:1.3;
+  margin-bottom:0;
+  line-height:1.35;
 }
-.song-meta{
+.song-artist{
   font-size:11px;
-  color:var(--premium-text-muted);
+  color:#9ca3af;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
+  line-height:1.3;
 }
+.song-meta{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:10px;
+  color:var(--premium-text-muted);
+  white-space:nowrap;
+  overflow:hidden;
+  margin-top:1px;
+  line-height:1.4;
+}
+.song-meta .sm-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  padding:1px 6px;
+  border-radius:4px;
+  font-weight:600;
+  font-size:10px;
+  line-height:1.5;
+}
+.sm-key{background:#fef3c7;color:#92400e}
+.sm-bpm{background:#f1f5f9;color:#64748b}
+.sm-male{background:#dbeafe;color:#1e40af}
+.sm-female{background:#fce7f3;color:#9d174d}
+.sm-duet{background:#d1fae5;color:#065f46}
 
 .song-badges{
   display:flex;
@@ -213,57 +244,52 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .badge-mood{background:#ede9fe;color:#4c1d95}
 .badge-era{background:var(--premium-off-white);color:var(--premium-text-muted);border:1px solid var(--premium-border)}
 
+.song-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .add-song-btn{
   flex-shrink:0;
-  width:36px;
-  height:36px;
-  border-radius:50%;
+  width:30px;height:30px;
+  border-radius:8px;
   background:var(--premium-gold-light);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  cursor:pointer;
-  user-select:none;
-  transition:background .15s;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;
+  cursor:pointer;user-select:none;
+  transition:background .12s,transform .08s;
   -webkit-tap-highlight-color:transparent;
-  min-width:36px;
-  min-height:36px;
-  padding:0;
-  border:1.5px solid var(--premium-gold);
+  min-width:30px;min-height:30px;padding:0;
+  border:1px solid var(--premium-gold);
   color:var(--premium-gold-dark);
 }
 .add-song-btn:hover{background:var(--premium-gold);color:#fff}
-.add-song-btn:active{transform:scale(.92)}
+.add-song-btn:active{transform:scale(.93)}
 
 .suggest-song-btn{
-  flex-shrink:0;width:36px;height:36px;border-radius:50%;
-  background:#ede9fe;display:flex;align-items:center;justify-content:center;
-  font-size:16px;cursor:pointer;user-select:none;transition:background .15s;
+  flex-shrink:0;width:28px;height:28px;border-radius:8px;
+  background:#f5f3ff;display:flex;align-items:center;justify-content:center;
+  font-size:13px;cursor:pointer;user-select:none;transition:background .12s;
   -webkit-tap-highlight-color:transparent;
-  min-width:36px;min-height:36px;padding:0;border:1.5px solid #c4b5fd;color:#5b21b6;
+  min-width:28px;min-height:28px;padding:0;border:1px solid #ddd6fe;color:#7c3aed;
 }
-.suggest-song-btn:hover{background:#c4b5fd;color:#fff}
-.suggest-song-btn:active{transform:scale(.92)}
+.suggest-song-btn:hover{background:#ddd6fe;color:#5b21b6}
+.suggest-song-btn:active{transform:scale(.93)}
 
 .edit-band-btn{
-  flex-shrink:0;width:32px;height:32px;border-radius:50%;
-  background:#dbeafe;display:flex;align-items:center;justify-content:center;
-  font-size:14px;cursor:pointer;user-select:none;transition:background .15s;
+  flex-shrink:0;width:28px;height:28px;border-radius:8px;
+  background:#eff6ff;display:flex;align-items:center;justify-content:center;
+  font-size:12px;cursor:pointer;user-select:none;transition:background .12s;
   -webkit-tap-highlight-color:transparent;
-  min-width:32px;min-height:32px;padding:0;border:1.5px solid #93c5fd;color:#1e40af;
+  min-width:28px;min-height:28px;padding:0;border:1px solid #bfdbfe;color:#1e40af;
 }
-.edit-band-btn:hover{background:#93c5fd;color:#fff}
-.edit-band-btn:active{transform:scale(.92)}
+.edit-band-btn:hover{background:#bfdbfe;color:#1e3a8a}
+.edit-band-btn:active{transform:scale(.93)}
 .del-band-btn{
-  flex-shrink:0;width:32px;height:32px;border-radius:50%;
-  background:#fee2e2;display:flex;align-items:center;justify-content:center;
-  font-size:14px;cursor:pointer;user-select:none;transition:background .15s;
+  flex-shrink:0;width:28px;height:28px;border-radius:8px;
+  background:#fef2f2;display:flex;align-items:center;justify-content:center;
+  font-size:12px;cursor:pointer;user-select:none;transition:background .12s;
   -webkit-tap-highlight-color:transparent;
-  min-width:32px;min-height:32px;padding:0;border:1.5px solid #fca5a5;color:#991b1b;
+  min-width:28px;min-height:28px;padding:0;border:1px solid #fecaca;color:#991b1b;
 }
-.del-band-btn:hover{background:#fca5a5;color:#fff}
-.del-band-btn:active{transform:scale(.92)}
+.del-band-btn:hover{background:#fecaca;color:#7f1d1d}
+.del-band-btn:active{transform:scale(.93)}
 
 .sug-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;overflow-y:auto;padding:16px}
 .sug-card{max-width:560px;margin:40px auto;background:#fff;border-radius:16px;padding:24px;position:relative}
@@ -300,21 +326,29 @@ button:disabled{opacity:.45;cursor:not-allowed}
   display:flex;
   justify-content:center;
   align-items:center;
-  gap:12px;
-  margin-top:12px;
+  gap:8px;
+  margin-top:10px;
+  padding:8px 0;
 }
 .pagination button{
   width:auto;
-  background:var(--premium-off-white);
+  background:#fff;
   color:var(--premium-text);
-  border:1.5px solid var(--premium-border);
+  border:1px solid var(--premium-border);
   font-weight:600;
-}
-.pagination button:hover{background:var(--premium-light-gray)}
-.page-info{
   font-size:13px;
+  padding:8px 16px;
+  min-height:38px;
+  border-radius:10px;
+  transition:all .12s;
+}
+.pagination button:hover:not(:disabled){background:#f8f8f6;border-color:var(--premium-gold)}
+.pagination button:disabled{opacity:.35}
+.page-info{
+  font-size:12px;
   color:var(--premium-text-muted);
   font-family:var(--font-family-body);
+  padding:0 4px;
 }
 
 /* playlist section */
@@ -417,7 +451,7 @@ html{scroll-behavior:smooth}
   .container{padding:12px}
   .panel{padding:12px}
   .tp-btn,.move-btn,.del{min-width:36px;min-height:36px;padding:8px;display:inline-flex;align-items:center;justify-content:center}
-  .add-song-btn{min-width:40px;min-height:40px}
+  .add-song-btn{min-width:34px;min-height:34px}
 }
 
 @media(max-width:599px){
@@ -477,6 +511,103 @@ html{scroll-behavior:smooth}
 .lib-tab.active{color:var(--premium-gold-dark)}
 .lib-tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--premium-gold);border-radius:3px 3px 0 0}
 .lib-tab .tab-count{font-size:11px;font-weight:400;opacity:.7;margin-left:4px}
+
+/* â”€â”€ Artist name in song card â”€â”€ */
+.song-artist{
+  font-size:11px;
+  color:#6b7280;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  margin-bottom:1px;
+}
+
+/* â”€â”€ Search highlight â”€â”€ */
+.search-hl{background:#fef08a;color:#92400e;border-radius:2px;padding:0 1px}
+
+/* â”€â”€ Floating Playlist Counter â”€â”€ */
+#playlistFloating{
+  position:fixed;
+  bottom:16px;
+  right:16px;
+  background:linear-gradient(135deg,#1a1a2e,#16213e);
+  color:#fff;
+  border-radius:16px;
+  padding:10px 18px;
+  display:none;
+  align-items:center;
+  gap:10px;
+  z-index:1500;
+  box-shadow:0 8px 32px rgba(0,0,0,.45);
+  border:1.5px solid rgba(246,173,85,.35);
+  font-size:13px;
+  font-weight:600;
+  font-family:var(--font-family-body);
+  cursor:pointer;
+  transition:transform .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+#playlistFloating:hover{transform:translateY(-2px)}
+#playlistFloating .pf-count{
+  background:var(--premium-gold);
+  color:#fff;
+  border-radius:50%;
+  width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;
+  flex-shrink:0;
+}
+#playlistFloating .pf-label{white-space:nowrap}
+
+/* â”€â”€ Playlist add checkbox mode (for adding to playlist) â”€â”€ */
+.pl-add-mode .result-item{cursor:pointer}
+.pl-add-mode .result-item.pl-selected{background:#fffbeb;border-color:var(--premium-gold)}
+.pl-add-mode .pl-cb{display:flex !important}
+.pl-cb{display:none;align-items:center;justify-content:center;flex-shrink:0;width:36px;height:36px}
+.pl-cb input[type=checkbox]{width:20px;height:20px;cursor:pointer;accent-color:var(--premium-gold);margin:0}
+
+/* Floating add-to-playlist bar */
+#plAddBar{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#1e293b;color:#fff;
+  padding:12px 20px;
+  display:none;
+  align-items:center;justify-content:space-between;gap:12px;
+  z-index:3100;
+  box-shadow:0 -4px 20px rgba(0,0,0,.4);
+  flex-wrap:wrap;
+}
+#plAddBar .pab-count{font-size:14px;font-weight:600;flex:1}
+#plAddBar .pab-btn{border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:600;cursor:pointer;border:none;min-height:unset}
+#plAddBar .pab-add{background:#38a169;color:#fff}
+#plAddBar .pab-add:disabled{opacity:.6;cursor:not-allowed}
+#plAddBar .pab-cancel{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
+
+/* â”€â”€ Recently Used Songs â”€â”€ */
+.recent-songs-panel{margin-bottom:var(--spacing-lg)}
+.recent-songs-wrap{display:flex;gap:8px;overflow-x:auto;padding:8px 0;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.recent-chip{
+  flex-shrink:0;
+  display:flex;align-items:center;gap:6px;
+  background:var(--premium-white);
+  border:1.5px solid var(--premium-border);
+  border-radius:var(--radius-full);
+  padding:6px 14px 6px 10px;
+  font-size:12px;font-weight:600;
+  color:var(--premium-text);
+  cursor:pointer;
+  transition:border-color .15s,background .15s;
+  white-space:nowrap;
+  font-family:var(--font-family-body);
+}
+.recent-chip:hover{border-color:var(--premium-gold);background:#fffdf8}
+.recent-chip:active{transform:scale(.97)}
+.recent-chip .rc-key{font-size:10px;color:#92400e;background:#fef3c7;border-radius:4px;padding:1px 5px}
+
+@media(max-width:599px){
+  #playlistFloating{bottom:12px;right:12px;padding:8px 14px;font-size:12px;border-radius:14px}
+  #playlistFloating .pf-count{width:24px;height:24px;font-size:11px}
+}
   </style>
 </head>
 
@@ -511,6 +642,7 @@ html{scroll-behavior:smooth}
     <!-- Row 3: action buttons -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px">
       <button onclick="loadInitial(true)" title="โหลดใหม่" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:36px;height:36px;min-height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">🔄</button>
+      <button id="plAddModeBtn" onclick="togglePlAddMode()" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#38a169,#2f855a);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(56,161,105,.3)">&#x2611;&#xFE0F; &#xe40;&#xe25;&#xe37;&#xe2d;&#xe01;&#xe2b;&#xe25;&#xe32;&#xe22;&#xe40;&#xe1e;&#xe25;&#xe07;</button>
       <button id="selectModeBtn" onclick="toggleSelectMode()" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(246,173,85,.3)">🎵 เลือกเพลงเข้าวง</button>
       <!-- Live Button -->
       <button id="liveModeBtn" onclick="goLiveMode()" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:14px;padding:6px 14px;min-width:64px;cursor:pointer;box-shadow:0 0 12px rgba(13,148,136,0.5)">
@@ -647,6 +779,21 @@ html{scroll-behavior:smooth}
   <ul id="playlist" class="list"></ul>
 </div>
 </div>
+
+<!-- Floating Playlist Counter -->
+<div id="playlistFloating" onclick="document.getElementById('playlist').scrollIntoView({behavior:'smooth',block:'start'})">
+  <span class="pf-count" id="pfCount">0</span>
+  <span class="pf-label" id="pfLabel">&#xe40;&#xe1e;&#xe25;&#xe07;&#xe43;&#xe19;&#xe25;&#xe34;&#xe2a;</span>
+</div>
+
+<!-- Playlist Add Bar (batch add to playlist) -->
+<div id="plAddBar">
+  <div class="pab-count" id="pabCount">&#xe40;&#xe25;&#xe37;&#xe2d;&#xe01;&#xe41;&#xe25;&#xe49;&#xe27; 0 &#xe40;&#xe1e;&#xe25;&#xe07;</div>
+  <div style="display:flex;gap:8px">
+    <button class="pab-btn pab-add" id="pabAddBtn" onclick="batchAddToPlaylist()" disabled>&#x2795; &#xe40;&#xe1e;&#xe34;&#xe48;&#xe21;&#xe43;&#xe19;&#xe25;&#xe34;&#xe2a;</button>
+    <button class="pab-btn pab-cancel" onclick="exitPlAddMode()">&#x2715; &#xe22;&#xe01;&#xe40;&#xe25;&#xe34;&#xe01;</button>
+  </div>
+</div>
 </main>
 
 <!-- Select Mode Floating Bar -->
@@ -692,8 +839,11 @@ let _pageData = [];
 let _totalCount = 0;
 let _totalPages = 1;
 let currentPage = 1;
-const PER_PAGE = 15;
+const PER_PAGE = 24;
 var _currentSource = 'global'; // 'global' or 'band'
+var _savedPageBeforeSearch = null;
+var _loadRequestId = 0;
+var _loadSpinTimer = null;
 
 // ── Select mode state ──────────────────────────────────────────────
 var _selectMode = false;
@@ -761,7 +911,15 @@ function getDropdownFiltered() {
 }
 
 function applyFiltersAndRender() {
-  loadPage(1);
+  var searchEl = document.getElementById('searchText');
+  var searchVal = searchEl ? searchEl.value.trim() : '';
+  if (!searchVal && _savedPageBeforeSearch !== null) {
+    var restorePage = _savedPageBeforeSearch;
+    _savedPageBeforeSearch = null;
+    loadPage(restorePage);
+  } else {
+    loadPage(1);
+  }
 }
 
 var applyFiltersAndRenderDebounced = debounce(applyFiltersAndRender, 300);
@@ -771,10 +929,16 @@ function applyTextFilter() {
   var val = document.getElementById('searchText').value;
   if (btn) btn.style.display = val ? 'flex' : 'none';
 
+  var searchVal = val ? val.trim() : '';
+  if (searchVal && _savedPageBeforeSearch === null) {
+    _savedPageBeforeSearch = currentPage;
+  }
+
   applyFiltersAndRenderDebounced();
 }
 
 function onFilterChange() {
+  _savedPageBeforeSearch = null;
   applyFiltersAndRender();
 }
 
@@ -866,13 +1030,25 @@ function cloneSelectedToBand() {
 
 function loadPage(page) {
   currentPage = page || 1;
-  setLoading(true);
+  var resultEl = getEl("result");
+  var _rc = resultEl ? resultEl.querySelector(".result-columns") : null;
+  var hadContent = !!_rc;
+
+  // Fade out existing content smoothly; show spinner only if API is slow
+  if (hadContent) {
+    _rc.classList.add("fade-out");
+  }
+  clearTimeout(_loadSpinTimer);
+  _loadSpinTimer = setTimeout(function() { setLoading(true); }, hadContent ? 400 : 0);
+
+  // Track request to ignore stale API responses
+  var reqId = ++_loadRequestId;
 
   var bandName = localStorage.getItem('bandName') || '';
   var bnEl = document.getElementById('headerBandName');
   var bnWrap = document.getElementById('headerBandInfo');
   if (bnEl && bandName) {
-    bnEl.textContent = 'วง ' + bandName;
+    bnEl.textContent = '\u0e27\u0e07 ' + bandName;
     if (bnWrap) bnWrap.style.display = 'flex';
   }
 
@@ -891,14 +1067,17 @@ function loadPage(page) {
     mood: filters.mood,
     artist: filters.artist
   }, function(result) {
-    setLoading(false);
+    clearTimeout(_loadSpinTimer);
+    // Ignore stale responses from previous requests
+    if (reqId !== _loadRequestId) return;
+    if (resultEl) resultEl.classList.remove("is-loading");
     if (result && result.success) {
       _pageData = result.data || [];
       _totalCount = result.total || 0;
       _totalPages = Math.max(1, Math.ceil(_totalCount / PER_PAGE));
       // update header total
       var hts = document.getElementById('headerTotalSongs');
-      if (_currentSource === 'global' && hts) hts.textContent = _totalCount.toLocaleString() + ' เพลง';
+      if (_currentSource === 'global' && hts) hts.textContent = _totalCount.toLocaleString() + ' \u0e40\u0e1e\u0e25\u0e07';
       // update tab count
       var tcId = _currentSource === 'global' ? 'tabCountGlobal' : 'tabCountBand';
       var tcEl = document.getElementById(tcId);
@@ -906,8 +1085,7 @@ function loadPage(page) {
       renderPage();
     } else {
       var msg = (result && result.message) ? result.message : 'error';
-      var resultEl = getEl('result');
-      if (resultEl) { var _d = document.createElement('div'); _d.className = 'result-loading result-error'; _d.textContent = 'โหลดข้อมูลไม่ได้: ' + msg; resultEl.innerHTML = ''; resultEl.appendChild(_d); }
+      if (resultEl) { var _d = document.createElement('div'); _d.className = 'result-loading result-error'; _d.textContent = '\u0e42\u0e2b\u0e25\u0e14\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49: ' + msg; resultEl.innerHTML = ''; resultEl.appendChild(_d); }
     }
   });
 }
@@ -952,6 +1130,7 @@ function switchLibrary(source) {
   if (addWrap) addWrap.style.display = (source === 'global' && localStorage.getItem('bandId')) ? 'block' : 'none';
   // exit select mode if active
   if (_selectMode) exitSelectMode();
+  _savedPageBeforeSearch = null;
   // reload
   loadPage(1);
   populateArtistFilter();
@@ -992,6 +1171,32 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function _highlightText(text, query) {
+  if (!query || !text) return escapeHtml(text);
+  var escaped = escapeHtml(text);
+  var safeQ = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  try { return escaped.replace(new RegExp('(' + safeQ + ')', 'gi'), '<span class="search-hl">$1</span>'); }
+  catch(e) { return escaped; }
+}
+
+function _buildMeta(s) {
+  var tags = [];
+  if (s.key) tags.push('<span class="sm-tag sm-key">' + escapeHtml(formatKey(s.key)) + '</span>');
+  if (s.bpm > 0) tags.push('<span class="sm-tag sm-bpm">' + s.bpm + '</span>');
+  if (s.singer) {
+    var cls = 'sm-tag';
+    if (s.singer === '\u0e0a\u0e32\u0e22' || s.singer === 'male') cls += ' sm-male';
+    else if (s.singer === '\u0e2b\u0e0d\u0e34\u0e07' || s.singer === 'female') cls += ' sm-female';
+    else if (s.singer === '\u0e0a\u0e32\u0e22/\u0e2b\u0e0d\u0e34\u0e07' || s.singer === 'duet' || s.singer === '\u0e04\u0e39\u0e48') cls += ' sm-duet';
+    var lbl = s.singer;
+    if (s.singer === 'male') lbl = '\u0e0a\u0e32\u0e22';
+    if (s.singer === 'female') lbl = '\u0e2b\u0e0d\u0e34\u0e07';
+    if (s.singer === 'duet') lbl = '\u0e04\u0e39\u0e48';
+    tags.push('<span class="' + cls + '">' + lbl + '</span>');
+  }
+  return tags.length ? '<div class="song-meta">' + tags.join('') + '</div>' : '';
+}
+
 function renderPage() {
   var resultEl = getEl("result");
   var pageInfoEl = getEl("pageInfo");
@@ -1002,111 +1207,122 @@ function renderPage() {
 
   var pageItems = _pageData;
   var totalPages = _totalPages;
+  var searchEl = document.getElementById('searchText');
+  var q = searchEl ? searchEl.value.trim() : '';
 
   var html = "";
   if (pageItems.length === 0) {
-    html = '<div class="result-empty">ไม่พบเพลงที่ตรงกับตัวกรอง</div>';
+    html = '<div class="result-empty">\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e17\u0e35\u0e48\u0e15\u0e23\u0e07\u0e01\u0e31\u0e1a\u0e15\u0e31\u0e27\u0e01\u0e23\u0e2d\u0e07</div>';
   } else {
     var buf = [];
     for (var i = 0; i < pageItems.length; i++) {
       var s = pageItems[i];
       var idx = i;
-      var nameEscaped = escapeHtml(s.name);
+      var titleHtml = q ? _highlightText(s.name, q) : escapeHtml(s.name);
       var newTag = s.isNew ? '<span class="new-tag">New</span>' : '';
       var songId = escapeHtml(s.id || s.songId || '');
-      var meta = [];
-      if (s.key) meta.push('🎵 ' + escapeHtml(formatKey(s.key)));
-      if (s.bpm > 0) meta.push('⏱ ' + s.bpm + ' BPM');
-      if (s.singer) {
-        var singerLabel = s.singer;
-        var singerColor = '#666';
-        if (s.singer === 'ชาย' || s.singer === 'male')   { singerLabel = 'ชาย'; singerColor = '#1e3a8a'; }
-        if (s.singer === 'หญิง' || s.singer === 'female') { singerLabel = 'หญิง'; singerColor = '#9d174d'; }
-        if (s.singer === 'ชาย/หญิง' || s.singer === 'duet' || s.singer === 'คู่') { singerLabel = 'คู่'; singerColor = '#065f46'; }
-        meta.push('<span style="color:' + singerColor + '">🎤 ' + singerLabel + '</span>');
+      var metaHtml = _buildMeta(s);
+      var artistHtml = '';
+      if (s.artist) {
+        artistHtml = '<div class="song-artist">' + (q ? _highlightText(s.artist, q) : escapeHtml(s.artist)) + '</div>';
       }
-      var metaHtml = meta.length ? '<div class="song-meta">' + meta.join(' &nbsp;·&nbsp; ') + '</div>' : '';
 
-      if (_selectMode) {
+      // Batch add to playlist mode
+      if (typeof _plAddMode !== 'undefined' && _plAddMode) {
+        var plSel = (typeof _plSelectedForAdd !== 'undefined' && _plSelectedForAdd[s.id || s.songId || '']);
+        buf.push(
+          '<div class="result-item' + (plSel ? ' pl-selected' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" style="cursor:pointer" onclick="(function(el){var si=el.getAttribute(\'data-index\');var sd=_pageData[parseInt(si,10)];if(sd){togglePlSelection(sd.id||sd.songId||\'\',el)}})(this)">' +
+          '<div class="pl-cb"><input type="checkbox"' + (plSel ? ' checked' : '') + ' onclick="event.stopPropagation()" onchange="(function(cb){var el=cb.closest(\'.result-item\');var si=el.getAttribute(\'data-index\');var sd=_pageData[parseInt(si,10)];if(sd)togglePlSelection(sd.id||sd.songId||\'\',el)})(this)"></div>' +
+          '<div class="result-item-left">' +
+          '<div class="song-title">' + titleHtml + newTag + '</div>' +
+          artistHtml + metaHtml +
+          '</div></div>'
+        );
+      } else if (_selectMode) {
         var isInLib = !!_bandLibraryIds[songId];
         var isSelected = !!_selectedIds[songId];
         if (isInLib) {
           buf.push(
             '<div class="result-item" data-index="' + idx + '" style="opacity:.55">' +
             '<div class="result-item-left">' +
-            '<div class="song-title">' + nameEscaped + newTag + '<span class="in-lib-tag">\u2705 \u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07</span></div>' +
-            metaHtml +
-            '</div>' +
-            '</div>'
+            '<div class="song-title">' + titleHtml + newTag + '<span class="in-lib-tag">\u2705 \u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07</span></div>' +
+            artistHtml + metaHtml +
+            '</div></div>'
           );
         } else {
           buf.push(
             '<div class="result-item' + (isSelected ? ' selected' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="toggleSelection(\'' + songId + '\',this)" style="cursor:pointer">' +
             '<div class="sel-cb"><input type="checkbox"' + (isSelected ? ' checked' : '') + ' onclick="event.stopPropagation()" onchange="toggleSelection(\'' + songId + '\',this.closest(\'.result-item\'))"></div>' +
             '<div class="result-item-left">' +
-            '<div class="song-title">' + nameEscaped + newTag + '</div>' +
-            metaHtml +
-            '</div>' +
-            '</div>'
+            '<div class="song-title">' + titleHtml + newTag + '</div>' +
+            artistHtml + metaHtml +
+            '</div></div>'
           );
         }
-      } else {
-      if (_currentSource === 'band') {
+      } else if (_currentSource === 'band') {
         var libType = s.libType || 'owned';
         if (libType === 'ref') {
-          // Referenced global song: edit (detach) + remove from library + add to playlist
           buf.push(
             '<div class="result-item" data-index="' + idx + '">' +
             '<div class="result-item-left">' +
-            '<div class="song-title">' + nameEscaped + newTag + '</div>' +
-            metaHtml +
+            '<div class="song-title">' + titleHtml + newTag + '</div>' +
+            artistHtml + metaHtml +
             '</div>' +
+            '<div class="song-actions">' +
             '<span class="edit-band-btn" data-songid="' + songId + '" data-libtype="ref" title="\u0e41\u0e01\u0e49\u0e44\u0e02">\u270F\uFE0F</span>' +
-            '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + nameEscaped.replace(/"/g,'&quot;') + '" data-libtype="ref" title="นำออกจากคลังวง">✕</span>' +
+            '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + escapeHtml(s.name).replace(/"/g,'&quot;') + '" data-libtype="ref" title="\u0e19\u0e33\u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07">\u2715</span>' +
             '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
-            '</div>'
+            '</div></div>'
           );
         } else {
-          // Band-owned song: edit + delete + add to playlist
           buf.push(
             '<div class="result-item" data-index="' + idx + '">' +
             '<div class="result-item-left">' +
-            '<div class="song-title">' + nameEscaped + newTag + '</div>' +
-            metaHtml +
+            '<div class="song-title">' + titleHtml + newTag + '</div>' +
+            artistHtml + metaHtml +
             '</div>' +
+            '<div class="song-actions">' +
             '<span class="edit-band-btn" data-songid="' + songId + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02">\u270F\uFE0F</span>' +
-            '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + nameEscaped.replace(/"/g,'&quot;') + '" data-libtype="owned" title="\u0e25\u0e1a">\u2715</span>' +
+            '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + escapeHtml(s.name).replace(/"/g,'&quot;') + '" data-libtype="owned" title="\u0e25\u0e1a">\u2715</span>' +
             '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
-            '</div>'
+            '</div></div>'
           );
         }
       } else {
-      // Global library: suggest + add to playlist
-      buf.push(
-        '<div class="result-item" data-index="' + idx + '">' +
-        '<div class="result-item-left">' +
-        '<div class="song-title">' + nameEscaped + newTag + '</div>' +
-        metaHtml +
-        '</div>' +
-        '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="แนะนำการแก้ไข">💡</span>' +
-        '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
-        '</div>'
-      );
+        buf.push(
+          '<div class="result-item" data-index="' + idx + '">' +
+          '<div class="result-item-left">' +
+          '<div class="song-title">' + titleHtml + newTag + '</div>' +
+          artistHtml + metaHtml +
+          '</div>' +
+          '<div class="song-actions">' +
+          '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e19\u0e30\u0e19\u0e33\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02">\u{1F4A1}</span>' +
+          '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
+          '</div></div>'
+        );
       }
-      } // end _selectMode else
     }
     html = '<div class="result-columns">' + buf.join('') + '</div>';
   }
 
   resultEl.innerHTML = html;
 
+  // Smooth fade-in for new content
+  var newRc = resultEl.querySelector('.result-columns');
+  if (newRc) {
+    newRc.classList.add('fade-out');
+    void newRc.offsetHeight; // force reflow
+    newRc.classList.remove('fade-out');
+  }
+
   if (pageInfoEl) {
     pageInfoEl.textContent = _totalCount === 0
-      ? "ไม่มีผลลัพธ์"
-      : "หน้า " + currentPage + " / " + totalPages + "  (" + _totalCount + " เพลง)";
+      ? "\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1c\u0e25\u0e25\u0e31\u0e1e\u0e18\u0e4c"
+      : "\u0e2b\u0e19\u0e49\u0e32 " + currentPage + " / " + totalPages + "  (" + _totalCount + " \u0e40\u0e1e\u0e25\u0e07)";
   }
   if (prevBtn) prevBtn.disabled = currentPage <= 1;
   if (nextBtn) nextBtn.disabled = currentPage >= totalPages || _totalCount === 0;
+  if (typeof updatePlaylistFloating === 'function') updatePlaylistFloating();
 }
 
 var nextPageThrottled = throttle(function () {
@@ -2202,5 +2418,291 @@ function closeAdGate() {
   </div>
 </div>
 
+<script>
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   UPGRADE: 6 improvements for faster setlist building
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+// â”€â”€ A. Floating Playlist Counter â”€â”€
+function updatePlaylistFloating() {
+  var el = document.getElementById('playlistFloating');
+  var countEl = document.getElementById('pfCount');
+  var labelEl = document.getElementById('pfLabel');
+  if (!el || !countEl) return;
+  var songCount = playlistData.filter(function(s){ return !s.break; }).length;
+  if (songCount > 0) {
+    countEl.textContent = songCount;
+    labelEl.textContent = songCount + ' \u0e40\u0e1e\u0e25\u0e07\u0e43\u0e19\u0e25\u0e34\u0e2a';
+    el.style.display = 'flex';
+  } else {
+    el.style.display = 'none';
+  }
+  // hide floating when plAddBar or selectBar is visible
+  var plAddBar = document.getElementById('plAddBar');
+  var selectBar = document.getElementById('selectBar');
+  if ((plAddBar && plAddBar.style.display === 'flex') || (selectBar && selectBar.style.display === 'flex')) {
+    el.style.display = 'none';
+  }
+}
+
+// Patch renderPlaylist to update floating counter
+var _origRenderPlaylist = renderPlaylist;
+renderPlaylist = function() {
+  _origRenderPlaylist();
+  updatePlaylistFloating();
+};
+
+// highlightText alias for external use
+function highlightText(text, query) { return _highlightText(text, query); }
+
+var _plAddMode = false;
+var _plSelectedForAdd = {};
+
+function togglePlAddMode() {
+  if (_plAddMode) exitPlAddMode(); else enterPlAddMode();
+}
+
+function enterPlAddMode() {
+  _plAddMode = true;
+  _plSelectedForAdd = {};
+  var btn = document.getElementById('plAddModeBtn');
+  if (btn) { btn.style.background = '#2f855a'; btn.textContent = '\u2611\uFE0F \u0e42\u0e2b\u0e21\u0e14\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2b\u0e25\u0e32\u0e22\u0e40\u0e1e\u0e25\u0e07'; }
+  var resultEl = document.getElementById('result');
+  if (resultEl) resultEl.classList.add('pl-add-mode');
+  var bar = document.getElementById('plAddBar');
+  if (bar) bar.style.display = 'flex';
+  // Hide floating counter while in this mode
+  var fc = document.getElementById('playlistFloating');
+  if (fc) fc.style.display = 'none';
+  renderPage();
+  updatePlAddBar();
+}
+
+function exitPlAddMode() {
+  _plAddMode = false;
+  _plSelectedForAdd = {};
+  var btn = document.getElementById('plAddModeBtn');
+  if (btn) { btn.style.background = ''; btn.textContent = '\u2611\uFE0F \u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2b\u0e25\u0e32\u0e22\u0e40\u0e1e\u0e25\u0e07'; }
+  var resultEl = document.getElementById('result');
+  if (resultEl) resultEl.classList.remove('pl-add-mode');
+  var bar = document.getElementById('plAddBar');
+  if (bar) bar.style.display = 'none';
+  // remove checkboxes
+  document.querySelectorAll('.pl-cb').forEach(function(cb){ cb.remove(); });
+  document.querySelectorAll('.result-item.pl-selected').forEach(function(el){ el.classList.remove('pl-selected'); });
+  renderPage();
+}
+
+function togglePlSelection(songId, el) {
+  if (!songId) return;
+  if (_plSelectedForAdd[songId]) {
+    delete _plSelectedForAdd[songId];
+    if (el) el.classList.remove('pl-selected');
+    var cb = el && el.querySelector('.pl-cb input[type=checkbox]');
+    if (cb) cb.checked = false;
+  } else {
+    // Store the full song data
+    for (var i = 0; i < _pageData.length; i++) {
+      var sid = _pageData[i].id || _pageData[i].songId || '';
+      if (sid === songId) {
+        _plSelectedForAdd[songId] = _pageData[i];
+        break;
+      }
+    }
+    if (el) el.classList.add('pl-selected');
+    var cb2 = el && el.querySelector('.pl-cb input[type=checkbox]');
+    if (cb2) cb2.checked = true;
+  }
+  updatePlAddBar();
+}
+
+function updatePlAddBar() {
+  var count = Object.keys(_plSelectedForAdd).length;
+  var countEl = document.getElementById('pabCount');
+  var addBtn = document.getElementById('pabAddBtn');
+  if (countEl) countEl.textContent = '\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e41\u0e25\u0e49\u0e27 ' + count + ' \u0e40\u0e1e\u0e25\u0e07';
+  if (addBtn) addBtn.disabled = count === 0;
+}
+
+function batchAddToPlaylist() {
+  var ids = Object.keys(_plSelectedForAdd);
+  if (!ids.length) return;
+  var addedNames = [];
+  ids.forEach(function(id) {
+    var song = _plSelectedForAdd[id];
+    if (song) {
+      playlistData.push({
+        name: song.name || '',
+        key: song.key || '',
+        bpm: song.bpm || 0,
+        artist: song.artist || '',
+        singer: song.singer || '',
+        transpose: 0,
+        mode: 'major'
+      });
+      addedNames.push(song.name || '');
+      // Save to recently used
+      saveRecentSong(song);
+    }
+  });
+  renderPlaylist();
+  exitPlAddMode();
+  showSongsAlert('\u2705 \u0e40\u0e1e\u0e34\u0e48\u0e21 ' + addedNames.length + ' \u0e40\u0e1e\u0e25\u0e07\u0e43\u0e19\u0e25\u0e34\u0e2a\u0e41\u0e25\u0e49\u0e27');
+}
+
+// â”€â”€ E. Recently Used Songs â”€â”€
+var RECENT_KEY = 'recentSongs_' + (localStorage.getItem('bandId') || 'default');
+var MAX_RECENT = 20;
+
+function getRecentSongs() {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+  } catch(e) { return []; }
+}
+
+function saveRecentSong(song) {
+  if (!song || !song.name) return;
+  var recent = getRecentSongs();
+  var songId = song.id || song.songId || song.name;
+  // Remove if already exists
+  recent = recent.filter(function(r) { return (r.id || r.songId || r.name) !== songId; });
+  // Add to front
+  recent.unshift({
+    id: song.id || song.songId || '',
+    name: song.name,
+    key: song.key || '',
+    bpm: song.bpm || 0,
+    artist: song.artist || '',
+    singer: song.singer || ''
+  });
+  // Cap at MAX_RECENT
+  if (recent.length > MAX_RECENT) recent = recent.slice(0, MAX_RECENT);
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch(e) {}
+}
+
+function renderRecentSongs() {
+  var panel = document.getElementById('recentSongsPanel');
+  var wrap = document.getElementById('recentSongsWrap');
+  if (!panel || !wrap) return;
+  var recent = getRecentSongs();
+  if (recent.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  wrap.innerHTML = '';
+  recent.forEach(function(s) {
+    var chip = document.createElement('div');
+    chip.className = 'recent-chip';
+    chip.title = (s.artist ? s.artist + ' - ' : '') + s.name;
+    chip.innerHTML = '\u2795 ' + escapeHtml(s.name) + (s.key ? ' <span class="rc-key">' + escapeHtml(typeof formatKey === 'function' ? formatKey(s.key) : s.key) + '</span>' : '');
+    chip.onclick = function() {
+      playlistData.push({
+        name: s.name,
+        key: s.key || '',
+        bpm: s.bpm || 0,
+        artist: s.artist || '',
+        singer: s.singer || '',
+        transpose: 0,
+        mode: 'major'
+      });
+      renderPlaylist();
+      showSongsAlert('\u2795 ' + s.name);
+    };
+    wrap.appendChild(chip);
+  });
+}
+
+// Patch addSong to also save to recent
+var _origAddSong = addSong;
+addSong = function(song) {
+  _origAddSong(song);
+  if (song) saveRecentSong(song);
+  renderRecentSongs();
+};
+
+// â”€â”€ F. Save/Restore Filter State â”€â”€
+var FILTER_KEY = 'songFilters_' + (localStorage.getItem('bandId') || 'default');
+
+function saveFilterState() {
+  var state = {
+    singer: (document.getElementById('singer') || {}).value || '',
+    era: (document.getElementById('era') || {}).value || '',
+    genre: (document.getElementById('genre') || {}).value || '',
+    mood: (document.getElementById('mood') || {}).value || '',
+    artist: (document.getElementById('artist') || {}).value || '',
+    search: (document.getElementById('searchText') || {}).value || ''
+  };
+  try { sessionStorage.setItem(FILTER_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function restoreFilterState() {
+  try {
+    var state = JSON.parse(sessionStorage.getItem(FILTER_KEY) || 'null');
+    if (!state) return false;
+    if (state.singer) { var el = document.getElementById('singer'); if (el) el.value = state.singer; }
+    if (state.era)    { var el2 = document.getElementById('era'); if (el2) el2.value = state.era; }
+    if (state.genre)  { var el3 = document.getElementById('genre'); if (el3) el3.value = state.genre; }
+    if (state.mood)   { var el4 = document.getElementById('mood'); if (el4) el4.value = state.mood; }
+    if (state.search) {
+      var el5 = document.getElementById('searchText');
+      if (el5) {
+        el5.value = state.search;
+        var btn = document.getElementById('searchClearBtn');
+        if (btn) btn.style.display = 'flex';
+      }
+    }
+    // artist needs to wait for populateArtistFilter, so we store it and apply after
+    if (state.artist) window._pendingArtistFilter = state.artist;
+    return !!(state.singer || state.era || state.genre || state.mood || state.search);
+  } catch(e) { return false; }
+}
+
+// Patch filter change functions to save state
+var _origOnFilterChange = onFilterChange;
+onFilterChange = function() {
+  _origOnFilterChange();
+  saveFilterState();
+};
+
+var _origApplyTextFilter = applyTextFilter;
+applyTextFilter = function() {
+  _origApplyTextFilter();
+  saveFilterState();
+};
+
+// Patch populateArtistFilter to restore artist selection
+var _origPopulateArtistFilter = populateArtistFilter;
+populateArtistFilter = function() {
+  _origPopulateArtistFilter();
+  // After a delay for async load, apply pending artist filter
+  setTimeout(function() {
+    if (window._pendingArtistFilter) {
+      var sel = document.getElementById('artist');
+      if (sel) {
+        sel.value = window._pendingArtistFilter;
+        delete window._pendingArtistFilter;
+      }
+    }
+  }, 800);
+};
+
+// â”€â”€ Init on load â”€â”€
+var _origOnload = window.onload;
+window.onload = function() {
+  // Restore filters BEFORE the original onload calls loadInitial
+  var hadFilters = restoreFilterState();
+
+  // Call original onload
+  if (_origOnload) _origOnload();
+
+  // Render recent songs
+  renderRecentSongs();
+
+  // Show plAddModeBtn always (not dependent on bandId)
+  var pabBtn = document.getElementById('plAddModeBtn');
+  if (pabBtn) pabBtn.style.display = 'inline-flex';
+
+  // Update floating counter
+  updatePlaylistFloating();
+};
+</script>
 </body>
 </html>

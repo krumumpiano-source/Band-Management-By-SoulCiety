@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -234,7 +234,7 @@
 
   <!-- Toolbar -->
   <div class="as-toolbar">
-    <input type="text" id="asSearch" class="as-search" placeholder="🔍 ค้นหาชื่อเพลง ศิลปิน คีย์..." oninput="filterTable()">
+    <input type="text" id="asSearch" class="as-search" placeholder="🔍 ค้นหาชื่อเพลง ศิลปิน คีย์..." oninput="searchInputChanged()">
     <select id="asSource" class="as-filter" onchange="filterTable()">
       <option value="">ทุกแหล่ง</option>
       <option value="global">คลังกลาง</option>
@@ -396,11 +396,14 @@ var _filtered     = [];
 var _sortKey      = 'name';
 var _sortAsc      = true;
 var _page         = 1;
+var _savedPageBeforeSearch = null;
 var _perPage      = 30;
 var _editingId    = null;
 var _dirty        = {}; // songId → draft data object (preserves edits across page turns)
 var _keyDisplayMode = localStorage.getItem('keyDisplayMode') || 'number'; // 'number' | 'letter'
 var _artistList   = []; // [{id, name}, ...] master list
+var _loadSongsReqId = 0;
+var _searchDebounce = null;
 
 // ─── Init ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
@@ -555,6 +558,7 @@ function loadSongs() {
   setBodyLoading(true);
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
+  var reqId = ++_loadSongsReqId;
   var _done = 0;
   var _libSongs = [];
   var _histRows = [];
@@ -562,6 +566,7 @@ function loadSongs() {
   function _merge() {
     _done++;
     if (_done < 2) return;
+    if (reqId !== _loadSongsReqId) return;
     setBodyLoading(false);
 
     // Build ID + name lookup from library
@@ -670,6 +675,22 @@ function filterTable() {
 function refilterKeepPage() {
   filterTable.__keepPage = true;
   filterTable();
+}
+
+function searchInputChanged() {
+  var val = (document.getElementById('asSearch').value || '').trim();
+  if (val && _savedPageBeforeSearch === null) {
+    _savedPageBeforeSearch = _page;
+  }
+  if (!val && _savedPageBeforeSearch !== null) {
+    _page = _savedPageBeforeSearch;
+    _savedPageBeforeSearch = null;
+    filterTable.__keepPage = true;
+  } else {
+    _savedPageBeforeSearch = val ? _savedPageBeforeSearch : null;
+  }
+  clearTimeout(_searchDebounce);
+  _searchDebounce = setTimeout(filterTable, 150);
 }
 
 function applySortToFiltered() {

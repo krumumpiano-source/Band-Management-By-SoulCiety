@@ -229,6 +229,7 @@ var apCheckInTime   = {}; // apCheckInTime[memberId][date] = checkInAt timestamp
 var apCheckInSub    = {}; // apCheckInSub[memberId][date][slotKey] = {name, contact} or null
 var apLeaveData     = []; // leave_requests for the date range
 var apLeaveSlots    = {}; // apLeaveSlots[memberId][date] = ['21:00-22:00']
+var _apLoadReqId    = 0;
 
 function apLoadCheckIns(cb) {
   apChecked = {};
@@ -239,10 +240,12 @@ function apLoadCheckIns(cb) {
   apLeaveData     = [];
   apLeaveSlots    = {};
   if (!apBandId || typeof apiCall !== 'function' || !apDateRange.length) { if (cb) cb(); return; }
+  var reqId = ++_apLoadReqId;
   var dates = apDateRange.slice(), all = [];
   var dateFrom = dates[0] || '', dateTo = dates[dates.length - 1] || '';
   var leaveDone = false, ciDone = false;
   function tryFinish() {
+    if (reqId !== _apLoadReqId) return;
     if (!ciDone || !leaveDone) return;
     // Process check-ins
     all.forEach(function(ci) {
@@ -319,11 +322,13 @@ function apLoadCheckIns(cb) {
   }
   // Load check-ins for full date range in one request
   apiCall('getCheckInsForRange', { bandId: apBandId, dateFrom: dateFrom, dateTo: dateTo }, function(r) {
+    if (reqId !== _apLoadReqId) return;
     if (r && r.success && r.data) all = r.data;
     ciDone = true; tryFinish();
   });
   // Load leave requests for the date range
   apiCall('getLeaveRequestsForRange', { bandId: apBandId, dateFrom: dateFrom, dateTo: dateTo }, function(r) {
+    if (reqId !== _apLoadReqId) return;
     if (r && r.success && r.data) {
       var dSet = {}; dates.forEach(function(d) { dSet[d] = true; });
       apLeaveData = r.data.filter(function(lv) { return dSet[lv.date]; });

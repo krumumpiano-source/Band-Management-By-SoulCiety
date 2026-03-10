@@ -185,6 +185,7 @@
   var adTimer      = null;
   var autoSaveTimer = null;   // debounce handle
   var lastSavedHash = '';     // detect real changes
+  var _dateChangeReqId = 0;
 
   var PLAN_LIMIT = { free: 0, lite: 4, pro: 8 }; // 0 = follow schedule
 
@@ -266,10 +267,12 @@
     document.getElementById('setTabs').innerHTML = '<div style="color:var(--premium-text-muted);font-size:.82rem">กำลังโหลด...</div>';
     document.getElementById('scheduleInfoEl').textContent = 'กำลังโหลด...';
 
+    var reqId = ++_dateChangeReqId;
     var schedDone = false, setsDone = false;
-    function tryBuild() { if (schedDone && setsDone) buildUI(); }
+    function tryBuild() { if (reqId !== _dateChangeReqId) return; if (schedDone && setsDone) buildUI(); }
 
     apiCall('getScheduleForDate', { date: date }, function(r) {
+      if (reqId !== _dateChangeReqId) return;
       todaySlots  = (r && r.slots)     || [];
       var scheds  = (r && r.schedules) || [];
       var infoEl  = document.getElementById('scheduleInfoEl');
@@ -285,6 +288,7 @@
     });
 
     apiCall('getSetlist', { date: date }, function(r) {
+      if (reqId !== _dateChangeReqId) return;
       setsData = (r && r.data) || {};
       setsDone = true;
       tryBuild();
