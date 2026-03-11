@@ -129,6 +129,7 @@
     .badge-req{background:#7c3aed;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:10px;white-space:nowrap}
     .badge-encore{background:#0e7490;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:10px}
     .badge-skip{background:var(--bg4);color:var(--text2);font-size:0.65rem;padding:1px 6px;border-radius:10px;cursor:pointer}
+    .badge-hbd{background:rgba(234,179,8,.18);color:#fde68a;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid rgba(234,179,8,.3)}
     /* reorder arrows */
     .si-arrows{display:flex;flex-direction:column;gap:1px;flex-shrink:0;margin-right:2px}
     .si-arrow{background:none;border:1px solid #333;color:#6b7280;font-size:0.7rem;width:24px;height:20px;cursor:pointer;border-radius:5px;display:flex;align-items:center;justify-content:center;padding:0;transition:color .15s,background .15s,border-color .15s;line-height:1}
@@ -354,11 +355,17 @@
     #chatToast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
     #chatToast .ct-from{font-weight:700;color:#60a5fa}
     #chatToast .ct-text{margin-left:4px}
+    /* ─── HBD WARNING BANNER ─── */
+    #hbdBanner{position:fixed;top:48px;left:50%;transform:translateX(-50%) translateY(-20px);background:rgba(234,179,8,.12);border:1.5px solid rgba(234,179,8,.5);color:#fde68a;border-radius:12px;padding:8px 18px;font-size:0.85rem;font-weight:700;z-index:9998;opacity:0;pointer-events:none;transition:opacity .4s,transform .4s;text-align:center;backdrop-filter:blur(8px);max-width:90vw}
+    #hbdBanner.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+    @keyframes hbdPulse{0%,100%{border-color:rgba(234,179,8,.5);box-shadow:0 0 0 0 rgba(234,179,8,0)}50%{border-color:#fde68a;box-shadow:0 0 12px 3px rgba(234,179,8,.25)}}
+    #hbdBanner.urgent{animation:hbdPulse 1s ease-in-out infinite}
   </style>
 </head>
 <body>
 
 <div id="chatToast"></div>
+<div id="hbdBanner"></div>
 <div id="liveApp">
   <!-- ── TOP BAR ── -->
   <div id="topBar">
@@ -670,6 +677,11 @@ var _chatMessages = []; // array of { from, text, time, isMine }
 var _chatUnread = 0;
 var _chatOpen = false;
 
+// ── HBD Timer ────────────────────────────────────────────────────────────
+var _hbdFired = {}; // track which HBD songs already fired (by idx)
+var _hbdWarned = {}; // track 2-min warning shown
+var _hbdTimer = null;
+
 // ── Double-tap / double-click detection ──────────────────────────
 var _tapTimer   = null;
 var _lastTapIdx = -1;
@@ -697,6 +709,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (_bn) document.title = 'Live Mode — ' + _bn;
   setFontLevel(_fontLevel);
   startClock();
+  _startHbdTimer();
   acquireWakeLock();
   document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
   // Set initial metronome button states
@@ -926,6 +939,8 @@ function renderSongList() {
     if (s._isRequest) badges += '<span class="badge-req">ขอ</span>';
     if (s._isEncore)  badges += '<span class="badge-encore">🔁</span>';
     if (s._skipped)   badges += '<span class="badge-skip" onclick="unskipSong(event,' + i + ')">skip ↩</span>';
+    var hbdT = _parseHbdTime(s.name);
+    if (hbdT && !s._skipped) badges += '<span class="badge-hbd">🎂 ' + String(hbdT.hours).padStart(2,'0') + ':' + String(hbdT.minutes).padStart(2,'0') + '</span>';
     var meta = [];
     if (s._key || s.key) meta.push('🎵 ' + formatKey(s._key || s.key));
     if (s.bpm)  meta.push(s.bpm + ' BPM');
@@ -936,11 +951,11 @@ function renderSongList() {
         (s._skipped ? ' is-skipped' : '') +
       '" data-idx="' + i + '">' +
         '<div class="si-num">' + (i + 1) + '</div>' +
+        dot +
         '<div class="si-arrows">' +
           '<button class="si-arrow" onclick="moveSongUp(event,' + i + ')"' + (i === 0 ? ' disabled' : '') + ' title="\u0e40\u0e25\u0e37\u0e48\u0e2d\u0e19\u0e02\u0e36\u0e49\u0e19">▲</button>' +
           '<button class="si-arrow" onclick="moveSongDown(event,' + i + ')"' + (i === _playlist.length - 1 ? ' disabled' : '') + ' title="\u0e40\u0e25\u0e37\u0e48\u0e2d\u0e19\u0e25\u0e07">▼</button>' +
         '</div>' +
-        dot +
         '<div class="si-content">' +
           '<div class="si-name">' + escHtml(s.name) + '</div>' +
           (meta.length ? '<div class="si-meta">' + meta.join(' · ') + '</div>' : '') +
@@ -2230,6 +2245,7 @@ function initRealtime() {
       _playlist = d.playlist;
       _current  = d.current || 0;
       _modified = true;
+      _resetHbdTracking();
       renderNowPlaying();
       renderSongList();
     })
@@ -2450,6 +2466,112 @@ function _playChatSound() {
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
     osc.start(t); osc.stop(t + 0.2);
   } catch(e) { /* no audio support */ }
+}
+
+// ─── HBD TIMED AUTO-SWITCH ─────────────────────────────────────────
+function _parseHbdTime(name) {
+  // Match: HBD followed by time like 21.30, 21:30, 9.00, 09:15
+  var m = name.match(/^HBD\s+(\d{1,2})[.:](\d{2})/i);
+  if (!m) return null;
+  var h = parseInt(m[1], 10);
+  var min = parseInt(m[2], 10);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return { hours: h, minutes: min };
+}
+
+function _startHbdTimer() {
+  if (_hbdTimer) clearInterval(_hbdTimer);
+  _hbdTimer = setInterval(_checkHbdSongs, 15000); // check every 15s
+}
+
+function _checkHbdSongs() {
+  if (_isGuest) return; // guests don't control playback
+  var now = new Date();
+  var nowMin = now.getHours() * 60 + now.getMinutes();
+  var nowSec = now.getSeconds();
+  var banner = document.getElementById('hbdBanner');
+
+  var activeWarning = null;
+
+  for (var i = 0; i < _playlist.length; i++) {
+    var s = _playlist[i];
+    if (s._skipped) continue;
+    var t = _parseHbdTime(s.name);
+    if (!t) continue;
+    var targetMin = t.hours * 60 + t.minutes;
+    var diff = targetMin - nowMin; // minutes until HBD
+
+    // Already fired this song
+    if (_hbdFired[i]) continue;
+
+    // Already playing this song
+    if (i === _current) { _hbdFired[i] = true; continue; }
+
+    // AUTO-SWITCH: time reached (0 to -1 min window)
+    if (diff <= 0 && diff >= -1) {
+      _hbdFired[i] = true;
+      _hbdWarned[i] = true;
+      if (banner) { banner.classList.remove('show','urgent'); }
+      // Play HBD sound alert
+      _playHbdSound();
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      playNow(i);
+      showToast('🎂 HBD! เปลี่ยนเพลงตามเวลาที่ตั้งไว้ → ' + s.name);
+      return; // handle one at a time
+    }
+
+    // 2-MIN WARNING
+    if (diff > 0 && diff <= 2 && !_hbdWarned[i]) {
+      _hbdWarned[i] = true;
+      activeWarning = { idx: i, name: s.name, diff: diff };
+    }
+
+    // Show countdown if within 3 minutes
+    if (diff > 0 && diff <= 3) {
+      activeWarning = activeWarning || { idx: i, name: s.name, diff: diff };
+    }
+  }
+
+  // Update banner
+  if (banner) {
+    if (activeWarning) {
+      var minLeft = activeWarning.diff;
+      banner.innerHTML = '🎂 ' + _escHtml(activeWarning.name) + ' — อีก ' + minLeft + ' นาที!';
+      banner.classList.add('show');
+      banner.classList.toggle('urgent', minLeft <= 1);
+    } else {
+      banner.classList.remove('show', 'urgent');
+    }
+  }
+}
+
+function _playHbdSound() {
+  try {
+    if (!_nudgeAudioCtx) {
+      _nudgeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    var ctx = _nudgeAudioCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+    var t = ctx.currentTime;
+    // Three ascending tones: C5 → E5 → G5
+    var notes = [523, 659, 784];
+    notes.forEach(function(freq, j) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      var start = t + j * 0.18;
+      gain.gain.setValueAtTime(0.2, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
+      osc.start(start); osc.stop(start + 0.25);
+    });
+  } catch(e) {}
+}
+
+// Reset HBD tracking when playlist changes
+function _resetHbdTracking() {
+  _hbdFired = {};
+  _hbdWarned = {};
 }
 
 // ─── NUDGE (สะกิด) ────────────────────────────────────────────────
