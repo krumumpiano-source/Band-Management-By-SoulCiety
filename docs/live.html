@@ -340,10 +340,20 @@
     /* badge on chat button */
     #chatBtnBadge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:0.6rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 4px}
     #chatBtnWrap{position:relative;display:inline-block}
+    /* ─── CHAT PULSE ANIMATION ─── */
+    @keyframes chatPulse{0%{box-shadow:0 0 0 0 rgba(59,130,246,.5)}50%{box-shadow:0 0 8px 4px rgba(59,130,246,.35)}100%{box-shadow:0 0 0 0 rgba(59,130,246,.5)}}
+    @keyframes chatBounce{0%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}60%{transform:translateY(2px)}}
+    #chatMsgBtn.chat-alert{animation:chatPulse 1s ease-in-out infinite,chatBounce 1s ease-in-out infinite}
+    /* ─── CHAT TOAST ─── */
+    #chatToast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-20px);background:rgba(30,41,59,.95);color:#e2e8f0;border:1px solid rgba(59,130,246,.4);border-radius:12px;padding:8px 16px;font-size:0.82rem;z-index:9999;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;max-width:85vw;text-align:center;backdrop-filter:blur(8px)}
+    #chatToast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+    #chatToast .ct-from{font-weight:700;color:#60a5fa}
+    #chatToast .ct-text{margin-left:4px}
   </style>
 </head>
 <body>
 
+<div id="chatToast"></div>
 <div id="liveApp">
   <!-- ── TOP BAR ── -->
   <div id="topBar">
@@ -2314,6 +2324,9 @@ function openChat() {
   _chatOpen = true;
   _chatUnread = 0;
   _updateChatBadge();
+  // Stop pulse animation when chat opened
+  var chatBtn = document.getElementById('chatMsgBtn');
+  if (chatBtn) chatBtn.classList.remove('chat-alert');
   _renderChatMessages();
   panel.classList.add('open');
   document.getElementById('chatBarInner').style.display = 'none';
@@ -2352,6 +2365,7 @@ function receiveChatMsg(from, text, time) {
   if (!_chatOpen) {
     _chatUnread++;
     _updateChatBadge();
+    _chatNotify(from, text);
   } else {
     _renderChatMessages();
   }
@@ -2385,6 +2399,46 @@ function _updateChatBadge() {
   } else {
     badge.style.display = 'none';
   }
+}
+
+// ─── CHAT NOTIFICATION (sound + vibrate + pulse + toast) ─────────
+var _chatToastTimer = null;
+function _chatNotify(from, text) {
+  // A) Sound — soft single-tone ping (gentler than nudge)
+  _playChatSound();
+  // B) Vibrate — single short pulse
+  if (navigator.vibrate) navigator.vibrate(150);
+  // C) Pulse animation on chat button
+  var btn = document.getElementById('chatMsgBtn');
+  if (btn) btn.classList.add('chat-alert');
+  // D) Toast popup showing sender + message
+  var toast = document.getElementById('chatToast');
+  if (toast) {
+    toast.innerHTML = '<span class="ct-from">' + _escHtml(from) + ':</span><span class="ct-text">' + _escHtml(text.length > 40 ? text.substring(0, 40) + '...' : text) + '</span>';
+    toast.classList.add('show');
+    if (_chatToastTimer) clearTimeout(_chatToastTimer);
+    _chatToastTimer = setTimeout(function() { toast.classList.remove('show'); }, 3000);
+    // Tap toast to open chat
+    toast.onclick = function() { toast.classList.remove('show'); openChat(); };
+  }
+}
+
+function _playChatSound() {
+  try {
+    if (!_nudgeAudioCtx) {
+      _nudgeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    var ctx = _nudgeAudioCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+    var t = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880; // A5 — softer than nudge C6/E6
+    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    osc.start(t); osc.stop(t + 0.2);
+  } catch(e) { /* no audio support */ }
 }
 
 // ─── NUDGE (สะกิด) ────────────────────────────────────────────────
