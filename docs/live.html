@@ -410,7 +410,10 @@
         <div id="nowKey" onclick="openTranspose()" title="แตะเพื่อ transpose">—</div>
         <div class="key-hint" id="keyHint">แตะเปลี่ยนคีย์</div>
       </div>
-      <div id="nowBpm"></div>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div id="nowBpm" onclick="openEditSong(_current)" style="cursor:pointer" title="แตะเพื่อแก้ไข BPM"></div>
+        <div class="key-hint">แตะแก้ BPM</div>
+      </div>
       <div id="nowSinger"></div>
     </div>
     <div id="nowNote"></div>
