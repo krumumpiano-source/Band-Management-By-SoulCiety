@@ -209,6 +209,12 @@
     /* note modal */
     #noteModal textarea{width:100%;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:var(--radius-sm);padding:10px 12px;font-size:0.97rem;font-family:inherit;outline:none;resize:none;height:90px;user-select:text;-webkit-user-select:text}
     #noteModal textarea:focus{border-color:var(--gold)}
+    /* ─── EDIT KEY/BPM MODAL ─── */
+    #editSongModal .edit-row{display:flex;gap:10px;margin-bottom:10px}
+    #editSongModal .edit-row label{font-size:0.8rem;color:var(--text2);margin-bottom:3px;display:block}
+    #editSongModal .edit-row input{width:100%;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:var(--radius-sm);padding:10px 12px;font-size:1rem;font-family:inherit;outline:none}
+    #editSongModal .edit-row input:focus{border-color:var(--gold)}
+    #editSongModal .edit-hint{font-size:0.72rem;color:var(--text3);margin-bottom:10px}
 
     /* toast */
     #toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 18px;border-radius:20px;font-size:0.85rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
@@ -538,6 +544,23 @@
   </div>
 </div>
 
+<!-- ── EDIT KEY/BPM MODAL ── -->
+<div class="modal-backdrop" id="editSongModal">
+  <div class="modal-sheet">
+    <h3>🎹 แก้คีย์ / BPM</h3>
+    <div id="editSongName" style="font-size:0.85rem;color:var(--gold);margin-bottom:10px"></div>
+    <div class="edit-row">
+      <div style="flex:1"><label>คีย์</label><input id="editKeyInput" placeholder="เช่น C, 2#, 3b" autocomplete="off"></div>
+      <div style="flex:1"><label>BPM</label><input id="editBpmInput" type="number" min="0" max="300" placeholder="เช่น 120"></div>
+    </div>
+    <div id="editSongHint" class="edit-hint"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeEditSong()">ยกเลิก</button>
+      <button class="modal-btn primary" onclick="submitEditSong()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── NUDGE FLASH + POPUP ── -->
 <div id="nudgeFlash"></div>
 <div id="nudgePopup">
@@ -798,7 +821,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (_modified) { e.preventDefault(); e.returnValue = ''; }
   });
   // touch close modals
-  ['transposeModal','noteModal','clipModal','qrModal'].forEach(function(id) {
+  ['transposeModal','noteModal','editSongModal','clipModal','qrModal'].forEach(function(id) {
     document.getElementById(id).addEventListener('click', function(e) {
       if (e.target === this) {
         this.classList.remove('show');
@@ -1838,6 +1861,102 @@ function submitNote() {
 }
 
 // ─────────────────────────────────────────────────────────────────
+//  EDIT KEY / BPM MODAL
+// ─────────────────────────────────────────────────────────────────
+var _editSongIdx = -1;
+
+function openEditSong(idx) {
+  _editSongIdx = idx;
+  var s = _playlist[idx];
+  if (!s) return;
+  document.getElementById('editSongName').textContent = '🎵 ' + s.name;
+  document.getElementById('editKeyInput').value = s._key || s.key || '';
+  document.getElementById('editBpmInput').value = s.bpm || '';
+  var role = localStorage.getItem('userRole') || 'member';
+  var isAdmin = (role === 'admin' || role === 'manager');
+  document.getElementById('editSongHint').textContent = isAdmin
+    ? '✅ แอดมิน/ผู้จัดการ — บันทึกลงคลังเพลงอัตโนมัติ'
+    : 'ℹ️ แก้ไขเฉพาะ Live Mode นี้เท่านั้น';
+  document.getElementById('editSongModal').classList.add('show');
+  setTimeout(function(){ document.getElementById('editKeyInput').focus(); }, 200);
+}
+
+function closeEditSong() {
+  document.getElementById('editSongModal').classList.remove('show');
+  _editSongIdx = -1;
+}
+
+function submitEditSong() {
+  if (_editSongIdx < 0) return;
+  var s = _playlist[_editSongIdx];
+  if (!s) { closeEditSong(); return; }
+  var newKey = document.getElementById('editKeyInput').value.trim();
+  var newBpm = parseInt(document.getElementById('editBpmInput').value, 10) || 0;
+
+  // Update playlist in memory
+  s._key = newKey ? formatKey(newKey) : '';
+  s.key = newKey;
+  s.bpm = newBpm;
+  _modified = true;
+
+  // Broadcast to all devices
+  broadcastEvent('edit_keybpm', { idx: _editSongIdx, key: newKey, bpm: newBpm });
+
+  // Re-render
+  if (_editSongIdx === _current) renderNowPlaying();
+  renderSongList();
+
+  // If admin/manager → also save to band_songs DB
+  var role = localStorage.getItem('userRole') || 'member';
+  var isAdmin = (role === 'admin' || role === 'manager');
+  if (isAdmin) {
+    _saveKeyBpmToLibrary(s.name, newKey, newBpm);
+  }
+
+  closeEditSong();
+  showToast('🎹 อัปเดต: ' + s.name);
+}
+
+function _saveKeyBpmToLibrary(songName, key, bpm) {
+  // Find song in _allSongs by name to get its ID
+  if (!_allSongsLoaded || _allSongs.length === 0) {
+    // Load songs first then save
+    apiCall('getSongs', { bandId: _bandId }, function(r) {
+      if (r && r.success && r.data) {
+        _allSongs = r.data;
+        _allSongsLoaded = true;
+        _doSaveKeyBpm(songName, key, bpm);
+      }
+    });
+  } else {
+    _doSaveKeyBpm(songName, key, bpm);
+  }
+}
+
+function _doSaveKeyBpm(songName, key, bpm) {
+  var nameLower = songName.trim().toLowerCase();
+  var match = null;
+  for (var i = 0; i < _allSongs.length; i++) {
+    if ((_allSongs[i].name || '').trim().toLowerCase() === nameLower) {
+      match = _allSongs[i];
+      break;
+    }
+  }
+  if (!match || !match.id) return; // song not in library, skip
+  var updateData = {};
+  if (key) updateData.key = key;
+  if (bpm) updateData.bpm = bpm;
+  if (Object.keys(updateData).length === 0) return;
+  apiCall('updateSong', { songId: match.id, data: updateData }, function(r) {
+    if (r && r.success) {
+      // Update cached _allSongs too
+      if (key) match.key = key;
+      if (bpm) match.bpm = bpm;
+    }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
 //  END BREAK (จบเบรค)
 // ─────────────────────────────────────────────────────────────────
 var _endBreakSaving = false; // guard against concurrent saves (multi-device race)
@@ -2068,6 +2187,17 @@ function initRealtime() {
       if (_playlist[d.idx]) { _playlist[d.idx]._note = d.note; _modified = true; }
       if (d.idx === _current) document.getElementById('nowNote').textContent = d.note || '';
       renderSongList();
+    })
+    .on('broadcast', { event: 'edit_keybpm' }, function(payload) {
+      var d = payload.payload || {};
+      var s = _playlist[d.idx];
+      if (s) {
+        if (d.key !== undefined) { s.key = d.key; s._key = d.key ? formatKey(d.key) : ''; }
+        if (d.bpm !== undefined) s.bpm = d.bpm;
+        _modified = true;
+        if (d.idx === _current) renderNowPlaying();
+        renderSongList();
+      }
     })
     .on('broadcast', { event: 'request_song' }, function(payload) {
       var d = payload.payload || {};
@@ -2941,6 +3071,7 @@ function openCtx(idx) {
     btns.push({ icon: '↩', label: 'ยกเลิก Skip', action: 'unskip' });
   }
   btns.push({ icon: '📝', label: 'เพิ่มโน้ต', action: 'note' });
+  btns.push({ icon: '🎹', label: 'แก้คีย์/BPM', action: 'editkeybpm' });
   btns.push({ icon: '🔁', label: 'Encore', action: 'encore' });
   btns.push({ icon: '', label: 'ลบ', action: 'remove' });
 
@@ -2975,6 +3106,7 @@ function ctxAction(action) {
     case 'skip':   skipSong(idx);     break;
     case 'unskip': _playlist[idx]._skipped = false; _modified = true; broadcastEvent('unskip_song', { idx: idx }); renderSongList(); break;
     case 'note':   openNote(idx);     break;
+    case 'editkeybpm': openEditSong(idx); break;
     case 'encore': addEncore(idx);    break;
     case 'remove': removeSongDirect(idx); break;
   }
