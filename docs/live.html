@@ -936,6 +936,10 @@ function renderSongList() {
         (s._skipped ? ' is-skipped' : '') +
       '" data-idx="' + i + '">' +
         '<div class="si-num">' + (i + 1) + '</div>' +
+        '<div class="si-arrows">' +
+          '<button class="si-arrow" onclick="moveSongUp(event,' + i + ')"' + (i === 0 ? ' disabled' : '') + ' title="\u0e40\u0e25\u0e37\u0e48\u0e2d\u0e19\u0e02\u0e36\u0e49\u0e19">▲</button>' +
+          '<button class="si-arrow" onclick="moveSongDown(event,' + i + ')"' + (i === _playlist.length - 1 ? ' disabled' : '') + ' title="\u0e40\u0e25\u0e37\u0e48\u0e2d\u0e19\u0e25\u0e07">▼</button>' +
+        '</div>' +
         dot +
         '<div class="si-content">' +
           '<div class="si-name">' + escHtml(s.name) + '</div>' +
@@ -943,10 +947,6 @@ function renderSongList() {
           (s._note ? '<div class="si-note">' + escHtml(s._note) + '</div>' : '') +
         '</div>' +
         (badges ? '<div class="si-badges">' + badges + '</div>' : '') +
-        '<div class="si-arrows">' +
-          '<button class="si-arrow" onclick="moveSongUp(event,' + i + ')"' + (i === 0 ? ' disabled' : '') + ' title="\u0e40\u0e25\u0e37\u0e48\u0e2d\u0e19\u0e02\u0e36\u0e49\u0e19">▲</button>' +
-          '<button class="si-arrow" onclick="moveSongDown(event,' + i + ')"' + (i === _playlist.length - 1 ? ' disabled' : '') + ' title="\u0e40\u0e25\u0e37\u0e48\u0e2d\u0e19\u0e25\u0e07">▼</button>' +
-        '</div>' +
         '<button class="si-del" onclick="removeSong(event,' + i + ')" title="\u0e25\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e19\u0e35\u0e49">\u2715</button>' +
       '</div>'
     );
