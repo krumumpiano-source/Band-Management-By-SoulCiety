@@ -182,6 +182,7 @@
   <script>
   var quotations = [];
   var calcData   = null;
+  var _qIsManager = (function(){ var r=localStorage.getItem('userRole')||'member'; return r==='admin'||r==='manager'; })();
 
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth();
@@ -199,6 +200,11 @@
     }
 
     loadQuotations();
+
+    // Hide write buttons for members
+    if (!_qIsManager) {
+      document.querySelectorAll('.page-header .btn-primary, #calcBanner .btn-primary').forEach(function(b){ b.style.display='none'; });
+    }
   });
 
   function loadQuotations(){
@@ -228,11 +234,11 @@
         +'<td style="font-weight:700;color:var(--premium-gold)">'+formatCurrency(q.total||0)+'</td>'
         +'<td><span class="badge '+(badgeMap[q.status]||'badge-draft')+'">'+escapeHtml(statusMap[q.status]||q.status||'ร่าง')+'</span></td>'
         +'<td style="display:flex;gap:4px;flex-wrap:wrap">'
-        +'<button class="btn btn-ghost btn-sm" onclick="openModal(\''+escapeHtml(q.quotationId||'')+'\')">✏️</button>'
+        +(_qIsManager ? '<button class="btn btn-ghost btn-sm" onclick="openModal(\''+escapeHtml(q.quotationId||'')+'\')">✏️</button>' : '')
         +'<button class="btn btn-secondary btn-sm" onclick="printQuot(\''+escapeHtml(q.quotationId||'')+'\')">🖨️</button>'
         +'<button class="btn btn-secondary btn-sm" onclick="savePdf(\''+escapeHtml(q.quotationId||'')+'\')">📄 PDF</button>'
         +(approved ? '<button class="btn btn-primary btn-sm" onclick="goToContract(\''+escapeHtml(q.quotationId||'')+'\')">📜 สัญญา</button>' : '')
-        +'<button class="btn btn-danger btn-sm" onclick="deleteQuot(\''+escapeHtml(q.quotationId||'')+'\')">🗑️</button>'
+        +(_qIsManager ? '<button class="btn btn-danger btn-sm" onclick="deleteQuot(\''+escapeHtml(q.quotationId||'')+'\')">🗑️</button>' : '')
         +'</td></tr>';
     }).join('');
   }

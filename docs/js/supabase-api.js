@@ -82,6 +82,12 @@
     function toCamelList(arr) { return (arr || []).map(toCamel); }
 
     // ── sbRun — Supabase API call interface ──────────────────────
+    function friendlyError(msg) {
+      if (!msg) return msg;
+      if (/row.level security|policy/i.test(msg)) return 'สิทธิ์ไม่เพียงพอ — เฉพาะผู้จัดการวงเท่านั้นที่ทำรายการนี้ได้';
+      return msg;
+    }
+
     function sbRun(action, data, callback) {
       dispatch(action, data || {}).then(function (result) {
         if (result && result.authError) {
@@ -89,10 +95,12 @@
           window.location.replace('index.html');
           return;
         }
+        if (result && !result.success && result.message) result.message = friendlyError(result.message);
         if (callback) callback(result);
       }).catch(function (err) {
         console.error('[sbRun]', action, err);
-        if (callback) callback({ success: false, message: err.message || err.toString() });
+        var msg = friendlyError(err.message || err.toString());
+        if (callback) callback({ success: false, message: msg });
       });
     }
     global.sbRun   = sbRun;

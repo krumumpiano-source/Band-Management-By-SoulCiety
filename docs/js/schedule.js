@@ -4,6 +4,7 @@
  * Ported from old frontend — uses apiCall() instead of apiCall()
  */
 
+var _schIsManager = (function(){ var r = localStorage.getItem('userRole')||'member'; return r==='admin'||r==='manager'; })();
 var currentBandId = null;
 var bandMembersData = [];
 var scheduleData = [];
@@ -228,8 +229,8 @@ function renderScheduleTable() {
     var typeLabel = gigTypeLabel(gig.type);
     var price = parseFloat(gig.price || 0).toLocaleString('th-TH');
     var actions = payoutLink(gig, idx) +
-      '<button type="button" class="btn-icon-tiny edit" onclick="editGig(' + idx + ')" title="แก้ไข">✏️</button>' +
-      '<button type="button" class="btn-icon-tiny delete" onclick="deleteGig(' + idx + ')" title="ลบ">🗑️</button>';
+      (_schIsManager ? '<button type="button" class="btn-icon-tiny edit" onclick="editGig(' + idx + ')" title="แก้ไข">✏️</button>' +
+      '<button type="button" class="btn-icon-tiny delete" onclick="deleteGig(' + idx + ')" title="ลบ">🗑️</button>' : '');
     var details = '<div class="gig-title">' + escapeHtml(gig.description || '-') + '</div>' +
       (gig.contact ? '<div class="gig-info">📞 ' + escapeHtml(gig.contact) + '</div>' : '');
 
@@ -536,7 +537,10 @@ document.addEventListener('DOMContentLoaded', function() {
   var applyBtn = getEl('applyFiltersBtn');
   if (applyBtn) applyBtn.addEventListener('click', applyFilters);
   var addBtn = getEl('addExternalGigBtn');
-  if (addBtn) addBtn.addEventListener('click', openAddExternalGigModal);
+  if (addBtn) {
+    if (_schIsManager) { addBtn.addEventListener('click', openAddExternalGigModal); }
+    else { addBtn.style.display = 'none'; }
+  }
   var closeBtn = getEl('closeModalBtn');
   if (closeBtn) closeBtn.addEventListener('click', closeModal);
   var cancelBtn = getEl('cancelGigBtn');

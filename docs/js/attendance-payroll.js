@@ -21,7 +21,7 @@ var _apInited     = false;
 var apWeekStart   = 1;  // default Monday (0=Sun..6=Sat)
 var apWeekEnd     = 0;  // default Sunday
 var _apUserEditedDates = false; // true once user manually changes startDate
-var apIsAdmin     = (localStorage.getItem('userRole') || '') === 'admin';
+var apIsAdmin     = (function(){ var r=localStorage.getItem('userRole')||'member'; return r==='admin'||r==='manager'; })();
 
 /* ── Helpers ────────────────────────────────────────── */
 function apEl(id) { return document.getElementById(id); }

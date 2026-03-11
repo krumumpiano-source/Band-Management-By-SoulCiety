@@ -417,6 +417,15 @@
         loadNotifAdminPanel();
         loadAutoNotifState();
       }
+      // Hide all write-buttons for members
+      if (_role !== 'admin' && _role !== 'manager') {
+        document.querySelectorAll('#saveBtn, #addVenueNameBtn, .btn-danger, [onclick*="remove"], [onclick*="delete"]').forEach(function(b){ b.style.display='none'; });
+        document.querySelectorAll('input, select, textarea').forEach(function(el){
+          if (el.type !== 'hidden') el.disabled = true;
+        });
+        var hdr = document.querySelector('.page-header');
+        if (hdr) { var info = document.createElement('div'); info.className = 'badge'; info.style.cssText = 'background:#f59e0b;color:#fff;padding:6px 14px;border-radius:8px;font-size:var(--text-sm)'; info.textContent = '👁️ โหมดดูอย่างเดียว — เฉพาะผู้จัดการวงแก้ไขได้'; hdr.appendChild(info); }
+      }
     });
 
     /* ── Auto-Notification Toggle + Timing ── */

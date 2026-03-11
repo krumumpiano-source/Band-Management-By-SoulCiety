@@ -216,6 +216,13 @@
       if (typeof renderMainNav === 'function') renderMainNav('mainNav');
       if (typeof applyTranslations === 'function') applyTranslations();
       if (typeof apInitPage === 'function') apInitPage();
+      // Read-only mode for members
+      if (!apIsAdmin) {
+        var sb = document.getElementById('saveBtn'); if (sb) sb.style.display = 'none';
+        document.querySelectorAll('.btn-danger').forEach(function(b){ b.style.display='none'; });
+        var hdr = document.querySelector('.page-header');
+        if (hdr) { var info = document.createElement('span'); info.style.cssText = 'background:#f59e0b;color:#fff;padding:6px 14px;border-radius:8px;font-size:var(--text-sm)'; info.textContent = '👁️ ดูอย่างเดียว'; hdr.appendChild(info); }
+      }
     });
   </script>
 </body>

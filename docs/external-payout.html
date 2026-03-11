@@ -203,7 +203,7 @@
           : '<span style="color:#c53030;font-size:11px;font-weight:700">⏸ รอจ่าย</span>')+'</div>'
         +'<div class="mf-action">'
         +(isPaid ? '<button class="btn-pay paid" disabled>จ่ายแล้ว ✅</button>'
-          : '<button class="btn-pay" onclick="openPayModal(\''+jId+'\',\''+mId+'\',\''+mNm+'\','+(mf.fee||0)+')">💰 เบิกจ่าย</button>')
+          : (_epIsManager ? '<button class="btn-pay" onclick="openPayModal(\''+jId+'\',\''+mId+'\',\''+mNm+'\','+(mf.fee||0)+')">💰 เบิกจ่าย</button>' : '<span style="color:#c53030;font-size:11px">⏸ รอจ่าย</span>'))
         +'</div></div>';
     }).join('') : '<p style="color:var(--premium-text-muted);font-size:var(--text-sm);padding:8px 0">ไม่มีข้อมูลสมาชิก</p>';
 
@@ -262,8 +262,8 @@
         +'</div>'
       +'</div>'
       +'<div class="job-actions">'
-        +(job.status!=='completed'?'<button class="btn btn-ghost btn-sm" onclick="markJobComplete(\''+esc(job.id||'')+'\')">🎉 งานเสร็จสิ้น</button>':'')
-        +'<button class="btn btn-ghost btn-sm" onclick="deleteJob(\''+esc(job.id||'')+'\')">🗑️ ลบ</button>'
+        +(_epIsManager && job.status!=='completed'?'<button class="btn btn-ghost btn-sm" onclick="markJobComplete(\''+esc(job.id||'')+'\')">🎉 งานเสร็จสิ้น</button>':'')
+        +(_epIsManager?'<button class="btn btn-ghost btn-sm" onclick="deleteJob(\''+esc(job.id||'')+'\')">🗑️ ลบ</button>':'')
       +'</div></div>';
   }
 
@@ -344,7 +344,7 @@
         return '<tr><td>'+esc(row.payeeName||'')+'</td><td>'+esc(row.payeeType||'')+'</td>'
           +'<td>'+fmt(row.amount||0)+'</td><td>'+esc(row.date||'')+'</td>'
           +'<td>'+esc(row.notes||'')+'</td>'
-          +'<td><button class="btn btn-danger btn-sm" onclick="delPayout(\''+esc(row.id||'')+'\')">🗑️</button></td></tr>';
+          +'<td>'+(_epIsManager?'<button class="btn btn-danger btn-sm" onclick="delPayout(\''+esc(row.id||'')+'\')">🗑️</button>':'')+'</td></tr>';
       }).join('');
     });
   }
@@ -359,6 +359,7 @@
     });
   }
 
+  var _epIsManager = (function(){ var r=localStorage.getItem('userRole')||'member'; return r==='admin'||r==='manager'; })();
   function esc(s){ var d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
   function fmt(n){ return (n||0).toLocaleString('th-TH')+' ฿'; }
 
@@ -368,6 +369,12 @@
     if(typeof applyTranslations==='function') applyTranslations();
     document.getElementById('epDate').value = (function(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(new Date());
     loadJobs();
+    // Hide write features for members
+    if (!_epIsManager) {
+      document.querySelectorAll('.page-header .btn-primary, #epExtForm, #payModalConfirmBtn').forEach(function(b){ b.style.display='none'; });
+      var hdr = document.querySelector('.page-header');
+      if (hdr) { var info = document.createElement('span'); info.style.cssText = 'background:#f59e0b;color:#fff;padding:6px 14px;border-radius:8px;font-size:var(--text-sm)'; info.textContent = '👁️ ดูอย่างเดียว'; hdr.appendChild(info); }
+    }
   });
   </script>
 </body>
