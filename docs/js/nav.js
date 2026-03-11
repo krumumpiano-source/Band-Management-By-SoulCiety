@@ -64,7 +64,8 @@ function renderMainNav(containerId) {
     navLink('band-info',     '👥 ' + _t('nav_bandInfo'),     'สมาชิก ช่องทางติดต่อ ร้านที่เล่น') +
     navLink('my-profile',    '👤 ' + _t('nav_myProfile'),    'ข้อมูลส่วนตัวและอัตราค่าตัว') +
     navLink('setlist',        '🎼 เซ็ตลิสต์',                 'จัดลำดับเพลงสำหรับงาน') +
-    navLink('user-manual',    '📖 คู่มือใช้งาน',              'วิธีใช้งานแต่ละฟีเจอร์');
+    navLink('user-manual',    '📖 คู่มือใช้งาน',              'วิธีใช้งานแต่ละฟีเจอร์') +
+    navLink('games',          '🎮 เกมส์ดนตรี',                'เล่นเกมส์กับสมาชิกในวง');
 
   // ── ลิงก์อัปเกรด (แสดงเฉพาะ free/lite) ──────────────
   var _plan = (localStorage.getItem('band_plan') || 'free').toLowerCase();
