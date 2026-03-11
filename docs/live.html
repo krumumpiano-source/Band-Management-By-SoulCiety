@@ -129,6 +129,11 @@
     .badge-req{background:#7c3aed;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:10px;white-space:nowrap}
     .badge-encore{background:#0e7490;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:10px}
     .badge-skip{background:var(--bg4);color:var(--text2);font-size:0.65rem;padding:1px 6px;border-radius:10px;cursor:pointer}
+    /* reorder arrows */
+    .si-arrows{display:flex;flex-direction:column;gap:1px;flex-shrink:0;margin-right:2px}
+    .si-arrow{background:none;border:1px solid #333;color:#6b7280;font-size:0.7rem;width:24px;height:20px;cursor:pointer;border-radius:5px;display:flex;align-items:center;justify-content:center;padding:0;transition:color .15s,background .15s,border-color .15s;line-height:1}
+    .si-arrow:active{color:var(--gold);background:rgba(212,168,67,.12);border-color:rgba(212,168,67,.4)}
+    .si-arrow:disabled{opacity:.2;cursor:default}
     /* delete button */
     .si-del{flex-shrink:0;background:none;border:none;color:#4b5563;font-size:1rem;padding:4px 6px;cursor:pointer;border-radius:6px;line-height:1;transition:color .15s,background .15s}
     .si-del:active{color:#ef4444;background:rgba(239,68,68,0.1)}
@@ -938,6 +943,10 @@ function renderSongList() {
           (s._note ? '<div class="si-note">' + escHtml(s._note) + '</div>' : '') +
         '</div>' +
         (badges ? '<div class="si-badges">' + badges + '</div>' : '') +
+        '<div class="si-arrows">' +
+          '<button class="si-arrow" onclick="moveSongUp(event,' + i + ')"' + (i === 0 ? ' disabled' : '') + ' title="\u0e40\u0e25\u0e37\u0e48\u0e2d\u0e19\u0e02\u0e36\u0e49\u0e19">▲</button>' +
+          '<button class="si-arrow" onclick="moveSongDown(event,' + i + ')"' + (i === _playlist.length - 1 ? ' disabled' : '') + ' title="\u0e40\u0e25\u0e37\u0e48\u0e2d\u0e19\u0e25\u0e07">▼</button>' +
+        '</div>' +
         '<button class="si-del" onclick="removeSong(event,' + i + ')" title="\u0e25\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e19\u0e35\u0e49">\u2715</button>' +
       '</div>'
     );
@@ -955,7 +964,8 @@ function renderSongList() {
 
     item.addEventListener('touchstart', function(e) {
       if (e.target.classList.contains('badge-skip') ||
-          e.target.classList.contains('si-del')) return;
+          e.target.classList.contains('si-del') ||
+          e.target.classList.contains('si-arrow')) return;
       _sx = e.touches[0].clientX;
       _sy = e.touches[0].clientY;
       _didSwipe = false;
@@ -1005,6 +1015,7 @@ function renderSongList() {
       if (_drag.active || _didDrag || _didSwipe) return;
       if (e.target.classList.contains('badge-skip')) return;
       if (e.target.classList.contains('si-del')) return;
+      if (e.target.classList.contains('si-arrow')) return;
       // Detect double-tap: second click on same idx within 260ms
       if (_lastTapIdx === idx && _tapTimer) {
         clearTimeout(_tapTimer); _tapTimer = null; _lastTapIdx = -1;
@@ -2845,6 +2856,28 @@ function ctxAction(action) {
     case 'encore': addEncore(idx);    break;
     case 'remove': removeSongDirect(idx); break;
   }
+}
+
+function moveSongUp(e, idx) {
+  e.stopPropagation();
+  if (idx <= 0) return;
+  _doMoveSong(idx, idx - 1);
+}
+function moveSongDown(e, idx) {
+  e.stopPropagation();
+  if (idx >= _playlist.length - 1) return;
+  _doMoveSong(idx, idx + 1);
+}
+function _doMoveSong(from, to) {
+  var song = _playlist.splice(from, 1)[0];
+  _playlist.splice(to, 0, song);
+  if (_current === from) _current = to;
+  else if (from < to && _current > from && _current <= to) _current--;
+  else if (from > to && _current < from && _current >= to) _current++;
+  _modified = true;
+  renderNowPlaying();
+  renderSongList();
+  broadcastEvent('reorder', { from: from, to: to });
 }
 
 function removeSongDirect(idx) {
