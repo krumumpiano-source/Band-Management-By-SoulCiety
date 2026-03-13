@@ -6,6 +6,8 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
@@ -17,7 +19,7 @@
   <style>
     .manual-layout{display:grid;grid-template-columns:240px 1fr;gap:var(--spacing-xl)}
     @media(max-width:768px){.manual-layout{grid-template-columns:1fr}}
-    .manual-toc{position:sticky;top:80px}
+    .manual-toc{position:sticky;top:calc(80px + env(safe-area-inset-top,0px))}
     .toc-item{padding:var(--spacing-xs) var(--spacing-md);border-left:3px solid transparent;font-size:var(--text-sm);color:var(--premium-text-muted);cursor:pointer;transition:all .15s;display:block;text-decoration:none}
     .toc-item:hover,.toc-item.active{border-left-color:var(--premium-gold);color:var(--premium-gold);background:var(--premium-off-white)}
     .manual-section{margin-bottom:var(--spacing-2xl)}

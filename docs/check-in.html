@@ -6,6 +6,8 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
@@ -57,7 +59,7 @@
     .ci-sub-fields .form-group{margin-bottom:var(--spacing-sm)}
     .ci-sub-fields .form-group:last-child{margin-bottom:0}
     .ci-sub-name-chip{display:inline-flex;align-items:center;gap:4px;background:var(--premium-gold);color:#fff;padding:3px 10px;border-radius:var(--radius-full,999px);font-size:12px;font-weight:600;margin-top:4px}
-    #toast{display:none;position:fixed;bottom:24px;right:24px;color:#fff;padding:12px 20px;border-radius:var(--radius-md);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.25);background:var(--premium-gold)}
+    #toast{display:none;position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));right:24px;color:#fff;padding:12px 20px;border-radius:var(--radius-md);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.25);background:var(--premium-gold)}
     #toast.show{display:block}
 
     /* Leave button */

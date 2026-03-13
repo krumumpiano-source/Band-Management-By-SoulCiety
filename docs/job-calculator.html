@@ -6,6 +6,8 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
@@ -17,7 +19,7 @@
   <style>
     .jc-grid{display:grid;grid-template-columns:1fr 380px;gap:var(--spacing-xl);align-items:start}
     @media(max-width:900px){.jc-grid{grid-template-columns:1fr}}
-    .jc-sticky{position:sticky;top:80px}
+    .jc-sticky{position:sticky;top:calc(80px + env(safe-area-inset-top,0px))}
     .sec-head{display:flex;align-items:center;gap:var(--spacing-sm);margin-bottom:var(--spacing-md);padding-bottom:var(--spacing-sm);border-bottom:2px solid var(--premium-gold)}
     .sec-head .sec-icon{font-size:1.4rem}
     .sec-head h3{margin:0;font-size:var(--text-lg);color:var(--premium-gold)}

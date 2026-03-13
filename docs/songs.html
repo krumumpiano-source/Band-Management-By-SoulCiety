@@ -6,6 +6,8 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
@@ -497,7 +499,7 @@ html{scroll-behavior:smooth}
 .sel-cb input[type=checkbox]{width:20px;height:20px;cursor:pointer;accent-color:var(--premium-gold);margin:0}
 .in-lib-tag{font-size:10px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;white-space:nowrap;margin-left:6px}
 /* Floating select bar */
-#selectBar{position:fixed;bottom:0;left:0;right:0;background:#1a1a1a;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:3000;box-shadow:0 -4px 20px rgba(0,0,0,.4);flex-wrap:wrap}
+#selectBar{position:fixed;bottom:0;left:0;right:0;background:#1a1a1a;color:#fff;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px)) 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:3000;box-shadow:0 -4px 20px rgba(0,0,0,.4);flex-wrap:wrap}
 #selectBar .sb-count{font-size:14px;font-weight:600;flex:1}
 #selectBar .sb-btn{border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:600;cursor:pointer;border:none;min-height:unset}
 #selectBar .sb-add{background:var(--premium-gold);color:#fff}
@@ -570,7 +572,7 @@ html{scroll-behavior:smooth}
 #plAddBar{
   position:fixed;bottom:0;left:0;right:0;
   background:#1e293b;color:#fff;
-  padding:12px 20px;
+  padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px)) 20px;
   display:none;
   align-items:center;justify-content:space-between;gap:12px;
   z-index:3100;

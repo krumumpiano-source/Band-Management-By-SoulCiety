@@ -281,7 +281,7 @@
       if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'maintenanceOverlay';
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#fff;text-align:center;padding:24px';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:#fff;text-align:center;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))';
         overlay.innerHTML = '<div style="font-size:3rem">🔧</div><h2 style="font-size:1.4rem;margin:0">ระบบปิดปรับปรุงชั่วคราว</h2><p style="color:rgba(255,255,255,.7);margin:0">กรุณากลับมาใหม่ในภายหลัง</p>';
         document.body.appendChild(overlay);
       }
@@ -297,7 +297,7 @@
         var typeColor = typeColors[cfg.announce_type || 'info'] || typeColors.info;
         var bar = document.createElement('div');
         bar.id = 'announceBanner';
-        bar.style.cssText = 'position:sticky;top:0;z-index:9999;background:' + typeColor + ';color:#fff;text-align:center;padding:8px 16px;font-size:.85rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px';
+        bar.style.cssText = 'position:sticky;top:env(safe-area-inset-top,0px);z-index:9999;background:' + typeColor + ';color:#fff;text-align:center;padding:8px 16px;font-size:.85rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px';
         bar.innerHTML = escapeHtml(banner)
           + '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:1rem;padding:0 4px;line-height:1">✕</button>';
         document.body.insertBefore(bar, document.body.firstChild);
