@@ -152,8 +152,9 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
 /* 3-column song grid */
 .result-columns{
-  display:flex;
-  flex-direction:column;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:0;
   contain:layout;
   opacity:1;
   transition:opacity .12s ease;
@@ -163,42 +164,46 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .result-item{
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:7px 12px;
+  gap:6px;
+  padding:8px 10px;
   border-bottom:1px solid var(--premium-light-gray);
+  border-right:1px solid var(--premium-light-gray);
   transition:background .12s;
   cursor:default;
-  min-height:44px;
+  min-height:52px;
 }
+.result-item:nth-child(3n){border-right:none}
 .result-item:hover{background:#fafaf9}
 .result-item-left{flex:1;min-width:0;overflow:hidden}
 
 .song-title{
-  font-size:13px;
+  font-size:12px;
   font-weight:700;
   font-family:var(--font-family-display);
   color:var(--premium-text);
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  margin-bottom:0;
+  margin-bottom:1px;
   line-height:1.35;
 }
 .song-artist{
-  display:inline;
-  font-size:11px;
+  font-size:10px;
   color:#6b7280;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
   line-height:1.3;
 }
 .song-meta{
-  display:inline-flex;
+  display:flex;
   align-items:center;
   gap:4px;
   font-size:10px;
   color:var(--premium-text-muted);
   white-space:nowrap;
-  vertical-align:middle;
-  margin-left:6px;
+  overflow:hidden;
+  margin-top:1px;
   line-height:1.4;
 }
 .song-meta .sm-tag{
@@ -442,6 +447,9 @@ html{scroll-behavior:smooth}
 }
 
 @media(max-width:899px){
+  .result-columns{grid-template-columns:repeat(2,1fr)}
+  .result-item:nth-child(3n){border-right:1px solid var(--premium-light-gray)}
+  .result-item:nth-child(2n){border-right:none}
   .container{padding:12px}
   .panel{padding:12px}
   .tp-btn,.move-btn,.del{min-width:36px;min-height:36px;padding:8px;display:inline-flex;align-items:center;justify-content:center}
@@ -449,7 +457,14 @@ html{scroll-behavior:smooth}
 }
 
 @media(max-width:599px){
-  .container{padding:10px}
+  .result-columns{grid-template-columns:repeat(2,1fr)}
+  .result-item{border-right:1px solid var(--premium-light-gray);min-height:56px;padding:10px 8px}
+  .result-item:nth-child(2n){border-right:none}
+  .result-item:nth-child(3n){border-right:1px solid var(--premium-light-gray)}
+  .result-item:nth-child(2n){border-right:none}
+  .song-title{font-size:13px}
+  .add-song-btn{min-width:38px;min-height:38px;font-size:17px}
+  .suggest-song-btn,.edit-band-btn,.del-band-btn{min-width:34px;min-height:34px}
   .panel{padding:10px}
   .filters{grid-template-columns:1fr 1fr;gap:8px}
   .action-buttons{flex-direction:column}
