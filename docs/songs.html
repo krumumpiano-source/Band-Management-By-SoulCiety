@@ -2366,8 +2366,9 @@ function closeHistory() {
     <label>หมายเหตุ (ไม่บังคับ)</label>
     <textarea id="sugNote" placeholder="เช่น ชื่อศิลปินสะกดผิด, คีย์ไม่ตรง ฯลฯ"></textarea>
   </div>
-  <div class="sug-actions">
+  <div class="sug-actions" style="flex-wrap:wrap;gap:8px">
     <button class="sug-btn-cancel" onclick="closeSuggestModal()">ยกเลิก</button>
+    <button id="sugDeleteBtn" onclick="deleteGlobalSong()" style="display:none;background:#fee2e2;color:#b91c1c;border:1.5px solid #fca5a5;border-radius:10px;padding:0 16px;height:42px;font-size:13px;font-weight:600;cursor:pointer;min-height:unset">🗑️ ลบเพลง</button>
     <button class="sug-btn-send" id="sugSendBtn" onclick="submitSuggestion()">📤 ส่งแนะนำ</button>
   </div>
 </div>
@@ -2422,12 +2423,35 @@ function openDirectEditModal(songId, idx) {
   document.getElementById('sugModalHint').style.display = 'none';
   document.getElementById('sugNoteField').style.display = 'none';
   document.getElementById('sugSendBtn').textContent = '💾 บันทึก';
+  document.getElementById('sugDeleteBtn').style.display = 'inline-flex';
   _fillSuggestModal(song, songId);
   document.getElementById('suggestModal').style.display = 'block';
 }
 
 function closeSuggestModal() {
   document.getElementById('suggestModal').style.display = 'none';
+  document.getElementById('sugDeleteBtn').style.display = 'none';
+  _editDirectMode = false;
+}
+
+function deleteGlobalSong() {
+  var songId = document.getElementById('sugSongId').value;
+  var songName = document.getElementById('sugName').value || 'เพลงนี้';
+  if (!songId) return;
+  if (!confirm('ยืนยันลบ "' + songName + '" ออกจากคลังกลาง?\nการลบนี้ไม่สามารถกู้คืนได้')) return;
+  var btn = document.getElementById('sugDeleteBtn');
+  btn.disabled = true; btn.textContent = 'กำลังลบ...';
+  apiCall('deleteSong', { songId: songId }, function(r) {
+    btn.disabled = false; btn.textContent = '🗑️ ลบเพลง';
+    if (r && r.success) {
+      showToast('✅ ลบเพลงเรียบร้อย', 'success');
+      closeSuggestModal();
+      _pageData = _pageData.filter(function(s) { return (s.id || s.songId || '') !== songId; });
+      renderPage();
+    } else {
+      showToast((r && r.message) || 'เกิดข้อผิดพลาด ลบไม่สำเร็จ', 'error');
+    }
+  });
 }
 
 document.getElementById('suggestModal').addEventListener('click', function(e) {
