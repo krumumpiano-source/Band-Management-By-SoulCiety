@@ -507,6 +507,7 @@ html{scroll-behavior:smooth}
   40%{background:#fbbf24;color:#fff}
   100%{background:#fef9ee}
 }
+.row-added{background:#fffbeb !important;border-left:3px solid var(--premium-gold)}
 .sel-cb{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:36px;height:36px}
 .sel-cb input[type=checkbox]{width:20px;height:20px;cursor:pointer;accent-color:var(--premium-gold);margin:0}
 .in-lib-tag{font-size:10px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;white-space:nowrap;margin-left:6px}
@@ -871,6 +872,7 @@ var _bandLibraryIds = {}; // song_id => true for songs already in band library (
 var _bandLibraryLoaded = false;
 var _isSongManager = false; // true if user is admin/manager or in band's songManagers list
 var _editDirectMode = false; // true when suggest modal is being used for direct edit (not suggestion)
+var _addedSongIds = {}; // song_id => true when added to playlist in this session
 
 var domCache = {};
 function getEl(id) {
@@ -1300,9 +1302,10 @@ function renderPage() {
         }
       } else if (_currentSource === 'band') {
         var libType = s.libType || 'owned';
+        var isRowAdded = !!_addedSongIds[songId];
         if (libType === 'ref') {
           buf.push(
-            '<div class="result-item tap-add" data-index="' + idx + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
+            '<div class="result-item tap-add' + (isRowAdded ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
             '<div class="result-item-left">' +
             '<div class="song-title">' + titleHtml + newTag + '</div>' +
             artistHtml + metaHtml +
@@ -1314,7 +1317,7 @@ function renderPage() {
           );
         } else {
           buf.push(
-            '<div class="result-item tap-add" data-index="' + idx + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
+            '<div class="result-item tap-add' + (isRowAdded ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
             '<div class="result-item-left">' +
             '<div class="song-title">' + titleHtml + newTag + '</div>' +
             artistHtml + metaHtml +
@@ -1329,8 +1332,9 @@ function renderPage() {
         // Global source — suggest for everyone (updateSong targets band_songs so cannot edit global songs)
         var isInBand = _bandLibraryIds && !!_bandLibraryIds[songId];
         var inBandBadge = isInBand ? '<span class="in-lib-tag">\u2705 \u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07</span>' : '';
+        var isRowAddedG = !!_addedSongIds[songId];
         buf.push(
-          '<div class="result-item tap-add" data-index="' + idx + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
+          '<div class="result-item tap-add' + (isRowAddedG ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
           '<div class="result-item-left">' +
           '<div class="song-title">' + titleHtml + newTag + inBandBadge + '</div>' +
           artistHtml + metaHtml +
@@ -1843,12 +1847,14 @@ function tapAddSong(e, idx) {
   if (!song) return;
   addSong(song);
   _lastAddedIndex = playlistData.length - 1;
-  // flash the row
+  var songId = song.id || song.songId || '';
+  if (songId) _addedSongIds[songId] = true;
+  // flash the row then keep it highlighted
   var row = e.currentTarget;
   if (row) {
     row.classList.remove('just-added');
     void row.offsetWidth; // reflow
-    row.classList.add('just-added');
+    row.classList.add('just-added', 'row-added');
     setTimeout(function(){ row.classList.remove('just-added'); }, 420);
   }
   var name = song.name || '';
@@ -1868,6 +1874,17 @@ function tapAddSong(e, idx) {
 function undoLastAdd() {
   clearTimeout(_undoToastTimer);
   if (_lastAddedIndex >= 0 && _lastAddedIndex < playlistData.length) {
+    var undone = playlistData[_lastAddedIndex];
+    if (undone) {
+      var uid = undone.id || undone.songId || '';
+      if (uid) delete _addedSongIds[uid];
+      // remove highlight from visible row
+      var rows = document.querySelectorAll('.tap-add.row-added');
+      for (var i = rows.length - 1; i >= 0; i--) {
+        var rid = rows[i].getAttribute('data-songid') || '';
+        if (rid === uid) { rows[i].classList.remove('row-added'); break; }
+      }
+    }
     playlistData.splice(_lastAddedIndex, 1);
     renderPlaylist();
   }
