@@ -1994,7 +1994,7 @@ function submitEditSong() {
 
   // Update playlist in memory
   if (!_editBpmOnly) {
-    s._key = newKey ? formatKey(newKey) : '';
+    s._key = newKey;
     s.key = newKey;
   }
   s.bpm = newBpm;
@@ -2295,7 +2295,7 @@ function initRealtime() {
       var d = payload.payload || {};
       var s = _playlist[d.idx];
       if (s) {
-        if (d.key !== undefined) { s.key = d.key; s._key = d.key ? formatKey(d.key) : ''; }
+        if (d.key !== undefined) { s.key = d.key; s._key = d.key; }
         if (d.bpm !== undefined) s.bpm = d.bpm;
         _modified = true;
         if (d.idx === _current) renderNowPlaying();
