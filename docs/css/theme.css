@@ -66,8 +66,8 @@
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
-html{font-size:16px;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;scroll-behavior:smooth}
-body{
+html{font-size:16px;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;scroll-behavior:smooth;overflow-x:hidden}
+body{overflow-x:hidden;
   font-family:var(--font-family-primary);
   font-size:var(--text-base);
   line-height:var(--leading-normal);
@@ -372,3 +372,36 @@ tbody td{padding:10px var(--spacing-md);color:var(--premium-text);font-size:var(
   opacity:0;transition:opacity .2s;pointer-events:none;
 }
 .fab-help:hover .fab-help-label{opacity:1}
+/* ============================================
+   Accessibility — Text Scale & High Contrast
+   ============================================ */
+body.text-scale-lg {
+  --text-xs: 1.015rem; --text-sm: 1.172rem; --text-base: 1.25rem;
+  --text-lg: 1.406rem; --text-xl: 1.563rem; --text-2xl: 1.875rem;
+  --text-3xl: 2.344rem; --text-4xl: 2.813rem;
+}
+body.text-scale-lg .btn { min-height: 52px; font-size: var(--text-sm); }
+body.text-scale-lg .form-control,
+body.text-scale-lg .form-group input,
+body.text-scale-lg .form-group select,
+body.text-scale-lg .form-group textarea { min-height: 52px; font-size: var(--text-base); }
+
+body.text-scale-xl {
+  --text-xs: 1.219rem; --text-sm: 1.406rem; --text-base: 1.5rem;
+  --text-lg: 1.688rem; --text-xl: 1.875rem; --text-2xl: 2.25rem;
+  --text-3xl: 2.813rem; --text-4xl: 3.375rem;
+}
+body.text-scale-xl .btn { min-height: 60px; font-size: var(--text-sm); }
+body.text-scale-xl .form-control,
+body.text-scale-xl .form-group input,
+body.text-scale-xl .form-group select,
+body.text-scale-xl .form-group textarea { min-height: 60px; font-size: var(--text-base); }
+
+body.high-contrast {
+  --premium-text-light: #2d3748;
+  --premium-text-muted: #4a5568;
+  --premium-text: #1a202c;
+  --premium-border: #a0aec0;
+}
+body.high-contrast .badge { font-weight: 700; }
+body.high-contrast .nav-link-desc { color: #4a5568; }

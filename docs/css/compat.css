@@ -18,6 +18,8 @@ textarea::placeholder { color:var(--premium-text-muted);opacity:.6 }
 @media(max-width:768px){
   input,select,textarea{font-size:16px!important}
 }
+/* Prevent any element from overflowing viewport width */
+img,video,canvas,iframe{max-width:100%;height:auto}
 
 /* Smooth touch scrolling on scrollable containers */
 .nav-menu-wrap,

@@ -502,3 +502,14 @@
   #faqBotPanel { right: 8px; width: calc(100vw - 16px); }
 }
 
+
+/* ============================================
+   Accessibility — Nav link size override
+   ============================================ */
+body.text-scale-lg .nav-link { padding: 14px 20px; font-size: 1.1rem; }
+body.text-scale-lg .nav-link-desc { font-size: 0.85rem; }
+body.text-scale-lg .sidebar-user-name { font-size: 1.15rem; }
+
+body.text-scale-xl .nav-link { padding: 16px 20px; font-size: 1.3rem; }
+body.text-scale-xl .nav-link-desc { font-size: 1rem; }
+body.text-scale-xl .sidebar-user-name { font-size: 1.35rem; }
