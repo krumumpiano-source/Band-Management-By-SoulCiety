@@ -531,10 +531,52 @@
       + '</span></div>'
       + '<div style="font-size:.76rem;margin-top:3px;padding-left:'+(chkHtml?'22px':'0')+'">'+_sdMeta(s)+'</div>'
       + '</div>'
-      + (_sdScore(s) < 5 && !_sdEnrichCache[s.id] ? '<div style="margin-top:4px;padding:6px 10px;background:linear-gradient(135deg,#faf5ff,#eff6ff);border:1px solid #c4b5fd;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();sdAiEnrich(\''+s.id+'\')"><span style="font-size:1.1rem">\uD83E\uDD16</span><span style="font-size:.78rem;color:#7c3aed;font-weight:600">AI \u0E0A\u0E48\u0E27\u0E22\u0E40\u0E15\u0E34\u0E21\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 \u2014 \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07, \u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19, \u0E04\u0E35\u0E22\u0E4C, BPM, mood, era</span></div>' : '')
-      + (_sdEnrichCache[s.id] ? '<div style="margin-top:4px;padding:5px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();sdAiEnrich(\''+s.id+'\')"><span style="font-size:.9rem">\u2705</span><span style="font-size:.76rem;color:#16a34a;font-weight:600">AI \u0E21\u0E35\u0E02\u0E49\u0E2D\u0E41\u0E19\u0E30\u0E19\u0E33\u0E41\u0E25\u0E49\u0E27 \u2014 \u0E01\u0E14\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E14\u0E39\u0E1C\u0E25</span></div>' : '')
+      + _sdInlineSuggestion(s)
       + '<div id="sd-enrich-'+s.id+'" style="display:none"></div>'
       + '<div id="sd-edit-'+s.id+'" style="display:none"></div>';
+  }
+
+  function _sdInlineSuggestion(s) {
+    var ai = _sdEnrichCache[s.id];
+    if (!ai) {
+      if (_sdScore(s) < 5) {
+        return '<div style="margin-top:4px;padding:6px 10px;background:linear-gradient(135deg,#faf5ff,#eff6ff);border:1px solid #c4b5fd;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();sdAiEnrich(\''+s.id+'\')">'
+          + '<span style="font-size:1.1rem">\uD83E\uDD16</span>'
+          + '<span style="font-size:.78rem;color:#7c3aed;font-weight:600">AI \u0E0A\u0E48\u0E27\u0E22\u0E40\u0E15\u0E34\u0E21\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 \u2014 \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07, \u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19, \u0E04\u0E35\u0E22\u0E4C, BPM, mood, era</span></div>';
+      }
+      return '';
+    }
+    var fields = ['name','singer','artist','key','bpm','mood','era','tags'];
+    var icons = { name:'\uD83C\uDFB6', singer:'\uD83C\uDFA4', artist:'\uD83D\uDC64', key:'\uD83C\uDFB5', bpm:'\u266A', mood:'\uD83D\uDCAB', era:'\uD83D\uDCC5', tags:'\uD83C\uDFF7\uFE0F' };
+    var diffs = [];
+    fields.forEach(function(f) {
+      var cur = String(s[f] || '');
+      var sug = String(ai[f] != null ? ai[f] : '');
+      if (sug && cur.toLowerCase().trim() !== sug.toLowerCase().trim()) {
+        var safeVal = sug.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        diffs.push('<span style="display:inline-flex;align-items:center;gap:2px;background:#fff;border:1px solid #bbf7d0;border-radius:4px;padding:1px 6px;font-size:.72rem">'
+          + icons[f]+' '
+          + (cur ? '<s style="color:#9ca3af">'+escapeHtml(cur)+'</s> \u2192 ' : '')
+          + '<b style="color:#16a34a">'+escapeHtml(sug)+'</b>'
+          + ' <button onclick="event.stopPropagation();sdApplyEnrich(\''+s.id+'\',\''+f+'\',\''+safeVal+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:3px;padding:0 4px;font-size:.6rem;cursor:pointer;line-height:1.4">\u0E43\u0E0A\u0E49</button>'
+          + '</span>');
+      }
+    });
+    if (!diffs.length) {
+      return '<div style="margin-top:4px;padding:5px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;display:flex;align-items:center;gap:6px">'
+        + '<span style="font-size:.9rem">\u2705</span><span style="font-size:.76rem;color:#16a34a;font-weight:600">AI \u0E15\u0E23\u0E27\u0E08\u0E41\u0E25\u0E49\u0E27 \u2014 \u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E04\u0E23\u0E1A\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07</span></div>';
+    }
+    var conf = ai.confidence ? Math.round(ai.confidence * 100) : '?';
+    var confColor = conf >= 80 ? '#16a34a' : conf >= 50 ? '#d97706' : '#dc2626';
+    return '<div style="margin-top:4px;padding:8px 10px;background:linear-gradient(135deg,#f0fdf4,#eff6ff);border:1px solid #86efac;border-radius:6px">'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">'
+      + '<span style="font-size:.82rem;font-weight:700;color:#16a34a">\uD83E\uDD16 AI \u0E41\u0E19\u0E30\u0E19\u0E33:</span>'
+      + '<span style="background:'+confColor+';color:#fff;font-size:.6rem;padding:1px 6px;border-radius:10px;font-weight:600">\u0E21\u0E31\u0E48\u0E19\u0E43\u0E08 '+conf+'%</span>'
+      + (ai.notes ? '<span style="font-size:.7rem;color:#6b7280;font-style:italic">\u2014 '+escapeHtml(ai.notes)+'</span>' : '')
+      + '<button onclick="event.stopPropagation();sdApplyAllEnrich(\''+s.id+'\')" style="margin-left:auto;background:linear-gradient(135deg,#16a34a,#059669);color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:.72rem;cursor:pointer;font-weight:600;white-space:nowrap">\u2705 \u0E43\u0E0A\u0E49\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14</button>'
+      + '</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:4px">'+diffs.join('')+'</div>'
+      + '</div>';
   }
 
   function _sdNormalize(name) {
