@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="google-adsense-account" content="ca-pub-6824376916256036">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -355,6 +355,38 @@
       </div>
     </div>
 
+    <!-- ═══ Accessibility Settings ═══ -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">🖥️ การตั้งค่าการแสดงผล</h3>
+      </div>
+      <div class="card-body">
+        <p style="margin:0 0 var(--spacing-md);color:var(--premium-text-muted);font-size:var(--text-sm)">
+          ปรับขนาดตัวอักษรและความคมชัด เพื่อให้อ่านง่ายขึ้น
+        </p>
+        <!-- Text Scale -->
+        <div style="margin-bottom:var(--spacing-lg)">
+          <label style="font-weight:600;margin-bottom:8px;display:block">ขนาดตัวอักษร</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="textScalePills">
+            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="" onclick="setTextScale('')" style="min-width:60px">S ปกติ</button>
+            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="" onclick="setTextScale('')" style="min-width:60px">M ปกติ</button>
+            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="lg" onclick="setTextScale('lg')" style="min-width:60px">L ใหญ่</button>
+            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="xl" onclick="setTextScale('xl')" style="min-width:60px">XL ใหญ่มาก</button>
+          </div>
+        </div>
+        <!-- High Contrast Toggle -->
+        <div style="margin-bottom:var(--spacing-lg);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <label style="font-weight:600">ความคมชัดสูง (High Contrast)</label>
+          <button type="button" id="contrastToggle" class="btn btn-sm btn-ghost" onclick="toggleHighContrast()" style="min-width:100px">ปิด</button>
+        </div>
+        <!-- Simple Menu Toggle -->
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <label style="font-weight:600">เมนูแบบย่อ (5 หน้าหลัก)</label>
+          <button type="button" id="simpleMenuToggle" class="btn btn-sm btn-ghost" onclick="toggleSimpleMenu()" style="min-width:100px">ปิด</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script src="js/i18n.js"></script>
@@ -658,6 +690,58 @@
       }
     });
   }
+
+  /* ── Accessibility Settings ── */
+  function _initAccUI() {
+    var scale = localStorage.getItem('accessibility_text_scale') || '';
+    var contrast = localStorage.getItem('accessibility_high_contrast') || '';
+    var simpleMenu = localStorage.getItem('accessibility_simple_menu') || '';
+    // Highlight active scale button
+    var btns = document.querySelectorAll('.acc-scale-btn');
+    btns.forEach(function(b) {
+      var s = b.getAttribute('data-scale');
+      if (s === scale) {
+        b.style.background = 'var(--premium-gold)'; b.style.color = '#1a202c'; b.style.fontWeight = '700';
+      } else {
+        b.style.background = ''; b.style.color = ''; b.style.fontWeight = '';
+      }
+    });
+    // Contrast toggle
+    var cBtn = document.getElementById('contrastToggle');
+    if (cBtn) {
+      cBtn.textContent = contrast === '1' ? '✅ เปิด' : 'ปิด';
+      cBtn.style.background = contrast === '1' ? '#276749' : '';
+      cBtn.style.color = contrast === '1' ? '#fff' : '';
+    }
+    // Simple menu toggle
+    var mBtn = document.getElementById('simpleMenuToggle');
+    if (mBtn) {
+      mBtn.textContent = simpleMenu === '1' ? '✅ เปิด' : 'ปิด';
+      mBtn.style.background = simpleMenu === '1' ? '#276749' : '';
+      mBtn.style.color = simpleMenu === '1' ? '#fff' : '';
+    }
+  }
+  function setTextScale(val) {
+    localStorage.setItem('accessibility_text_scale', val);
+    initAccessibility();
+    _initAccUI();
+  }
+  function toggleHighContrast() {
+    var current = localStorage.getItem('accessibility_high_contrast') || '';
+    localStorage.setItem('accessibility_high_contrast', current === '1' ? '' : '1');
+    initAccessibility();
+    _initAccUI();
+  }
+  function toggleSimpleMenu() {
+    var current = localStorage.getItem('accessibility_simple_menu') || '';
+    localStorage.setItem('accessibility_simple_menu', current === '1' ? '' : '1');
+    _initAccUI();
+    showToast('เมนูจะเปลี่ยนเมื่อโหลดหน้าใหม่', 'info');
+  }
+  // Init on load
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(_initAccUI, 100);
+  });
 
   </script>
 </body>

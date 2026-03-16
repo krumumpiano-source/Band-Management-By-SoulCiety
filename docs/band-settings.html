@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="google-adsense-account" content="ca-pub-6824376916256036">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -318,6 +318,29 @@
         <div id="notifAdminMsg" style="margin-top:10px;font-size:var(--text-xs);color:var(--premium-text-muted)"></div>
       </div>
 
+      <!-- ═══ Gemini AI Settings (Admin only) ═══ -->
+      <div id="geminiSection" class="card" style="display:none">
+        <div class="card-header">
+          <h3 class="card-title">🤖 ตั้งค่า AI (Gemini)</h3>
+        </div>
+        <p style="font-size:var(--text-sm);color:var(--premium-text-light);margin-bottom:var(--spacing-md)">
+          ใส่ Gemini API Key เพื่อเปิดใช้ AI Auto-tag เพลง (กรอก key, BPM, mood, era, genre อัตโนมัติ)<br>
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--accent-primary)">สมัครฟรีที่ aistudio.google.com</a>
+        </p>
+        <div class="form-group">
+          <label class="form-label">Gemini API Key</label>
+          <div style="display:flex;gap:8px">
+            <input type="password" id="geminiApiKey" placeholder="AIza..." style="flex:1;font-family:monospace" class="form-control">
+            <button type="button" class="btn btn-sm btn-ghost" onclick="var el=document.getElementById('geminiApiKey');el.type=el.type==='password'?'text':'password'" title="แสดง/ซ่อน key">👁️</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-primary btn-sm" onclick="saveGeminiKey()">💾 บันทึก</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="testGeminiKey()">🧪 ทดสอบ</button>
+        </div>
+        <div id="geminiMsg" style="margin-top:10px;font-size:var(--text-xs);color:var(--premium-text-muted)"></div>
+      </div>
+
     </div><!-- /container -->
   </main>
 
@@ -418,6 +441,12 @@
         if (card) card.style.display = '';
         loadNotifAdminPanel();
         loadAutoNotifState();
+      }
+      // Show Gemini section for admin only
+      if (_role === 'admin') {
+        var gemSec = document.getElementById('geminiSection');
+        if (gemSec) gemSec.style.display = '';
+        loadGeminiKey();
       }
       // Hide all write-buttons for members
       if (_role !== 'admin' && _role !== 'manager') {
@@ -576,6 +605,55 @@
           }
         }
         loadNotifAdminPanel();
+      });
+    }
+
+    /* ── Gemini API Key Management ── */
+    function loadGeminiKey() {
+      var bandId = localStorage.getItem('bandId') || '';
+      if (!bandId) return;
+      apiCall('getBandSettings', { bandId: bandId }, function(r) {
+        var settings = (r && r.success && r.data) || {};
+        var el = document.getElementById('geminiApiKey');
+        if (el && settings.geminiApiKey) el.value = settings.geminiApiKey;
+      });
+    }
+    function saveGeminiKey() {
+      var bandId = localStorage.getItem('bandId') || '';
+      var key = (document.getElementById('geminiApiKey').value || '').trim();
+      var msgEl = document.getElementById('geminiMsg');
+      if (!key) { if (msgEl) { msgEl.style.color = '#e53e3e'; msgEl.textContent = '❌ กรุณาใส่ API Key'; } return; }
+      apiCall('getBandSettings', { bandId: bandId }, function(r) {
+        var current = (r && r.success && r.data) ? r.data : {};
+        current.bandId = bandId;
+        current.geminiApiKey = key;
+        apiCall('saveBandSettings', current, function(r2) {
+          if (r2 && r2.success) {
+            if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ บันทึก API Key แล้ว'; }
+          } else {
+            if (msgEl) { msgEl.style.color = '#e53e3e'; msgEl.textContent = '❌ บันทึกไม่สำเร็จ'; }
+          }
+        });
+      });
+    }
+    function testGeminiKey() {
+      var key = (document.getElementById('geminiApiKey').value || '').trim();
+      var msgEl = document.getElementById('geminiMsg');
+      if (!key) { if (msgEl) { msgEl.style.color = '#e53e3e'; msgEl.textContent = '❌ กรุณาใส่ API Key ก่อน'; } return; }
+      if (msgEl) { msgEl.style.color = 'var(--premium-text-muted)'; msgEl.textContent = '⏳ กำลังทดสอบ…'; }
+      fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(key), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: 'ตอบว่า OK' }] }] })
+      }).then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data && data.candidates) {
+          if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ API Key ใช้งานได้! (Free tier)'; }
+        } else {
+          if (msgEl) { msgEl.style.color = '#e53e3e'; msgEl.textContent = '❌ Key ไม่ถูกต้อง: ' + (data.error ? data.error.message : JSON.stringify(data)); }
+        }
+      }).catch(function(err) {
+        if (msgEl) { msgEl.style.color = '#e53e3e'; msgEl.textContent = '❌ ไม่สามารถเชื่อมต่อ: ' + err.message; }
       });
     }
   </script>

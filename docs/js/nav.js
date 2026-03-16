@@ -3,6 +3,25 @@
  * renderMainNav() — ไฟล์นี้เป็นที่เดียวที่ renderMainNav ถูกนิยาม
  */
 
+/**
+ * Accessibility — อ่าน settings จาก localStorage แล้ว apply class บน body
+ * เรียกก่อน renderMainNav เพื่อให้ CSS พร้อมก่อน render
+ */
+function initAccessibility() {
+  var scale = localStorage.getItem('accessibility_text_scale') || '';
+  var contrast = localStorage.getItem('accessibility_high_contrast') || '';
+  var simpleMenu = localStorage.getItem('accessibility_simple_menu') || '';
+  // Remove old classes
+  document.body.classList.remove('text-scale-lg', 'text-scale-xl', 'high-contrast');
+  // Apply scale
+  if (scale === 'lg') document.body.classList.add('text-scale-lg');
+  else if (scale === 'xl') document.body.classList.add('text-scale-xl');
+  // Apply high contrast
+  if (contrast === '1') document.body.classList.add('high-contrast');
+}
+// Auto-run immediately
+initAccessibility();
+
 function renderMainNav(containerId) {
   if (typeof ensureDemoSession === 'function') ensureDemoSession();
   var container = document.getElementById(containerId || 'mainNav');
@@ -52,20 +71,21 @@ function renderMainNav(containerId) {
     ? '<div class="sidebar-user-instrument">' + _escHtml(instrument) + '</div>'
     : '';
   // ── เมนูสมาชิกวง (ทุกบทบาท) ─────────────────────────
+  var _simpleMenu = localStorage.getItem('accessibility_simple_menu') === '1';
   var memberLinks =
     navSection('🎸 สมาชิกวง') +
     navLink('dashboard',     '📊 ' + _t('nav_dashboard'),    'ภาพรวมงาน สถิติ และทางลัด') +
     navLink('songs',         '🎵 ' + _t('nav_songs'),        'เพลงทั้งหมดและเซ็ตลิสต์') +
-    navLink('song-insights', '📊 ' + _t('nav_songInsights'), 'เพลงที่เล่นบ่อย / ไม่เคยเล่น') +
+    (_simpleMenu ? '' : navLink('song-insights', '📊 ' + _t('nav_songInsights'), 'เพลงที่เล่นบ่อย / ไม่เคยเล่น')) +
     navLink('schedule',      '📅 ' + _t('nav_schedule'),     'ปฏิทินงานและตารางนัด') +
-    navLink('statistics',    '💰 ' + _t('nav_statistics'),   'สรุปรายได้รายเดือน') +
-    navLink('equipment',     '🎸 ' + _t('nav_equipment'),    'อุปกรณ์วงและงบซ่อมบำรุง') +
-    navLink('band-fund',     '💰 ' + _t('nav_bandFund'),     'บัญชีรายรับรายจ่ายกองกลาง') +
+    (_simpleMenu ? '' : navLink('statistics',    '💰 ' + _t('nav_statistics'),   'สรุปรายได้รายเดือน')) +
+    (_simpleMenu ? '' : navLink('equipment',     '🎸 ' + _t('nav_equipment'),    'อุปกรณ์วงและงบซ่อมบำรุง')) +
+    (_simpleMenu ? '' : navLink('band-fund',     '💰 ' + _t('nav_bandFund'),     'บัญชีรายรับรายจ่ายกองกลาง')) +
     navLink('band-info',     '👥 ' + _t('nav_bandInfo'),     'สมาชิก ช่องทางติดต่อ ร้านที่เล่น') +
     navLink('my-profile',    '👤 ' + _t('nav_myProfile'),    'ข้อมูลส่วนตัวและอัตราค่าตัว') +
-    navLink('setlist',        '🎼 เซ็ตลิสต์',                 'จัดลำดับเพลงสำหรับงาน') +
-    navLink('user-manual',    '📖 คู่มือใช้งาน',              'วิธีใช้งานแต่ละฟีเจอร์') +
-    navLink('games',          '🎮 เกมส์ดนตรี',                'เล่นเกมส์กับสมาชิกในวง');
+    (_simpleMenu ? '' : navLink('setlist',        '🎼 เซ็ตลิสต์',                 'จัดลำดับเพลงสำหรับงาน')) +
+    (_simpleMenu ? '' : navLink('user-manual',    '📖 คู่มือใช้งาน',              'วิธีใช้งานแต่ละฟีเจอร์')) +
+    (_simpleMenu ? '' : navLink('games',          '🎮 เกมส์ดนตรี',                'เล่นเกมส์กับสมาชิกในวง'));
 
   // ── ลิงก์อัปเกรด (แสดงเฉพาะ free/lite) ──────────────
   var _plan = (localStorage.getItem('band_plan') || 'free').toLowerCase();
@@ -190,6 +210,67 @@ function renderMainNav(containerId) {
 
   // ── FAQ Chatbot ───────────────────────────────────────────────────
   renderFaqBot();
+
+  // ── Song Manager menu injection ───────────────────────────────────
+  _injectSongManagerMenu();
+}
+
+/**
+ * Song Manager — inject เมนู "🎵 คลังเพลง" ให้สมาชิกที่อยู่ใน songManagers list
+ * admin เห็น adminLinks อยู่แล้ว ไม่ต้อง inject ซ้ำ
+ */
+function _injectSongManagerMenu() {
+  var userRole = localStorage.getItem('userRole') || 'member';
+  if (userRole === 'admin') return; // admin เห็นเมนูอยู่แล้ว
+  var userId = localStorage.getItem('userId') || '';
+  if (!userId) return;
+
+  if (typeof apiCall !== 'function') return;
+  apiCall('getBandSettings', {}, function(r) {
+    var settings = (r && r.success && r.data) || {};
+    var managers = settings.songManagers || [];
+    if (managers.indexOf(userId) < 0) return; // ไม่ใช่ Song Manager
+
+    var navMenu = document.querySelector('.nav-menu');
+    if (!navMenu) return;
+
+    // หา Songs link เพื่อ inject ถัดจากมัน
+    var songsLi = null;
+    var links = navMenu.querySelectorAll('a.nav-link');
+    for (var i = 0; i < links.length; i++) {
+      if (links[i].getAttribute('href') === 'songs.html') {
+        songsLi = links[i].parentElement;
+        break;
+      }
+    }
+
+    // สร้าง li ใหม่
+    var currentPage = (window.location.pathname.split('/').pop() || '').replace('.html', '');
+    var li = document.createElement('li');
+    li.innerHTML = '<a href="admin-songs.html" class="nav-link' + (currentPage === 'admin-songs' ? ' active' : '') + '">🎵 จัดการคลังเพลง<span class="nav-link-desc">เพิ่ม แก้ไข ลบเพลงในคลัง</span></a>';
+
+    // Insert after Songs link, or at end of nav
+    if (songsLi && songsLi.nextSibling) {
+      navMenu.insertBefore(li, songsLi.nextSibling);
+    } else if (songsLi) {
+      navMenu.appendChild(li);
+    } else {
+      navMenu.appendChild(li);
+    }
+
+    // Close sidebar on click (mobile)
+    li.querySelector('a').addEventListener('click', function() {
+      if (window.innerWidth < 1024) {
+        var sidebar = document.getElementById('navSidebar');
+        var backdrop = document.getElementById('navBackdrop');
+        var hamburger = document.getElementById('navHamburger');
+        if (sidebar) sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('open');
+        if (hamburger) { hamburger.classList.remove('open'); hamburger.setAttribute('aria-expanded', 'false'); }
+        document.body.style.overflow = '';
+      }
+    });
+  });
 }
 
 // ── Ad Countdown Timer ──────────────────────────────────────────────

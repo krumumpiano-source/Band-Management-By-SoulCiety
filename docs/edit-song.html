@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="google-adsense-account" content="ca-pub-6824376916256036">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -66,6 +66,13 @@
           <div class="form-group"><label>ชื่อเพลง *</label><input type="text" id="songName" required placeholder="ชื่อเพลง"></div>
           <div class="form-group"><label>ศิลปิน / วงดนตรีต้นฉบับ</label><input type="text" id="artist" list="artistDatalist" placeholder="พิมพ์ชื่อศิลปิน"></div>
           <datalist id="artistDatalist"></datalist>
+          <!-- AI Auto-tag Button -->
+          <div id="aiTagWrap" style="display:none;margin-bottom:var(--spacing-md)">
+            <button type="button" id="aiTagBtn" class="btn btn-sm" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;width:100%" onclick="aiAutoTag()">
+              🤖 AI กรอกข้อมูลให้อัตโนมัติ
+            </button>
+            <small id="aiTagMsg" style="display:block;margin-top:6px;font-size:12px;color:var(--premium-text-muted);min-height:18px"></small>
+          </div>
           <div class="form-r">
             <div class="form-group">
               <label>คีย์</label>
@@ -201,6 +208,94 @@
       });
     });
   });
+
+  /* ── AI Auto-Tag (Gemini) ── */
+  var _geminiKey = '';
+  function _loadGeminiKey() {
+    apiCall('getBandSettings', {}, function(r) {
+      var s = (r && r.success && r.data) || {};
+      _geminiKey = s.geminiApiKey || '';
+      if (_geminiKey) {
+        var wrap = document.getElementById('aiTagWrap');
+        if (wrap) wrap.style.display = '';
+      }
+    });
+  }
+  _loadGeminiKey();
+
+  function aiAutoTag() {
+    var songName = document.getElementById('songName').value.trim();
+    var artist = document.getElementById('artist').value.trim();
+    var msgEl = document.getElementById('aiTagMsg');
+    var btn = document.getElementById('aiTagBtn');
+    if (!songName) { if (msgEl) msgEl.textContent = '❌ กรุณากรอกชื่อเพลงก่อน'; return; }
+    if (!_geminiKey) { if (msgEl) msgEl.textContent = '❌ ยังไม่ได้ตั้ง Gemini API Key (ตั้งค่าได้ที่หน้าตั้งค่าวง)'; return; }
+
+    btn.disabled = true; btn.textContent = '🤖 กำลังวิเคราะห์…';
+    if (msgEl) msgEl.textContent = '';
+
+    var prompt = 'ฉันมีเพลงชื่อ "' + songName + '"' + (artist ? ' ของศิลปิน "' + artist + '"' : '')
+      + '\nช่วยบอกข้อมูลเพลงนี้โดยตอบเป็น JSON เท่านั้น (ไม่ต้องมี markdown):'
+      + '\n{"key":"คีย์เพลง เช่น C, 1#, 2b","bpm":ตัวเลข BPM,"mood":"เลือก 1 จาก: มัน / สนุก, หวาน / โรแมนติก, เศร้า / อกหัก, นิ่ง / ผ่อนคลาย, ฮึกเหิม / ยิ่งใหญ่","era":"เลือก 1 จาก: 80s, 90s, 2000s, 2010s, 2020s","tags":"เลือก 1 จาก: ป๊อป, ร็อค, ดิสโก้, ฮิปฮอป, ลูกทุ่ง / อีสาน, เพื่อชีวิต, สากลเก่า, สากลปัจจุบัน","singer":"เลือก 1 จาก: ชาย, หญิง, ชาย/หญิง"}'
+      + '\nตอบเฉพาะ JSON เท่านั้น ไม่ต้องอธิบาย ถ้าไม่แน่ใจให้เดาจากข้อมูลที่มี';
+
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(_geminiKey), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    }).then(function(res) { return res.json(); })
+    .then(function(data) {
+      btn.disabled = false; btn.textContent = '🤖 AI กรอกข้อมูลให้อัตโนมัติ';
+      if (!data || !data.candidates || !data.candidates[0]) {
+        if (msgEl) msgEl.textContent = '❌ AI ไม่ตอบกลับ';
+        return;
+      }
+      var text = data.candidates[0].content.parts[0].text || '';
+      var jsonStr = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      try {
+        var info = JSON.parse(jsonStr);
+        if (info.key) {
+          var keyEl = document.getElementById('key');
+          for (var i = 0; i < keyEl.options.length; i++) {
+            if (keyEl.options[i].value === info.key || keyEl.options[i].text.indexOf(info.key) >= 0) {
+              keyEl.selectedIndex = i; break;
+            }
+          }
+        }
+        if (info.bpm) document.getElementById('bpm').value = info.bpm;
+        if (info.era) {
+          var eraEl = document.getElementById('era');
+          for (var j = 0; j < eraEl.options.length; j++) {
+            if (eraEl.options[j].value === info.era) { eraEl.selectedIndex = j; break; }
+          }
+        }
+        if (info.mood) {
+          var moodEl = document.getElementById('mood');
+          for (var k = 0; k < moodEl.options.length; k++) {
+            if (moodEl.options[k].value === info.mood) { moodEl.selectedIndex = k; break; }
+          }
+          updateMoodHint('mood', 'moodHint');
+        }
+        if (info.tags) {
+          var genreEl = document.getElementById('genre');
+          for (var g = 0; g < genreEl.options.length; g++) {
+            if (genreEl.options[g].value === info.tags) { genreEl.selectedIndex = g; break; }
+          }
+        }
+        if (info.singer) {
+          var singerMap = { 'ชาย': 's-male', 'หญิง': 's-female', 'ชาย/หญิง': 's-duet' };
+          var singerRadio = document.getElementById(singerMap[info.singer]);
+          if (singerRadio) singerRadio.checked = true;
+        }
+        if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ AI กรอกข้อมูลเรียบร้อย — ตรวจสอบแล้วแก้ไขได้ก่อนบันทึก'; }
+      } catch(e) {
+        if (msgEl) { msgEl.style.color = '#e53e3e'; msgEl.textContent = '❌ AI ตอบกลับรูปแบบไม่ถูกต้อง'; }
+      }
+    }).catch(function(err) {
+      btn.disabled = false; btn.textContent = '🤖 AI กรอกข้อมูลให้อัตโนมัติ';
+      if (msgEl) { msgEl.style.color = '#e53e3e'; msgEl.textContent = '❌ เชื่อมต่อ AI ไม่ได้: ' + err.message; }
+    });
+  }
   </script>
 </body>
 </html>

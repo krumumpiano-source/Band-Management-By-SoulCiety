@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="google-adsense-account" content="ca-pub-6824376916256036">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -374,6 +374,10 @@
                 <div style="font-size:1.6rem;font-weight:700;color:#d97706" id="sd-count-diff">—</div>
                 <div style="font-size:.78rem;color:#6b7280">ชื่อซ้ำ singer ต่างกัน ❓</div>
               </div>
+              <div style="background:#ede9fe;border:1px solid #c4b5fd;border-radius:8px;padding:10px 16px;text-align:center;min-width:130px">
+                <div style="font-size:1.6rem;font-weight:700;color:#7c3aed" id="sd-count-fuzzy">—</div>
+                <div style="font-size:.78rem;color:#6b7280">ชื่อใกล้เคียง 🔤</div>
+              </div>
               <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 16px;text-align:center;min-width:130px">
                 <div style="font-size:1.6rem;font-weight:700;color:#16a34a" id="sd-count-total">—</div>
                 <div style="font-size:.78rem;color:#6b7280">เพลงทั้งหมด</div>
@@ -382,6 +386,7 @@
             <div style="display:flex;gap:8px;margin-bottom:10px">
               <button class="btn btn-sm" id="sd-tab-same" style="background:var(--premium-gold);color:#fff" onclick="sdSwitchTab('same')">⚠️ ซ้ำ Singer เดียวกัน</button>
               <button class="btn btn-sm" id="sd-tab-diff" style="background:var(--premium-off-white);color:var(--premium-text-muted)" onclick="sdSwitchTab('diff')">❓ Singer ต่างกัน</button>
+              <button class="btn btn-sm" id="sd-tab-fuzzy" style="background:var(--premium-off-white);color:var(--premium-text-muted)" onclick="sdSwitchTab('fuzzy')">🔤 ชื่อใกล้เคียง</button>
             </div>
             <input id="sd-search" type="text" placeholder="🔍 ค้นหาชื่อเพลง..." oninput="sdFilter(this.value)" style="width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--premium-border);font-size:.9rem;font-family:inherit;margin-bottom:10px;background:var(--premium-off-white);color:var(--premium-text)">
             <div id="sd-list" style="max-height:65vh;overflow-y:auto">
@@ -480,7 +485,7 @@
   }
 
   // ── Song Duplicate Checker ─────────────────────────────────────────────────
-  var _sdGroups = { same: [], diff: [] };
+  var _sdGroups = { same: [], diff: [], fuzzy: [] };
   var _sdSelected = {};   // { keepId: [delId, ...] }
   var _sdTab = 'same';
   var _sdLoaded = false;
@@ -506,9 +511,26 @@
       _sdGroups = sdAnalyze(songs);
       document.getElementById('sd-count-same').textContent = _sdGroups.same.length;
       document.getElementById('sd-count-diff').textContent = _sdGroups.diff.length;
+      document.getElementById('sd-count-fuzzy').textContent = _sdGroups.fuzzy.length;
       _sdLoaded = true;
       sdRender();
     });
+  }
+
+  // Levenshtein distance for fuzzy match
+  function _levenshtein(a, b) {
+    var m = a.length, n = b.length;
+    if (!m) return n; if (!n) return m;
+    var d = [];
+    for (var i = 0; i <= m; i++) { d[i] = [i]; }
+    for (var j = 1; j <= n; j++) { d[0][j] = j; }
+    for (var i = 1; i <= m; i++) {
+      for (var j = 1; j <= n; j++) {
+        d[i][j] = a[i-1] === b[j-1] ? d[i-1][j-1]
+          : Math.min(d[i-1][j], d[i][j-1], d[i-1][j-1]) + 1;
+      }
+    }
+    return d[m][n];
   }
 
   function sdAnalyze(songs) {
@@ -519,9 +541,11 @@
       map[k].push(s);
     });
     var same = [], diff = [];
+    var exactKeys = {}; // track exact-dup keys
     Object.keys(map).forEach(function(k) {
       var arr = map[k];
       if (arr.length < 2) return;
+      exactKeys[k] = true;
       // score: เพลงที่ข้อมูลครบกว่า = KEEP
       function score(s) {
         return (s.key ? 3 : 0) + (s.bpm ? 2 : 0) + (s.artist ? 2 : 0) + (s.mood ? 1 : 0) + (s.era ? 1 : 0);
@@ -535,15 +559,47 @@
       if (uniqueSingers.length === 1) same.push(group);
       else diff.push(group);
     });
-    return { same: same, diff: diff };
+
+    // Fuzzy match: find near-duplicate names (Levenshtein distance 1-2)
+    var fuzzy = [];
+    var keys = Object.keys(map).sort();
+    var fuzzyUsed = {}; // avoid duplicate pairs
+    for (var i = 0; i < keys.length; i++) {
+      for (var j = i + 1; j < keys.length; j++) {
+        var a = keys[i], b = keys[j];
+        // skip if length difference > 2 (optimization)
+        if (Math.abs(a.length - b.length) > 2) continue;
+        // skip very short names
+        if (a.length < 2 || b.length < 2) continue;
+        var dist = _levenshtein(a, b);
+        var threshold = Math.max(a.length, b.length) <= 5 ? 1 : 2;
+        if (dist >= 1 && dist <= threshold) {
+          var pairKey = a < b ? a + '||' + b : b + '||' + a;
+          if (fuzzyUsed[pairKey]) continue;
+          fuzzyUsed[pairKey] = true;
+          var allSongs = map[a].concat(map[b]);
+          fuzzy.push({
+            nameA: map[a][0].name,
+            nameB: map[b][0].name,
+            distance: dist,
+            songs: allSongs,
+            count: allSongs.length
+          });
+        }
+      }
+    }
+    return { same: same, diff: diff, fuzzy: fuzzy };
   }
 
   function sdSwitchTab(tab) {
     _sdTab = tab;
-    document.getElementById('sd-tab-same').style.background = tab === 'same' ? 'var(--premium-gold)' : 'var(--premium-off-white)';
-    document.getElementById('sd-tab-same').style.color       = tab === 'same' ? '#fff' : 'var(--premium-text-muted)';
-    document.getElementById('sd-tab-diff').style.background  = tab === 'diff' ? 'var(--premium-gold)' : 'var(--premium-off-white)';
-    document.getElementById('sd-tab-diff').style.color        = tab === 'diff' ? '#fff' : 'var(--premium-text-muted)';
+    ['same','diff','fuzzy'].forEach(function(t) {
+      var el = document.getElementById('sd-tab-' + t);
+      if (el) {
+        el.style.background = tab === t ? 'var(--premium-gold)' : 'var(--premium-off-white)';
+        el.style.color = tab === t ? '#fff' : 'var(--premium-text-muted)';
+      }
+    });
     sdRender();
   }
 
@@ -554,6 +610,7 @@
       list.innerHTML = '<div style="text-align:center;color:var(--premium-text-muted);padding:30px">✅ ไม่พบรายการ</div>';
       return;
     }
+    if (_sdTab === 'fuzzy') { sdRenderFuzzy(groups, list); return; }
     var html = groups.map(function(g) {
       var isDiff = _sdTab === 'diff';
       var delHtml = g.dels.map(function(d) {
@@ -584,6 +641,33 @@
         + (g.keep.key ? '🎵 ' + escapeHtml(g.keep.key) + ' ' : '') + (g.keep.bpm ? '♩' + escapeHtml(String(g.keep.bpm)) : '') + '</span>'
         + '</div>'
         + delHtml
+        + '</div></div>';
+    }).join('');
+    list.innerHTML = html;
+  }
+
+  function sdRenderFuzzy(groups, list) {
+    var html = groups.map(function(g) {
+      var songRows = g.songs.map(function(s) {
+        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--premium-off-white);border:1px solid var(--premium-border);border-radius:6px;margin-top:5px">'
+          + '<span style="font-weight:600;font-size:.85rem;color:var(--premium-text)">' + escapeHtml(s.name) + '</span>'
+          + '<span style="background:#e5e7eb;font-size:.73rem;padding:2px 8px;border-radius:12px">' + escapeHtml(s.singer || '?') + '</span>'
+          + '<span style="font-family:monospace;font-size:.68rem;color:#9ca3af">' + s.id + '</span>'
+          + '<span style="margin-left:auto;font-size:.75rem;color:#6b7280">'
+          + (s.key ? '🎵 ' + escapeHtml(s.key) + ' ' : '') + (s.bpm ? '♩' + escapeHtml(String(s.bpm)) : '') + '</span>'
+          + '</div>';
+      }).join('');
+
+      return '<div class="sd-group" data-name="' + escapeHtml(g.nameA.toLowerCase() + ' ' + g.nameB.toLowerCase()) + '" style="border:1px solid #c4b5fd;border-radius:8px;margin-bottom:10px;overflow:hidden">'
+        + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f5f3ff;cursor:pointer" onclick="sdToggleGroup(this)">'
+        + '<span style="font-weight:600;color:var(--premium-text);flex:1">'
+        + '「' + escapeHtml(g.nameA) + '」 ↔ 「' + escapeHtml(g.nameB) + '」</span>'
+        + '<span style="background:#ede9fe;color:#7c3aed;font-size:.72rem;padding:2px 8px;border-radius:12px;font-weight:600">ต่าง ' + g.distance + ' ตัวอักษร</span>'
+        + '<span style="color:var(--premium-text-muted)">▼</span>'
+        + '</div>'
+        + '<div class="sd-group-body" style="display:none;padding:10px 14px">'
+        + '<div style="font-size:.8rem;color:#6b7280;margin-bottom:8px">ℹ️ ชื่อเพลงเหล่านี้คล้ายกันมาก — อาจเป็นเพลงเดียวกันที่พิมพ์ต่างกัน</div>'
+        + songRows
         + '</div></div>';
     }).join('');
     list.innerHTML = html;
