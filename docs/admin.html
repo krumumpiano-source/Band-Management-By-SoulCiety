@@ -304,7 +304,8 @@
               <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
                 <button class="btn btn-secondary btn-sm" onclick="loadSongDupPanel(true)">🔄 โหลดใหม่</button>
                 <span id="sd-ai-wrap" style="display:none">
-                  <button class="btn btn-sm" id="sd-ai-batch-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff" onclick="sdAiBatch()">🤖 AI วิเคราะห์ทั้งหมด</button>
+                  <button class="btn btn-sm" id="sd-ai-batch-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff" onclick="sdAiBatch()">🤖 AI วิเคราะห์ซ้ำ</button>
+                  <button class="btn btn-sm" id="sd-ai-enrich-btn" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff" onclick="sdAiEnrichBatch()">🧠 AI ตรวจข้อมูล</button>
                 </span>
                 <button class="btn btn-sm" style="background:#0ea5e9;color:#fff" onclick="sdExpandAll()">📂 เปิดหมด</button>
                 <button class="btn btn-sm" style="background:#64748b;color:#fff" onclick="sdCollapseAll()">📁 ปิดหมด</button>
@@ -455,6 +456,10 @@
   var _sdAiResults = {};
   var _sdAllSongs = [];
   var _SD_FIELDS = ['name','singer','artist','key','bpm','mood','era','tags'];
+  var _SD_MOOD_OPTS = ['มัน / สนุก','หวาน / โรแมนติก','เศร้า / อกหัก','นิ่ง / ผ่อนคลาย','ฮึกเหิม / ยิ่งใหญ่'];
+  var _SD_ERA_OPTS  = ['80s','90s','2000s','2010s','2020s'];
+  var _SD_TAGS_OPTS = ['ป๊อป','ร็อค','ดิสโก้','ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','สากลเก่า','สากลปัจจุบัน'];
+  var _sdEnrichCache = {};
 
   function _sdScore(s) {
     var n = 0;
@@ -511,10 +516,12 @@
       + '<span style="font-family:monospace;font-size:.63rem;color:#9ca3af">'+s.id.substring(0,8)+'</span>'
       + '<span style="margin-left:auto;display:flex;gap:4px;align-items:center">'
       + swapHtml
+      + '<button onclick="event.stopPropagation();sdAiEnrich(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E41\u0E19\u0E30\u0E19\u0E33\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25">\uD83E\uDD16</button>'
       + '<button onclick="event.stopPropagation();sdEditSong(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E41\u0E01\u0E49\u0E44\u0E02">\u270F\uFE0F</button>'
       + '</span></div>'
       + '<div style="font-size:.76rem;margin-top:3px;padding-left:'+(chkHtml?'22px':'0')+'">'+_sdMeta(s)+'</div>'
       + '</div>'
+      + '<div id="sd-enrich-'+s.id+'" style="display:none"></div>'
       + '<div id="sd-edit-'+s.id+'" style="display:none"></div>';
   }
 
@@ -1088,6 +1095,178 @@
       }
     });
   }
+  // ── AI Enrich (per-song metadata lookup) ──────────────────────────────────
+  function _sdEnrichPrompt(song) {
+    return 'You are a Thai/international music metadata expert. Given this song from a Thai music database, verify and suggest corrections for ALL fields.\n\n'
+      + 'Current data:\n'
+      + '- name: "'+(song.name||'')+'"\n'
+      + '- singer: "'+(song.singer||'')+'"\n'
+      + '- artist: "'+(song.artist||'')+'"\n'
+      + '- key: "'+(song.key||'')+'"\n'
+      + '- bpm: '+(song.bpm||'null')+'\n'
+      + '- mood: "'+(song.mood||'')+'"\n'
+      + '- era: "'+(song.era||'')+'"\n'
+      + '- tags: "'+(song.tags||'')+'"\n\n'
+      + 'Rules:\n'
+      + '- name: correct Thai/English spelling, remove typos\n'
+      + '- singer: the vocalist who sang it\n'
+      + '- artist: the band/composer/original artist\n'
+      + '- key: music key like C, Cm, D, Eb, F#m etc.\n'
+      + '- bpm: beats per minute (integer)\n'
+      + '- mood: MUST be one of: \u0E21\u0E31\u0E19 / \u0E2A\u0E19\u0E38\u0E01, \u0E2B\u0E27\u0E32\u0E19 / \u0E42\u0E23\u0E41\u0E21\u0E19\u0E15\u0E34\u0E01, \u0E40\u0E28\u0E23\u0E49\u0E32 / \u0E2D\u0E01\u0E2B\u0E31\u0E01, \u0E19\u0E34\u0E48\u0E07 / \u0E1C\u0E48\u0E2D\u0E19\u0E04\u0E25\u0E32\u0E22, \u0E2E\u0E36\u0E01\u0E40\u0E2B\u0E34\u0E21 / \u0E22\u0E34\u0E48\u0E07\u0E43\u0E2B\u0E0D\u0E48\n'
+      + '- era: MUST be one of: 80s, 90s, 2000s, 2010s, 2020s (based on release year: 80s=1980-1989, 90s=1990-1999, 2000s=2000-2009, 2010s=2010-2019, 2020s=2020+)\n'
+      + '- tags: MUST be one of: \u0E1B\u0E4A\u0E2D\u0E1B, \u0E23\u0E47\u0E2D\u0E04, \u0E14\u0E34\u0E2A\u0E42\u0E01\u0E49, \u0E2E\u0E34\u0E1B\u0E2E\u0E2D\u0E1B, \u0E25\u0E39\u0E01\u0E17\u0E38\u0E48\u0E07 / \u0E2D\u0E35\u0E2A\u0E32\u0E19, \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E0A\u0E35\u0E27\u0E34\u0E15, \u0E2A\u0E32\u0E01\u0E25\u0E40\u0E01\u0E48\u0E32, \u0E2A\u0E32\u0E01\u0E25\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19\n\n'
+      + 'Respond JSON only: {"name":"...","singer":"...","artist":"...","key":"...","bpm":N,"mood":"...","era":"...","tags":"...","confidence":0.0-1.0,"notes":"brief Thai explanation of changes"}';
+  }
+
+  function sdAiEnrich(songId) {
+    var el = document.getElementById('sd-enrich-'+songId);
+    if (!el) return;
+    if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+    var song = _sdAllSongs.find(function(s) { return s.id === songId; });
+    if (!song) { showToast('\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E25\u0E07', 'error'); return; }
+    // Check cache
+    if (_sdEnrichCache[songId]) { _sdShowEnrich(songId, song, _sdEnrichCache[songId]); return; }
+    el.style.display = '';
+    el.innerHTML = '<div style="padding:10px;text-align:center;color:#667eea;font-size:.84rem">\uD83E\uDD16 AI \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E25\u0E07...</div>';
+    _sdCallGemini(_sdEnrichPrompt(song), function(result) {
+      if (!result || typeof result !== 'object') {
+        el.innerHTML = '<div style="padding:8px;color:#dc2626;font-size:.82rem">\u26A0\uFE0F AI \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E44\u0E14\u0E49</div>';
+        return;
+      }
+      _sdEnrichCache[songId] = result;
+      _sdShowEnrich(songId, song, result);
+    });
+  }
+
+  function _sdShowEnrich(songId, song, ai) {
+    var el = document.getElementById('sd-enrich-'+songId);
+    if (!el) return;
+    el.style.display = '';
+    var conf = ai.confidence ? Math.round(ai.confidence * 100) : '?';
+    var confColor = conf >= 80 ? '#16a34a' : conf >= 50 ? '#d97706' : '#dc2626';
+    var fields = ['name','singer','artist','key','bpm','mood','era','tags'];
+    var icons = { name:'\uD83C\uDFB6', singer:'\uD83C\uDFA4', artist:'\uD83D\uDC64', key:'\uD83C\uDFB5', bpm:'\u266A', mood:'\uD83D\uDCAB', era:'\uD83D\uDCC5', tags:'\uD83C\uDFF7\uFE0F' };
+    var labels = { name:'\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07', singer:'Singer', artist:'Artist', key:'Key', bpm:'BPM', mood:'Mood', era:'Era', tags:'Tags' };
+    var rows = '';
+    var hasDiff = false;
+    fields.forEach(function(f) {
+      var cur = String(song[f] || '');
+      var sug = String(ai[f] != null ? ai[f] : '');
+      if (!sug) return;
+      var changed = cur.toLowerCase().trim() !== sug.toLowerCase().trim();
+      if (changed) hasDiff = true;
+      var curStyle = changed && cur ? 'text-decoration:line-through;color:#9ca3af' : 'color:var(--premium-text)';
+      var sugStyle = changed ? 'color:#16a34a;font-weight:600' : 'color:var(--premium-text-muted)';
+      var safeVal = sug.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      var applyBtn = changed ? '<button onclick="sdApplyEnrich(\''+songId+'\',\''+f+'\',\''+safeVal+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:4px;padding:1px 6px;font-size:.65rem;cursor:pointer;white-space:nowrap">\u0E43\u0E0A\u0E49</button>' : '\u2714\uFE0F';
+      rows += '<tr>'
+        + '<td style="padding:3px 6px;font-size:.76rem;white-space:nowrap">'+icons[f]+' '+labels[f]+'</td>'
+        + '<td style="padding:3px 6px;font-size:.78rem;'+curStyle+'">'+escapeHtml(cur || '\u2014')+'</td>'
+        + '<td style="padding:3px 6px;font-size:.78rem;'+sugStyle+'">'+escapeHtml(sug)+'</td>'
+        + '<td style="padding:3px 4px;text-align:center">'+applyBtn+'</td></tr>';
+    });
+    el.innerHTML = '<div style="background:linear-gradient(135deg,#faf5ff,#eff6ff);border:1px solid #c4b5fd;border-radius:8px;padding:10px;margin:6px 0">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">'
+      + '<span style="font-weight:700;font-size:.86rem;color:#7c3aed">\uD83E\uDD16 AI \u0E41\u0E19\u0E30\u0E19\u0E33\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25</span>'
+      + '<span style="background:'+confColor+';color:#fff;font-size:.65rem;padding:2px 8px;border-radius:12px;font-weight:600">\u0E04\u0E27\u0E32\u0E21\u0E21\u0E31\u0E48\u0E19\u0E43\u0E08 '+conf+'%</span>'
+      + (hasDiff ? '<button onclick="sdApplyAllEnrich(\''+songId+'\')" style="margin-left:auto;background:linear-gradient(135deg,#16a34a,#059669);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:.76rem;cursor:pointer;font-weight:600">\u2705 \u0E43\u0E0A\u0E49\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14</button>' : '')
+      + '<button onclick="document.getElementById(\'sd-enrich-'+songId+'\').style.display=\'none\'" style="background:transparent;border:none;cursor:pointer;font-size:.8rem;color:#9ca3af">\u2715</button>'
+      + '</div>'
+      + (ai.notes ? '<div style="font-size:.78rem;color:#4b5563;margin-bottom:8px;padding:4px 8px;background:#fff;border-radius:4px;border-left:3px solid #7c3aed">\uD83D\uDCDD '+escapeHtml(ai.notes)+'</div>' : '')
+      + '<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid #e5e7eb">'
+      + '<th style="padding:3px 6px;font-size:.68rem;color:#9ca3af;text-align:left">\u0E1F\u0E34\u0E25\u0E14\u0E4C</th>'
+      + '<th style="padding:3px 6px;font-size:.68rem;color:#9ca3af;text-align:left">\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19</th>'
+      + '<th style="padding:3px 6px;font-size:.68rem;color:#9ca3af;text-align:left">AI \u0E41\u0E19\u0E30\u0E19\u0E33</th>'
+      + '<th style="padding:3px 4px;font-size:.68rem;color:#9ca3af;text-align:center"></th>'
+      + '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }
+
+  function sdApplyEnrich(songId, field, value) {
+    var data = { songId: songId };
+    data[field] = field === 'bpm' ? (parseInt(value) || null) : value;
+    apiCall('updateSong', data, function(r) {
+      if (r && r.success) {
+        var s = _sdAllSongs.find(function(x) { return x.id === songId; });
+        if (s) s[field] = data[field];
+        showToast('\u2705 \u0E2D\u0E31\u0E1E\u0E40\u0E14\u0E17 '+field+' \u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22', 'success');
+        _sdShowEnrich(songId, s, _sdEnrichCache[songId]);
+        sdRender();
+      } else { showToast('\u274C '+((r && r.message) || 'error'), 'error'); }
+    });
+  }
+
+  function sdApplyAllEnrich(songId) {
+    var song = _sdAllSongs.find(function(s) { return s.id === songId; });
+    var ai = _sdEnrichCache[songId];
+    if (!song || !ai) return;
+    var data = { songId: songId };
+    var changed = false;
+    ['name','singer','artist','key','bpm','mood','era','tags'].forEach(function(f) {
+      var sug = ai[f] != null ? String(ai[f]) : '';
+      var cur = String(song[f] || '');
+      if (sug && cur.toLowerCase().trim() !== sug.toLowerCase().trim()) {
+        data[f] = f === 'bpm' ? (parseInt(sug) || null) : sug;
+        changed = true;
+      }
+    });
+    if (!changed) return;
+    apiCall('updateSong', data, function(r) {
+      if (r && r.success) {
+        Object.keys(data).forEach(function(f) { if (f !== 'songId') song[f] = data[f]; });
+        showToast('\u2705 \u0E2D\u0E31\u0E1E\u0E40\u0E14\u0E17\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22', 'success');
+        _sdShowEnrich(songId, song, ai);
+        sdRender();
+      } else { showToast('\u274C '+((r && r.message) || 'error'), 'error'); }
+    });
+  }
+
+  function sdAiEnrichBatch() {
+    if (!_sdAllSongs.length) { showToast('\u0E42\u0E2B\u0E25\u0E14\u0E40\u0E1E\u0E25\u0E07\u0E01\u0E48\u0E2D\u0E19', 'error'); return; }
+    var incomplete = _sdAllSongs.filter(function(s) { return _sdScore(s) < 6; });
+    if (!incomplete.length) { showToast('\u2705 \u0E40\u0E1E\u0E25\u0E07\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E04\u0E23\u0E1A\u0E41\u0E25\u0E49\u0E27!', 'success'); return; }
+    var btn = document.getElementById('sd-ai-enrich-btn');
+    btn.disabled = true;
+    var batchSize = 10;
+    var batches = [];
+    for (var b = 0; b < incomplete.length; b += batchSize) batches.push(incomplete.slice(b, b + batchSize));
+    var batchIdx = 0, done = 0;
+    btn.innerHTML = '\uD83E\uDDE0 0/'+incomplete.length+'...';
+
+    function nextBatch() {
+      if (batchIdx >= batches.length) {
+        btn.disabled = false;
+        btn.innerHTML = '\uD83E\uDDE0 AI \u0E15\u0E23\u0E27\u0E08\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25';
+        showToast('\u2705 AI \u0E15\u0E23\u0E27\u0E08\u0E40\u0E2A\u0E23\u0E47\u0E08 '+done+' \u0E40\u0E1E\u0E25\u0E07 — \u0E01\u0E14 \uD83E\uDD16 \u0E17\u0E35\u0E48\u0E40\u0E1E\u0E25\u0E07\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E14\u0E39\u0E1C\u0E25', 'success');
+        return;
+      }
+      var batch = batches[batchIdx];
+      var info = batch.map(function(s, i) {
+        return (done+i+1)+'. name:"'+s.name+'" singer:"'+(s.singer||'')+'" artist:"'+(s.artist||'')+'" key:'+(s.key||'?')+' bpm:'+(s.bpm||'?')+' mood:"'+(s.mood||'')+'" era:"'+(s.era||'')+'" tags:"'+(s.tags||'')+'"';
+      }).join('\n');
+      var prompt = 'You are a Thai/international music metadata expert. Verify and complete these songs:\n\n'+info
+        + '\n\nRules: mood MUST be one of: \u0E21\u0E31\u0E19 / \u0E2A\u0E19\u0E38\u0E01, \u0E2B\u0E27\u0E32\u0E19 / \u0E42\u0E23\u0E41\u0E21\u0E19\u0E15\u0E34\u0E01, \u0E40\u0E28\u0E23\u0E49\u0E32 / \u0E2D\u0E01\u0E2B\u0E31\u0E01, \u0E19\u0E34\u0E48\u0E07 / \u0E1C\u0E48\u0E2D\u0E19\u0E04\u0E25\u0E32\u0E22, \u0E2E\u0E36\u0E01\u0E40\u0E2B\u0E34\u0E21 / \u0E22\u0E34\u0E48\u0E07\u0E43\u0E2B\u0E0D\u0E48'
+        + '\nera MUST be one of: 80s, 90s, 2000s, 2010s, 2020s (80s=1980-1989...)'
+        + '\ntags MUST be one of: \u0E1B\u0E4A\u0E2D\u0E1B, \u0E23\u0E47\u0E2D\u0E04, \u0E14\u0E34\u0E2A\u0E42\u0E01\u0E49, \u0E2E\u0E34\u0E1B\u0E2E\u0E2D\u0E1B, \u0E25\u0E39\u0E01\u0E17\u0E38\u0E48\u0E07 / \u0E2D\u0E35\u0E2A\u0E32\u0E19, \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E0A\u0E35\u0E27\u0E34\u0E15, \u0E2A\u0E32\u0E01\u0E25\u0E40\u0E01\u0E48\u0E32, \u0E2A\u0E32\u0E01\u0E25\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19'
+        + '\n\nRespond JSON array: [{"idx":N,"name":"...","singer":"...","artist":"...","key":"...","bpm":N,"mood":"...","era":"...","tags":"...","confidence":0.0-1.0,"notes":"brief Thai"}]\nJSON only';
+      _sdCallGemini(prompt, function(result) {
+        if (result && Array.isArray(result)) {
+          result.forEach(function(r) {
+            var i = (r.idx || 0) - 1;
+            if (i >= 0 && i < batch.length) {
+              _sdEnrichCache[batch[i].id] = r;
+            }
+          });
+        }
+        done += batch.length;
+        batchIdx++;
+        btn.innerHTML = '\uD83E\uDDE0 '+Math.min(done, incomplete.length)+'/'+incomplete.length+'...';
+        nextBatch();
+      });
+    }
+    nextBatch();
+  }
+
   function sdRenameGroup(songIds, correctName) {
     if (!confirm('\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07 '+songIds.length+' \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E40\u0E1B\u0E47\u0E19 "'+correctName+'"?')) return;
     var done = 0, fail = 0;
