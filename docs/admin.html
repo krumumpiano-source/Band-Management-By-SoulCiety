@@ -604,8 +604,6 @@
         _sdGeminiKey = s.geminiApiKey || '';
         var aiWrap = document.getElementById('sd-ai-wrap');
         if (aiWrap) aiWrap.style.display = _sdGeminiKey ? '' : 'none';
-        var keyBtn = document.getElementById('sd-key-btn');
-        if (keyBtn) keyBtn.style.display = _sdGeminiKey ? 'none' : '';
         var setupEl = document.getElementById('sd-gemini-setup');
         if (setupEl) setupEl.style.display = _sdGeminiKey ? 'none' : '';
       });
@@ -998,8 +996,6 @@
           if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ บันทึกแล้ว! AI พร้อมใช้งาน'; }
           var aiWrap = document.getElementById('sd-ai-wrap');
           if (aiWrap) aiWrap.style.display = '';
-          var keyBtn = document.getElementById('sd-key-btn');
-          if (keyBtn) keyBtn.style.display = 'none';
           setTimeout(function() {
             var setupEl = document.getElementById('sd-gemini-setup');
             if (setupEl) setupEl.style.display = 'none';
