@@ -303,11 +303,7 @@
               <h3 class="card-title">🔍 ตรวจสอบเพลงซ้ำ — Global Library</h3>
               <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
                 <button class="btn btn-secondary btn-sm" onclick="loadSongDupPanel(true)">🔄 โหลดใหม่</button>
-                <span id="sd-ai-wrap" style="display:none">
-                  <button class="btn btn-sm" id="sd-ai-batch-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff" onclick="sdAiBatch()">🤖 AI วิเคราะห์ซ้ำ</button>
-                  <button class="btn btn-sm" id="sd-ai-enrich-btn" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff" onclick="sdAiEnrichBatch()">🧠 AI ตรวจข้อมูล</button>
-                </span>
-                <button class="btn btn-sm" id="sd-key-btn" style="background:#f59e0b;color:#fff" onclick="sdShowGeminiSetup()">🔑 ตั้ง API Key</button>
+                <button class="btn btn-sm" id="sd-itunes-btn" style="background:#0ea5e9;color:#fff" onclick="sdItunesEnrichBatch()">🔍 ค้นหา iTunes</button>
                 <button class="btn btn-sm" style="background:#0ea5e9;color:#fff" onclick="sdExpandAll()">📂 เปิดหมด</button>
                 <button class="btn btn-sm" style="background:#64748b;color:#fff" onclick="sdCollapseAll()">📁 ปิดหมด</button>
                 <button class="btn btn-sm" id="sd-btn-select-all" style="background:#334155;color:#fff" onclick="sdSelectAll()">☑️ เลือก DEL ทั้งหมด</button>
@@ -317,16 +313,7 @@
             <div id="sd-notice" style="margin-bottom:10px;padding:8px 14px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:.82rem">
               ✅ ระบบจะ redirect <code>band_song_refs</code> ก่อนลบ — ไม่กระทบคลังเพลงของวงใดทั้งสิ้น
             </div>
-            <div id="sd-gemini-setup" style="display:none;margin-bottom:12px;padding:14px 18px;border-radius:10px;background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #f59e0b;font-size:.84rem">
-              <div style="font-weight:700;margin-bottom:8px;color:#92400e">🤖 ตั้งค่า Groq API Key (ฟรี ไม่ต้องผูกบัตร)</div>
-              <div style="color:#78350f;margin-bottom:10px;line-height:1.5">ระบบ AI ใช้ <b>Groq</b> (ฟรี สมัครด้วย Gmail) — <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline;font-weight:600">1. กดที่นี่ → Sign in → Create API Key → Copy</a></div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input type="password" id="sd-gemini-key-input" placeholder="gsk_..." style="flex:1;min-width:200px;padding:7px 12px;border:1px solid #d97706;border-radius:8px;background:#fff;font-size:.84rem">
-                <button class="btn btn-sm" style="background:#16a34a;color:#fff;white-space:nowrap" onclick="sdSaveGeminiKey()">💾 บันทึก</button>
-                <button class="btn btn-sm" style="background:#6366f1;color:#fff;white-space:nowrap" onclick="sdTestGeminiKey()">🧪 ทดสอบ</button>
-              </div>
-              <div id="sd-gemini-msg" style="margin-top:6px;font-size:.8rem"></div>
-            </div>
+
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
               <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 16px;text-align:center;min-width:110px;cursor:pointer" onclick="sdSwitchTab('same')">
                 <div style="font-size:1.5rem;font-weight:700;color:#dc2626" id="sd-count-same">—</div>
@@ -463,8 +450,6 @@
   var _sdSelected = {};
   var _sdTab = 'same';
   var _sdLoaded = false;
-  var _sdGeminiKey = '';
-  var _sdAiResults = {};
   var _sdAllSongs = [];
   var _SD_FIELDS = ['name','singer','artist','key','bpm','mood','era','tags'];
   var _SD_MOOD_OPTS = ['มัน / สนุก','หวาน / โรแมนติก','เศร้า / อกหัก','นิ่ง / ผ่อนคลาย','ฮึกเหิม / ยิ่งใหญ่'];
@@ -527,7 +512,7 @@
       + '<span style="font-family:monospace;font-size:.63rem;color:#9ca3af">'+s.id.substring(0,8)+'</span>'
       + '<span style="margin-left:auto;display:flex;gap:4px;align-items:center">'
       + swapHtml
-      + '<button onclick="event.stopPropagation();sdAiEnrich(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E41\u0E19\u0E30\u0E19\u0E33\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25">\uD83E\uDD16</button>'
+      + '<button onclick="event.stopPropagation();sdItunesEnrich(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25">\uD83D\uDD0D</button>'
       + '<button onclick="event.stopPropagation();sdEditSong(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E41\u0E01\u0E49\u0E44\u0E02">\u270F\uFE0F</button>'
       + '</span></div>'
       + '<div style="font-size:.76rem;margin-top:3px;padding-left:'+(chkHtml?'22px':'0')+'">'+_sdMeta(s)+'</div>'
@@ -541,9 +526,9 @@
     var ai = _sdEnrichCache[s.id];
     if (!ai) {
       if (_sdScore(s) < 5) {
-        return '<div style="margin-top:4px;padding:6px 10px;background:linear-gradient(135deg,#faf5ff,#eff6ff);border:1px solid #c4b5fd;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();sdAiEnrich(\''+s.id+'\')">'
-          + '<span style="font-size:1.1rem">\uD83E\uDD16</span>'
-          + '<span style="font-size:.78rem;color:#7c3aed;font-weight:600">AI \u0E0A\u0E48\u0E27\u0E22\u0E40\u0E15\u0E34\u0E21\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 \u2014 \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07, \u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19, \u0E04\u0E35\u0E22\u0E4C, BPM, mood, era</span></div>';
+        return '<div style="margin-top:4px;padding:6px 10px;background:linear-gradient(135deg,#e0f2fe,#eff6ff);border:1px solid #7dd3fc;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();sdItunesEnrich(\''+s.id+'\')">'
+          + '<span style="font-size:1.1rem">\uD83D\uDD0D</span>'
+          + '<span style="font-size:.78rem;color:#0ea5e9;font-weight:600">iTunes \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07, \u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19, Era, Tags \u2014 \u0E44\u0E21\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E43\u0E0A\u0E49 API Key</span></div>';
       }
       return '';
     }
@@ -565,14 +550,14 @@
     });
     if (!diffs.length) {
       return '<div style="margin-top:4px;padding:5px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;display:flex;align-items:center;gap:6px">'
-        + '<span style="font-size:.9rem">\u2705</span><span style="font-size:.76rem;color:#16a34a;font-weight:600">AI \u0E15\u0E23\u0E27\u0E08\u0E41\u0E25\u0E49\u0E27 \u2014 \u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E04\u0E23\u0E1A\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07</span></div>';
+        + '<span style="font-size:.9rem">\u2705</span><span style="font-size:.76rem;color:#16a34a;font-weight:600">iTunes \u0E04\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27 \u2014 \u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E04\u0E23\u0E1A\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07</span></div>';
     }
     var conf = ai.confidence ? Math.round(ai.confidence * 100) : '?';
     var confColor = conf >= 80 ? '#16a34a' : conf >= 50 ? '#d97706' : '#dc2626';
     return '<div style="margin-top:4px;padding:8px 10px;background:linear-gradient(135deg,#f0fdf4,#eff6ff);border:1px solid #86efac;border-radius:6px">'
       + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">'
-      + '<span style="font-size:.82rem;font-weight:700;color:#16a34a">\uD83E\uDD16 AI \u0E41\u0E19\u0E30\u0E19\u0E33:</span>'
-      + '<span style="background:'+confColor+';color:#fff;font-size:.6rem;padding:1px 6px;border-radius:10px;font-weight:600">\u0E21\u0E31\u0E48\u0E19\u0E43\u0E08 '+conf+'%</span>'
+      + '<span style="font-size:.82rem;font-weight:700;color:#0ea5e9">\uD83D\uDD0D iTunes \u0E41\u0E19\u0E30\u0E19\u0E33:</span>'
+      + '<span style="background:#0ea5e9;color:#fff;font-size:.6rem;padding:1px 6px;border-radius:10px;font-weight:600">iTunes</span>'
       + (ai.notes ? '<span style="font-size:.7rem;color:#6b7280;font-style:italic">\u2014 '+escapeHtml(ai.notes)+'</span>' : '')
       + '<button onclick="event.stopPropagation();sdApplyAllEnrich(\''+s.id+'\')" style="margin-left:auto;background:linear-gradient(135deg,#16a34a,#059669);color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:.72rem;cursor:pointer;font-weight:600;white-space:nowrap">\u2705 \u0E43\u0E0A\u0E49\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14</button>'
       + '</div>'
@@ -596,18 +581,7 @@
       var el = document.getElementById('sd-count-'+k); if (el) el.textContent = '\u2014';
     });
     _sdSelected = {};
-    _sdAiResults = {};
     sdUpdateCount();
-    if (!_sdGeminiKey) {
-      apiCall('getBandSettings', {}, function(r) {
-        var s = (r && r.success && r.data) || {};
-        _sdGeminiKey = s.groqApiKey || s.geminiApiKey || '';
-        var aiWrap = document.getElementById('sd-ai-wrap');
-        if (aiWrap) aiWrap.style.display = _sdGeminiKey ? '' : 'none';
-        var setupEl = document.getElementById('sd-gemini-setup');
-        if (setupEl) setupEl.style.display = _sdGeminiKey ? 'none' : '';
-      });
-    }
     apiCall('getGlobalSongsAll', {}, function(r) {
       if (!r || !r.success) {
         list.innerHTML = '<div style="color:#dc2626;padding:20px">\u0E42\u0E2B\u0E25\u0E14\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08: '+((r&&r.message)||'error')+'</div>';
@@ -647,8 +621,8 @@
     if (!parts.length) parts.push('\u2705 \u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E40\u0E1E\u0E25\u0E07\u0E0B\u0E49\u0E33');
     // Count incomplete songs
     var incomplete = _sdAllSongs.filter(function(s) { return _sdScore(s) < 5; }).length;
-    if (incomplete && _sdGeminiKey) {
-      parts.push('<br>\uD83E\uDDE0 <span style="color:#7c3aed">\u0E1E\u0E1A <b>'+incomplete+' \u0E40\u0E1E\u0E25\u0E07</b>\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E04\u0E23\u0E1A \u2014 \u0E01\u0E14 <b>\uD83E\uDDE0 AI \u0E15\u0E23\u0E27\u0E08\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25</b> \u0E14\u0E49\u0E32\u0E19\u0E1A\u0E19 \u0E2B\u0E23\u0E37\u0E2D\u0E01\u0E14 \uD83E\uDD16 \u0E17\u0E35\u0E48\u0E40\u0E1E\u0E25\u0E07 \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E43\u0E2B\u0E49 AI \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07, \u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19, Key, BPM, Mood, Era \u0E43\u0E2B\u0E49</span>');
+    if (incomplete) {
+      parts.push('<br>\uD83D\uDD0D <span style="color:#0ea5e9">\u0E1E\u0E1A <b>'+incomplete+' \u0E40\u0E1E\u0E25\u0E07</b>\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E04\u0E23\u0E1A \u2014 \u0E01\u0E14 <b>\uD83D\uDD0D \u0E04\u0E49\u0E19\u0E2B\u0E32 iTunes</b> \u0E14\u0E49\u0E32\u0E19\u0E1A\u0E19 \u0E2B\u0E23\u0E37\u0E2D\u0E01\u0E14 \uD83D\uDD0D \u0E17\u0E35\u0E48\u0E40\u0E1E\u0E25\u0E07 \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07, \u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19, Era, Tags</span>');
     }
     el.innerHTML = parts.join(' &nbsp;\u00B7&nbsp; ');
   }
@@ -775,29 +749,16 @@
       return;
     }
     if (_sdTab === 'fuzzy') { sdRenderFuzzy(groups, list); return; }
-    var showAi = !!_sdGeminiKey;
     var autoExpand = groups.length <= 10;
     var html = groups.map(function(g, gi) {
       var isDiff = _sdTab === 'diff';
       var showCheckbox = true;
-      var aiKey = g.name.toLowerCase();
-      var aiRes = _sdAiResults[aiKey];
 
       var keepCard = _sdSongCard(g.keep, 'KEEP', { showSwap: true, groupIdx: gi });
       var delCards = g.dels.map(function(d) {
         var isChecked = _sdSelected[g.keep.id] && _sdSelected[g.keep.id].indexOf(d.id) !== -1;
         return _sdSongCard(d, 'DEL', { showCheckbox: showCheckbox, checked: isChecked, keepId: g.keep.id, showSwap: true, groupIdx: gi });
       }).join('');
-
-      var aiHtml = '';
-      if (aiRes) {
-        var isMerge = aiRes.action === 'merge';
-        aiHtml = '<div style="padding:8px 12px;border-radius:6px;font-size:.82rem;margin-top:6px;'
-          + 'background:'+(isMerge ? '#f0fdf4' : '#fefce8')+';border:1px solid '+(isMerge ? '#bbf7d0' : '#fde68a')+'">'
-          + '<span style="font-weight:700;color:'+(isMerge ? '#16a34a' : '#ca8a04')+'">'
-          + (isMerge ? '\u2705 AI: \u0E04\u0E27\u0E23 Merge' : '\u23ED\uFE0F AI: \u0E02\u0E49\u0E32\u0E21\u0E44\u0E27\u0E49') + '</span> '
-          + '<span style="color:#374151">'+escapeHtml(aiRes.reason || '')+'</span></div>';
-      }
 
       var headerBg = isDiff ? '#fffbeb' : 'var(--premium-off-white)';
       var artistsData = (g.keep.artist||'').toLowerCase() + ' ' + g.dels.map(function(d) { return (d.artist||'').toLowerCase(); }).join(' ');
@@ -806,43 +767,24 @@
         + '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:'+headerBg+';cursor:pointer" onclick="sdToggleGroup(this)">'
         + '<span style="font-weight:600;color:var(--premium-text);flex:1;font-size:.92rem">'+escapeHtml(g.name)+'</span>'
         + '<span style="background:'+(isDiff ? '#dbeafe' : '#fee2e2')+';color:'+(isDiff ? '#1d4ed8' : '#dc2626')+';font-size:.68rem;padding:2px 8px;border-radius:12px;font-weight:600">'+g.count+'x</span>'
-        + (showAi ? '<button onclick="event.stopPropagation();sdAiGroup('+gi+')" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\uD83E\uDD16</button>' : '')
         + '<button onclick="event.stopPropagation();sdSelectGroup(\''+g.keep.id+'\','+JSON.stringify(g.dels.map(function(d){return d.id;}))+');sdUpdateCount()" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2611 DEL</button>'
         + '<span style="color:var(--premium-text-muted);font-size:.8rem">'+(autoExpand ? '\u25B2' : '\u25BC')+'</span>'
         + '</div>'
         + '<div class="sd-group-body" style="'+(autoExpand ? '' : 'display:none;')+'padding:8px 12px">'
         + keepCard + delCards
-        + '<div id="sd-ai-res-'+gi+'">'+aiHtml+'</div>'
         + '</div></div>';
     }).join('');
     list.innerHTML = html;
   }
 
   function sdRenderFuzzy(groups, list) {
-    var showAi = !!_sdGeminiKey;
     var autoExpand = groups.length <= 10;
     var html = groups.map(function(g, gi) {
-      var aiKey = g.nameA.toLowerCase() + '||' + g.nameB.toLowerCase();
-      var aiRes = _sdAiResults[aiKey];
-
       var keepCard = _sdSongCard(g.keep, 'KEEP', {});
       var delCards = g.dels.map(function(d) {
         var isChecked = _sdSelected[g.keep.id] && _sdSelected[g.keep.id].indexOf(d.id) !== -1;
         return _sdSongCard(d, 'DEL', { showCheckbox: true, checked: isChecked, keepId: g.keep.id });
       }).join('');
-
-      var aiHtml = '';
-      if (aiRes) {
-        var isSame = aiRes.same;
-        aiHtml = '<div style="padding:8px 12px;border-radius:6px;font-size:.82rem;margin-top:6px;'
-          + 'background:'+(isSame ? '#f0fdf4' : '#fefce8')+';border:1px solid '+(isSame ? '#bbf7d0' : '#fde68a')+'">'
-          + '<span style="font-weight:700;color:'+(isSame ? '#16a34a' : '#ca8a04')+'">'
-          + (isSame ? '\u2705 \u0E40\u0E1E\u0E25\u0E07\u0E40\u0E14\u0E35\u0E22\u0E27\u0E01\u0E31\u0E19' : '\u274C \u0E04\u0E19\u0E25\u0E30\u0E40\u0E1E\u0E25\u0E07')+'</span> '
-          + '<span style="color:#374151">'+escapeHtml(aiRes.reason||'')+'</span>'
-          + (isSame && aiRes.correctName ? '<br><span style="color:#7c3aed;font-weight:600">\u0E0A\u0E37\u0E48\u0E2D\u0E17\u0E35\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07: "'+escapeHtml(aiRes.correctName)+'"</span>'
-            + ' <button onclick="sdRenameGroup('+JSON.stringify(g.songs.map(function(s){return s.id;}))+',\''+escapeHtml(aiRes.correctName).replace(/'/g, "\\'")+'\');" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:.7rem;cursor:pointer">\u270F\uFE0F \u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E0A\u0E37\u0E48\u0E2D</button>' : '')
-          + '</div>';
-      }
 
       var matchLabel = g.matchType === 'norm' ? '\u0E40\u0E27\u0E49\u0E19\u0E27\u0E23\u0E23\u0E04/\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E2B\u0E21\u0E32\u0E22' : '\u0E15\u0E48\u0E32\u0E07 '+g.distance+' \u0E15\u0E31\u0E27';
       var artistsData = g.songs.map(function(s) { return (s.artist||'').toLowerCase(); }).join(' ');
@@ -852,13 +794,11 @@
         + '<span style="font-weight:600;color:var(--premium-text);flex:1;font-size:.9rem">'
         + escapeHtml(g.nameA)+' <span style="color:#7c3aed">\u2194</span> '+escapeHtml(g.nameB)+'</span>'
         + '<span style="background:#ede9fe;color:#7c3aed;font-size:.66rem;padding:2px 8px;border-radius:12px;font-weight:600;white-space:nowrap">'+matchLabel+'</span>'
-        + (showAi ? '<button onclick="event.stopPropagation();sdAiGroup('+gi+')" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\uD83E\uDD16</button>' : '')
         + '<button onclick="event.stopPropagation();sdSelectGroup(\''+g.keep.id+'\','+JSON.stringify(g.dels.map(function(d){return d.id;}))+');sdUpdateCount()" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2611 DEL</button>'
         + '<span style="color:var(--premium-text-muted);font-size:.8rem">'+(autoExpand ? '\u25B2' : '\u25BC')+'</span>'
         + '</div>'
         + '<div class="sd-group-body" style="'+(autoExpand ? '' : 'display:none;')+'padding:8px 12px">'
         + keepCard + delCards
-        + '<div id="sd-ai-res-'+gi+'">'+aiHtml+'</div>'
         + '</div></div>';
     }).join('');
     list.innerHTML = html;
@@ -974,192 +914,88 @@
     next(0);
   }
 
-  // ── Gemini Key Setup ────────────────────────────────────────────────────
-  function sdShowGeminiSetup() {
-    var el = document.getElementById('sd-gemini-setup');
-    if (el) { el.style.display = ''; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-    var inp = document.getElementById('sd-gemini-key-input');
-    if (inp) setTimeout(function() { inp.focus(); }, 400);
+  // ── iTunes Search ─────────────────────────────────────────────────────────
+  function _sdGenreToTag(genre) {
+    var g = (genre || '').toLowerCase();
+    if (g.indexOf('pop') !== -1) return '\u0E1B\u0E4A\u0E2D\u0E1B';
+    if (g.indexOf('rock') !== -1) return '\u0E23\u0E47\u0E2D\u0E04';
+    if (g.indexOf('hip') !== -1 || g.indexOf('rap') !== -1) return '\u0E2E\u0E34\u0E1B\u0E2E\u0E2D\u0E1B';
+    if (g.indexOf('dance') !== -1 || g.indexOf('disco') !== -1 || g.indexOf('electronic') !== -1) return '\u0E14\u0E34\u0E2A\u0E42\u0E01\u0E49';
+    if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1) return '\u0E25\u0E39\u0E01\u0E17\u0E38\u0E48\u0E07 / \u0E2D\u0E35\u0E2A\u0E32\u0E19';
+    if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1) return '\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E0A\u0E35\u0E27\u0E34\u0E15';
+    if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1) return '\u0E2A\u0E32\u0E01\u0E25\u0E40\u0E01\u0E48\u0E32';
+    return '\u0E2A\u0E32\u0E01\u0E25\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19';
   }
-  function sdSaveGeminiKey() {
-    var inp = document.getElementById('sd-gemini-key-input');
-    var key = (inp ? inp.value : '').trim();
-    var msgEl = document.getElementById('sd-gemini-msg');
-    if (!key) { if (msgEl) { msgEl.style.color = '#dc2626'; msgEl.textContent = '❌ กรุณาใส่ API Key'; } return; }
-    if (msgEl) { msgEl.style.color = '#92400e'; msgEl.textContent = '⏳ กำลังบันทึก...'; }
-    apiCall('getBandSettings', {}, function(r) {
-      var current = (r && r.success && r.data) ? r.data : {};
-      current.groqApiKey = key;
-      apiCall('saveBandSettings', current, function(r2) {
-        if (r2 && r2.success) {
-          _sdGeminiKey = key;
-          if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ บันทึกแล้ว! AI พร้อมใช้งาน'; }
-          var aiWrap = document.getElementById('sd-ai-wrap');
-          if (aiWrap) aiWrap.style.display = '';
-          setTimeout(function() {
-            var setupEl = document.getElementById('sd-gemini-setup');
-            if (setupEl) setupEl.style.display = 'none';
-          }, 2000);
-        } else {
-          if (msgEl) { msgEl.style.color = '#dc2626'; msgEl.textContent = '❌ บันทึกไม่สำเร็จ: ' + ((r2 && r2.message) || ''); }
-        }
-      });
+  function _sdYearToEra(dateStr) {
+    if (!dateStr) return '';
+    var y = parseInt(dateStr.substring(0, 4));
+    if (!y) return '';
+    if (y < 1990) return '80s';
+    if (y < 2000) return '90s';
+    if (y < 2010) return '2000s';
+    if (y < 2020) return '2010s';
+    return '2020s';
+  }
+  function _sdSearchItunes(name, singer, callback) {
+    var term = encodeURIComponent(((singer || '') + ' ' + name).trim());
+    fetch('https://itunes.apple.com/search?term=' + term + '&limit=5&entity=song&media=music')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data || !data.results || !data.results.length) { callback(null, '\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E40\u0E1E\u0E25\u0E07\u0E19\u0E35\u0E49\u0E43\u0E19 iTunes'); return; }
+        var t = data.results[0];
+        callback({
+          name: t.trackName || '',
+          artist: t.artistName || '',
+          singer: t.artistName || '',
+          era: _sdYearToEra(t.releaseDate || ''),
+          tags: _sdGenreToTag(t.primaryGenreName || ''),
+          notes: (t.trackName || '') + ' \u2014 ' + (t.artistName || '') + (t.releaseDate ? ' (' + t.releaseDate.substring(0, 4) + ')' : '')
+        }, null);
+      })
+      .catch(function(err) { callback(null, 'Network: ' + (err.message || err)); });
+  }
+  function sdItunesEnrich(songId, forceRetry) {
+    var el = document.getElementById('sd-enrich-' + songId);
+    if (!el) return;
+    if (!forceRetry && el.style.display !== 'none') { el.style.display = 'none'; return; }
+    var song = _sdAllSongs.find(function(s) { return s.id === songId; });
+    if (!song) { showToast('\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E25\u0E07', 'error'); return; }
+    if (!forceRetry && _sdEnrichCache[songId]) { el.style.display = 'none'; sdRender(); return; }
+    el.style.display = '';
+    el.innerHTML = '<div style="padding:10px;text-align:center;color:#0ea5e9;font-size:.84rem">\uD83D\uDD0D \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E43\u0E19 iTunes...</div>';
+    _sdSearchItunes(song.name, song.singer, function(result, errText) {
+      if (!result) {
+        el.innerHTML = '<div style="padding:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:.82rem">'
+          + '<span style="color:#dc2626;font-weight:600">\u26A0\uFE0F ' + escapeHtml(errText || '\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E44\u0E21\u0E48\u0E1E\u0E1A') + '</span>'
+          + '<button onclick="sdItunesEnrich(\'' + songId + '\',true)" style="margin-left:8px;background:#6366f1;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:.76rem;cursor:pointer">\uD83D\uDD04 \u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48</button></div>';
+        return;
+      }
+      _sdEnrichCache[songId] = result;
+      el.style.display = 'none';
+      sdRender();
     });
   }
-  function sdTestGeminiKey() {
-    var inp = document.getElementById('sd-gemini-key-input');
-    var key = (inp ? inp.value : '').trim();
-    var msgEl = document.getElementById('sd-gemini-msg');
-    if (!key) { if (msgEl) { msgEl.style.color = '#dc2626'; msgEl.textContent = '❌ กรุณาใส่ API Key ก่อน'; } return; }
-    if (msgEl) { msgEl.style.color = '#92400e'; msgEl.textContent = '⏳ กำลังทดสอบ...'; }
-    fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: 'ตอบว่า OK' }], max_tokens: 10 })
-    }).then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (data && data.choices && data.choices[0]) {
-        if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ Groq API Key ใช้งานได้! (Free)'; }
-      } else {
-        if (msgEl) { msgEl.style.color = '#dc2626'; msgEl.textContent = '❌ Key ไม่ถูกต้อง: ' + (data.error ? data.error.message : 'unknown'); }
+  function sdItunesEnrichBatch() {
+    if (!_sdAllSongs.length) { showToast('\u0E42\u0E2B\u0E25\u0E14\u0E40\u0E1E\u0E25\u0E07\u0E01\u0E48\u0E2D\u0E19', 'error'); return; }
+    var incomplete = _sdAllSongs.filter(function(s) { return _sdScore(s) < 5 && !_sdEnrichCache[s.id]; });
+    if (!incomplete.length) { showToast('\u2705 \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E04\u0E23\u0E1A\u0E41\u0E25\u0E49\u0E27!', 'success'); return; }
+    var btn = document.getElementById('sd-itunes-btn');
+    if (btn) btn.disabled = true;
+    var done = 0;
+    function next(i) {
+      if (i >= incomplete.length) {
+        if (btn) { btn.disabled = false; btn.textContent = '\uD83D\uDD0D \u0E04\u0E49\u0E19\u0E2B\u0E32 iTunes'; }
+        showToast('\u2705 \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E40\u0E2A\u0E23\u0E47\u0E08 ' + done + ' \u0E40\u0E1E\u0E25\u0E07', 'success');
+        sdRender(); return;
       }
-    }).catch(function(err) {
-      if (msgEl) { msgEl.style.color = '#dc2626'; msgEl.textContent = '❌ เชื่อมต่อไม่ได้: ' + err.message; }
-    });
-  }
-
-  // ── AI Helpers ────────────────────────────────────────────────────────────
-  function _sdCallGemini(prompt, callback) {
-    if (!_sdGeminiKey) { sdShowGeminiSetup(); showToast('🤖 กรุณาตั้ง Groq API Key ก่อนใช้ AI', 'warning'); callback(null); return; }
-    fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _sdGeminiKey },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 1024 })
-    }).then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (data && data.error) { callback(null, 'API Error: ' + (data.error.message || JSON.stringify(data.error))); return; }
-      if (!data || !data.choices || !data.choices[0]) { callback(null, 'No response from AI'); return; }
-      var text = data.choices[0].message.content || '';
-      var jsonStr = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-      try { callback(JSON.parse(jsonStr)); } catch(e) { callback(null, 'JSON parse error: ' + text.substring(0, 100)); }
-    }).catch(function(err) { callback(null, 'Network: ' + err.message); });
-  }
-
-  function sdAiBatch() {
-    var groups = _sdGroups[_sdTab] || [];
-    if (!groups.length) return;
-    var btn = document.getElementById('sd-ai-batch-btn');
-    btn.disabled = true;
-    var batchSize = 25;
-
-    if (_sdTab === 'fuzzy') {
-      var batches = [];
-      for (var b = 0; b < groups.length; b += batchSize) batches.push({ start: b, items: groups.slice(b, b + batchSize) });
-      var batchIdx = 0;
-      btn.innerHTML = '\uD83E\uDD16 0/'+groups.length+'...';
-      function nextFuzzyBatch() {
-        if (batchIdx >= batches.length) {
-          btn.disabled = false; btn.innerHTML = '\uD83E\uDD16 AI \u0E27\u0E34\u0E40\u0E04\u0E23\u0E32\u0E30\u0E2B\u0E4C\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14';
-          var sameCount = 0;
-          groups.forEach(function(g) { if (_sdAiResults[g.nameA.toLowerCase()+'||'+g.nameB.toLowerCase()] && _sdAiResults[g.nameA.toLowerCase()+'||'+g.nameB.toLowerCase()].same) sameCount++; });
-          sdRender();
-          showToast('\u2705 AI \u0E40\u0E2A\u0E23\u0E47\u0E08: \u0E1E\u0E1A '+sameCount+'/'+groups.length+' \u0E04\u0E39\u0E48\u0E17\u0E35\u0E48\u0E40\u0E1B\u0E47\u0E19\u0E40\u0E1E\u0E25\u0E07\u0E40\u0E14\u0E35\u0E22\u0E27\u0E01\u0E31\u0E19', 'success');
-          return;
-        }
-        var batch = batches[batchIdx];
-        var info = batch.items.map(function(g, i) {
-          var allSongs = g.songs.map(function(s) { return '"'+s.name+'" ('+s.singer+'/'+s.artist+')'; }).join(', ');
-          return (batch.start+i+1)+'. "'+g.nameA+'" vs "'+g.nameB+'" (dist '+g.distance+', '+g.matchType+') songs: '+allSongs;
-        }).join('\n');
-        var prompt = 'Analyze fuzzy-matched song name pairs in a Thai music database:\n'+info
-          + '\n\nRespond JSON array: [{"pair":N,"same":true/false,"correctName":"if same song","reason":"brief Thai reason"}]\nsame=true = same song with typo, provide correctName\nsame=false = different songs\nJSON only';
-        _sdCallGemini(prompt, function(result) {
-          if (result && Array.isArray(result)) {
-            result.forEach(function(r) {
-              var idx = (r.pair || 0) - 1;
-              if (idx >= 0 && idx < groups.length) {
-                var g = groups[idx];
-                _sdAiResults[g.nameA.toLowerCase()+'||'+g.nameB.toLowerCase()] = r;
-              }
-            });
-          }
-          batchIdx++;
-          btn.innerHTML = '\uD83E\uDD16 '+Math.min(batchIdx * batchSize, groups.length)+'/'+groups.length+'...';
-          nextFuzzyBatch();
-        });
-      }
-      nextFuzzyBatch();
-    } else {
-      var batches = [];
-      for (var b = 0; b < groups.length; b += batchSize) batches.push({ start: b, items: groups.slice(b, b + batchSize) });
-      var batchIdx = 0;
-      btn.innerHTML = '\uD83E\uDD16 0/'+groups.length+'...';
-      function nextExactBatch() {
-        if (batchIdx >= batches.length) {
-          btn.disabled = false; btn.innerHTML = '\uD83E\uDD16 AI \u0E27\u0E34\u0E40\u0E04\u0E23\u0E32\u0E30\u0E2B\u0E4C\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14';
-          var merged = 0;
-          groups.forEach(function(g) { var r = _sdAiResults[g.name.toLowerCase()]; if (r && r.action === 'merge' && _sdTab === 'same') merged++; });
-          sdRender();
-          showToast('\u2705 AI \u0E40\u0E2A\u0E23\u0E47\u0E08: \u0E41\u0E19\u0E30\u0E19\u0E33 merge '+merged+' \u0E01\u0E25\u0E38\u0E48\u0E21', 'success');
-          return;
-        }
-        var batch = batches[batchIdx];
-        var info = batch.items.map(function(g, i) {
-          var allSingers = [g.keep.singer||'?'].concat(g.dels.map(function(d) { return d.singer||'?'; }));
-          var allArtists = [g.keep.artist||'?'].concat(g.dels.map(function(d) { return d.artist||'?'; }));
-          return (batch.start+i+1)+'. "'+g.name+'" singers:['+allSingers.join(',')+'] artists:['+allArtists.join(',')+'] ('+g.count+' copies, keep score:'+_sdScore(g.keep)+')';
-        }).join('\n');
-        var prompt = 'Analyze duplicate songs ('+(_sdTab === 'same' ? 'same singer' : 'diff singers')+') in Thai music DB:\n'+info
-          + '\n\nRespond JSON array: [{"group":N,"action":"merge"|"skip","reason":"brief Thai reason"}]\nmerge=true dup, safe to delete\nskip=different ver/cover\nJSON only';
-        _sdCallGemini(prompt, function(result) {
-          if (result && Array.isArray(result)) {
-            result.forEach(function(r) {
-              var idx = (r.group || 0) - 1;
-              if (idx >= 0 && idx < groups.length) {
-                var g = groups[idx];
-                _sdAiResults[g.name.toLowerCase()] = r;
-                if (r.action === 'merge' && _sdTab === 'same') {
-                  sdSelectGroup(g.keep.id, g.dels.map(function(d) { return d.id; }));
-                }
-              }
-            });
-          }
-          batchIdx++;
-          btn.innerHTML = '\uD83E\uDD16 '+Math.min(batchIdx * batchSize, groups.length)+'/'+groups.length+'...';
-          nextExactBatch();
-        });
-      }
-      nextExactBatch();
-    }
-  }
-
-  function sdAiGroup(idx) {
-    var groups = _sdGroups[_sdTab] || [];
-    var g = groups[idx]; if (!g) return;
-    var el = document.getElementById('sd-ai-res-'+idx);
-    if (el) el.innerHTML = '<span style="color:#667eea;font-size:.82rem">\uD83E\uDD16 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E27\u0E34\u0E40\u0E04\u0E23\u0E32\u0E30\u0E2B\u0E4C...</span>';
-
-    if (_sdTab === 'fuzzy') {
-      var songsInfo = g.songs.map(function(s) { return '"'+s.name+'" (singer:'+s.singer+', artist:'+(s.artist||'?')+', key:'+(s.key||'?')+')'; }).join(', ');
-      var prompt = 'Song pair: "'+g.nameA+'" vs "'+g.nameB+'" (dist '+g.distance+', '+g.matchType+')\nAll songs: '+songsInfo
-        + '\nAre these the same Thai song with typo/spacing?\nJSON only: {"same":true/false,"correctName":"if same","reason":"brief Thai reason"}';
-      _sdCallGemini(prompt, function(result) {
-        if (!result) { if (el) el.innerHTML = '<span style="color:#dc2626;font-size:.82rem">\u26A0\uFE0F AI \u0E27\u0E34\u0E40\u0E04\u0E23\u0E32\u0E30\u0E2B\u0E4C\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49</span>'; return; }
-        _sdAiResults[g.nameA.toLowerCase()+'||'+g.nameB.toLowerCase()] = result;
-        sdRender();
-      });
-    } else {
-      var allSingers = [g.keep.singer||'?'].concat(g.dels.map(function(d) { return d.singer||'?'; }));
-      var allArtists = [g.keep.artist||'?'].concat(g.dels.map(function(d) { return d.artist||'?'; }));
-      var prompt = 'Song "'+g.name+'" has '+g.count+' entries \u2014 singers:['+allSingers.join(',')+'] artists:['+allArtists.join(',')+']'
-        + '\nKeep: key='+g.keep.key+' bpm='+g.keep.bpm+' mood='+g.keep.mood+' era='+g.keep.era+' tags='+g.keep.tags
-        + '\nIs this true dup for merge or different ver?\nJSON only: {"action":"merge"|"skip","reason":"brief Thai reason"}';
-      _sdCallGemini(prompt, function(result) {
-        if (!result) { if (el) el.innerHTML = '<span style="color:#dc2626;font-size:.82rem">\u26A0\uFE0F AI \u0E27\u0E34\u0E40\u0E04\u0E23\u0E32\u0E30\u0E2B\u0E4C\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49</span>'; return; }
-        _sdAiResults[g.name.toLowerCase()] = result;
-        sdRender();
+      if (btn) btn.textContent = '\uD83D\uDD0D ' + i + '/' + incomplete.length + '...';
+      var s = incomplete[i];
+      _sdSearchItunes(s.name, s.singer, function(result) {
+        if (result) { _sdEnrichCache[s.id] = result; done++; }
+        setTimeout(function() { next(i + 1); }, 400);
       });
     }
+    next(0);
   }
 
   // ── Inline Editing ─────────────────────────────────────────────────────────
@@ -1213,97 +1049,6 @@
       }
     });
   }
-  // ── AI Enrich (per-song metadata lookup) ──────────────────────────────────
-  function _sdEnrichPrompt(song) {
-    return 'You are a Thai/international music metadata expert. Given this song from a Thai music database, verify and suggest corrections for ALL fields.\n\n'
-      + 'Current data:\n'
-      + '- name: "'+(song.name||'')+'"\n'
-      + '- singer: "'+(song.singer||'')+'"\n'
-      + '- artist: "'+(song.artist||'')+'"\n'
-      + '- key: "'+(song.key||'')+'"\n'
-      + '- bpm: '+(song.bpm||'null')+'\n'
-      + '- mood: "'+(song.mood||'')+'"\n'
-      + '- era: "'+(song.era||'')+'"\n'
-      + '- tags: "'+(song.tags||'')+'"\n\n'
-      + 'Rules:\n'
-      + '- name: correct Thai/English spelling, remove typos\n'
-      + '- singer: the vocalist who sang it\n'
-      + '- artist: the band/composer/original artist\n'
-      + '- key: music key like C, Cm, D, Eb, F#m etc.\n'
-      + '- bpm: beats per minute (integer)\n'
-      + '- mood: MUST be one of: \u0E21\u0E31\u0E19 / \u0E2A\u0E19\u0E38\u0E01, \u0E2B\u0E27\u0E32\u0E19 / \u0E42\u0E23\u0E41\u0E21\u0E19\u0E15\u0E34\u0E01, \u0E40\u0E28\u0E23\u0E49\u0E32 / \u0E2D\u0E01\u0E2B\u0E31\u0E01, \u0E19\u0E34\u0E48\u0E07 / \u0E1C\u0E48\u0E2D\u0E19\u0E04\u0E25\u0E32\u0E22, \u0E2E\u0E36\u0E01\u0E40\u0E2B\u0E34\u0E21 / \u0E22\u0E34\u0E48\u0E07\u0E43\u0E2B\u0E0D\u0E48\n'
-      + '- era: MUST be one of: 80s, 90s, 2000s, 2010s, 2020s (based on release year: 80s=1980-1989, 90s=1990-1999, 2000s=2000-2009, 2010s=2010-2019, 2020s=2020+)\n'
-      + '- tags: MUST be one of: \u0E1B\u0E4A\u0E2D\u0E1B, \u0E23\u0E47\u0E2D\u0E04, \u0E14\u0E34\u0E2A\u0E42\u0E01\u0E49, \u0E2E\u0E34\u0E1B\u0E2E\u0E2D\u0E1B, \u0E25\u0E39\u0E01\u0E17\u0E38\u0E48\u0E07 / \u0E2D\u0E35\u0E2A\u0E32\u0E19, \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E0A\u0E35\u0E27\u0E34\u0E15, \u0E2A\u0E32\u0E01\u0E25\u0E40\u0E01\u0E48\u0E32, \u0E2A\u0E32\u0E01\u0E25\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19\n\n'
-      + 'Respond JSON only: {"name":"...","singer":"...","artist":"...","key":"...","bpm":N,"mood":"...","era":"...","tags":"...","confidence":0.0-1.0,"notes":"brief Thai explanation of changes"}';
-  }
-
-  function sdAiEnrich(songId, forceRetry) {
-    var el = document.getElementById('sd-enrich-'+songId);
-    if (!el) return;
-    if (!forceRetry && el.style.display !== 'none') { el.style.display = 'none'; return; }
-    var song = _sdAllSongs.find(function(s) { return s.id === songId; });
-    if (!song) { showToast('\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E25\u0E07', 'error'); return; }
-    // Check cache
-    if (!forceRetry && _sdEnrichCache[songId]) { _sdShowEnrich(songId, song, _sdEnrichCache[songId]); return; }
-    el.style.display = '';
-    el.innerHTML = '<div style="padding:10px;text-align:center;color:#667eea;font-size:.84rem">\uD83E\uDD16 AI \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E25\u0E07...</div>';
-    _sdCallGemini(_sdEnrichPrompt(song), function(result, errText) {
-      if (!result || typeof result !== 'object') {
-        var msg = errText || 'unknown error';
-        el.innerHTML = '<div style="padding:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:.82rem">'
-          + '<span style="color:#dc2626;font-weight:600">\u26A0\uFE0F AI \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E44\u0E14\u0E49</span>'
-          + '<div style="color:#9ca3af;font-size:.72rem;margin-top:4px">'+escapeHtml(msg)+'</div>'
-          + '<button onclick="sdAiEnrich(\''+songId+'\',true)" style="margin-top:6px;background:#6366f1;color:#fff;border:none;border-radius:4px;padding:3px 10px;font-size:.76rem;cursor:pointer">\uD83D\uDD04 \u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48</button></div>';
-        return;
-      }
-      _sdEnrichCache[songId] = result;
-      _sdShowEnrich(songId, song, result);
-    });
-  }
-
-  function _sdShowEnrich(songId, song, ai) {
-    var el = document.getElementById('sd-enrich-'+songId);
-    if (!el) return;
-    el.style.display = '';
-    var conf = ai.confidence ? Math.round(ai.confidence * 100) : '?';
-    var confColor = conf >= 80 ? '#16a34a' : conf >= 50 ? '#d97706' : '#dc2626';
-    var fields = ['name','singer','artist','key','bpm','mood','era','tags'];
-    var icons = { name:'\uD83C\uDFB6', singer:'\uD83C\uDFA4', artist:'\uD83D\uDC64', key:'\uD83C\uDFB5', bpm:'\u266A', mood:'\uD83D\uDCAB', era:'\uD83D\uDCC5', tags:'\uD83C\uDFF7\uFE0F' };
-    var labels = { name:'\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07', singer:'Singer', artist:'Artist', key:'Key', bpm:'BPM', mood:'Mood', era:'Era', tags:'Tags' };
-    var rows = '';
-    var hasDiff = false;
-    fields.forEach(function(f) {
-      var cur = String(song[f] || '');
-      var sug = String(ai[f] != null ? ai[f] : '');
-      if (!sug) return;
-      var changed = cur.toLowerCase().trim() !== sug.toLowerCase().trim();
-      if (changed) hasDiff = true;
-      var curStyle = changed && cur ? 'text-decoration:line-through;color:#9ca3af' : 'color:var(--premium-text)';
-      var sugStyle = changed ? 'color:#16a34a;font-weight:600' : 'color:var(--premium-text-muted)';
-      var safeVal = sug.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      var applyBtn = changed ? '<button onclick="sdApplyEnrich(\''+songId+'\',\''+f+'\',\''+safeVal+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:4px;padding:1px 6px;font-size:.65rem;cursor:pointer;white-space:nowrap">\u0E43\u0E0A\u0E49</button>' : '\u2714\uFE0F';
-      rows += '<tr>'
-        + '<td style="padding:3px 6px;font-size:.76rem;white-space:nowrap">'+icons[f]+' '+labels[f]+'</td>'
-        + '<td style="padding:3px 6px;font-size:.78rem;'+curStyle+'">'+escapeHtml(cur || '\u2014')+'</td>'
-        + '<td style="padding:3px 6px;font-size:.78rem;'+sugStyle+'">'+escapeHtml(sug)+'</td>'
-        + '<td style="padding:3px 4px;text-align:center">'+applyBtn+'</td></tr>';
-    });
-    el.innerHTML = '<div style="background:linear-gradient(135deg,#faf5ff,#eff6ff);border:1px solid #c4b5fd;border-radius:8px;padding:10px;margin:6px 0">'
-      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">'
-      + '<span style="font-weight:700;font-size:.86rem;color:#7c3aed">\uD83E\uDD16 AI \u0E41\u0E19\u0E30\u0E19\u0E33\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25</span>'
-      + '<span style="background:'+confColor+';color:#fff;font-size:.65rem;padding:2px 8px;border-radius:12px;font-weight:600">\u0E04\u0E27\u0E32\u0E21\u0E21\u0E31\u0E48\u0E19\u0E43\u0E08 '+conf+'%</span>'
-      + (hasDiff ? '<button onclick="sdApplyAllEnrich(\''+songId+'\')" style="margin-left:auto;background:linear-gradient(135deg,#16a34a,#059669);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:.76rem;cursor:pointer;font-weight:600">\u2705 \u0E43\u0E0A\u0E49\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14</button>' : '')
-      + '<button onclick="document.getElementById(\'sd-enrich-'+songId+'\').style.display=\'none\'" style="background:transparent;border:none;cursor:pointer;font-size:.8rem;color:#9ca3af">\u2715</button>'
-      + '</div>'
-      + (ai.notes ? '<div style="font-size:.78rem;color:#4b5563;margin-bottom:8px;padding:4px 8px;background:#fff;border-radius:4px;border-left:3px solid #7c3aed">\uD83D\uDCDD '+escapeHtml(ai.notes)+'</div>' : '')
-      + '<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid #e5e7eb">'
-      + '<th style="padding:3px 6px;font-size:.68rem;color:#9ca3af;text-align:left">\u0E1F\u0E34\u0E25\u0E14\u0E4C</th>'
-      + '<th style="padding:3px 6px;font-size:.68rem;color:#9ca3af;text-align:left">\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19</th>'
-      + '<th style="padding:3px 6px;font-size:.68rem;color:#9ca3af;text-align:left">AI \u0E41\u0E19\u0E30\u0E19\u0E33</th>'
-      + '<th style="padding:3px 4px;font-size:.68rem;color:#9ca3af;text-align:center"></th>'
-      + '</tr></thead><tbody>'+rows+'</tbody></table></div>';
-  }
-
   function sdApplyEnrich(songId, field, value) {
     var data = { songId: songId };
     data[field] = field === 'bpm' ? (parseInt(value) || null) : value;
@@ -1312,7 +1057,6 @@
         var s = _sdAllSongs.find(function(x) { return x.id === songId; });
         if (s) s[field] = data[field];
         showToast('\u2705 \u0E2D\u0E31\u0E1E\u0E40\u0E14\u0E17 '+field+' \u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22', 'success');
-        _sdShowEnrich(songId, s, _sdEnrichCache[songId]);
         sdRender();
       } else { showToast('\u274C '+((r && r.message) || 'error'), 'error'); }
     });
@@ -1337,57 +1081,9 @@
       if (r && r.success) {
         Object.keys(data).forEach(function(f) { if (f !== 'songId') song[f] = data[f]; });
         showToast('\u2705 \u0E2D\u0E31\u0E1E\u0E40\u0E14\u0E17\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22', 'success');
-        _sdShowEnrich(songId, song, ai);
         sdRender();
       } else { showToast('\u274C '+((r && r.message) || 'error'), 'error'); }
     });
-  }
-
-  function sdAiEnrichBatch() {
-    if (!_sdAllSongs.length) { showToast('\u0E42\u0E2B\u0E25\u0E14\u0E40\u0E1E\u0E25\u0E07\u0E01\u0E48\u0E2D\u0E19', 'error'); return; }
-    var incomplete = _sdAllSongs.filter(function(s) { return _sdScore(s) < 6; });
-    if (!incomplete.length) { showToast('\u2705 \u0E40\u0E1E\u0E25\u0E07\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E04\u0E23\u0E1A\u0E41\u0E25\u0E49\u0E27!', 'success'); return; }
-    var btn = document.getElementById('sd-ai-enrich-btn');
-    btn.disabled = true;
-    var batchSize = 10;
-    var batches = [];
-    for (var b = 0; b < incomplete.length; b += batchSize) batches.push(incomplete.slice(b, b + batchSize));
-    var batchIdx = 0, done = 0;
-    btn.innerHTML = '\uD83E\uDDE0 0/'+incomplete.length+'...';
-
-    function nextBatch() {
-      if (batchIdx >= batches.length) {
-        btn.disabled = false;
-        btn.innerHTML = '\uD83E\uDDE0 AI \u0E15\u0E23\u0E27\u0E08\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25';
-        showToast('\u2705 AI \u0E15\u0E23\u0E27\u0E08\u0E40\u0E2A\u0E23\u0E47\u0E08 '+done+' \u0E40\u0E1E\u0E25\u0E07 \u2014 \u0E01\u0E14\u0E41\u0E16\u0E1A\u0E2A\u0E35\u0E40\u0E02\u0E35\u0E22\u0E27 \u201CAI \u0E21\u0E35\u0E02\u0E49\u0E2D\u0E41\u0E19\u0E30\u0E19\u0E33\u0E41\u0E25\u0E49\u0E27\u201D \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E14\u0E39\u0E1C\u0E25\u0E41\u0E25\u0E30\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19', 'success');
-        sdRender();
-        return;
-      }
-      var batch = batches[batchIdx];
-      var info = batch.map(function(s, i) {
-        return (done+i+1)+'. name:"'+s.name+'" singer:"'+(s.singer||'')+'" artist:"'+(s.artist||'')+'" key:'+(s.key||'?')+' bpm:'+(s.bpm||'?')+' mood:"'+(s.mood||'')+'" era:"'+(s.era||'')+'" tags:"'+(s.tags||'')+'"';
-      }).join('\n');
-      var prompt = 'You are a Thai/international music metadata expert. Verify and complete these songs:\n\n'+info
-        + '\n\nRules: mood MUST be one of: \u0E21\u0E31\u0E19 / \u0E2A\u0E19\u0E38\u0E01, \u0E2B\u0E27\u0E32\u0E19 / \u0E42\u0E23\u0E41\u0E21\u0E19\u0E15\u0E34\u0E01, \u0E40\u0E28\u0E23\u0E49\u0E32 / \u0E2D\u0E01\u0E2B\u0E31\u0E01, \u0E19\u0E34\u0E48\u0E07 / \u0E1C\u0E48\u0E2D\u0E19\u0E04\u0E25\u0E32\u0E22, \u0E2E\u0E36\u0E01\u0E40\u0E2B\u0E34\u0E21 / \u0E22\u0E34\u0E48\u0E07\u0E43\u0E2B\u0E0D\u0E48'
-        + '\nera MUST be one of: 80s, 90s, 2000s, 2010s, 2020s (80s=1980-1989...)'
-        + '\ntags MUST be one of: \u0E1B\u0E4A\u0E2D\u0E1B, \u0E23\u0E47\u0E2D\u0E04, \u0E14\u0E34\u0E2A\u0E42\u0E01\u0E49, \u0E2E\u0E34\u0E1B\u0E2E\u0E2D\u0E1B, \u0E25\u0E39\u0E01\u0E17\u0E38\u0E48\u0E07 / \u0E2D\u0E35\u0E2A\u0E32\u0E19, \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E0A\u0E35\u0E27\u0E34\u0E15, \u0E2A\u0E32\u0E01\u0E25\u0E40\u0E01\u0E48\u0E32, \u0E2A\u0E32\u0E01\u0E25\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19'
-        + '\n\nRespond JSON array: [{"idx":N,"name":"...","singer":"...","artist":"...","key":"...","bpm":N,"mood":"...","era":"...","tags":"...","confidence":0.0-1.0,"notes":"brief Thai"}]\nJSON only';
-      _sdCallGemini(prompt, function(result) {
-        if (result && Array.isArray(result)) {
-          result.forEach(function(r) {
-            var i = (r.idx || 0) - 1;
-            if (i >= 0 && i < batch.length) {
-              _sdEnrichCache[batch[i].id] = r;
-            }
-          });
-        }
-        done += batch.length;
-        batchIdx++;
-        btn.innerHTML = '\uD83E\uDDE0 '+Math.min(done, incomplete.length)+'/'+incomplete.length+'...';
-        nextBatch();
-      });
-    }
-    nextBatch();
   }
 
   function sdRenameGroup(songIds, correctName) {
