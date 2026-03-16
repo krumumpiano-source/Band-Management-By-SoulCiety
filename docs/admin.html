@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="css/compat.css">
   <style>
     .admin-layout{display:grid;grid-template-columns:220px 1fr;gap:var(--spacing-xl)}
-    @media(max-width:768px){.admin-layout{grid-template-columns:1fr}}
+    @media(max-width:1100px){.admin-layout{grid-template-columns:1fr}}
     .admin-nav{display:flex;flex-direction:column;gap:2px}
     .a-nav-group-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--premium-text-muted);padding:12px var(--spacing-md) 4px;margin-top:6px;opacity:.7;border-top:1px solid var(--premium-border)}
     .a-nav-group-title:first-child{border-top:none;margin-top:0;padding-top:4px}
@@ -26,14 +26,14 @@
     .a-nav-item.active,.a-nav-item:hover{background:var(--premium-gold);color:#fff}
     .a-panel{display:none}.a-panel.active{display:block}
     /* Mobile: horizontal pill nav for admin */
-    @media(max-width:768px){
+    @media(max-width:1100px){
       .admin-nav-sidebar{display:none}
       .admin-nav-mobile{display:flex;overflow-x:auto;gap:6px;padding:10px;background:var(--premium-off-white);border-radius:var(--radius-lg);margin-bottom:var(--spacing-md);scrollbar-width:none;-ms-overflow-style:none;flex-wrap:nowrap;border:1px solid var(--premium-border)}
       .admin-nav-mobile::-webkit-scrollbar{display:none}
       .admin-nav-mobile .a-nav-item{white-space:nowrap;padding:7px 12px;font-size:var(--text-xs);flex-shrink:0}
       .admin-nav-mobile .a-nav-group-title{display:none}
     }
-    @media(min-width:769px){
+    @media(min-width:1101px){
       .admin-nav-mobile{display:none}
     }
     .role-select{font-size:var(--text-sm);padding:4px 8px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md)}
@@ -331,8 +331,8 @@
               <button class="btn btn-primary btn-sm" onclick="loadNotifTemplates()">🔄 รีเฟรช</button>
             </div>
             <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:16px">แก้ไขเทมเพลตข้อความสำหรับการแจ้งเตือนต่าง ๆ — ใช้ {{variable}} สำหรับตัวแปร</p>
-            <div style="display:grid;grid-template-columns:220px 1fr;gap:16px" id="templatesLayout">
-              <div id="templateListSide" style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:grid;grid-template-columns:1fr;gap:16px" id="templatesLayout">
+              <div id="templateListSide" style="display:flex;flex-direction:row;flex-wrap:wrap;gap:4px">
                 <div style="color:var(--premium-text-muted);font-size:.78rem;padding:8px">กดรีเฟรชเพื่อโหลด</div>
               </div>
               <div id="templateEditor" style="display:none">
