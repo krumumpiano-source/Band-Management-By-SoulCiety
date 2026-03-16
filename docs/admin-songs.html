@@ -50,12 +50,12 @@
     .pill-era{background:#F1F5F9;color:#475569;border:1px solid #E2E8F0}
     .td-actions{white-space:nowrap;display:flex;gap:6px;align-items:center}
 
-    /* ── iTunes Lookup ── */
-    .btn-itunes{background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD}
-    .btn-itunes:hover{background:#DDD6FE}
+    /* ── Spotify Lookup ── */
+    .btn-spotify{background:#E8F5E9;color:#1DB954;border:1px solid #81C784}
+    .btn-spotify:hover{background:#C8E6C9}
     .itunes-popover-wrap{position:fixed;inset:0;z-index:3990;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;padding:16px}
-    .itunes-popover-box{background:var(--premium-white);border:2px solid #C4B5FD;border-radius:14px;padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.24);min-width:300px;max-width:400px;width:100%}
-    .itunes-popover-box h4{margin:0 0 12px;font-size:.95rem;color:#4C1D95;display:flex;align-items:center;gap:6px}
+    .itunes-popover-box{background:var(--premium-white);border:2px solid #1DB954;border-radius:14px;padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.24);min-width:300px;max-width:420px;width:100%}
+    .itunes-popover-box h4{margin:0 0 12px;font-size:.95rem;color:#1DB954;display:flex;align-items:center;gap:6px}
     .itunes-field{display:flex;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--premium-light-gray);font-size:.83rem;gap:8px}
     .itunes-field:last-of-type{border-bottom:none}
     .itunes-field-label{color:var(--premium-text-muted);font-weight:700;min-width:72px;flex-shrink:0}
@@ -474,11 +474,11 @@
   </div>
 </div>
 
-<!-- ── iTunes Lookup Popover ── -->
+<!-- ── Spotify Lookup Popover ── -->
 <div id="itunesPopoverWrap" style="display:none" class="itunes-popover-wrap" onclick="if(event.target===this)closeItunesPopover()">
   <div class="itunes-popover-box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <h4>🎵 iTunes Lookup</h4>
+      <h4>🎵 Spotify Lookup</h4>
       <button onclick="closeItunesPopover()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9CA3AF;line-height:1;padding:0">✕</button>
     </div>
     <div id="itunesPopoverContent" style="min-height:60px"></div>
@@ -488,6 +488,7 @@
 
 <datalist id="artistDatalist"></datalist>\n<script src="js/i18n.js"></script>
 <script src="js/app.js"></script>
+<script src="js/spotify-api.js"></script>
 <script src="js/nav.js"></script>
 <script>
 // ─── State ───────────────────────────────────────────────────────
@@ -984,7 +985,7 @@ function renderTable() {
       '<td class="hide-lg">' + _buildSel('mood', _MOOD_OPTS,  dMood, 'il-mood',  null,        true)  + '</td>' +
       '<td><div class="td-actions">' +
         '<button class="btn-sm btn-save" id="sbtn-' + id + '" onclick="saveRow(\'' + id + '\')"' + (isDirty ? '' : ' disabled') + '>💾</button>' +
-        ' <button class="btn-sm btn-itunes" onclick="itunesLookup(\'' + jsId + '\')" title="ค้นหาข้อมูลจาก iTunes">🎵</button>' +
+        ' <button class="btn-sm btn-spotify" onclick="itunesLookup(\'' + jsId + '\')" title="ค้นหาข้อมูลจาก Spotify">🎵</button>' +
         ' <button class="btn-sm btn-del" onclick="deleteSong(\'' + id + '\',\'' + esc(s.name) + '\')">🗑️</button>' +
       '</div></td>' +
     '</tr>';
@@ -1933,59 +1934,24 @@ function renderPresence() {
     };
   }
 
-// ─── iTunes Lookup for Admin Songs ─────────────────────────────
+// ─── Spotify Lookup for Admin Songs ─────────────────────────────
 var _itunesPendingSongId = null;
 var _itunesPendingData   = null;
 
 var _AS_ERA_OPTS  = ['80s','90s','2000s','2010s','2020s'];
 var _AS_TAGS_OPTS = ['ป๊อป','ร็อค','ดิสโก้','ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','สากลเก่า','สากลปัจจุบัน'];
-var _AS_ITUNES_FIELDS = [
-  { f:'artist', label:'ศิลปิน',  icon:'👤', type:'text' },
-  { f:'era',    label:'ยุค',     icon:'📅', type:'era'  },
-  { f:'tags',   label:'แนวเพลง',icon:'🏷️', type:'tags' }
+var _AS_MOOD_OPTS = ['สนุกสนาน','เศร้า','โรแมนติก','มันส์','เท่','ชิลล์','อบอุ่น','ทั่วไป'];
+var _AS_KEY_OPTS  = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B','Cm','C#m','Dm','D#m','Em','Fm','F#m','Gm','G#m','Am','A#m','Bm'];
+var _AS_SPOTIFY_FIELDS = [
+  { f:'name',   label:'ชื่อเพลง', icon:'🎶', type:'text' },
+  { f:'artist', label:'ศิลปิน',   icon:'👤', type:'text' },
+  { f:'singer', label:'นักร้อง',  icon:'🎤', type:'text' },
+  { f:'key',    label:'คีย์',     icon:'🎵', type:'key'  },
+  { f:'bpm',    label:'BPM',      icon:'♩',  type:'number' },
+  { f:'mood',   label:'อารมณ์',   icon:'💫', type:'mood' },
+  { f:'era',    label:'ยุค',      icon:'📅', type:'era'  },
+  { f:'tags',   label:'แนวเพลง', icon:'🏷️', type:'tags' }
 ];
-
-function _asGenreToTag(genre) {
-  var g = (genre || '').toLowerCase();
-  if (g.indexOf('pop') !== -1) return 'ป๊อป';
-  if (g.indexOf('rock') !== -1) return 'ร็อค';
-  if (g.indexOf('hip') !== -1 || g.indexOf('rap') !== -1) return 'ฮิปฮอป';
-  if (g.indexOf('dance') !== -1 || g.indexOf('disco') !== -1 || g.indexOf('electronic') !== -1) return 'ดิสโก้';
-  if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1) return 'ลูกทุ่ง / อีสาน';
-  if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1) return 'เพื่อชีวิต';
-  if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1) return 'สากลเก่า';
-  return 'สากลปัจจุบัน';
-}
-
-function _asYearToEra(dateStr) {
-  if (!dateStr) return '';
-  var y = parseInt(dateStr.substring(0, 4));
-  if (!y) return '';
-  if (y < 1990) return '80s';
-  if (y < 2000) return '90s';
-  if (y < 2010) return '2000s';
-  if (y < 2020) return '2010s';
-  return '2020s';
-}
-
-function _asSearchItunes(name, artist, callback) {
-  var term = encodeURIComponent(((artist || '') + ' ' + name).trim());
-  fetch('https://itunes.apple.com/search?term=' + term + '&limit=5&entity=song&media=music&country=TH&lang=th_TH')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (!data || !data.results || !data.results.length) { callback(null, 'ไม่พบเพลงนี้ใน iTunes'); return; }
-      var t = data.results[0];
-      callback({
-        artist:    t.artistName || '',
-        era:       _asYearToEra(t.releaseDate || ''),
-        tags:      _asGenreToTag(t.primaryGenreName || ''),
-        trackName: t.trackName || '',
-        genre:     t.primaryGenreName || '',
-        year:      (t.releaseDate || '').substring(0, 4)
-      }, null);
-    })
-    .catch(function(err) { callback(null, 'Network: ' + (err.message || err)); });
-}
 
 function itunesLookup(songId) {
   var song = _allSongs.find(function(s) { return s.id === songId; });
@@ -1995,10 +1961,10 @@ function itunesLookup(songId) {
   var wrap = document.getElementById('itunesPopoverWrap');
   var cnt  = document.getElementById('itunesPopoverContent');
   var act  = document.getElementById('itunesPopoverActions');
-  cnt.innerHTML = '<div style="text-align:center;color:#7C3AED;padding:16px 0">🔍 กำลังค้นหา &ldquo;<strong>' + esc(song.name) + '</strong>&rdquo;...</div>';
+  cnt.innerHTML = '<div style="text-align:center;color:#1DB954;padding:16px 0">🎵 กำลังค้นหา &ldquo;<strong>' + esc(song.name) + '</strong>&rdquo; ใน Spotify...</div>';
   act.style.display = 'none';
   wrap.style.display = '';
-  _asSearchItunes(song.name, song.artist || '', function(result, errText) {
+  spotifySearch(song.name, song.artist || '', function(result, errText) {
     if (!result) {
       cnt.innerHTML = '<div style="color:#DC2626;font-size:.85rem;padding:10px 0">⚠️ ' + esc(errText || 'ไม่พบข้อมูล') + '</div>'
         + '<button onclick="itunesLookup(\'' + esc(songId) + '\')" style="margin-top:8px;background:#6366f1;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:.8rem;cursor:pointer">🔄 ลองใหม่</button>';
@@ -2010,12 +1976,13 @@ function itunesLookup(songId) {
 
     // Build field-by-field table with checkbox + editable input
     var tableRows = '';
-    _AS_ITUNES_FIELDS.forEach(function(fd) {
+    _AS_SPOTIFY_FIELDS.forEach(function(fd) {
       var sug = result[fd.f] || '';
-      if (!sug) return;
+      if (!sug && fd.f !== 'bpm') return;
+      if (fd.f === 'bpm' && !result.bpm) return;
       var curEl = row ? row.querySelector('[data-field="' + fd.f + '"]') : null;
       var cur = curEl ? (curEl.value || '') : (song[fd.f] || '');
-      var isDiff = cur.toLowerCase().trim() !== sug.toLowerCase().trim();
+      var isDiff = String(cur).toLowerCase().trim() !== String(sug).toLowerCase().trim();
       var inputId = 'as-it-' + fd.f;
       var chkId   = 'as-itchk-' + fd.f;
       var inputHtml;
@@ -2025,6 +1992,14 @@ function itunesLookup(songId) {
       } else if (fd.type === 'tags') {
         inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
           + _AS_TAGS_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+      } else if (fd.type === 'mood') {
+        inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
+          + _AS_MOOD_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+      } else if (fd.type === 'key') {
+        inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
+          + _AS_KEY_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+      } else if (fd.type === 'number') {
+        inputHtml = '<input id="' + inputId + '" type="number" value="' + esc(String(sug)) + '" min="0" max="300" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%;box-sizing:border-box">';
       } else {
         inputHtml = '<input id="' + inputId + '" value="' + esc(sug) + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%;box-sizing:border-box">';
       }
@@ -2037,10 +2012,13 @@ function itunesLookup(songId) {
         + '</tr>';
     });
 
-    var infoHtml = '<div style="background:#f5f3ff;border-radius:6px;padding:6px 10px;margin-bottom:10px;font-size:.78rem;color:#6b7280">'
-      + '🎵 <strong>' + esc(result.trackName) + '</strong>'
+    var infoHtml = '<div style="background:#E8F5E9;border-radius:6px;padding:6px 10px;margin-bottom:10px;font-size:.78rem;color:#374151">'
+      + '🎵 <strong>' + esc(result.trackName || result.name) + '</strong>'
       + (result.year ? ' · ' + esc(result.year) : '')
       + (result.genre ? ' · ' + esc(result.genre) : '')
+      + (result.bpm ? ' · ' + result.bpm + ' BPM' : '')
+      + (result.key ? ' · Key: ' + esc(result.key) : '')
+      + (result.spotifyUrl ? ' · <a href="' + esc(result.spotifyUrl) + '" target="_blank" style="color:#1DB954">เปิดใน Spotify</a>' : '')
       + '</div>';
 
     cnt.innerHTML = infoHtml
@@ -2052,14 +2030,13 @@ function itunesLookup(songId) {
       + '</div>';
 
     act.style.display = '';
-    // Change action button to Apply Selected
-    act.innerHTML = '<button class="btn-sm" style="background:#16a34a;color:#fff;border:none;flex:1" onclick="applyItunesData()">✅ นำไปใช้ที่เลือก</button>'
+    act.innerHTML = '<button class="btn-sm" style="background:#1DB954;color:#fff;border:none;flex:1" onclick="applyItunesData()">✅ นำไปใช้ที่เลือก</button>'
       + '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db" onclick="closeItunesPopover()">ยกเลิก</button>';
   });
 }
 
 function asItunesCheckAll(check) {
-  _AS_ITUNES_FIELDS.forEach(function(fd) {
+  _AS_SPOTIFY_FIELDS.forEach(function(fd) {
     var el = document.getElementById('as-itchk-' + fd.f);
     if (el) el.checked = check;
   });
@@ -2072,7 +2049,7 @@ function applyItunesData() {
   var row = document.querySelector('tr[data-id="' + songId + '"]');
   if (!row) { closeItunesPopover(); showToast('เพลงอยู่คนละหน้า — เปิดหน้าที่มีเพลงนั้นก่อน แล้วกด 🎵 ใหม่', 'warning'); return; }
   var changed = false;
-  _AS_ITUNES_FIELDS.forEach(function(fd) {
+  _AS_SPOTIFY_FIELDS.forEach(function(fd) {
     var chk = document.getElementById('as-itchk-' + fd.f);
     if (!chk || !chk.checked) return;
     var inp = document.getElementById('as-it-' + fd.f);
@@ -2084,7 +2061,7 @@ function applyItunesData() {
   if (changed) {
     var anyEl = row.querySelector('input,select');
     if (anyEl) markDirty(anyEl);
-    showToast('✅ นำข้อมูล iTunes มาใส่แล้ว กด 💾 เพื่อบันทึก', 'success');
+    showToast('✅ นำข้อมูล Spotify มาใส่แล้ว กด 💾 เพื่อบันทึก', 'success');
   } else {
     showToast('ℹ️ ไม่ได้เลือก field ใด', 'info');
   }
