@@ -2366,6 +2366,7 @@ function closeHistory() {
     <label>หมายเหตุ (ไม่บังคับ)</label>
     <textarea id="sugNote" placeholder="เช่น ชื่อศิลปินสะกดผิด, คีย์ไม่ตรง ฯลฯ"></textarea>
   </div>
+  <div id="sugErrorBanner" style="display:none;background:#fee2e2;border:1.5px solid #fca5a5;border-radius:10px;padding:11px 14px;margin-bottom:12px;color:#b91c1c;font-weight:600;font-size:13px"></div>
   <div class="sug-actions" style="flex-wrap:wrap;gap:8px">
     <button class="sug-btn-cancel" onclick="closeSuggestModal()">ยกเลิก</button>
     <button id="sugDeleteBtn" onclick="deleteGlobalSong()" style="display:none;background:#fee2e2;color:#b91c1c;border:1.5px solid #fca5a5;border-radius:10px;padding:0 16px;height:42px;font-size:13px;font-weight:600;cursor:pointer;min-height:unset">🗑️ ลบเพลง</button>
@@ -2407,6 +2408,7 @@ function openSuggestModal(songId, idx) {
   document.getElementById('sugModalHint').style.display = '';
   document.getElementById('sugNoteField').style.display = '';
   document.getElementById('sugSendBtn').textContent = '📤 ส่งแนะนำ';
+  document.getElementById('sugErrorBanner').style.display = 'none';
   _fillSuggestModal(song, songId);
   document.getElementById('suggestModal').style.display = 'block';
 }
@@ -2424,6 +2426,7 @@ function openDirectEditModal(songId, idx) {
   document.getElementById('sugNoteField').style.display = 'none';
   document.getElementById('sugSendBtn').textContent = '💾 บันทึก';
   document.getElementById('sugDeleteBtn').style.display = 'inline-flex';
+  document.getElementById('sugErrorBanner').style.display = 'none';
   _fillSuggestModal(song, songId);
   document.getElementById('suggestModal').style.display = 'block';
 }
@@ -2493,6 +2496,8 @@ function submitSuggestion() {
 
   if (_editDirectMode) {
     // ผู้ดูแลเพลง — บันทึกตรงโดยไม่ผ่าน suggestion workflow
+    var errBanner = document.getElementById('sugErrorBanner');
+    errBanner.style.display = 'none';
     apiCall('updateSong', { songId: songId, data: changes }, function(r) {
       btn.disabled = false; btn.textContent = '💾 บันทึก';
       if (r && r.success) {
@@ -2507,7 +2512,10 @@ function submitSuggestion() {
         }
         renderPage();
       } else {
-        showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+        var msg = (r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+        errBanner.textContent = '❌ ' + msg;
+        errBanner.style.display = 'block';
+        showToast(msg, 'error');
       }
     });
   } else {

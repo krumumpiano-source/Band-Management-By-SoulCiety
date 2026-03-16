@@ -490,10 +490,19 @@
       row.updated_at = new Date().toISOString();
       var { data, error } = await sb.from(table).update(row).eq('id', id).select();
       if (error) throw error;
-      // Supabase returns empty array (no error) when RLS blocks or token expired —
-      // must detect this so we don't report false success to the user
+      // Supabase returns empty array (no error) when RLS blocks or session expired.
+      // Auto-refresh token and retry once before reporting failure.
       if (!data || data.length === 0) {
-        return { success: false, message: 'บันทึกไม่สำเร็จ — กรุณา refresh และลองใหม่ (session อาจหมดอายุ หรือสิทธิ์ไม่เพียงพอ)' };
+        try {
+          var { error: refErr } = await sb.auth.refreshSession();
+          if (!refErr) {
+            var { data: data2, error: err2 } = await sb.from(table).update(row).eq('id', id).select();
+            if (!err2 && data2 && data2.length > 0) {
+              return { success: true, data: toCamel(data2[0]) };
+            }
+          }
+        } catch(e) {}
+        return { success: false, message: 'บันทึกไม่สำเร็จ — กรุณากด "ลองใหม่" หรือ refresh หน้าและ login ใหม่ (session หมดอายุ หรือสิทธิ์ไม่เพียงพอ)' };
       }
       return { success: true, data: toCamel(data[0]) };
     }
