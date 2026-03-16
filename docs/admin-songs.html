@@ -50,6 +50,19 @@
     .pill-era{background:#F1F5F9;color:#475569;border:1px solid #E2E8F0}
     .td-actions{white-space:nowrap;display:flex;gap:6px;align-items:center}
 
+    /* ── iTunes Lookup ── */
+    .btn-itunes{background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD}
+    .btn-itunes:hover{background:#DDD6FE}
+    .itunes-popover-wrap{position:fixed;inset:0;z-index:3990;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;padding:16px}
+    .itunes-popover-box{background:var(--premium-white);border:2px solid #C4B5FD;border-radius:14px;padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.24);min-width:300px;max-width:400px;width:100%}
+    .itunes-popover-box h4{margin:0 0 12px;font-size:.95rem;color:#4C1D95;display:flex;align-items:center;gap:6px}
+    .itunes-field{display:flex;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--premium-light-gray);font-size:.83rem;gap:8px}
+    .itunes-field:last-of-type{border-bottom:none}
+    .itunes-field-label{color:var(--premium-text-muted);font-weight:700;min-width:72px;flex-shrink:0}
+    .itunes-field-val{color:var(--premium-text);word-break:break-word}
+    .itunes-field-changed{color:#7C3AED;font-weight:700}
+    .itunes-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+
     /* ── Stats bar ── */
     .stats-bar{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px}
     .stat-box{background:var(--premium-white);border:1.5px solid var(--premium-border);border-radius:10px;padding:10px 18px;text-align:center;min-width:80px}
@@ -457,6 +470,21 @@
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeAddModal()">ยกเลิก</button>
       <button class="btn-primary" id="addSaveBtn" onclick="submitAddSong()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── iTunes Lookup Popover ── -->
+<div id="itunesPopoverWrap" style="display:none" class="itunes-popover-wrap" onclick="if(event.target===this)closeItunesPopover()">
+  <div class="itunes-popover-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h4>🎵 iTunes Lookup</h4>
+      <button onclick="closeItunesPopover()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9CA3AF;line-height:1;padding:0">✕</button>
+    </div>
+    <div id="itunesPopoverContent" style="min-height:60px"></div>
+    <div class="itunes-actions" id="itunesPopoverActions" style="display:none">
+      <button class="btn-sm" style="background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD;flex:1" onclick="applyItunesData('empty')">✨ เติมเฉพาะที่ว่าง</button>
+      <button class="btn-sm" style="background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0;flex:1" onclick="applyItunesData('all')">✅ ใช้ทั้งหมด</button>
     </div>
   </div>
 </div>
@@ -959,6 +987,7 @@ function renderTable() {
       '<td class="hide-lg">' + _buildSel('mood', _MOOD_OPTS,  dMood, 'il-mood',  null,        true)  + '</td>' +
       '<td><div class="td-actions">' +
         '<button class="btn-sm btn-save" id="sbtn-' + id + '" onclick="saveRow(\'' + id + '\')"' + (isDirty ? '' : ' disabled') + '>💾</button>' +
+        ' <button class="btn-sm btn-itunes" onclick="itunesLookup(\'' + jsId + '\')" title="ค้นหาข้อมูลจาก iTunes">🎵</button>' +
         ' <button class="btn-sm btn-del" onclick="deleteSong(\'' + id + '\',\'' + esc(s.name) + '\')">🗑️</button>' +
       '</div></td>' +
     '</tr>';
@@ -1906,6 +1935,126 @@ function renderPresence() {
       _origCloseImport.apply(this, arguments);
     };
   }
+
+// ─── iTunes Lookup for Admin Songs ─────────────────────────────
+var _itunesPendingSongId = null;
+var _itunesPendingData   = null;
+
+function _asGenreToTag(genre) {
+  var g = (genre || '').toLowerCase();
+  if (g.indexOf('pop') !== -1) return 'ป๊อป';
+  if (g.indexOf('rock') !== -1) return 'ร็อค';
+  if (g.indexOf('hip') !== -1 || g.indexOf('rap') !== -1) return 'ฮิปฮอป';
+  if (g.indexOf('dance') !== -1 || g.indexOf('disco') !== -1 || g.indexOf('electronic') !== -1) return 'ดิสโก้';
+  if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1) return 'ลูกทุ่ง / อีสาน';
+  if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1) return 'เพื่อชีวิต';
+  if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1) return 'สากลเก่า';
+  return 'สากลปัจจุบัน';
+}
+
+function _asYearToEra(dateStr) {
+  if (!dateStr) return '';
+  var y = parseInt(dateStr.substring(0, 4));
+  if (!y) return '';
+  if (y < 1990) return '80s';
+  if (y < 2000) return '90s';
+  if (y < 2010) return '2000s';
+  if (y < 2020) return '2010s';
+  return '2020s';
+}
+
+function _asSearchItunes(name, artist, callback) {
+  var term = encodeURIComponent(((artist || '') + ' ' + name).trim());
+  fetch('https://itunes.apple.com/search?term=' + term + '&limit=5&entity=song&media=music&country=TH&lang=th_TH')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data || !data.results || !data.results.length) { callback(null, 'ไม่พบเพลงนี้ใน iTunes'); return; }
+      var t = data.results[0];
+      callback({
+        artist:    t.artistName || '',
+        era:       _asYearToEra(t.releaseDate || ''),
+        tags:      _asGenreToTag(t.primaryGenreName || ''),
+        trackName: t.trackName || '',
+        genre:     t.primaryGenreName || '',
+        year:      (t.releaseDate || '').substring(0, 4)
+      }, null);
+    })
+    .catch(function(err) { callback(null, 'Network: ' + (err.message || err)); });
+}
+
+function itunesLookup(songId) {
+  var song = _allSongs.find(function(s) { return s.id === songId; });
+  if (!song) return;
+  _itunesPendingSongId = songId;
+  _itunesPendingData   = null;
+  var wrap = document.getElementById('itunesPopoverWrap');
+  var cnt  = document.getElementById('itunesPopoverContent');
+  var act  = document.getElementById('itunesPopoverActions');
+  cnt.innerHTML = '<div style="text-align:center;color:#7C3AED;padding:16px 0">🔍 กำลังค้นหา &ldquo;<strong>' + esc(song.name) + '</strong>&rdquo;...</div>';
+  act.style.display = 'none';
+  wrap.style.display = '';
+  _asSearchItunes(song.name, song.artist || song.singer, function(result, errText) {
+    if (!result) {
+      cnt.innerHTML = '<div style="color:#DC2626;font-size:.85rem;padding:10px 0">⚠️ ' + esc(errText || 'ไม่พบข้อมูล') + '</div>';
+      return;
+    }
+    _itunesPendingData = result;
+    var row = document.querySelector('tr[data-id="' + songId + '"]');
+    var curArtist = row ? ((row.querySelector('[data-field="artist"]') || {}).value || '') : (song.artist || '');
+    var curEra    = row ? ((row.querySelector('[data-field="era"]')    || {}).value || '') : (song.era    || '');
+    var curTags   = row ? ((row.querySelector('[data-field="tags"]')   || {}).value || '') : (song.tags   || '');
+    var fields = [
+      { label: 'เพลงที่พบ', val: result.trackName, diff: false },
+      { label: 'ศิลปิน',    val: result.artist,    diff: !!result.artist && curArtist !== result.artist },
+      { label: 'ยุค',       val: result.era,       diff: !!result.era  && curEra  !== result.era  },
+      { label: 'แนวเพลง',   val: result.tags,      diff: !!result.tags && curTags !== result.tags  },
+      { label: 'ปีที่ออก', val: result.year,       diff: false },
+      { label: 'Genre',     val: result.genre,     diff: false }
+    ];
+    var html = '';
+    fields.forEach(function(f) {
+      if (!f.val) return;
+      html += '<div class="itunes-field"><span class="itunes-field-label">' + esc(f.label) + '</span>' +
+        '<span class="itunes-field-val' + (f.diff ? ' itunes-field-changed' : '') + '">' + esc(f.val) + (f.diff ? ' ✏️' : '') + '</span></div>';
+    });
+    cnt.innerHTML = html || '<div style="color:#94a3b8;font-size:.85rem">ไม่มีข้อมูลเพิ่มเติม</div>';
+    act.style.display = '';
+  });
+}
+
+function applyItunesData(mode) {
+  var songId = _itunesPendingSongId;
+  var data   = _itunesPendingData;
+  if (!songId || !data) return;
+  var row = document.querySelector('tr[data-id="' + songId + '"]');
+  if (!row) { closeItunesPopover(); showToast('เพลงอยู่คนละหน้า — เปิดหน้าที่มีเพลงนั้นก่อน แล้วกด 🎵 ใหม่', 'warning'); return; }
+  var changed = false;
+  function setField(field, newVal) {
+    if (!newVal) return;
+    var el = row.querySelector('[data-field="' + field + '"]');
+    if (!el) return;
+    if (mode === 'empty' && (el.value || '').trim()) return;
+    el.value = newVal;
+    changed = true;
+  }
+  setField('artist', data.artist);
+  setField('era',    data.era);
+  setField('tags',   data.tags);
+  if (changed) {
+    var anyEl = row.querySelector('input,select');
+    if (anyEl) markDirty(anyEl);
+    showToast('✅ นำข้อมูล iTunes มาใส่แล้ว กด 💾 เพื่อบันทึก', 'success');
+  } else {
+    showToast('ℹ️ ไม่มีช่องที่ว่างให้เติม', 'info');
+  }
+  closeItunesPopover();
+}
+
+function closeItunesPopover() {
+  document.getElementById('itunesPopoverWrap').style.display = 'none';
+  _itunesPendingSongId = null;
+  _itunesPendingData   = null;
+}
 
   // Track song manager panel
   var _origToggleSM = window.toggleSongManagerPanel;
