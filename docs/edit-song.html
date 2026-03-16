@@ -54,6 +54,7 @@
 <body>
   <div id="mainNav"></div>
   <div id="toast"></div>
+  <div id="saveError" style="display:none;position:sticky;top:0;z-index:999;background:#fee2e2;border-bottom:2px solid #fca5a5;padding:12px 20px;color:#b91c1c;font-weight:600;font-size:14px;text-align:center"></div>
   <main>
     <div class="container" style="max-width:640px">
       <div class="page-header">
@@ -177,8 +178,22 @@
     } else {
       showToast('ไม่มี songId ใน URL', 'error');
     }
+    // ── Dirty tracking: เตือนเมื่อจะออกก่อนบันทึก ─────────────
+    var _formDirty = false;
+    var _saveSuccess = false;
+    document.getElementById('editSongForm').addEventListener('input', function() { _formDirty = true; });
+    document.getElementById('editSongForm').addEventListener('change', function() { _formDirty = true; });
+    window.addEventListener('beforeunload', function(ev) {
+      if (_formDirty && !_saveSuccess) {
+        ev.preventDefault();
+        ev.returnValue = 'มีข้อมูลที่ยังไม่ได้บันทึก — ออกจากหน้านี้จริงหรือ?';
+      }
+    });
+
     document.getElementById('editSongForm').addEventListener('submit', function(e) {
       e.preventDefault();
+      var errDiv = document.getElementById('saveError');
+      errDiv.style.display = 'none';
       var btn = document.getElementById('saveBtn'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
       var singerRadio = document.querySelector('input[name="singer"]:checked');
       apiCall('updateSong', {
@@ -194,6 +209,7 @@
       }, function(r) {
         btn.disabled = false; btn.textContent = '💾 บันทึก';
         if (r && r.success) {
+          _formDirty = false; _saveSuccess = true;
           // auto-save artist to master table
           var art = document.getElementById('artist').value.trim();
           if (art) apiCall('ensureArtist', { name: art });
@@ -201,10 +217,15 @@
           var bid = localStorage.getItem('bandId') || '';
           var bn  = localStorage.getItem('bandName') || '';
           try { sessionStorage.removeItem('songs_cache_' + (bid || bn)); } catch(e) {}
-          showToast('บันทึกเรียบร้อย','success');
+          showToast('บันทึกเรียบร้อย ✅','success');
           setTimeout(function(){ window.location.href='songs.html'; },1000);
+        } else {
+          var msg = (r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+          errDiv.textContent = '❌ ' + msg;
+          errDiv.style.display = 'block';
+          errDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast(msg, 'error');
         }
-        else showToast((r&&r.message)||'เกิดข้อผิดพลาด','error');
       });
     });
   });
