@@ -1034,11 +1034,15 @@
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     }).then(function(res) { return res.json(); })
     .then(function(data) {
-      if (!data || !data.candidates || !data.candidates[0]) { callback(null); return; }
+      if (data && data.error) { callback(null, 'API Error: ' + (data.error.message || data.error.status || JSON.stringify(data.error))); return; }
+      if (!data || !data.candidates || !data.candidates[0]) {
+        var reason = (data && data.promptFeedback && data.promptFeedback.blockReason) || '';
+        callback(null, reason ? 'Blocked: ' + reason : 'No response from AI'); return;
+      }
       var text = data.candidates[0].content.parts[0].text || '';
       var jsonStr = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-      try { callback(JSON.parse(jsonStr)); } catch(e) { callback(null, text); }
-    }).catch(function(err) { callback(null, err.message); });
+      try { callback(JSON.parse(jsonStr)); } catch(e) { callback(null, 'JSON parse error: ' + text.substring(0, 100)); }
+    }).catch(function(err) { callback(null, 'Network: ' + err.message); });
   }
 
   function sdAiBatch() {
@@ -1233,19 +1237,23 @@
       + 'Respond JSON only: {"name":"...","singer":"...","artist":"...","key":"...","bpm":N,"mood":"...","era":"...","tags":"...","confidence":0.0-1.0,"notes":"brief Thai explanation of changes"}';
   }
 
-  function sdAiEnrich(songId) {
+  function sdAiEnrich(songId, forceRetry) {
     var el = document.getElementById('sd-enrich-'+songId);
     if (!el) return;
-    if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+    if (!forceRetry && el.style.display !== 'none') { el.style.display = 'none'; return; }
     var song = _sdAllSongs.find(function(s) { return s.id === songId; });
     if (!song) { showToast('\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E25\u0E07', 'error'); return; }
     // Check cache
-    if (_sdEnrichCache[songId]) { _sdShowEnrich(songId, song, _sdEnrichCache[songId]); return; }
+    if (!forceRetry && _sdEnrichCache[songId]) { _sdShowEnrich(songId, song, _sdEnrichCache[songId]); return; }
     el.style.display = '';
     el.innerHTML = '<div style="padding:10px;text-align:center;color:#667eea;font-size:.84rem">\uD83E\uDD16 AI \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E25\u0E07...</div>';
-    _sdCallGemini(_sdEnrichPrompt(song), function(result) {
+    _sdCallGemini(_sdEnrichPrompt(song), function(result, errText) {
       if (!result || typeof result !== 'object') {
-        el.innerHTML = '<div style="padding:8px;color:#dc2626;font-size:.82rem">\u26A0\uFE0F AI \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E44\u0E14\u0E49</div>';
+        var msg = errText || 'unknown error';
+        el.innerHTML = '<div style="padding:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:.82rem">'
+          + '<span style="color:#dc2626;font-weight:600">\u26A0\uFE0F AI \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E44\u0E14\u0E49</span>'
+          + '<div style="color:#9ca3af;font-size:.72rem;margin-top:4px">'+escapeHtml(msg)+'</div>'
+          + '<button onclick="sdAiEnrich(\''+songId+'\',true)" style="margin-top:6px;background:#6366f1;color:#fff;border:none;border-radius:4px;padding:3px 10px;font-size:.76rem;cursor:pointer">\uD83D\uDD04 \u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48</button></div>';
         return;
       }
       _sdEnrichCache[songId] = result;
