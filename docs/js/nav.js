@@ -136,7 +136,7 @@ function renderMainNav(containerId) {
         _admSub('sysinfo',      '📊', 'ระบบ') +
         _admSub('appconfig',    '⚙️', 'ตั้งค่า') +
         _admSub('activitylog',  '📋', 'Activity Log') +
-        navLink('admin-songs',  '🎵 คลังเพลง', '') +
+        navLink('admin-songs',  '🗂️ จัดการคลังเพลง', '') +
         _admSub('songdup',      '🔍', 'ตรวจเพลงซ้ำ') +
         navLink('member-worklog', '📊 รายงานงานสมาชิก', '') +
       '</ul>' +
