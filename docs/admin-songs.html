@@ -560,6 +560,7 @@ var _presenceChannel = null; // Supabase Presence channel
 var _myActivity = 'ดูรายการ'; // current user activity description
 var _hiddenHistSongs = {}; // hidden history song keys (lowercase name → true)
 var _verifiedSongs = {}; // songId → { by: name, at: ISO timestamp }
+var _userNameMap = {}; // userId → display name
 var _COMPLETENESS_FIELDS = ['name','artist','key','bpm','singer','era','tags','mood'];
 
 // ─── Init ─────────────────────────────────────────────────────────
@@ -598,6 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   updateModalKeyOptions();
   loadArtists();
+  loadUserNameMap();
   loadSongs();
   loadSuggestions();
   initPresence();
@@ -1022,6 +1024,25 @@ function missingFields(s) {
   return miss;
 }
 
+function resolveUserName(uid) {
+  if (!uid) return '';
+  if (_userNameMap[uid]) return _userNameMap[uid];
+  // If it doesn't look like a UUID, it's probably already a name
+  if (uid.indexOf('-') < 0 || uid.length < 20) return uid;
+  return uid.substring(0, 8) + '...';
+}
+
+function loadUserNameMap() {
+  apiCall('getBandProfiles', {}, function(r) {
+    if (!r || !r.success) return;
+    (r.data || []).forEach(function(p) {
+      var name = p.nickname || p.user_name || p.first_name || p.email || '';
+      if (name && p.id) _userNameMap[p.id] = name;
+    });
+    if (_allSongs.length) refilterKeepPage();
+  });
+}
+
 function loadVerifiedSongs(cb) {
   apiCall('getBandSettings', {}, function(r) {
     var settings = (r && r.success && r.data) || {};
@@ -1107,7 +1128,8 @@ function renderTable() {
     var editInfo = '';
     if (s.updatedBy && s.updatedAt) {
       var diffH = (Date.now() - new Date(s.updatedAt).getTime()) / 3600000;
-      if (diffH < 24) editInfo = '<div class="edit-info" title="แก้ไขล่าสุดโดย ' + esc(s.updatedBy) + '">' + esc(s.updatedBy) + '</div>';
+      var editorName = resolveUserName(s.updatedBy);
+      if (diffH < 24) editInfo = '<div class="edit-info" title="แก้ไขล่าสุดโดย ' + esc(editorName) + '">' + esc(editorName) + '</div>';
     }
     // Row class
     var rowClass = isDirty ? 'row-dirty' : '';
