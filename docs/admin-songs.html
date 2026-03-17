@@ -1939,6 +1939,18 @@ function renderPresence() {
     };
   }
 
+  // Track song manager panel
+  var _origToggleSM = window.toggleSongManagerPanel;
+  if (_origToggleSM) {
+    window.toggleSongManagerPanel = function() {
+      var panel = document.getElementById('smPanel');
+      var willOpen = !panel.classList.contains('show');
+      _origToggleSM.apply(this, arguments);
+      updateMyActivity(willOpen ? 'ตั้งค่าผู้ดูแล' : 'ดูรายการ');
+    };
+  }
+})();
+
 // ─── iTunes Lookup for Admin Songs ──────────────────────────────
 var _itunesPendingSongId = null;
 var _itunesPendingData   = null;
@@ -2082,17 +2094,6 @@ function closeItunesPopover() {
   _itunesPendingData   = null;
 }
 
-  // Track song manager panel
-  var _origToggleSM = window.toggleSongManagerPanel;
-  if (_origToggleSM) {
-    window.toggleSongManagerPanel = function() {
-      var panel = document.getElementById('smPanel');
-      var willOpen = !panel.classList.contains('show');
-      _origToggleSM.apply(this, arguments);
-      updateMyActivity(willOpen ? 'ตั้งค่าผู้ดูแล' : 'ดูรายการ');
-    };
-  }
-})();
 </script>
 </body>
 </html>
