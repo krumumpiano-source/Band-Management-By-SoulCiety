@@ -13,9 +13,7 @@
   function genreToTag(genre) {
     var g = (genre || '').toLowerCase();
     if (g.indexOf('rock') !== -1 || g.indexOf('metal') !== -1 || g.indexOf('punk') !== -1) return 'ร็อค';
-    if (g.indexOf('k-pop') !== -1 || g.indexOf('k pop') !== -1 || g.indexOf('korean') !== -1) return 'เคป๊อป';
-    if (g.indexOf('j-pop') !== -1 || g.indexOf('j pop') !== -1 || g.indexOf('japanese') !== -1 || g.indexOf('anime') !== -1) return 'เจป๊อป';
-    if (g.indexOf('hip') !== -1 || g.indexOf('rap') !== -1) return 'ฮิปฮอป';
+    if (g.indexOf('hip') !== -1 || g.indexOf('rap') !== -1) return 'แร๊ฟ/ฮิปฮอป';
     if (g.indexOf('dance') !== -1 || g.indexOf('disco') !== -1 || g.indexOf('edm') !== -1 || g.indexOf('electronic') !== -1 || g.indexOf('house') !== -1 || g.indexOf('techno') !== -1) return 'ดิสโก้';
     if (g.indexOf('r&b') !== -1 || g.indexOf('soul') !== -1 || g.indexOf('rnb') !== -1) return 'อาร์แอนด์บี';
     if (g.indexOf('jazz') !== -1 || g.indexOf('blues') !== -1) return 'แจ๊ส / บลูส์';
