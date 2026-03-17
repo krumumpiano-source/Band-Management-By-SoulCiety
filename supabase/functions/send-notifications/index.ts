@@ -362,6 +362,99 @@ function timeToMinutes(hhmm: string): number | null {
   return h * 60 + m;
 }
 
+// ── Notification Type 2+3 (from weekly template in band_settings) ────────────
+// The weekly template stored in band_settings.settings.schedule is keyed by
+// day-of-week (0=Sun … 6=Sat). Each day has an array of slots with startTime.
+// This is what the user sets up via "ตั้งค่าวง" and uses for payroll.
+// The schedule table may be empty, so we fall back to this template.
+async function notifyWeeklyTemplateSlots(thai: Date) {
+  const nowHHMM  = thai.toISOString().substring(11, 16);
+  const todayDate = thaiDateStr(thai);
+  // Derive day-of-week from the Thai-date string (avoids UTC vs local confusion)
+  const todayDow  = new Date(todayDate + 'T12:00:00Z').getDay(); // 0=Sun … 6=Sat
+
+  // Fetch all bands' settings (filter in code for simplicity)
+  const { data: bands, error } = await sb
+    .from('band_settings')
+    .select('band_id, settings');
+
+  if (error || !bands || bands.length === 0) return;
+
+  for (const band of bands) {
+    const s = band.settings || {};
+    if (!s.notifications_enabled) continue;
+
+    // weekly template: { "0": [...slots], "1": [...slots], ... }
+    const schedTemplate = s.schedule || s.scheduleData || {};
+    const todaySlots: Array<{ startTime?: string; endTime?: string; venueId?: string; id?: string }> =
+      schedTemplate[todayDow] ?? schedTemplate[String(todayDow)] ?? [];
+
+    if (!todaySlots.length) continue;
+
+    const venues: Array<{ id: string; name: string }> = (s.venues || []).map(
+      (v: Record<string, string>) => ({ id: v.id || v.venueId || '', name: v.name || v.venueName || '' })
+    );
+
+    const cfg = await getBandNotifConfig(band.band_id);
+    if (!cfg.enabled) continue;
+
+    // Sort slots by startTime ascending
+    const sorted = [...todaySlots]
+      .filter(sl => sl.startTime)
+      .sort((a, b) => (a.startTime! > b.startTime! ? 1 : -1));
+
+    for (let i = 0; i < sorted.length; i++) {
+      const slot = sorted[i];
+      const isFirst     = (i === 0);
+      const reminderMins = isFirst ? cfg.firstSlotMins : cfg.nextSlotMins;
+
+      const slotMin = timeToMinutes(slot.startTime!);
+      const nowMin  = timeToMinutes(nowHHMM);
+      if (slotMin === null || nowMin === null) continue;
+
+      const targetMin = slotMin - reminderMins;
+      const diff      = nowMin - targetMin;
+      if (diff < -3 || diff > 3) continue;  // ±3 min window
+
+      const slotId  = slot.id || `dow${todayDow}_${slot.startTime}`;
+      const refKey  = `weekly_${isFirst ? 'first' : 'next'}_${reminderMins}m:${slotId}:${todayDate}`;
+      const logged  = await logNotification(band.band_id, 'weekly_reminder', refKey);
+      if (!logged) continue;  // already sent today
+
+      const { data: subs } = await sb
+        .from('push_subscriptions')
+        .select('endpoint, p256dh, auth_key')
+        .eq('band_id', band.band_id);
+
+      if (!subs || subs.length === 0) continue;
+
+      const venue     = venues.find(v => v.id === slot.venueId);
+      const venueName = venue ? venue.name : 'งาน';
+
+      let title: string, body: string, type: string, url: string;
+      if (reminderMins >= 60) {
+        const hrs  = Math.floor(reminderMins / 60);
+        const mins = reminderMins % 60;
+        const tl   = mins > 0 ? `${hrs} ชม. ${mins} นาที` : `${hrs} ชั่วโมง`;
+        title = `⏰ อีก ${tl}ถึงเวลางาน!`;
+        body  = venueName + ' · เวลา ' + slot.startTime;
+        type  = 'regular_1hr';
+        url   = APP_BASE + 'schedule.html';
+      } else {
+        title = `📋 อีก ${reminderMins} นาทีถึงเวลางาน!`;
+        body  = venueName + ' · กดเช็คอินได้เลย';
+        type  = 'checkin_5min';
+        url   = APP_BASE + 'check-in.html';
+      }
+
+      const payload = { title, body, type, url };
+      for (const sub of subs) {
+        await sendPush(sub, payload);
+      }
+    }
+  }
+}
+
 // ── Admin: Test push to all band subscribers ────────────────────────────────
 async function handleTestPush(bandId: string, jwt: string, title: string, body: string): Promise<{ sent: number; error?: string }> {
   if (!jwt) return { sent: 0, error: 'Unauthorized — ต้อง login ก่อน' };
@@ -443,7 +536,8 @@ Deno.serve(async (req: Request) => {
 
     await Promise.all([
       notifyExternalJobs(thai),
-      notifyScheduleReminders(thai)
+      notifyScheduleReminders(thai),
+      notifyWeeklyTemplateSlots(thai),
     ]);
 
     return new Response(JSON.stringify({ ok: true }), {
