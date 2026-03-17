@@ -19,6 +19,11 @@
     if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1 || g.indexOf('luk thung') !== -1 || g.indexOf('isan') !== -1) return 'ลูกทุ่ง / อีสาน';
     if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1) return 'เพื่อชีวิต';
     if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1) return 'สากลเก่า';
+    if (g.indexOf('r&b') !== -1 || g.indexOf('soul') !== -1 || g.indexOf('rnb') !== -1) return 'ป๊อป';
+    if (g.indexOf('jazz') !== -1 || g.indexOf('blues') !== -1) return 'สากลเก่า';
+    if (g.indexOf('reggae') !== -1 || g.indexOf('ska') !== -1) return 'เรกเก้';
+    if (g.indexOf('thai') !== -1) return 'ป๊อป';
+    if (g.indexOf('world') !== -1 || g.indexOf('asia') !== -1) return 'ป๊อป';
     return 'สากลปัจจุบัน';
   }
 
