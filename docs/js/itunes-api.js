@@ -118,7 +118,12 @@
             if (sc > bestScore) { bestScore = sc; best = data.results[i]; }
           }
         }
-        callback(mapResult(best), null);
+        var result = mapResult(best);
+        // If original artist is Thai but iTunes returns Latin name → keep Thai
+        if (artist && hasThai(artist) && !hasThai(result.artist)) {
+          result.artist = artist;
+        }
+        callback(result, null);
       })
       .catch(function(err) { callback(null, 'iTunes search error: ' + (err.message || err)); });
   };
@@ -161,7 +166,13 @@
         unique.sort(function(a, b) {
           return artistScore(b, artist) - artistScore(a, artist);
         });
-        var mapped = unique.slice(0, limit).map(mapResult);
+        var mapped = unique.slice(0, limit).map(function(t) {
+          var result = mapResult(t);
+          if (artist && hasThai(artist) && !hasThai(result.artist)) {
+            result.artist = artist;
+          }
+          return result;
+        });
         callback(mapped, null);
       })
       .catch(function(err) { callback(null, 'iTunes search error: ' + (err.message || err)); });
