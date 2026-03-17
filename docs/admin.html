@@ -349,7 +349,7 @@
   </main>
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
-  <script src="js/itunes-api.js?v=20260317c"></script>
+  <script src="js/itunes-api.js?v=20260317d"></script>
   <script src="js/nav.js?v=20260317"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -625,6 +625,10 @@
       var cur = String(s[f] || '');
       var sug = String(ai[f] != null ? ai[f] : '');
       if (!sug) return;
+      // If current artist has Thai text and suggestion is all-Latin, keep Thai name
+      if (f === 'artist' && cur && /[\u0E00-\u0E7F]/.test(cur) && !/[\u0E00-\u0E7F]/.test(sug)) {
+        sug = cur; // prefer existing Thai artist name
+      }
       var isDiff = cur.toLowerCase().trim() !== sug.toLowerCase().trim();
       if (isDiff) hasDiff = true;
       var inputId = 'sd-it-' + f + '-' + s.id;
