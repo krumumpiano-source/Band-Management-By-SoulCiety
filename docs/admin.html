@@ -376,6 +376,16 @@
     });
   });
 
+  // Prevent Backspace from navigating away when not in an editable field
+  document.addEventListener('keydown', function(e) {
+    var tag = (e.target.tagName || '').toLowerCase();
+    var isEditable = (tag === 'input' || tag === 'textarea' || tag === 'select')
+                  || e.target.isContentEditable;
+    if (e.key === 'Backspace' && !isEditable) {
+      e.preventDefault();
+    }
+  });
+
   // ── Band Requests ─────────────────────────────────────────
   function loadBandRequests() {
     apiCall('getPendingBandRequests', {}, function(r) {
