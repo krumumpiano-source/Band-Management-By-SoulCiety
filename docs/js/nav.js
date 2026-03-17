@@ -63,6 +63,16 @@ function renderMainNav(containerId) {
   function navSection(label) {
     return '<li class="nav-section-title">' + label + '</li>';
   }
+  function navSubmenu(icon, title, desc, pages, items) {
+    var isOpen = pages.some(function(p) { return p === currentPage; });
+    return '<li>' +
+      '<div class="nav-submenu-toggle' + (isOpen ? ' open' : '') + '" onclick="this.classList.toggle(\'open\');this.nextElementSibling.classList.toggle(\'open\')">' +
+        '<div>' + icon + ' ' + title + (desc ? '<span class="nav-link-desc">' + desc + '</span>' : '') + '</div>' +
+        '<span class="arrow">▼</span>' +
+      '</div>' +
+      '<ul class="nav-submenu-items' + (isOpen ? ' open' : '') + '">' + items + '</ul>' +
+    '</li>';
+  }
 
   // ── Role display label ────────────────────────────────
   var roleLabel = isAdmin
@@ -76,18 +86,24 @@ function renderMainNav(containerId) {
   var _simpleMenu = localStorage.getItem('accessibility_simple_menu') === '1';
   var memberLinks =
     navSection('🎸 สมาชิกวง') +
-    navLink('dashboard',     '📊 ' + _t('nav_dashboard'),    'ภาพรวมงาน สถิติ และทางลัด') +
-    navLink('songs',         '🎵 ' + _t('nav_songs'),        'เพลงทั้งหมดและเซ็ตลิสต์') +
-    (_simpleMenu ? '' : navLink('song-insights', '📊 ' + _t('nav_songInsights'), 'เพลงที่เล่นบ่อย / ไม่เคยเล่น')) +
-    navLink('schedule',      '📅 ' + _t('nav_schedule'),     'ปฏิทินงานและตารางนัด') +
-    (_simpleMenu ? '' : navLink('statistics',    '💰 ' + _t('nav_statistics'),   'สรุปรายได้รายเดือน')) +
-    (_simpleMenu ? '' : navLink('equipment',     '🎸 ' + _t('nav_equipment'),    'อุปกรณ์วงและงบซ่อมบำรุง')) +
-    (_simpleMenu ? '' : navLink('band-fund',     '💰 ' + _t('nav_bandFund'),     'บัญชีรายรับรายจ่ายกองกลาง')) +
-    navLink('band-info',     '👥 ' + _t('nav_bandInfo'),     'สมาชิก ช่องทางติดต่อ ร้านที่เล่น') +
-    navLink('my-profile',    '👤 ' + _t('nav_myProfile'),    'ข้อมูลส่วนตัวและอัตราค่าตัว') +
-    (_simpleMenu ? '' : navLink('setlist',        '🎼 เซ็ตลิสต์',                 'จัดลำดับเพลงสำหรับงาน')) +
-    (_simpleMenu ? '' : navLink('user-manual',    '📖 คู่มือใช้งาน',              'วิธีใช้งานแต่ละฟีเจอร์')) +
-    (_simpleMenu ? '' : navLink('games',          '🎮 เกมส์ดนตรี',                'เล่นเกมส์กับสมาชิกในวง'));
+    navLink('dashboard', '📊 ' + _t('nav_dashboard'), 'ภาพรวมงาน สถิติ และทางลัด') +
+    (_simpleMenu
+      ? navLink('songs', '🎵 ' + _t('nav_songs'), 'เพลงทั้งหมดและเซ็ตลิสต์')
+      : navSubmenu('🎵', 'เพลง', 'คลังเพลง สถิติ และเซ็ตลิสต์', ['songs', 'song-insights', 'setlist'],
+          navLink('songs',         '🎵 คลังเพลง',  'เพลงทั้งหมดของวง') +
+          navLink('song-insights', '📊 สถิติเพลง', 'เพลงที่เล่นบ่อย / ไม่เคยเล่น') +
+          navLink('setlist',       '🎼 เซ็ตลิสต์',  'จัดลำดับเพลงสำหรับงาน')
+        )
+    ) +
+    navLink('schedule', '📅 ' + _t('nav_schedule'), 'ปฏิทินงานและตารางนัด') +
+    (_simpleMenu ? '' : navSubmenu('💰', 'การเงิน', 'รายได้และเงินกองกลาง', ['statistics', 'band-fund'],
+        navLink('statistics', '💰 รายได้รวม',   'สรุปรายได้รายเดือน') +
+        navLink('band-fund',  '💰 เงินกองกลาง', 'บัญชีรายรับรายจ่ายกองกลาง')
+      )
+    ) +
+    (_simpleMenu ? '' : navLink('equipment', '🎸 ' + _t('nav_equipment'), 'อุปกรณ์วงและงบซ่อมบำรุง')) +
+    navLink('band-info',  '👥 ' + _t('nav_bandInfo'),  'สมาชิก ช่องทางติดต่อ ร้านที่เล่น') +
+    navLink('my-profile', '👤 ' + _t('nav_myProfile'), 'ข้อมูลส่วนตัวและอัตราค่าตัว');
 
   // ── ลิงก์อัปเกรด (แสดงเฉพาะ free/lite) ──────────────
   var _plan = (localStorage.getItem('band_plan') || 'free').toLowerCase();
@@ -103,17 +119,21 @@ function renderMainNav(containerId) {
   // ── เมนูผู้จัดการวง ───────────────────────────────────
   var managerLinks = isManager ? (
     navSection('👔 ผู้จัดการวง') +
-    navLink('attendance-payroll', '📋 ' + _t('nav_attendance'),    'เช็คชื่อเข้างาน & เบิกจ่ายค่าตัว') +
-    navLink('job-calculator',     '🧮 ' + _t('nav_jobCalculator'), 'คำนวณราคารับงานนอก') +
-    navLink('quotation',          '📄 ' + _t('nav_quotation'),     'สร้างและส่งใบเสนอราคา') +
-    navLink('contract',           '📜 สัญญาว่าจ้าง',               'สัญญาจ้างวงดนตรี') +
-    navLink('external-payout',    '💵 ' + _t('nav_externalPayout'),'จ่ายเงินให้คนนอกวง') +
-    navLink('job-history',        '📁 ประวัติงานนอก',               'ประวัติและรายละเอียดงานนอกทั้งหมด') +
-    navLink('band-settings',      '⚙️ ' + _t('nav_settings'),     'ตั้งค่าวง ร้าน และตาราง')
+    navSubmenu('📋', 'เบิกจ่าย', 'ลงเวลาและจ่ายเงิน', ['attendance-payroll', 'external-payout', 'job-history'],
+      navLink('attendance-payroll', '📋 ' + _t('nav_attendance'),    'เช็คชื่อเข้างาน & เบิกจ่ายค่าตัว') +
+      navLink('external-payout',    '💵 ' + _t('nav_externalPayout'),'จ่ายเงินให้คนนอกวง') +
+      navLink('job-history',        '📁 ประวัติงานนอก',               'ประวัติและรายละเอียดงานนอกทั้งหมด')
+    ) +
+    navSubmenu('🧮', 'งานนอก', 'คำนวณ เสนอราคา และสัญญา', ['job-calculator', 'quotation', 'contract'],
+      navLink('job-calculator', '🧮 ' + _t('nav_jobCalculator'), 'คำนวณราคารับงานนอก') +
+      navLink('quotation',      '📄 ' + _t('nav_quotation'),     'สร้างและส่งใบเสนอราคา') +
+      navLink('contract',       '📜 สัญญาว่าจ้าง',               'สัญญาจ้างวงดนตรี')
+    ) +
+    navLink('band-settings', '⚙️ ' + _t('nav_settings'), 'ตั้งค่าวง ร้าน และตาราง')
   ) : '';
 
   // ── เมนูแอดมิน (collapsible submenu) ────────────────────
-  var _adminPage = (currentPage === 'admin' || currentPage === 'admin-songs');
+  var _adminPage = (currentPage === 'admin' || currentPage === 'admin-songs' || currentPage === 'member-worklog');
   function _admSub(hash, icon, label) {
     var href = 'admin.html#' + hash;
     var cls = 'nav-link';
@@ -127,20 +147,20 @@ function renderMainNav(containerId) {
         '<span class="arrow">▼</span>' +
       '</div>' +
       '<ul class="nav-submenu-items' + (_adminPage ? ' open' : '') + '">' +
-        _admSub('bandreqs',     '🎵', 'คำขอสร้างวง') +
         _admSub('users',        '👥', 'ผู้ใช้งาน') +
         _admSub('bands',        '🎼', 'จัดการวง') +
+        _admSub('bandreqs',     '🎵', 'คำขอสร้างวง') +
         _admSub('subscriptions','💳', 'Subscriptions') +
         _admSub('pricing',      '💰', 'ตั้งราคา') +
         _admSub('promo',        '🎟️', 'Promo Codes') +
         _admSub('broadcast',    '📣', 'Broadcast') +
         _admSub('templates',    '📧', 'Templates') +
-        _admSub('sysinfo',      '📊', 'ระบบ') +
-        _admSub('appconfig',    '⚙️', 'ตั้งค่า') +
-        _admSub('activitylog',  '📋', 'Activity Log') +
         navLink('admin-songs',  '🗂️ จัดการคลังเพลง', '') +
         _admSub('songdup',      '🔍', 'ตรวจเพลงซ้ำ') +
+        _admSub('activitylog',  '📋', 'Activity Log') +
         navLink('member-worklog', '📊 รายงานงานสมาชิก', '') +
+        _admSub('sysinfo',      '📊', 'ระบบ') +
+        _admSub('appconfig',    '⚙️', 'ตั้งค่า') +
       '</ul>' +
     '</li>'
   ) : '';
