@@ -162,7 +162,7 @@
                 <span id="totalDuration" style="font-size:.8rem;color:var(--premium-text-muted)">0 นาที</span>
                 <div style="display:flex;align-items:center;gap:10px">
                   <span id="autoSaveInd" style="font-size:.75rem;color:#22c55e;opacity:.8"></span>
-                  <button class="btn btn-primary" onclick="saveCurrentSet()">💾 บันทึก</button>
+                  <button class="btn btn-primary" id="saveSetBtn" onclick="saveCurrentSet()">💾 บันทึก</button>
                 </div>
               </div>
             </div>
@@ -556,7 +556,10 @@
       document.getElementById('setRequiredHint').style.display = '';
       showToast('กรุณาเลือกเซ็ตก่อนบันทึก', 'error'); return;
     }
+    var btn = document.getElementById('saveSetBtn');
+    if (btn) btn.disabled = true;
     apiCall('saveSetlist', { date: date, sets: setsData }, function(r) {
+      if (btn) btn.disabled = false;
       if (r && r.success) {
         lastSavedHash = JSON.stringify(setsData);
         showToast('✅ บันทึกเซ็ตที่ ' + currentSetIdx + ' สำเร็จ', 'success');

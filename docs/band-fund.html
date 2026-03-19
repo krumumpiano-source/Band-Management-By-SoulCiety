@@ -227,7 +227,7 @@
   </main>
 
   <!-- Reject Modal -->
-  <div id="rejectModal" class="modal-backdrop" style="display:none">
+  <div id="rejectModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeRejectModal()">
     <div class="modal" style="max-width:420px">
       <div class="modal-header">
         <h3 class="modal-title">❌ ปฏิเสธรายการ</h3>
@@ -280,8 +280,12 @@
   });
 
   /* ── Load ── */
+  var _loadFundInProgress = false;
   function loadFund() {
+    if (_loadFundInProgress) return;
+    _loadFundInProgress = true;
     apiCall('getFundTransactions', {}, function(r) {
+      _loadFundInProgress = false;
       if (!(r && r.success)) { showToast('โหลดข้อมูลไม่สำเร็จ', 'error'); return; }
       _allTx = r.data.transactions || [];
 
@@ -302,7 +306,7 @@
 
   /* ── Month filter ── */
   function populateMonthFilter() {
-    var approved = _allTx.filter(function(t){ return t.status === 'approved' || !t.status; });
+    var approved = _allTx.filter(function(t){ return t.status === 'approved'; });
     var months = {};
     approved.forEach(function(t) {
       var m = (t.date || '').substring(0, 7);
@@ -494,6 +498,13 @@
 
     var btn = document.getElementById('saveTxBtn');
     btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+
+    var amount = parseFloat(document.getElementById('txAmount').value);
+    if (isNaN(amount) || amount <= 0) {
+      btn.disabled = false; btn.textContent = _isManager ? '💾 บันทึก' : '📤 ส่งคำขอ';
+      showToast('กรุณาใส่จำนวนเงินที่ถูกต้อง', 'error');
+      return;
+    }
     var userName = localStorage.getItem('userNickname') || localStorage.getItem('userFirstName') || localStorage.getItem('userName') || '';
 
     var category, description;
@@ -510,7 +521,7 @@
 
     apiCall('addFundTransaction', {
       type:        type,
-      amount:      document.getElementById('txAmount').value,
+      amount:      amount,
       date:        document.getElementById('txDate').value,
       category:    category,
       description: description,

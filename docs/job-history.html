@@ -366,9 +366,26 @@
     });
     lines.push('─────────────────');
     lines.push('รวมรับ: ' + Number(job.totalFee || 0).toLocaleString('th-TH') + ' ฿');
-    navigator.clipboard.writeText(lines.join('\n')).then(function() {
+    var _copyText = lines.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(_copyText).then(function() {
+        showToast('📋 คัดลอกสรุปงานแล้ว', 'success');
+      }).catch(function() {
+        var ta = document.createElement('textarea'); ta.value = _copyText; ta.setAttribute('readonly','');
+        ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        try { document.execCommand('copy'); } catch(e) {}
+        document.body.removeChild(ta);
+        showToast('📋 คัดลอกสรุปงานแล้ว', 'success');
+      });
+    } else {
+      var ta = document.createElement('textarea'); ta.value = _copyText; ta.setAttribute('readonly','');
+      ta.style.position = 'fixed'; ta.style.left = '-9999px';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try { document.execCommand('copy'); } catch(e) {}
+      document.body.removeChild(ta);
       showToast('📋 คัดลอกสรุปงานแล้ว', 'success');
-    });
+    }
   }
   </script>
 </body>

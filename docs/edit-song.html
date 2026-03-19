@@ -212,7 +212,9 @@
           _formDirty = false; _saveSuccess = true;
           // auto-save artist to master table
           var art = document.getElementById('artist').value.trim();
-          if (art) apiCall('ensureArtist', { name: art });
+          if (art) apiCall('ensureArtist', { name: art }, function(r) {
+            if (!r || !r.success) console.warn('[ensureArtist] failed:', r && r.message);
+          });
           // ล้าง cache เพลงเพื่อให้หน้าลิสโหลดใหม่
           var bid = localStorage.getItem('bandId') || '';
           var bn  = localStorage.getItem('bandName') || '';
