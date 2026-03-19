@@ -362,13 +362,25 @@ function generateBandCode() {
 }
 function copyBandCode() {
   if (!currentInviteCode) return;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(currentInviteCode).then(function() { showToast('คัดลอกรหัส ' + currentInviteCode + ' แล้ว'); });
+  var msg = 'คัดลอกรหัส ' + currentInviteCode + ' แล้ว';
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(currentInviteCode).then(function() {
+      showToast(msg);
+    }).catch(function() {
+      _fallbackCopyText(currentInviteCode);
+      showToast(msg);
+    });
   } else {
-    var t = document.createElement('textarea'); t.value = currentInviteCode;
-    document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
-    showToast('คัดลอกรหัส ' + currentInviteCode + ' แล้ว');
+    _fallbackCopyText(currentInviteCode);
+    showToast(msg);
   }
+}
+function _fallbackCopyText(text) {
+  var t = document.createElement('textarea'); t.value = text; t.setAttribute('readonly','');
+  t.style.position = 'fixed'; t.style.left = '-9999px';
+  document.body.appendChild(t); t.focus(); t.select();
+  try { document.execCommand('copy'); } catch(e) { console.warn('[copy] fallback failed', e); }
+  document.body.removeChild(t);
 }
 
 /* ══════════════════════════════════════════

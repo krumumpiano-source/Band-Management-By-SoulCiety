@@ -2178,7 +2178,6 @@ function formatThaiDate(dateStr){
 }
 
 function _doCopyAndSave(){
-  try {
 
     const showSpeed = document.getElementById("copySpeed")?.checked;
     const showKey   = document.getElementById("copyKey")?.checked;
@@ -2216,53 +2215,51 @@ function _doCopyAndSave(){
 
     const textToCopy = header + body;
 
-    const ta = document.createElement("textarea");
-    ta.value = textToCopy;
-    ta.setAttribute("readonly", "");
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    ta.style.top = "0";
-
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-
-    let success = false;
-    try {
-      success = document.execCommand("copy");
-    } catch (err) {
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(textToCopy).then(() => {
-          success = true;
-        }).catch(() => {
-          success = false;
-        });
+    // ── 1) บันทึกลิสก่อนเสมอ (ไม่ขึ้นกับ clipboard) ──
+    saveHistory(function(saveOk) {
+      var toastMsg = saveOk
+        ? '📋 คัดลอก & บันทึกลิสสำเร็จ!'
+        : '⚠️ บันทึกลิสไม่สำเร็จ — ลองอีกครั้ง';
+      var toast = document.getElementById('toast');
+      if (toast) {
+        toast.textContent = toastMsg;
+        toast.style.display = 'block';
+        toast.classList.add('show');
+        setTimeout(function(){
+          toast.classList.remove('show');
+          setTimeout(function(){ toast.style.display='none'; },300);
+        },2500);
       }
+      if (saveOk) checkExistingPlaylists(); // refresh used-count หลัง save สำเร็จ
+    });
+
+    // ── 2) คัดลอกลง clipboard แยกต่างหาก ──
+    function doCopy() {
+      // ลอง modern API ก่อน (รองรับมือถือดีกว่า)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).catch(function() {
+          fallbackCopy(textToCopy);
+        });
+        return;
+      }
+      fallbackCopy(textToCopy);
     }
 
-    document.body.removeChild(ta);
-
-    if(!success){
-      throw new Error("ไม่สามารถคัดลอกได้");
+    function fallbackCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand('copy'); } catch(e) { console.warn('[copy] fallback failed', e); }
+      document.body.removeChild(ta);
     }
 
-    // บันทึกประวัติพร้อมกับคัดลอก
-    saveHistory();
-    checkExistingPlaylists(); // refresh used-count after save
-    const toast = document.getElementById("toast");
-    if(toast){
-      toast.textContent = '📋 คัดลอก & บันทึกลิสสำเร็จ!';
-      toast.style.display = "block";
-      toast.classList.add("show");
-      setTimeout(()=>{
-        toast.classList.remove("show");
-        setTimeout(()=>{ toast.style.display="none"; toast.textContent='📋 คัดลอก & บันทึกลิสสำเร็จ!'; },300);
-      },2500);
-    }
-
-  } catch (err) {
-    showSongsAlert('❌ คัดลอกไม่สำเร็จ: ' + err.message);
-  }
+    doCopy();
 }
 
 function copyPlaylist(){
@@ -2302,24 +2299,25 @@ function goLiveMode() {
 function saveHistoryManual() {
   if (playlistData.length === 0) { showSongsAlert('⚠️ ยังไม่มีเพลงในลิส'); return; }
   checkPlaylistLimit(function() {
-    saveHistory();
-    checkExistingPlaylists();
+    saveHistory(function(ok) {
+      var toast = document.getElementById('toast');
+      if (toast) {
+        toast.textContent = ok ? '💾 บันทึกลิสเรียบร้อย!' : '⚠️ บันทึกไม่สำเร็จ — ลองอีกครั้ง';
+        toast.style.display = 'block';
+        toast.classList.add('show');
+        setTimeout(function(){
+          toast.classList.remove('show');
+          setTimeout(function(){ toast.style.display='none'; },300);
+        },2000);
+      }
+      if (ok) checkExistingPlaylists();
+    });
   });
-  var toast = document.getElementById('toast');
-  if (toast) {
-    toast.textContent = '💾 บันทึกลิสเรียบร้อย!';
-    toast.style.display = 'block';
-    toast.classList.add('show');
-    setTimeout(function(){
-      toast.classList.remove('show');
-      setTimeout(function(){ toast.style.display='none'; toast.textContent='คัดลอกลิสสำเร็จ'; },300);
-    },2000);
-  }
 }
 
-function saveHistory() {
-  if (playlistData.length === 0) return;
-  if (_savingHistory) return; // ป้องกัน double-save
+function saveHistory(onDone) {
+  if (playlistData.length === 0) { if (onDone) onDone(false); return; }
+  if (_savingHistory) { if (onDone) onDone(false); return; } // ป้องกัน double-save
   _savingHistory = true;
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
@@ -2338,11 +2336,13 @@ function saveHistory() {
     songs:    songs
   }, function(r){
     _savingHistory = false;
-    console.log('[history] saved', r && r.success);
+    var ok = !!(r && r.success);
+    console.log('[history] saved', ok);
     // refresh cache if modal is open
     if (document.getElementById('historyModal').style.display === 'block') {
       showHistory();
     }
+    if (onDone) onDone(ok);
   });
 }
 

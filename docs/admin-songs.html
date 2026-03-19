@@ -670,8 +670,8 @@ function renderSuggestions() {
       '<div class="sug-diff">' + diffHtml + '</div>' +
       noteHtml +
       '<div class="sug-card-actions">' +
-        '<button class="sug-btn-reject" onclick="rejectSuggestion(\'' + sug.id + '\', ' + i + ')">❌ ปฏิเสธ</button>' +
-        '<button class="sug-btn-approve" onclick="approveSuggestion(\'' + sug.id + '\', ' + i + ')">✅ อนุมัติ & แก้ไข</button>' +
+        '<button class="sug-btn-reject" onclick="rejectSuggestion(\'' + esc(sug.id) + '\', ' + i + ')">❌ ปฏิเสธ</button>' +
+        '<button class="sug-btn-approve" onclick="approveSuggestion(\'' + esc(sug.id) + '\', ' + i + ')">✅ อนุมัติ & แก้ไข</button>' +
       '</div>' +
     '</div>';
   });
@@ -1065,7 +1065,9 @@ function saveVerifiedSongs() {
   apiCall('getBandSettings', {}, function(r) {
     var existing = (r && r.success && r.data) || {};
     existing.verifiedSongs = _verifiedSongs;
-    apiCall('saveBandSettings', existing, function() {});
+    apiCall('saveBandSettings', existing, function(sr) {
+      if (!sr || !sr.success) console.warn('saveVerifiedSongs failed:', sr && sr.message);
+    });
   });
 }
 
@@ -1368,7 +1370,7 @@ function saveRow(songId) {
   var btn = document.getElementById('sbtn-' + songId);
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
   apiCall('updateSong', Object.assign({}, data, { songId: songId }), function(r) {
-    if (btn) { btn.disabled = true; btn.textContent = '💾'; }
+    if (btn) { btn.disabled = false; btn.textContent = '💾'; }
     if (r && r.success) {
       ensureArtistExists(data.artist);
       delete _dirty[songId];
@@ -1838,13 +1840,16 @@ function buildArtistACList(filterText) {
   }
   list.innerHTML = html;
   _acActiveIdx = -1;
-  var items = list.querySelectorAll('.ac-item[data-val]');
-  for (var j = 0; j < items.length; j++) {
-    items[j].addEventListener('click', function() {
-      selectArtistAC(this.getAttribute('data-val'));
-    });
-  }
 }
+
+// Event delegation for artist autocomplete (avoid duplicate listeners)
+(function() {
+  var acList = document.getElementById('acArtistList');
+  if (acList) acList.addEventListener('click', function(e) {
+    var item = e.target.closest('.ac-item[data-val]');
+    if (item) selectArtistAC(item.getAttribute('data-val'));
+  });
+})();
 
 function openArtistAC() {
   buildArtistACList(document.getElementById('asArtist').value);

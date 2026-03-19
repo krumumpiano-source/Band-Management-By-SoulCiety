@@ -1089,7 +1089,19 @@
       if (subInfo) insertPayload.substitute = subInfo;
       if (d.notes) insertPayload.notes = d.notes;
       var { data, error } = await sb.from('member_check_ins').insert(insertPayload).select().single();
-      if (error) throw error;
+      if (error) {
+        // Concurrent insert — retry as update
+        if (error.code === '23505') {
+          var { data: exist2 } = await sb.from('member_check_ins')
+            .select('id').eq('band_id', bandId)
+            .eq('member_id', memberId).eq('date', dateStr).limit(1);
+          if (exist2 && exist2.length > 0) {
+            await sb.from('member_check_ins').update(insertPayload).eq('id', exist2[0].id);
+            return { success: true, message: 'อัปเดตเวลาเรียบร้อย' };
+          }
+        }
+        throw error;
+      }
       return { success: true, data: toCamel(data) };
     }
 
@@ -1587,23 +1599,6 @@
       }
       var { data, error } = await sb.from('playlist_history').insert(row).select().single();
       if (error) throw error;
-      var insertedId = data.id;
-      // Post-insert dedup: concurrent inserts may have created duplicate rows
-      // Keep newest (highest created_at), delete the rest
-      var { data: dupes } = await sb.from('playlist_history')
-        .select('id').eq('band_id', bandId)
-        .eq('date', row.date).eq('venue', row.venue).eq('time_slot', row.time_slot)
-        .order('created_at', { ascending: false });
-      if (dupes && dupes.length > 1) {
-        var keepId = dupes[0].id;
-        var deleteIds = dupes.slice(1).map(function(x) { return x.id; });
-        await sb.from('playlist_history').delete().in('id', deleteIds).eq('band_id', bandId);
-        if (keepId !== insertedId) {
-          // Our insert was older — fetch the kept row to return correct data
-          var { data: kept } = await sb.from('playlist_history').select('*').eq('id', keepId).single();
-          if (kept) return { success: true, data: toCamel(kept) };
-        }
-      }
       return { success: true, data: toCamel(data) };
     }
 
@@ -1899,8 +1894,8 @@
       var rows = toCamelList(data || []);
       var balance = 0, totalIncome = 0, totalExpense = 0;
       (data || []).forEach(function(r) {
-        // คำนวณยอดเฉพาะ approved
-        if (r.status === 'approved' || !r.status) {
+        // คำนวณยอดเฉพาะ approved เท่านั้น
+        if (r.status === 'approved') {
           if (r.type === 'income') { totalIncome += (r.amount || 0); balance += (r.amount || 0); }
           else { totalExpense += (r.amount || 0); balance -= (r.amount || 0); }
         }

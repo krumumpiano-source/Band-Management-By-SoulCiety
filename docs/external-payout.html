@@ -70,7 +70,7 @@
   <div id="toast"></div>
   <div id="confirmModal"></div>
 
-  <div id="payModal" class="pay-modal-backdrop" style="display:none">
+  <div id="payModal" class="pay-modal-backdrop" style="display:none" onclick="if(event.target===this)closePayModal()">
     <div class="pay-modal-box">
       <h3>💰 เบิกจ่ายให้ <span id="payModalName"></span></h3>
       <div class="form-group"><label>ค่าตัว</label><div style="font-size:var(--text-xl);font-weight:700;color:#276749" id="payModalFee"></div></div>

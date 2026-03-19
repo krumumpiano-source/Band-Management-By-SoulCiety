@@ -718,6 +718,7 @@ var _allSongs  = [];   // preloaded band song library for autocomplete
 var _allSongsLoaded = false;
 var _guestLinkToken = null; // pre-generated QR token
 var _breakWarningTimer = null;
+var _clockTimer = null;
 var _ctxIdx = -1; // context menu target song index
 
 // ── Sync state (realtime) ─────────────────────────────────────────
@@ -1198,7 +1199,7 @@ function startClock() {
     document.getElementById('clock').textContent = h + ':' + m + ':' + s;
   }
   tick();
-  setInterval(tick, 1000);
+  _clockTimer = setInterval(tick, 1000);
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1636,6 +1637,9 @@ function chatBarSubmit() {
 }
 
 function addSongToPlaylist(name, key, bpm, singer, artist, isRequest) {
+  // ป้องกันเพลงซ้ำในลิสต์
+  var dup = _playlist.some(function(s) { return !s._skipped && s.name === name; });
+  if (dup && !confirm('เพลง "' + name + '" มีอยู่ในลิสต์แล้ว เพิ่มซ้ำ?')) return;
   var song = {
     name: name, key: key, bpm: bpm, singer: singer, artist: artist,
     _key: key ? formatKey(key) : '', _note: '', _skipped: false,
@@ -2240,14 +2244,25 @@ function saveRequestsToLibrary() {
 
 function copyClip() {
   var text = document.getElementById('clipContent').textContent;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(function() { showToast('📋 คัดลอกแล้ว!'); });
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('📋 คัดลอกแล้ว!');
+    }).catch(function() {
+      _fallbackCopy(text);
+      showToast('📋 คัดลอกแล้ว!');
+    });
   } else {
-    var ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
+    _fallbackCopy(text);
     showToast('📋 คัดลอกแล้ว!');
   }
+}
+function _fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.setAttribute('readonly','');
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch(e) { console.warn('[copy] fallback failed', e); }
+  document.body.removeChild(ta);
 }
 
 function closeClipAndExit() {
@@ -2261,6 +2276,7 @@ function exitLive() {
 }
 
 function doExit() {
+  if (_clockTimer) { clearInterval(_clockTimer); _clockTimer = null; }
   if (_breakWarningTimer) clearTimeout(_breakWarningTimer);
   if (_syncRetryTimer) { clearTimeout(_syncRetryTimer); _syncRetryTimer = null; }
   if (_periodicSyncTimer) { clearInterval(_periodicSyncTimer); _periodicSyncTimer = null; }
@@ -2543,7 +2559,8 @@ function getState() {
 
 function broadcastEvent(event, data) {
   if (!_channel) return;
-  _channel.send({ type: 'broadcast', event: event, payload: data });
+  try { _channel.send({ type: 'broadcast', event: event, payload: data }); }
+  catch(e) { console.warn('broadcastEvent error:', e); }
 }
 
 // ─── SYNC: Retry + Periodic ──────────────────────────────────────

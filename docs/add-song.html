@@ -151,6 +151,7 @@
     document.getElementById('addSongForm').addEventListener('submit', function(e) {
       e.preventDefault();
       var btn = document.getElementById('saveBtn');
+      if (btn.disabled) return; // ป้องกัน double-submit
       btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
       var singerRadio = document.querySelector('input[name="singer"]:checked');
       var bandId   = localStorage.getItem('bandId')   || '';
@@ -171,7 +172,9 @@
         if (r && r.success) {
           // auto-save artist to master table
           var art = document.getElementById('artist').value.trim();
-          if (art) apiCall('ensureArtist', { name: art });
+          if (art) apiCall('ensureArtist', { name: art }, function(r) {
+            if (!r || !r.success) console.warn('[ensureArtist] failed:', r && r.message);
+          });
           try { sessionStorage.removeItem('songs_cache_' + (bandId || bandName)); } catch(ex) {}
           showToast('เพิ่มเพลงเรียบร้อย', 'success');
           setTimeout(function() { window.location.href = 'songs.html'; }, 1000);
