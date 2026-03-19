@@ -283,28 +283,41 @@ function _injectSongManagerMenu() {
     var navMenu = document.querySelector('.nav-menu');
     if (!navMenu) return;
 
-    // หา Songs link เพื่อ inject ถัดจากมัน
-    var songsLi = null;
+    // หา Songs link แล้ว walk up ไปหา top-level <li> ใน .nav-menu
+    var targetLi = null;
     var links = navMenu.querySelectorAll('a.nav-link');
     for (var i = 0; i < links.length; i++) {
       if (links[i].getAttribute('href') === 'songs.html') {
-        songsLi = links[i].parentElement;
+        var el = links[i].closest('li');
+        // walk up จนหา <li> ที่เป็น direct child ของ .nav-menu
+        while (el && el.parentElement !== navMenu) {
+          el = el.parentElement;
+          if (el && el.tagName === 'LI') { /* keep walking */ }
+        }
+        if (el && el.parentElement === navMenu) targetLi = el;
         break;
       }
     }
 
-    // สร้าง li ใหม่
+    // สร้าง li ใหม่ — top-level เมนูที่เห็นชัด
     var currentPage = (window.location.pathname.split('/').pop() || '').replace('.html', '');
     var li = document.createElement('li');
-    li.innerHTML = '<a href="admin-songs.html" class="nav-link' + (currentPage === 'admin-songs' ? ' active' : '') + '">🎵 จัดการคลังเพลง<span class="nav-link-desc">เพิ่ม แก้ไข ลบเพลงในคลัง</span></a>';
+    li.innerHTML = '<a href="admin-songs.html" class="nav-link' + (currentPage === 'admin-songs' ? ' active' : '') + '" style="color:#f59e0b;font-weight:600">🎵 จัดการคลังเพลง<span class="nav-link-desc">เพิ่ม แก้ไข ลบเพลงในคลัง</span></a>';
 
-    // Insert after Songs link, or at end of nav
-    if (songsLi && songsLi.nextSibling) {
-      navMenu.insertBefore(li, songsLi.nextSibling);
-    } else if (songsLi) {
+    // Insert หลัง Songs submenu เป็น top-level item
+    if (targetLi && targetLi.nextSibling) {
+      navMenu.insertBefore(li, targetLi.nextSibling);
+    } else if (targetLi) {
       navMenu.appendChild(li);
     } else {
-      navMenu.appendChild(li);
+      // fallback: ใส่หลัง section title "สมาชิกวง"
+      var sections = navMenu.querySelectorAll('.nav-section-title');
+      var memberSection = sections.length > 0 ? sections[0] : null;
+      if (memberSection && memberSection.parentElement && memberSection.parentElement.nextSibling) {
+        navMenu.insertBefore(li, memberSection.parentElement.nextSibling);
+      } else {
+        navMenu.appendChild(li);
+      }
     }
 
     // Close sidebar on click (mobile)
