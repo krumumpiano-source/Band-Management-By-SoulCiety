@@ -243,6 +243,17 @@
         apiCall('saveSetlist', { date: date, sets: setsData }, function(){});
       }
     });
+
+    // Auto-refresh when user comes back from another page
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        apiCall('getAllSongs', {}, function(r) {
+          allSongs = (r && r.success && r.data) ? r.data : [];
+          renderPool();
+        });
+        onDateChange();
+      }
+    });
   });
 
   // ── Key Display Mode Toggle ──

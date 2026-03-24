@@ -574,6 +574,11 @@
     renderMainNav('mainNav');
     applyTranslations();
     loadStats();
+
+    // Auto-refresh when user comes back from another page
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) loadStats();
+    });
   });
   </script>
 </body>

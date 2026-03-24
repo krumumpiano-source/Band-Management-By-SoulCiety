@@ -207,6 +207,11 @@
     if (!_qIsManager) {
       document.querySelectorAll('.page-header .btn-primary, #calcBanner .btn-primary').forEach(function(b){ b.style.display='none'; });
     }
+
+    // Auto-refresh when user comes back from another page
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) loadQuotations();
+    });
   });
 
   function loadQuotations(){

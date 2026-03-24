@@ -105,6 +105,11 @@ if (document.getElementById('memberForm')) {
   });
 }
 
+// Auto-refresh when user comes back from another page
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) loadBandMembers();
+});
+
 function deleteCurrentMember() {
   var id = document.getElementById('memberId').value;
   showConfirm(t('confirmDeleteTitle'), t('confirmDeleteMsg'), {danger:true, confirmText:t('delete')}).then(function(ok) {

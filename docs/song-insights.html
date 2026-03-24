@@ -233,6 +233,19 @@
         if (el) el.innerHTML = '<div class="empty-state">ยังไม่มีข้อมูลเพลง</div>';
       });
     }
+
+    // Auto-refresh when user comes back from another page
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && bandId && typeof apiCall === 'function') {
+        apiCall('getSongInsights', { bandId: bandId }, function(result) {
+          if (result && result.success && result.data) {
+            allHistory = result.data.history || [];
+            allBandSongs = result.data.songs || [];
+            loadInsights();
+          }
+        });
+      }
+    });
   });
   </script>
 </body>
