@@ -2292,6 +2292,8 @@ function doExit() {
 // ─────────────────────────────────────────────────────────────────
 function initRealtime() {
   if (!window._sb) return;
+  // Clean up existing channel before creating a new one (prevent duplicate listeners)
+  if (_channel) { try { _channel.unsubscribe(); } catch(e) {} _channel = null; }
   var channelName = 'live-' + _bandId + '-' + _date + (_timeSlot ? '-' + _timeSlot.replace(/:/g,'') : '');
   _channel = window._sb.channel(channelName, { config: { broadcast: { self: false } } });
 
