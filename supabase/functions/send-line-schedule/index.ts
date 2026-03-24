@@ -607,8 +607,19 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    let body: Record<string, string> = {};
+    let body: Record<string, any> = {};
     try { body = await req.json(); } catch { /* cron sends empty body */ }
+
+    // ── LINE Webhook event — จับ Group ID ──────────────────────────
+    if (body.events && Array.isArray(body.events)) {
+      for (const ev of body.events) {
+        if (ev.source?.groupId) {
+          console.log(`[LINE-WEBHOOK] groupId = ${ev.source.groupId}`);
+          console.log(`[LINE-WEBHOOK] type = ${ev.type}, userId = ${ev.source?.userId || '-'}`);
+        }
+      }
+      return json({ ok: true, webhook: true });
+    }
 
     const mode = body.mode || 'daily';
     const thai = thaiNow();
