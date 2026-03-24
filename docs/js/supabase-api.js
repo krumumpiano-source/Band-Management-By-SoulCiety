@@ -1393,7 +1393,7 @@
 
     async function doRemoveMember(d) {
       if (!d.userId) return { success: false, message: 'ไม่ระบุสมาชิก' };
-      var { data, error } = await sb.from('profiles').update({ band_id: null, band_name: null, role: 'member', status: 'inactive', updated_at: new Date().toISOString() }).eq('id', d.userId).select().single();
+      var { data, error } = await sb.from('profiles').update({ band_id: null, band_name: null, role: null, status: 'inactive', updated_at: new Date().toISOString() }).eq('id', d.userId).select().single();
       if (error) throw error;
       return { success: true, data: toCamel(data), message: 'ลบสมาชิกออกจากวงเรียบร้อย' };
     }
@@ -2303,8 +2303,9 @@
 
     async function doSetBandPlan(d) {
       if (!d.bandId || !d.plan) return { success: false, message: 'ไม่พบ bandId หรือ plan' };
-      var { error } = await sb.from('bands').update({ band_plan: d.plan }).eq('id', d.bandId);
+      var { data, error } = await sb.from('bands').update({ band_plan: d.plan }).eq('id', d.bandId).select().maybeSingle();
       if (error) throw error;
+      if (!data) return { success: false, message: 'ไม่สามารถเปลี่ยนแพ็กเกจได้ (สิทธิ์ไม่เพียงพอ)' };
       return { success: true };
     }
 

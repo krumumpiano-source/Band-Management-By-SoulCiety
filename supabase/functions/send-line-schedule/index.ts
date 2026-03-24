@@ -152,7 +152,8 @@ async function fetchDayData(dateStr: string, bandIds: string[]): Promise<BreakSl
     // Get band name
     const { data: bandRow } = await sb.from('bands').select('band_name').eq('id', bs.band_id).maybeSingle();
     const bandName = bandRow?.band_name || 'ไม่ทราบชื่อวง';
-    const venues: Array<{ id: string; name: string }> = (s.venues || []).map(
+    const rawVenues = Array.isArray(s.venues) ? s.venues : [];
+    const venues: Array<{ id: string; name: string }> = rawVenues.map(
       (v: Record<string, string>) => ({ id: v.id || '', name: v.name || v.venueName || '' })
     );
 
@@ -638,6 +639,7 @@ Deno.serve(async (req: Request) => {
       const uid = (() => {
         try { return JSON.parse(atob(jwt.split('.')[1])).sub ?? ''; } catch { return ''; }
       })();
+      if (!uid) return json({ ok: false, error: 'Unauthorized' }, 401);
       const { data: { user } } = await sb.auth.admin.getUserById(uid);
       if (!user) return json({ ok: false, error: 'Unauthorized' }, 401);
 
@@ -663,9 +665,11 @@ Deno.serve(async (req: Request) => {
     if (mode === 'quota') {
       const authHeader = req.headers.get('Authorization') ?? '';
       const jwt = authHeader.replace('Bearer ', '');
+      if (!jwt) return json({ ok: false, error: 'Unauthorized' }, 401);
       const uid = (() => {
         try { return JSON.parse(atob(jwt.split('.')[1])).sub ?? ''; } catch { return ''; }
       })();
+      if (!uid) return json({ ok: false, error: 'Unauthorized' }, 401);
       const { data: { user } } = await sb.auth.admin.getUserById(uid);
       if (!user) return json({ ok: false, error: 'Unauthorized' }, 401);
       const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).maybeSingle();
