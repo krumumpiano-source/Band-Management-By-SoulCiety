@@ -377,6 +377,11 @@
       var hdr = document.querySelector('.page-header');
       if (hdr) { var info = document.createElement('span'); info.style.cssText = 'background:#f59e0b;color:#fff;padding:6px 14px;border-radius:8px;font-size:var(--text-sm)'; info.textContent = '👁️ ดูอย่างเดียว'; hdr.appendChild(info); }
     }
+
+    // Auto-refresh when user comes back from another page
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) loadJobs();
+    });
   });
   </script>
 </body>

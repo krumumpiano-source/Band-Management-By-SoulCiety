@@ -256,6 +256,11 @@
     // Load members from profiles + settings in parallel
     loadMembers();
     loadBandSettings();
+
+    // Auto-refresh when user comes back from another page
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) { loadMembers(); loadBandSettings(); }
+    });
   });
 
   function loadMembers() {

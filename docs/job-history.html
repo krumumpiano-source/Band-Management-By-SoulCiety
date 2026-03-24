@@ -136,6 +136,11 @@
     renderMainNav('mainNav');
     applyTranslations();
     loadHistory();
+
+    // Auto-refresh when user comes back from another page
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) loadHistory();
+    });
   });
 
   function loadHistory() {

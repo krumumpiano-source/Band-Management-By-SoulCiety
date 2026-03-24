@@ -602,6 +602,11 @@ document.addEventListener('DOMContentLoaded', function() {
   loadSuggestions();
   initPresence();
   } // end initAdminSongs
+
+  // Auto-refresh when user comes back from another page
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) { loadSongs(); loadSuggestions(); }
+  });
 });
 
 // ─── Song Suggestions ─────────────────────────────────────────────

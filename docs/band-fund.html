@@ -277,6 +277,11 @@
     });
 
     loadFund();
+
+    // Auto-refresh when user comes back from another page
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) loadFund();
+    });
   });
 
   /* ── Load ── */
