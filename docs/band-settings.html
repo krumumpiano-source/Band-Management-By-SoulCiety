@@ -784,10 +784,29 @@
     }
 
     document.getElementById('lineEnabled').addEventListener('change', function() {
-      _updateLineToggle('lineEnabled', 'lineEnabledTrack', 'lineEnabledThumb', 'lineEnabledLabel', this.checked, true);
+      var on = this.checked;
+      _updateLineToggle('lineEnabled', 'lineEnabledTrack', 'lineEnabledThumb', 'lineEnabledLabel', on, true);
+      // Auto-save enabled state to DB (like autoNotifToggle)
+      if (_lineConfigId) {
+        apiCall('saveVenueLineConfig', { id: _lineConfigId, enabled: on }, function(r) {
+          var msgEl = document.getElementById('lineMsg');
+          if (r && r.success) {
+            msgEl.style.color = 'var(--accent-success,#38a169)';
+            msgEl.textContent = on ? '✅ เปิดระบบ LINE แล้ว' : '⏸️ ปิดระบบ LINE แล้ว';
+          } else {
+            msgEl.style.color = '#e53e3e';
+            msgEl.textContent = '❌ บันทึกไม่สำเร็จ';
+          }
+        });
+      }
     });
     document.getElementById('lineWeeklyEnabled').addEventListener('change', function() {
-      _updateLineToggle('lineWeeklyEnabled', 'lineWeeklyTrack', 'lineWeeklyThumb', 'lineWeeklyLabel', this.checked, false);
+      var on = this.checked;
+      _updateLineToggle('lineWeeklyEnabled', 'lineWeeklyTrack', 'lineWeeklyThumb', 'lineWeeklyLabel', on, false);
+      // Auto-save weekly enabled state to DB
+      if (_lineConfigId) {
+        apiCall('saveVenueLineConfig', { id: _lineConfigId, send_weekly_enabled: on }, function() {});
+      }
     });
     function _updateLineToggle(cbId, trackId, thumbId, labelId, on, isMain) {
       var track = document.getElementById(trackId);
@@ -803,6 +822,12 @@
 
     function saveLineConfig() {
       var msgEl = document.getElementById('lineMsg');
+      var bandId = localStorage.getItem('bandId') || '';
+      if (!bandId) {
+        msgEl.style.color = '#e53e3e';
+        msgEl.textContent = '❌ ไม่พบ Band ID — กรุณาล็อกอินใหม่';
+        return;
+      }
       msgEl.textContent = '⏳ กำลังบันทึก...';
       var payload = {
         id: _lineConfigId,
@@ -814,6 +839,7 @@
         send_weekly_enabled: document.getElementById('lineWeeklyEnabled').checked,
         send_weekly_time: document.getElementById('lineWeeklyTime').value || '08:00',
         footer_text: document.getElementById('lineFooter').value.trim(),
+        band_ids: [bandId],
       };
       apiCall('saveVenueLineConfig', payload, function(r) {
         if (r && r.success) {
