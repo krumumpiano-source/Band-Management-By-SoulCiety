@@ -1847,6 +1847,11 @@ window.onload = function() {
     dateInput.value = yyyy + '-' + mm + '-' + dd;
   }
 
+  // Auto-fill date/venue/timeSlot จาก URL params (เช่นกดปุ่ม ✏️ จาก dashboard)
+  var _urlParams = new URLSearchParams(location.search);
+  var _urlDate = _urlParams.get('date');
+  if (_urlDate && dateInput) dateInput.value = _urlDate;
+
   loadInitial();
   loadBandSettings();
   populateArtistFilter();
@@ -1866,6 +1871,28 @@ window.onload = function() {
   // Auto-enter select mode from ?selectMode=1 link (e.g. from add-song.html banner)
   if (new URLSearchParams(location.search).get('selectMode') === '1' && _smBandId) {
     enterSelectMode();
+  }
+
+  // Auto-load existing playlist if coming from dashboard edit button (?date=...&venue=...&timeSlot=...)
+  if (_urlDate && _smBandId) {
+    var _urlVenue = _urlParams.get('venue') || '';
+    var _urlTimeSlot = _urlParams.get('timeSlot') || '';
+    // Wait for band settings to load (venue/timeSlot dropdowns), then set & auto-load
+    setTimeout(function() {
+      var venueEl = document.getElementById('venue');
+      var timeEl  = document.getElementById('timeSlot');
+      if (venueEl && _urlVenue) {
+        for (var vi = 0; vi < venueEl.options.length; vi++) {
+          if (venueEl.options[vi].value === _urlVenue) { venueEl.selectedIndex = vi; break; }
+        }
+      }
+      if (timeEl && _urlTimeSlot) {
+        for (var ti = 0; ti < timeEl.options.length; ti++) {
+          if (timeEl.options[ti].value === _urlTimeSlot) { timeEl.selectedIndex = ti; break; }
+        }
+      }
+      checkExistingPlaylists(true);
+    }, 800);
   }
 };
 </script>

@@ -1640,6 +1640,12 @@ function addSongToPlaylist(name, key, bpm, singer, artist, isRequest) {
   // ป้องกันเพลงซ้ำในลิสต์
   var dup = _playlist.some(function(s) { return !s._skipped && s.name === name; });
   if (dup && !confirm('เพลง "' + name + '" มีอยู่ในลิสต์แล้ว เพิ่มซ้ำ?')) return;
+  // ถ้าเพลงมีในคลังอยู่แล้ว → ไม่ mark เป็นเพลงขอ (แม้จะเพิ่มผ่าน chat bar)
+  if (isRequest && _allSongs.length > 0) {
+    var nameLower = name.toLowerCase();
+    var inLibrary = _allSongs.some(function(s) { return (s.name || '').toLowerCase() === nameLower; });
+    if (inLibrary) isRequest = false;
+  }
   var song = {
     name: name, key: key, bpm: bpm, singer: singer, artist: artist,
     _key: key ? formatKey(key) : '', _note: '', _skipped: false,
