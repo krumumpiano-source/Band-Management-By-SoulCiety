@@ -437,9 +437,13 @@ async function runDaily(thai: Date): Promise<void> {
   for (const cfg of configs) {
     if (!cfg.line_channel_token || !cfg.line_group_id) continue;
 
-    // Validate there are bands configured
-    const bandIds: string[] = cfg.band_ids || [];
-    if (!bandIds.length) continue;
+    // Validate there are bands configured — fallback to all bands if empty
+    let bandIds: string[] = cfg.band_ids || [];
+    if (!bandIds.length) {
+      const { data: allBands } = await sb.from('bands').select('id');
+      bandIds = (allBands || []).map((b: { id: string }) => b.id);
+      if (!bandIds.length) continue;
+    }
 
     // Check quota (skip for test)
     const count = await getMonthlyCount(cfg.id);
@@ -484,8 +488,12 @@ async function runWeekly(thai: Date): Promise<void> {
 
   for (const cfg of configs) {
     if (!cfg.line_channel_token || !cfg.line_group_id) continue;
-    const bandIds: string[] = cfg.band_ids || [];
-    if (!bandIds.length) continue;
+    let bandIds: string[] = cfg.band_ids || [];
+    if (!bandIds.length) {
+      const { data: allBands } = await sb.from('bands').select('id');
+      bandIds = (allBands || []).map((b: { id: string }) => b.id);
+      if (!bandIds.length) continue;
+    }
 
     // Check quota
     const count = await getMonthlyCount(cfg.id);
@@ -551,7 +559,11 @@ async function runPreview(configId: string, mode: 'daily' | 'weekly'): Promise<{
     .maybeSingle();
 
   if (!cfg) return { ok: false, error: 'ไม่พบ config' };
-  const bandIds: string[] = cfg.band_ids || [];
+  let bandIds: string[] = cfg.band_ids || [];
+  if (!bandIds.length) {
+    const { data: allBands } = await sb.from('bands').select('id');
+    bandIds = (allBands || []).map((b: { id: string }) => b.id);
+  }
   const thai = thaiNow();
 
   try {
